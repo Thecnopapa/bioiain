@@ -1,4 +1,4 @@
-from bioiain import main
+from bioiain.biopython import atom
 
 
-main.main()
+print(atom.Atom())
