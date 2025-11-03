@@ -1,6 +1,9 @@
 import Bio.PDB as bp
 from .base import BiopythonOverlayClass
+from .chain import Chain
+
 
 
 class Model(bp.Model.Model, BiopythonOverlayClass):
-    pass
+    child_class = Chain
+

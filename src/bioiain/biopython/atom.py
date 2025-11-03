@@ -3,4 +3,4 @@ from .base import BiopythonOverlayClass
 
 
 class Atom(bp.Atom.Atom, BiopythonOverlayClass):
-    pass
+    child_class = None

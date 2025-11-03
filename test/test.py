@@ -3,22 +3,21 @@ import Bio.PDB as bp
 
 sys.path.append('.')
 import src.bioiain as bi
-from src.bioiain.utilities.logging import log
-from src.bioiain.biopython import imports
-from src.bioiain.symmetries.operations import *
-from src.bioiain.symmetries.parsing import parse_crystal_card
-from src.bioiain.utilities.entities import print_all_coords
+print(bi.bp)
+
+
+
+bi.log("warning", "works")
+
+
+pdb = bi.biopython.loadPDB("./test/1M2Z.pdb")
+cif = bi.biopython.loadPDB("./test/1M2Z.cif")
+print(bi.biopython.Structure)
 
 
 
 
-pdb = imports.loadPDB("./test/1M2Z.pdb")
-cif = imports.loadPDB("./test/1M2Z.cif")
-
-
-
-
-print(pdb.__dict__.keys())
+print(pdb.child_class)
 print(cif.__dict__.keys())
 
 
