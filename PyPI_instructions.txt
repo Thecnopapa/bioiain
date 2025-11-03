@@ -7,9 +7,9 @@ pip install -i https://test.pypi.org/simple/ bioiain
 
 
 
-
+# from ~/bioiain (where src)
 python3 -m build
 python3 -m twine upload --repository testpypi dist/*
-pip install -i https://test.pypi.org/simple/ bioiain
+pip install -i https://test.pypi.org/simple/ bioiain -U
 
 
