@@ -6,13 +6,20 @@ from ..utilities.logging import log
 from ..utilities.strings import string_to_list, clean_string
 
 
-def parse_crystal_card(file_path):
+def parse_crystal_card(file_path) -> dict:
+    """
+    Parse crystal card from .pdb/.cif files.
+    :param file_path: File path of file
+    :return: Crystal card: { a, b, c,
+    alpha, beta, gamma, Z,
+    ori1, ori2, ori3,
+    scale1, scale2, scale3,
+    group_name, group_key }
+    """
     log("debug", "Parsing Crystal Card from {}".format(file_path))
     assert os.path.isfile(file_path)
     ext = file_path.split(".")[-1]
     assert "pdb" in ext or "cif" in ext
-
-
 
     if "pdb" in ext:
         cryst1 = None
@@ -136,16 +143,9 @@ def parse_crystal_card(file_path):
     return None
 
 
-
-
-
-
-
-
-
 def get_space_group(raw_group:str) -> list[str|int]:
     """
-    Parse space group from PDB CRYST1 line.
+    Parse space group from PDB file CRYST1 line.
     :param raw_group: Raw space group name
     :return: [space group name, space group key]
     """
@@ -166,6 +166,7 @@ def get_space_group(raw_group:str) -> list[str|int]:
 
     return [new_group, new_key]
 
+
 def get_cell_dim(card:dict) -> list:
     """
     Parse unit cell parameters from crystal card.
@@ -176,7 +177,12 @@ def get_cell_dim(card:dict) -> list:
 
 
 
-def calculate_parameters(card):
+def calculate_parameters(card:dict) -> dict:
+    """
+    Calculate parameters from crystal card.
+    :param card: Crystal card
+    :return: Parameters dictionary
+    """
     cell_dim = get_cell_dim(card)
     parameters = {}
     parameters["A"] = A = float(cell_dim[0])

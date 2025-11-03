@@ -4,7 +4,14 @@ from ..utilities.logging import log
 
 
 
-def clean_string(string:str, allow:list[str]=(".", "_"), remove_newlines:bool=True):
+def clean_string(string:str, allow:list[str]=(".", "_"), remove_newlines:bool=True) -> str:
+    """
+    Remove unwanted characters from string.
+    :param string: String to clean
+    :param allow: List of special characters allowed (default ".", "_")
+    :param remove_newlines: whether tho remove "\n" (default True)
+    :return: Clean string
+    """
     string = unidecode(str(string))
     if remove_newlines:
         string = string.replace("\n", "")
@@ -13,7 +20,13 @@ def clean_string(string:str, allow:list[str]=(".", "_"), remove_newlines:bool=Tr
 
 
 def get_digits(string:str, allow:list[str]=("."), integer:bool= False):
-
+    """
+    Parse digits within a string as int or float.
+    :param string: Target string
+    :param allow: List of special characters to allow (default ".")
+    :param integer: Parse as int, default False -> parsed as float
+    :return: Parsed int/float
+    """
     try:
         if integer:
             return int(''.join(e for e in unidecode(str(string)) if e.isdigit() or e in allow))
@@ -27,6 +40,12 @@ def get_digits(string:str, allow:list[str]=("."), integer:bool= False):
 
 
 def string_to_list(line:str, delimiter:str=" ") -> list:
+    """
+    Split string by the specified delimiter. Empty (or \n) are removed.
+    :param line: String to split
+    :param delimiter: Delimiter to split at (default " ")
+    :return: List of strings
+    """
     l = line.split(delimiter)
     nl = []
     for c in l:
