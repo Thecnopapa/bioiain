@@ -1,6 +1,6 @@
 import Bio.PDB as bp
+from .base import BiopythonOverlayClass
 
 
-
-class Residue(bp.Residue.Residue):
+class Residue(bp.Residue.Residue, BiopythonOverlayClass):
     pass
