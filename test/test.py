@@ -1,28 +1,19 @@
 import sys
 import Bio.PDB as bp
 
-
-
 sys.path.append('.')
 import src.bioiain as bi
-from src.bioiain.utilities.prints import log
+from src.bioiain.utilities.logging import log
 from src.bioiain.biopython import structure
 from src.bioiain.symmetries.operations import *
-
-biop_structure = bp.Structure.Structure("4321")
-test_structure = structure.Structure("1234")
-print(test_structure)
-print(type(test_structure))
-print(test_structure, isinstance(test_structure,bp.Entity.Entity))
-print(entity_to_frac(test_structure, {}))
+from src.bioiain.symmetries.parsing import parse_crystal_card
 
 
-print(biop_structure.__class__)
-print(test_structure.__class__)
+pdb = parse_crystal_card("./test/1M2Z.pdb")
+cif = parse_crystal_card("./test/1M2Z.cif")
 
-mix = structure.Structure.cast(biop_structure)
-print(mix)
-print(structure.Structure.__mro__)
+print(pdb)
+print(cif)
 
 
 

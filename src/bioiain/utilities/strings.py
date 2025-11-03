@@ -1,6 +1,6 @@
 
 from unidecode import unidecode
-from ..utilities.prints import log
+from ..utilities.logging import log
 
 
 
@@ -22,5 +22,16 @@ def get_digits(string:str, allow:list[str]=("."), integer:bool= False):
     except:
         log("warning", "No digits found in: {}".format(string))
         log(0, ''.join(e for e in unidecode(str(string)) if e.isdigit() or e in allow))
-
         return None
+
+
+
+def string_to_list(line:str, delimiter:str=" ") -> list:
+    l = line.split(delimiter)
+    nl = []
+    for c in l:
+        c = c.strip()
+        if c == "" or c == "\n":
+            continue
+        nl.append(c)
+    return nl
