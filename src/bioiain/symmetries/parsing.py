@@ -1,6 +1,6 @@
 
 import numpy as np
-from space_groups import dictio_space_groups
+from .space_groups import dictio_space_groups
 
 
 
@@ -54,8 +54,6 @@ def calculate_parameters(card):
 
 
 def get_crystal(file_path):
-
-    #print1("Parsing crystalcard from", file_path)
 
     def line_contents_no_blank(line):
         l = line.split(" ")
