@@ -28,6 +28,7 @@ def loadPDB(file_path:str, name:str=None, quiet=True) -> Structure:
         return None
     assert isinstance(parsed, bp.Structure.Structure)
     structure = Structure.cast(parsed)
+    structure.paths["original"] = os.path.abspath(file_path)
     return structure
 
 
@@ -77,11 +78,12 @@ def downloadPDB(data_dir:str, list_name:str, pdb_list:list=None, file_path:str =
         failed_counter = 0
         skipped_counter = 0
         for line in f:
+            line = line.replace("\n", "")
             f_name = line.split("/")[-1]
             if os.path.exists(os.path.join(list_folder, f_name)) and not overwrite:
                 skipped_counter += 1
                 continue
-            url = line.replace("\n", "")
+            url = line
             log("debug", "...Downloading {}".format(url), end="\r")
             response = requests.get(url)
             if response.status_code != 200:

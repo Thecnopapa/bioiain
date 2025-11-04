@@ -156,7 +156,7 @@ def get_space_group(raw_group:str) -> list[str|int]:
     for key, group in dictio_space_groups.items():
         if raw_group == group["symbol"]:
             new_group = str(group["symbol"])
-            new_key = int(key)
+            new_key = key
             break
     if new_group is None or new_key is None:
         log("error", "Missing crystal group")
