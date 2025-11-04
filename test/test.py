@@ -1,24 +1,16 @@
 import sys
+sys.path.append('.')
 import Bio.PDB as bp
 
-sys.path.append('.')
+
+
+from src.bioiain.biopython import downloadPDB
 import src.bioiain as bi
-print(bi.bp)
 
 
 
-bi.log("warning", "works")
+downloadPDB("./test/data", "test_list", ["5JJM", "6nwl"], file_path="test/pdb_list.txt", file_format="pdb")
 
-
-pdb = bi.biopython.loadPDB("./test/1M2Z.pdb")
-cif = bi.biopython.loadPDB("./test/1M2Z.cif")
-print(bi.biopython.Structure)
-
-
-
-
-print(pdb.child_class)
-print(cif.__dict__.keys())
 
 
 

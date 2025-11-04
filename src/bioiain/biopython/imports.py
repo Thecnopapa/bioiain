@@ -1,9 +1,21 @@
 import Bio.PDB as bp
+import os
+
+import requests
+
+from ..utilities.strings import clean_string, string_to_list
 from ..utilities.logging import log
 from .structure import Structure
 
 
-def loadPDB(file_path:str, name:str=None, quiet=True):
+def loadPDB(file_path:str, name:str=None, quiet=True) -> Structure:
+    """
+
+    :param file_path:
+    :param name:
+    :param quiet:
+    :return:
+    """
     if name is None:
         name = file_path.split("/")[-1].split(".")[0]
     ext = file_path.split(".")[0]
@@ -17,5 +29,68 @@ def loadPDB(file_path:str, name:str=None, quiet=True):
     assert isinstance(parsed, bp.Structure.Structure)
     structure = Structure.cast(parsed)
     return structure
+
+
+def downloadPDB(save_folder:str, list_name:str, pdb_list:list=None, file_path:str = None, file_format="pdb",
+                overwrite:bool=False) -> str:
+    """
+
+    :param save_folder:
+    :param list_name:
+    :param pdb_list:
+    :param file_path:
+    :param file_format:
+    :param overwrite:
+    """
+    log("debug", "Downloading PDB files...")
+    assert file_format in ["pdb", "cif"]
+    if pdb_list is None:
+        pdb_list = []
+    if file_path is not None:
+        with open(file_path) as f:
+            for line in f:
+                new = string_to_list(line, delimiter=",")
+                for n in new:
+                    n = clean_string(n)
+                    pdb_list.append(n)
+    pdb_list = sorted(list(set([p.upper() for p in pdb_list])))
+
+    log("debug", "Codes:", pdb_list)
+
+    os.makedirs(save_folder, exist_ok=True)
+    link_file = "{}_({}).txt".format(list_name, file_format)
+    with open(os.path.join(save_folder, link_file) , "w") as f:
+        for pdb in pdb_list:
+            if file_format == "pdb":
+                f.write("https://files.rcsb.org/download/{}.pdb\n".format(pdb))
+            elif file_format == "cif":
+                f.write("https://files.rcsb.org/download/{}.cif\n".format(pdb))
+    log("debug", "Generated links at: {}".format(os.path.join(save_folder, link_file) ))
+
+    with open(os.path.join(save_folder, link_file)) as f:
+        counter = 0
+        failed_counter = 0
+        skipped_counter = 0
+        for line in f:
+            f_name = line.split("/")[-1]
+            if os.path.exists(os.path.join(save_folder, f_name)) and not overwrite:
+                skipped_counter += 1
+                continue
+            url = line.replace("\n", "")
+            log("debug", "...Downloading {}".format(url), end="\r")
+            response = requests.get(url)
+            if response.status_code != 200:
+                log("Error", "Failed to download from:", line)
+                failed_counter += 1
+            else:
+                with open(os.path.join(save_folder, f_name), "w") as f:
+                    f.write(response.text)
+                counter += 1
+    log("debug", "{} files downloaded, {} failed, {} skipped".format(counter, failed_counter, skipped_counter))
+
+
+
+
+
 
 
