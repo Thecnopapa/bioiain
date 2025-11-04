@@ -1,6 +1,6 @@
 import os
 import sys
-sys.path.append('.')
+sys.path.append('..')
 import Bio.PDB as bp
 
 
@@ -11,21 +11,40 @@ import src.bioiain as bi
 
 
 
-file_folder = downloadPDB("./test/data", "test_list", ["5JJM", "6nwl"],
-                          file_path="test/pdb_list.txt", file_format="pdb",
+file_folder = downloadPDB("./data", "test_list", ["5JJM", "6nwl"],
+                          file_path="./pdb_list.txt", file_format="pdb",
                           overwrite=False)
 
 bi.log("header", file_folder)
 
 
 t = bi.imports.loadPDB(os.path.join(file_folder,os.listdir(file_folder)[0]))
-print(t)
+#print(t)
 print(t.id)
 
 t.init_crystal()
 
-print(t.export("./test/exports", data=True))
 
+
+from src.bioiain.visualisation import pymol
+
+script = pymol.PymolScript()
+script._bioiain = "sys\nsys.path.append('..')\nimport src.bioiain"
+
+script.load(t.paths["original"], "original", to="pdb")
+script.print("pdb")
+script.disable("(all)")
+script.add("bi.log", "'header'", "\"I'm a log\"", is_cmd = False)
+
+
+
+
+
+
+t.export("./exports", data=True)
+
+script.write_script()
+script.execute()
 
 
 

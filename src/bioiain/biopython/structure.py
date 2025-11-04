@@ -11,3 +11,7 @@ class Structure(bp.Structure.Structure, BiopythonOverlayClass):
         from ..symmetries import parse_crystal_card, calculate_parameters
         self.data["crystal"] =  parse_crystal_card(self.paths["original"])
         self.data["params"] = calculate_parameters(self.data["crystal"])
+
+
+    def init_all(self):
+        self.init_crystal()

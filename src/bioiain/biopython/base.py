@@ -30,11 +30,11 @@ class BiopythonOverlayClass:
         return entity
 
     def base_init(self):
-        self.exporting = ["data", "paths"]
+        self.exporting = ["data", "paths", "header"]
         self.data=  {}
         self.paths = {}
 
-    def export(self, folder, filename=None, data=False, structure=True, structure_format="pdb") -> list[str]|str:
+    def export(self, folder, filename=None, data=False, structure=True, structure_format="pdb") -> list[str|None]|str:
 
         if filename is None:
             filename = self.id
@@ -53,7 +53,7 @@ class BiopythonOverlayClass:
             return paths[0]
         return paths
 
-    def export_structure(self, folder, filename, extension) -> str:
+    def export_structure(self, folder, filename, extension) -> str|None:
         filename = "{}.{}".format(filename, extension)
         filepath = os.path.join(folder, filename)
         if extension == "pdb":
