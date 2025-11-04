@@ -10,11 +10,11 @@ from .structure import Structure
 
 def loadPDB(file_path:str, name:str=None, quiet=True) -> Structure:
     """
-
-    :param file_path:
-    :param name:
-    :param quiet:
-    :return:
+    Loads a PDB file into a Structure object.
+    :param file_path: Path to the PDB file
+    :param name: ID assigned to the structure
+    :param quiet: Passed to parser
+    :return: Structure object (bioiain)
     """
     if name is None:
         name = file_path.split("/")[-1].split(".")[0]
@@ -31,18 +31,21 @@ def loadPDB(file_path:str, name:str=None, quiet=True) -> Structure:
     return structure
 
 
-def downloadPDB(save_folder:str, list_name:str, pdb_list:list=None, file_path:str = None, file_format="pdb",
+def downloadPDB(data_dir:str, list_name:str, pdb_list:list=None, file_path:str = None, file_format="pdb",
                 overwrite:bool=False) -> str:
     """
-
-    :param save_folder:
-    :param list_name:
-    :param pdb_list:
-    :param file_path:
-    :param file_format:
-    :param overwrite:
+    Downloads a list of PDB files into a folder of given name within the data_dir. Creates a file containing all
+    the file in the data_dir
+    :param data_dir: Directory to create the download folder
+    :param list_name: Name of the folder to download files to
+    :param pdb_list: List of PDB codes to download
+    :param file_path: (optional) file with PDB codes, separated by comma or new lines, extends pdb_list
+    :param file_format: PDB / CIF, extension of downloaded files
+    :param overwrite: True to download existing pdb files and overwrite
+    :return: Path to folder containing downloaded files
     """
     log("debug", "Downloading PDB files...")
+    file_format = file_format.lower()
     assert file_format in ["pdb", "cif"]
     if pdb_list is None:
         pdb_list = []
@@ -57,23 +60,25 @@ def downloadPDB(save_folder:str, list_name:str, pdb_list:list=None, file_path:st
 
     log("debug", "Codes:", pdb_list)
 
-    os.makedirs(save_folder, exist_ok=True)
+    os.makedirs(data_dir, exist_ok=True)
+    list_folder = os.path.join(data_dir, list_name)
+    os.makedirs(list_folder, exist_ok=True)
     link_file = "{}_({}).txt".format(list_name, file_format)
-    with open(os.path.join(save_folder, link_file) , "w") as f:
+    with open(os.path.join(data_dir, link_file) , "w") as f:
         for pdb in pdb_list:
             if file_format == "pdb":
                 f.write("https://files.rcsb.org/download/{}.pdb\n".format(pdb))
             elif file_format == "cif":
                 f.write("https://files.rcsb.org/download/{}.cif\n".format(pdb))
-    log("debug", "Generated links at: {}".format(os.path.join(save_folder, link_file) ))
+    log("debug", "Generated links at: {}".format(os.path.join(data_dir, link_file) ))
 
-    with open(os.path.join(save_folder, link_file)) as f:
+    with open(os.path.join(data_dir, link_file)) as f:
         counter = 0
         failed_counter = 0
         skipped_counter = 0
         for line in f:
             f_name = line.split("/")[-1]
-            if os.path.exists(os.path.join(save_folder, f_name)) and not overwrite:
+            if os.path.exists(os.path.join(list_folder, f_name)) and not overwrite:
                 skipped_counter += 1
                 continue
             url = line.replace("\n", "")
@@ -83,12 +88,11 @@ def downloadPDB(save_folder:str, list_name:str, pdb_list:list=None, file_path:st
                 log("Error", "Failed to download from:", line)
                 failed_counter += 1
             else:
-                with open(os.path.join(save_folder, f_name), "w") as f:
+                with open(os.path.join(list_folder, f_name), "w") as f:
                     f.write(response.text)
                 counter += 1
     log("debug", "{} files downloaded, {} failed, {} skipped".format(counter, failed_counter, skipped_counter))
-
-
+    return list_folder
 
 
 
