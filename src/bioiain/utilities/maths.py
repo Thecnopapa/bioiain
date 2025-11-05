@@ -1,17 +1,22 @@
 import numpy as np
+from types import GeneratorType
 
-
-def find_com(atoms):
+def find_com(atoms:list|GeneratorType|np.ndarray) -> list[float]:
+    """
+    Find the center of mass of a list of atoms. All atoms weight the same.
+    :param atoms: List (or generator) of Atom objects. Also accepts as atoms lists and np.arrays, where the first 3
+    items are the coordinates.
+    :return: List of coordinates of the center of mass.
+    """
     x = 0
     y = 0
     z = 0
 
-    import types
-    if isinstance(atoms, types.GeneratorType):
+    if isinstance(atoms, GeneratorType):
         atoms = list(atoms)
 
     for atom in atoms:
-        if isinstance(atom, np.ndarray):
+        if isinstance(atom, np.ndarray) or type(atom) == list:
             x += atom[0]
             y += atom[1]
             z += atom[2]
@@ -22,4 +27,4 @@ def find_com(atoms):
     x /= len(atoms)
     y /= len(atoms)
     z /= len(atoms)
-    return x, y, z
+    return [x, y, z]

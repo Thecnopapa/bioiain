@@ -1,6 +1,7 @@
 from .space_groups import dictio_space_groups
 import Bio.PDB as bp
 import sys
+from typing_extensions import Self
 
 from .operations import *
 from ..utilities import find_com, print_all_coords
@@ -12,26 +13,57 @@ from ..visualisation.pymol import quick_display, PymolScript
 
 
 
+class CrystalElement(Chain):
+    pass
+
+
+
+
+
 class Crystal(Model):
-    def init(self, *args, **kwargs):
+    def init(self, *args, **kwargs) -> Self:
+        """
+        Initialize the crystal. Executed on casting.
+        :param args:
+        :param kwargs:
+        :return: Self.
+        """
         self.data["min_monomer_length"] = None
         self.data["oligomer_levels"] = None
 
         self.monomers = None
         self.ligands = None
+        return self
 
-    def set_params(self, data:dict, min_monomer_length, oligomer_levels):
+    def set_params(self, data:dict, min_monomer_length, oligomer_levels:int|list[int]) -> Self:
+        """
+        Set parameters for crystal processing.
+        :param data: Data dictionary from parent structure.
+        :param min_monomer_length: Minimum (inclusive) length of chain to be considered a monomer.
+        :param oligomer_levels: Oligomerisation level/s to consider.
+        :return: Self.
+        """
         self.data["params"] = data["params"]
         self.data["crystal"] = data["crystal"]
         self.data["min_monomer_length"] = min_monomer_length
         self.data["oligomer_levels"] = oligomer_levels
+        return self
 
-    def process(self):
+    def process(self) -> Self:
+        """
+        Processes the crystal through the main pipeline. Requires set_params to be run beforehand.
+        :return: Self.
+        """
         self._identyfy_main_elements()
         self._cast_main_elements()
         self._regenerate_crystal()
+        return self
 
-    def _identyfy_main_elements(self):
+    def _identyfy_main_elements(self) -> list[list[CrystalElement]]:
+        """
+        Separates chains in model into monomers and ligands, according to the min_monomer_length parameter.
+        :return: List of monomers, list of ligands.
+        """
         if self.data["min_monomer_length"] is None:
             log("error", "Crystal: missing param: min_monomer_length", raise_exception=True)
         self.monomers = []
@@ -43,9 +75,14 @@ class Crystal(Model):
                 self.ligands.append(chain)
             else:
                 self.monomers.append(chain)
+        return [self.monomers, self.ligands]
 
 
-    def _cast_main_elements(self):
+    def _cast_main_elements(self) -> list[list[CrystalElement]]:
+        """
+        Casts monomers and ligands (bi.Chain objects) to their respective classes.
+        :return: List of monomers, list of ligands.
+        """
         for n, mon in enumerate(self.monomers):
             m = Monomer.cast(mon)
             self.monomers[n] = m
@@ -53,12 +90,10 @@ class Crystal(Model):
             l = Ligand.cast(lig)
             self.ligands[n] = l
         log("debug", "Monomers: {}, Ligands: {}".format(self.monomers, self.ligands))
+        return [self.monomers, self.ligands]
 
 
-    def _find_oligomers(self):
 
-        for n in self.data["oligomer_levels"]:
-            log("debug" "Oligomer level: {}".format(n))
 
 
 
@@ -116,9 +151,9 @@ class Crystal(Model):
                         atom.coord = new_coord
                         atom.position = position
 
-                entity_to_orth(displaced_monomer, params)
+
                 sym_monomers.append(displaced_monomer)
-                script.load_entity(displaced_monomer)
+                script.load_entity(entity_to_orth(displaced_monomer.copy(), params))
         script.write_script("./exports")
         script.execute()
 
@@ -128,25 +163,13 @@ class Crystal(Model):
 
 
 
+    def _find_oligomers(self):
+
+        for n in self.data["oligomer_levels"]:
+            log("debug" "Oligomer level: {}".format(n))
 
 
 
-
-
-
-
-
-
-
-
-        #quick_display(self.fractional)
-        #quick_display(self)
-
-
-
-
-class CrystalElement(Chain):
-    pass
 
 
 class Monomer(CrystalElement):
@@ -156,7 +179,6 @@ class Monomer(CrystalElement):
 
 class Ligand(CrystalElement):
     pass
-
 
 
 

@@ -276,30 +276,6 @@ def string_numbers():
 def points_to_line(start,end):
     return list(zip(start,end))
 
-def find_com(atoms):
-    import types
-    if isinstance(atoms, types.GeneratorType):
-        atoms = list(atoms)
-    x = 0
-    y = 0
-    z = 0
-    for atom in atoms:
-        if isinstance(atom, np.ndarray):
-            x += atom[0]
-            y += atom[1]
-            z += atom[2]
-        else:
-            #print(com, atom.coord)
-            x += atom.coord[0]
-            y += atom.coord[1]
-            z += atom.coord[2]
-    x /= len(atoms)
-    y /= len(atoms)
-    z /= len(atoms)
-    #print(len(atoms), end = " -> ")
-    return x, y, z
-
-
 
 
 def rotation_matrix_from_vectors(vec1, vec2):

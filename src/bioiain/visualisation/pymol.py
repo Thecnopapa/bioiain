@@ -1,9 +1,17 @@
 import os, sys, subprocess
+from idlelib.undo import Command
+
 from ..utilities import *
 from ..biopython.base import BiopythonOverlayClass
 
 
-def quick_display(entity:BiopythonOverlayClass|list[BiopythonOverlayClass]):
+def quick_display(entity:BiopythonOverlayClass|list[BiopythonOverlayClass]) -> str:
+    """
+    Displays entity or list of entities with PyMol. Exports entities to ./.temp and saves generated script in the same
+    directory as quick_display.py. Entities are named as N_[entity_id] following input order.
+    :param entity: Entity or list of entities.
+    :return: Path to the generated script.
+    """
     script = PymolScript("quick_display")
     os.makedirs("./.temp", exist_ok=True)
 
@@ -15,6 +23,7 @@ def quick_display(entity:BiopythonOverlayClass|list[BiopythonOverlayClass]):
         script.load(path, name)
     script.write_script("./.temp")
     script.execute()
+    return script.path
 
 
 
@@ -37,7 +46,7 @@ class PymolScript(object):
         self.path = None
 
 
-    def write_script(self,folder, filename:str=None) -> str:
+    def write_script(self,folder:str, filename:str=None) -> str:
         """
         Writes the stored commands to a file. The file can be executed from the terminal or run as a PyMol script.
         :param folder: Folder where to write the file.
@@ -45,8 +54,8 @@ class PymolScript(object):
         :return: Path to the file.
         """
         if filename is None:
-            filepath = self.name+".py"
-        filepath = os.path.join(folder, filepath)
+            filename = self.name+".py"
+        filepath = os.path.join(folder, filename)
         with open(filepath, "w") as f:
             f.write("pymol\n\n")
             f.write("import {} as bi\n\n\n".format(self._bioiain))
@@ -69,14 +78,14 @@ class PymolScript(object):
         subprocess.run(cmd)
 
 
-    def add(self, fun, *args, **kwargs):
+    def add(self, fun, *args, **kwargs) -> Command:
         """
-        Adds command to the script. Can be used to insert custom functions. Beware when adding parameters as strings.
+        Generates a command object and adds the command to the script. Can be used to insert custom functions. Beware when adding parameters as strings.
         must be double-quoted ("'string'").
-        :param fun: Function to execute. Use .import() to import such function if necessary.
+        :param fun: Name(string) of function to execute. Use .import() to import such function if necessary.
         :param args: Args to pass the function. "strings" -> variables, "'strings'" -> strings.
         :param kwargs: Same as args but with keywords.
-        :return: Command object.
+        :return: Generated Command object.
         """
         c = self.Command(fun, *args, **kwargs)
         self.commands.append(c)
@@ -85,7 +94,16 @@ class PymolScript(object):
 
 
     class Command(object):
-        def __init__(self, fun, *args, to=None, is_cmd=True, **kwargs):
+        """
+        Class for commands stored PyMol script.
+        :param fun: Name(string) of function to execute. Use .import() to import such function if necessary.
+        :param args: Args to pass the function. "strings" -> variables, "'strings'" -> strings.
+        :param to: Name of variable to assign the return of the function.
+        :param is_cmd: whether the command is within od pymol.cmd.
+        :param kwargs: Same as args but with keywords.
+        :return: Command object.
+        """
+        def __init__(self, fun:str, *args, to:str=None, is_cmd=True, **kwargs):
             self.fun = fun
             self.args = args
             self.kwargs = kwargs
@@ -99,7 +117,11 @@ class PymolScript(object):
             return self.cmd
 
 
-        def construct_command(self):
+        def construct_command(self) -> str:
+            """
+            Generates final string to append to script. Uses parameters stored in the instance.
+            :return: Generated string.
+            """
             if type(self.args) == str:
                 arg_str = self.args
             else:
@@ -113,7 +135,14 @@ class PymolScript(object):
             self.cmd = c
             return self.cmd
 
-    def _process_sele(self, sele, force_str=False, **kwargs):
+    @staticmethod
+    def _process_sele(sele:str, force_str:bool=False) -> str:
+        """
+        Adds extra quotes to PyMol selections. Selections are strings within brackets e.g (all).
+        :param sele: Selection string.
+        :param force_str: Whether to always double-quote input string.
+        :return: Double-quoted selection or string if not a selection.
+        """
         if sele.startswith("(") and sele.endswith(")") or force_str:
             sele = f"'{sele}'"
         else:
@@ -121,27 +150,53 @@ class PymolScript(object):
         return sele
 
 
-    def print(self, *args, **kwargs):
+    def print(self, *args, **kwargs) -> Command:
+        """
+        Adds command to print with builtin print.
+        :param args: Args to pass to print.
+        :param kwargs: Kwargs to pass to print.
+        :return: Generated Command object. -> Nothing
+        """
         fun = "print"
         return self.add(fun, *args, is_cmd=False, **kwargs)
 
 
-    def load(self, path:str, name:str, **kwargs):
+    def load(self, path:str, name:str, **kwargs) -> Command:
+        """
+        Adds command to load file from path.
+        :param path: Path to file.
+        :param name: Name of created PyMol object.
+        :param kwargs:
+        :return: Generated Command object -> Unknown.
+        """
         fun = "load"
         args = f"'{path}'", f"'{name}'"
         return self.add(fun, *args, **kwargs)
 
-    def load_entity(self, entity:BiopythonOverlayClass):
-        name = entity.id
+    def load_entity(self, entity:BiopythonOverlayClass, name:str|None=None) -> Command:
+        """
+        Adds command to load file from entity. Entity is exported to ./.temp as of the cwd.
+        :param entity:
+        :param name: (optional) Name of created PyMol object. Defaults to the entity id
+        :return: Generated Command object -> Unknown.
+        """
+        if name is None:
+            name = entity.id
         n = 1
         while name+".pdb" in os.listdir("./.temp"):
             name = "{}_{}.pdb".format(entity.id, n)
             n += 1
         path = entity.export_structure("./.temp", name)
-        self.load(path, name)
+        return self.load(path, name)
 
 
-    def disable(self, sele:str, **kwargs):
+    def disable(self, sele:str, **kwargs) -> Command:
+        """
+        Adds Command to disable selection.
+        :param sele: Selection string.
+        :param kwargs:
+        :return: Generated Command object -> Unknown.
+        """
         sele = self._process_sele(sele, **kwargs)
         fun = "disable"
         return self.add(fun, sele, **kwargs)
