@@ -1,11 +1,13 @@
 from .space_groups import dictio_space_groups
 import Bio.PDB as bp
+import sys
 
 from .operations import *
+from ..utilities import find_com
 from ..utilities.logging import log
 from ..utilities import *
 from ..biopython import Chain, Model
-
+from ..visualisation.pymol import quick_display, PymolScript
 
 
 
@@ -18,8 +20,9 @@ class Crystal(Model):
         self.monomers = None
         self.ligands = None
 
-    def set_params(self,params, min_monomer_length, oligomer_levels):
-        self.data["params"] = params
+    def set_params(self, data:dict, min_monomer_length, oligomer_levels):
+        self.data["params"] = data["params"]
+        self.data["crystal"] = data["crystal"]
         self.data["min_monomer_length"] = min_monomer_length
         self.data["oligomer_levels"] = oligomer_levels
 
@@ -61,10 +64,72 @@ class Crystal(Model):
 
 
     def _regenerate_crystal(self):
-        self.fractional = entity_to_frac(self, self.data["params"])
-        entities.print_all_coords(self.fractional)
-        from ..visualisation.pymol_old import pymol_temp_show
-        pymol_temp_show(self.fractional)
+        script = PymolScript()
+        key = self.data["crystal"]["group_key"]
+        operations = dictio_space_groups[key]["symops"]
+        print(operations)
+        sym_monomers = []
+        sym_ligands = []
+
+
+        for monomer in self.monomers:
+            log("debug", "Monomer: {}".format(monomer))
+            frac_monomer = entity_to_frac(monomer.copy(), self.data["params"])
+            frac_monomer_com =  find_com(frac_monomer.get_atoms())
+            for n, operation in operations.items():
+                log("debug", "Operation: {}".format(n))
+                displaced_monomer = generate_displaced_copy(frac_monomer, distance=99.5, key=key, op_n=n)
+                print(displaced_monomer, [round(c) for c in find_com(displaced_monomer.get_atoms())])
+                print(monomer, [round(c) for c in find_com(monomer.get_atoms())])
+
+                for atom in displaced_monomer.get_atoms():
+                    #print(atom, atom.get_full_id(), atom.is_disordered()>0)
+                    if atom.is_disordered()>0:
+                        log("warning", "Disordered atom found")
+
+                    deltaX = ((atom.coord[0] - frac_monomer_com[0]) % 1) - 0.5
+                    deltaY = ((atom.coord[1] - frac_monomer_com[1]) % 1) - 0.5
+                    deltaZ = ((atom.coord[2] - frac_monomer_com[2]) % 1) - 0.5
+
+                    new_coordX = frac_monomer_com[0] + deltaX
+                    new_coordY = frac_monomer_com[1] + deltaY
+                    new_coordZ = frac_monomer_com[2] + deltaZ
+                    new_coord = [new_coordX, new_coordY, new_coordZ]
+
+                    position = [(n_coord - d_coord + 99.5) for n_coord, d_coord in zip(new_coord, atom.coord)]
+                    for p in position:
+                        assert p % 1 == 0
+                    position = tuple([int(p) for p in position])
+
+                    if any([p >= 10 for p in position]):
+                        print(atom.get_full_id())
+                        print("Position:", position)
+                        print("Original:", atom.coord)
+                        print("Deltas:", deltaX, deltaY, deltaZ)
+                        print("New coord:", new_coord)
+                        log("error", "Orthogonal position in fractional operation", raise_exception=True)
+                    #print(position)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        #quick_display(self.fractional)
+        #quick_display(self)
 
 
 

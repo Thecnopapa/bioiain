@@ -26,21 +26,21 @@ t = bi.imports.loadPDB(os.path.join(file_folder,os.listdir(file_folder)[0]))
 print(t.id)
 
 t.init_crystal()
-
+t.export("./exports", data=True, structure=False)
 
 model = t.get_list()[0]
 print(model)
 
 crystal = bi.symmetries.Crystal.cast(model.copy())
 crystal.set_params(
-    params = t.data["params"],
+    data = t.data,
     min_monomer_length=100,
     oligomer_levels=[2],
 )
 
 
 crystal.process()
-crystal.export_data(".", "crystal")
+crystal.export_data("./exports", "crystal")
 
 print(crystal, model)
 

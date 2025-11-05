@@ -46,10 +46,12 @@ class BiopythonOverlayClass:
 
 
 
-    def export(self, folder, filename=None, data=False, structure=True, structure_format="pdb") -> list[str|None]|str:
+    def export(self, folder:str, filename:str=None, data:bool=False, structure:bool=True, structure_format:str="pdb") -> list[str|None]|str:
 
         if filename is None:
             filename = self.id
+        if folder is None:
+            folder = "./"
         structure_format = structure_format.lower()
         assert structure_format in ["pdb", "cif"]
 

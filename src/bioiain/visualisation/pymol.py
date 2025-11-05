@@ -1,6 +1,22 @@
 import os, sys, subprocess
 from ..utilities import *
 
+
+
+
+def quick_display(entity):
+    script = PymolScript()
+    os.makedirs("./.temp", exist_ok=True)
+    path = entity.export_structure("./.temp", "temp", "pdb")
+    script.load(path, entity.id)
+    script.write_script("./.temp/.quick_display.py")
+    script.execute()
+
+
+
+
+
+
 class PymolScript(object):
     """
     Class to build PyMol scripts from predetermined functions or custom ones.
