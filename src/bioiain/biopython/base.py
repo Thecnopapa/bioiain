@@ -35,12 +35,11 @@ class BiopythonOverlayClass:
 
 
 
-
     def base_init(self):
         if not hasattr(self, "exporting"):
-            self.exporting = ["data", "paths", "header"]
+            self.exporting = ["data", "paths"]
         if not hasattr(self, "data"):
-            self.data =  {}
+            self.data =  {"info":{"name":"_".join([str(i) for i in self.get_full_id()])}}
         if not hasattr(self, "paths"):
             self.paths = {}
 

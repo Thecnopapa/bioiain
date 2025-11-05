@@ -8,7 +8,7 @@ from ..utilities.logging import log
 from .structure import Structure
 
 
-def loadPDB(file_path:str, name:str=None, quiet=True) -> Structure:
+def loadPDB(file_path:str, name:str=None, quiet=True) -> Structure|None:
     """
     Loads a PDB file into a Structure object.
     :param file_path: Path to the PDB file
@@ -18,10 +18,10 @@ def loadPDB(file_path:str, name:str=None, quiet=True) -> Structure:
     """
     if name is None:
         name = file_path.split("/")[-1].split(".")[0]
-    ext = file_path.split(".")[0]
-    if "pdb" in file_path:
+    ext = file_path.split(".")[-1]
+    if "pdb" in ext:
         parsed = bp.PDBParser(QUIET=quiet).get_structure(name, file_path)
-    elif "cif" in file_path:
+    elif "cif" in ext:
         parsed = bp.MMCIFParser(QUIET=quiet).get_structure(name, file_path)
     else:
         log("error", "File format not recognized: {}".format(file_path))
@@ -29,6 +29,8 @@ def loadPDB(file_path:str, name:str=None, quiet=True) -> Structure:
     assert isinstance(parsed, bp.Structure.Structure)
     structure = Structure.cast(parsed)
     structure.paths["original"] = os.path.abspath(file_path)
+    structure.data["info"]["name"] = name
+    structure.data["info"]["o_name"] = name
     return structure
 
 

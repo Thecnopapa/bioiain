@@ -4,6 +4,7 @@ requires = [
     "biopython >= 1.85",
     "pandas >= 2.2.3",
     "numpy >= 2.2.5",
+    "typing-extensions >= 4.15.0",
 ]
 build-backend = "setuptools.build_meta"
 

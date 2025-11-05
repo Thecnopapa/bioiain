@@ -22,7 +22,7 @@ bi.log("header", file_folder)
 
 
 t = bi.imports.loadPDB(os.path.join(file_folder,os.listdir(file_folder)[0]))
-#print(t)
+print(t)
 print(t.id)
 
 t.init_crystal()
@@ -30,6 +30,8 @@ t.export("./exports", data=True, structure=False)
 
 model = t.get_list()[0]
 print(model)
+print(model.get_full_id())
+
 
 crystal = bi.symmetries.Crystal.cast(model.copy())
 crystal.set_params(
