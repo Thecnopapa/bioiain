@@ -173,8 +173,38 @@ def generate_displaced_copy(original:bp.Entity.Entity, distance:list[float]|floa
 
 
 
+def get_fractional_distance(coord1, coord2, params):
+    from maths import vector
+    deltaX, deltaY, deltaZ = vector(coord1, coord2)
+
+    a = params["A"]
+    b = params["B"]
+    c = params["C"]
+    c_a = params["c_a"]
+    c_b = params["c_b"]
+    c_g = params["c_g"]
+
+    d2 = (a**2)*(deltaX**2) + (b**2)*(deltaY**2) + (c**2)*(deltaZ**2) +2*b*c*c_a*deltaY*deltaZ +2*a*c*c_b*deltaX*deltaZ +2*a*b*c_g*deltaX*deltaY
+
+    return d2
 
 
 
 
-
+def get_neigh_from_coord(coord, target_atoms, max_distance, count_to = 1, params = None): #Deprecated
+    if params is not None:
+        distance_fun = get_fractional_distance
+        max_distance = max_distance**2
+    else:
+        from maths import distance as distance_fun
+    num_contacts = 0
+    contacts = []
+    is_contact = False
+    for atom in target_atoms:
+        if distance_fun(coord, atom.coord, params = params) <= max_distance:
+            num_contacts += 1
+            contacts.append([[c for c in coord], [c for c in atom.coord]])
+            if num_contacts >= count_to:
+                is_contact = True
+                break
+    return is_contact, num_contacts, contacts

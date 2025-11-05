@@ -3,6 +3,7 @@ import Bio.PDB as bp
 
 from .operations import *
 from ..utilities.logging import log
+from ..utilities import *
 from ..biopython import Chain, Model
 
 
@@ -25,6 +26,7 @@ class Crystal(Model):
     def process(self):
         self._identyfy_main_elements()
         self._cast_main_elements()
+        self._regenerate_crystal()
 
     def _identyfy_main_elements(self):
         if self.data["min_monomer_length"] is None:
@@ -58,8 +60,12 @@ class Crystal(Model):
 
 
 
-    def _regenerate_crystal(self, chain):
-        pass
+    def _regenerate_crystal(self):
+        self.fractional = entity_to_frac(self, self.data["params"])
+        entities.print_all_coords(self.fractional)
+        from ..visualisation.pymol_old import pymol_temp_show
+        pymol_temp_show(self.fractional)
+
 
 
 

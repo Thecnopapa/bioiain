@@ -31,21 +31,18 @@ def pymol_colour_everything(start_at=0):
 
 def pymol_start(show=False, quiet=True):
     # Start PyMol
-    if vars.pymol_started:
-        if not quiet:
-            print("(PyMol) PyMol already started")
-        return
-    sprint("(PyMol) Starting PyMol...")
+
+    print("(PyMol) Starting PyMol...")
     if show:  # Debug stuff / -c: no interface, -q no startup message, -Q completely quiet
         pymol.finish_launching(["pymol"])  #
         if quiet:
             pymol.finish_launching(["pymol", "-q"])
     else:
         pymol.finish_launching(["pymol", "-cqQ"])
-    vars["pymol_started"] = True
+
 
 def pymol_close():
-    sprint("(PyMol) Closing PyMol...")
+    print("(PyMol) Closing PyMol...")
     pymol.cmd.quit()
 
 def pymol_reset():
@@ -150,22 +147,7 @@ def pymol_save_session(file_name, folder, mode="pse"):
 def get_all_obj():
     return pymol.cmd.get_names(type='objects')
 
-def generate_preview(path, folder="", state = 0,save_session=True):
-    if save_session:
-        local[folder+"_sessions"] = "sessions/{}_sessions".format(folder)
-    local[folder] = "previews/{}".format(folder)
-    name = os.path.basename(path).split(".")[0]
-    pymol_reset()
-    pymol_load_path(path, state=state)
-    pymol.cmd.orient("(all)")
-    if state == 0:
-        pymol_colour_everything()
-    else:
-        pymol_colour_everything(start_at=state-1)
-    if save_session:
-        pymol_save_session(name, local[folder+"_sessions"])
-    preview_path = pymol_save_small(name.upper(), local[folder], dpi=50, height=150, width=150)
-    return preview_path
+
 
 def pymol_align_all(all_obj = None):
     if all_obj is None:
@@ -352,7 +334,7 @@ def pymol_paint_contacts(obj, contact_list, colour ="yellow", quiet = True):
 
 def pymol_temp_show(structure, disable = False, delete=False, name=None, folder = None):
     from Bio.PDB import PDBIO
-    local["temp"] = "temp"
+
     exporting = PDBIO()
     exporting.set_structure(structure)
     all_obj = [n.upper() for n in pymol_get_all_objects()]
@@ -368,7 +350,7 @@ def pymol_temp_show(structure, disable = False, delete=False, name=None, folder 
         if not name.endswith(".pdb"):
             name += ".pdb"
     if folder is None:
-        folder = local.temp
+        folder = "./temp"
     path = os.path.join(folder, name)
     exporting.save(path)
     pymol_start(show=True)
@@ -450,7 +432,7 @@ def pymol_paint_all_faces(obj, face_dict=None):
 
 def pymol_save_temp_session(path=None, name="temp_session.pse"):
     if path is None:
-        path = os.path.join(local.temp, name)
+        path = os.path.join("./temp", name)
     pymol.cmd.save(path)
     return path
 
@@ -465,7 +447,7 @@ def pymol_command_in_new_process(path, command):
 
 def pymol_save_cluster(obj_list, name="CLUSTER_X.pdb", folder=None, state=0):
     if folder is None:
-        folder = local.temp
+        folder = "./temp"
     objects = []
     for obj in obj_list:
         if type(obj) is list or type(obj) is tuple:
@@ -495,7 +477,7 @@ def pymol_open_saved_cluster(path, name_list=None, only_even=True, spheres = Fal
         models = [model for model in models if model.id % 2 == 0]
     spheres = []
     for model, name in zip(models, cluster_data["names"]):
-        print1(model)
+        print(model)
         cluster_data["models"].append(model)
         for chain in model.get_chains():
             print2(chain)
