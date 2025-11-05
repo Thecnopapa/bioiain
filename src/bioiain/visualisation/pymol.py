@@ -1,15 +1,19 @@
 import os, sys, subprocess
 from ..utilities import *
+from ..biopython.base import BiopythonOverlayClass
 
 
-
-
-def quick_display(entity):
-    script = PymolScript()
+def quick_display(entity:BiopythonOverlayClass|list[BiopythonOverlayClass]):
+    script = PymolScript("quick_display")
     os.makedirs("./.temp", exist_ok=True)
-    path = entity.export_structure("./.temp", "temp", "pdb")
-    script.load(path, entity.id)
-    script.write_script("./.temp/.quick_display.py")
+
+    if type(entity) is not list:
+        entity = [entity]
+    for n, entity in enumerate(entity):
+        name = "{}_{}".format(n, entity.id)
+        path = entity.export_structure("./.temp", name, "pdb")
+        script.load(path, name)
+    script.write_script("./.temp")
     script.execute()
 
 
@@ -33,14 +37,16 @@ class PymolScript(object):
         self.path = None
 
 
-    def write_script(self, filepath:str=None) -> str:
+    def write_script(self,folder, filename:str=None) -> str:
         """
         Writes the stored commands to a file. The file can be executed from the terminal or run as a PyMol script.
-        :param filepath: (optional) Path to the file to write to. Uses script name and current wd as default.
+        :param folder: Folder where to write the file.
+        :param filename: (optional) Path to the file to write to. Uses script name and current wd as default.
         :return: Path to the file.
         """
-        if filepath is None:
+        if filename is None:
             filepath = self.name+".py"
+        filepath = os.path.join(folder, filepath)
         with open(filepath, "w") as f:
             f.write("pymol\n\n")
             f.write("import {} as bi\n\n\n".format(self._bioiain))
@@ -56,7 +62,7 @@ class PymolScript(object):
         Executes the script on the current thread. Not sure if it is blocking or not.
         """
         if self.path is None:
-            self.write_script()
+            self.write_script(".")
         cmd = [self.pymol_path, self.path]
 
         logging.log("debug", "$ " + " ".join(cmd))
@@ -124,6 +130,15 @@ class PymolScript(object):
         fun = "load"
         args = f"'{path}'", f"'{name}'"
         return self.add(fun, *args, **kwargs)
+
+    def load_entity(self, entity:BiopythonOverlayClass):
+        name = entity.id
+        n = 1
+        while name+".pdb" in os.listdir("./.temp"):
+            name = "{}_{}.pdb".format(entity.id, n)
+            n += 1
+        path = entity.export_structure("./.temp", name)
+        self.load(path, name)
 
 
     def disable(self, sele:str, **kwargs):

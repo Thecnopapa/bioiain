@@ -67,7 +67,7 @@ class BiopythonOverlayClass:
             return paths[0]
         return paths
 
-    def export_structure(self, folder, filename, extension) -> str|None:
+    def export_structure(self, folder, filename, extension="pdb") -> str|None:
         filename = "{}.{}".format(filename, extension)
         filepath = os.path.join(folder, filename)
         if extension == "pdb":

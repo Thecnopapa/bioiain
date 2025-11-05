@@ -74,7 +74,7 @@ script.add("bi.log", "'header'", "\"I'm a log\"", is_cmd = False)
 
 t.export("./exports", data=True)
 
-script.write_script()
+script.write_script("./exports")
 script.execute()
 
 
