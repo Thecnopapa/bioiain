@@ -2,6 +2,11 @@ import os, sys, subprocess
 from ..utilities import *
 
 class PymolScript(object):
+    """
+    Class to build PyMol scripts from predetermined functions or custom ones.
+    :param name: Name of the script. Will de set as a filename. Default is ".temp_pymol_script".
+    :return: PymolScript Object.
+    """
     def __init__(self, name=".temp_pymol_script", pymol_path = "pymol"):
         self.pymol_path = pymol_path
         self._bioiain = "bioiain"
@@ -12,24 +17,45 @@ class PymolScript(object):
         self.path = None
 
 
-    def write_script(self, filepath=None):
+    def write_script(self, filepath:str=None) -> str:
+        """
+        Writes the stored commands to a file. The file can be executed from the terminal or run as a PyMol script.
+        :param filepath: (optional) Path to the file to write to. Uses script name and current wd as default.
+        :return: Path to the file.
+        """
         if filepath is None:
             filepath = self.name+".py"
         with open(filepath, "w") as f:
-            f.write("#!pymol\n\n")
+            f.write("pymol\n\n")
             f.write("import {} as bi\n\n\n".format(self._bioiain))
             for cmd in self.commands:
                 f.write(repr(cmd)+"\n")
         self.path = os.path.abspath(filepath)
+        os.chmod(self.path, 0o755)
+        return self.path
 
 
     def execute(self):
+        """
+        Executes the script on the current thread. Not sure if it is blocking or not.
+        """
         if self.path is None:
             self.write_script()
-        subprocess.run([self.pymol_path, self.path])
+        cmd = [self.pymol_path, self.path]
+
+        logging.log("debug", "$ " + " ".join(cmd))
+        subprocess.run(cmd)
 
 
     def add(self, fun, *args, **kwargs):
+        """
+        Adds command to the script. Can be used to insert custom functions. Beware when adding parameters as strings.
+        must be double-quoted ("'string'").
+        :param fun: Function to execute. Use .import() to import such function if necessary.
+        :param args: Args to pass the function. "strings" -> variables, "'strings'" -> strings.
+        :param kwargs: Same as args but with keywords.
+        :return: Command object.
+        """
         c = self.Command(fun, *args, **kwargs)
         self.commands.append(c)
         return c
