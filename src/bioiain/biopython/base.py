@@ -2,6 +2,7 @@ import builtins
 import os
 import Bio.PDB as bp
 import json
+from ..utilities.logging import log
 
 
 
@@ -27,12 +28,23 @@ class BiopythonOverlayClass:
                     entity.child_list[n] = e
                     entity.child_dict[n] = e
         entity.base_init()
+        if hasattr(entity, "init"):
+            entity.init()
         return entity
 
+
+
+
+
     def base_init(self):
-        self.exporting = ["data", "paths", "header"]
-        self.data=  {}
-        self.paths = {}
+        if not hasattr(self, "exporting"):
+            self.exporting = ["data", "paths", "header"]
+        if not hasattr(self, "data"):
+            self.data =  {}
+        if not hasattr(self, "paths"):
+            self.paths = {}
+
+
 
     def export(self, folder, filename=None, data=False, structure=True, structure_format="pdb") -> list[str|None]|str:
 
@@ -72,7 +84,7 @@ class BiopythonOverlayClass:
 
         filename = "{}.data.json".format(filename)
         filepath = os.path.join(folder, filename)
-        exp = {e: self.__getattribute__(e) for e in self.exporting}
+        exp = {e: self.__getattribute__(e) for e in self.exporting if hasattr(self, e)}
         with open(filepath, "w") as f:
             f.write(json.dumps(exp, indent=4 ))
         return filepath

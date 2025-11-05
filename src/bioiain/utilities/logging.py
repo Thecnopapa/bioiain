@@ -20,14 +20,17 @@ def log(level:int|str=1, *args, **kwargs):
         level = level.lower()
     if v > -2:
         if level == "error":
-
             if isinstance(kwargs.get("error", None), Exception):
                 raise kwargs.get("error")
+
+            elif kwargs.get("raise_exception", False):
+                raise Exception(" ".join(args))
             else:
                 print("\033[91m")
                 print("ERROR: ", end="")
                 print(*args, **kwargs)
                 print("\033[0m")
+
         elif v > -1:
             if level == "warning":
                 print("\033[93m")
