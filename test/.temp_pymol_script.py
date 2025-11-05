@@ -1,4 +1,4 @@
-#!pymol
+
 
 import sys
 sys.path.append('..')

@@ -1,5 +1,8 @@
 import os
 import sys
+
+
+
 sys.path.append('..')
 import Bio.PDB as bp
 
@@ -25,8 +28,36 @@ print(t.id)
 t.init_crystal()
 
 
+model = t.get_list()[0]
+print(model)
 
+crystal = bi.symmetries.Crystal.cast(model.copy())
+crystal.set_params(
+    params = t.data["params"],
+    min_monomer_length=100,
+    oligomer_levels=[2],
+)
+
+
+crystal.process()
+crystal.export_data(".", "crystal")
+
+print(crystal, model)
+
+
+
+
+
+
+
+
+
+
+
+
+exit()
 from src.bioiain.visualisation import pymol
+
 
 script = pymol.PymolScript()
 script._bioiain = "sys\nsys.path.append('..')\nimport src.bioiain"
