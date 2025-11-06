@@ -1,9 +1,10 @@
-from .space_groups import dictio_space_groups
+
 import Bio.PDB as bp
 import sys
 from typing_extensions import Self
+from copy import deepcopy
 
-
+from .space_groups import dictio_space_groups
 from .operations import *
 from ..utilities import find_com, print_all_coords
 from ..utilities.logging import log
@@ -19,39 +20,44 @@ class CrystalElement(Chain):
     def init(self, *args, **kwargs):
         super().init(*args, **kwargs)
         self.data["symmetry"] = {
+            "operation": None,
+            "operation_n": None,
             "is_symmetry": False,
             "positions": [],
         }
         self.sym_elements = []
 
+    def __repr__(self):
+        return "<bi.{} id={} op:{}>".format(
+            self.__class__.__name__, self.id, self.data["symmetry"]["operation_n"])
+
+    def __str__(self):
+        return "<bi.{} id={} op:{}>".format(
+            self.__class__.__name__, self.id, self.data["symmetry"]["operation_n"])
+
 
 
     def generate_symmetries(self, operations, params, key):
-        print(self.data["info"]["name"])
-
+        log(3, "Generating symmetries ({})".format(self.data["info"]["name"]))
+        log(4, self, "CoM:", [round(c) for c in find_com(self.get_atoms())])
         frac_element = entity_to_frac(self.copy(), params)
-        frac_element.data = frac_element.data.copy()
         frac_element_com = find_com(frac_element.get_atoms())
 
         #TODO: Something is not popying right
         for n, operation in operations.items():
-            log("debug", "Operation: {}".format(n))
+            log(4, "Operation: {}".format(n))
             displaced_element = generate_displaced_copy(frac_element.copy(), key=key, op_n=n).copy()
-            displaced_element.data = displaced_element.data.copy()
+            displaced_element.data = deepcopy(displaced_element.data)
             displaced_element.data["symmetry"] = {
                 "operation_n": n,
                 "operation": operation,
                 "is_symmetry": True,
                 "positions": [],
             }
-            displaced_element = displaced_element.copy()
-            print(self.data["info"]["name"])
-            print(self, displaced_element)
-            displaced_element.data["info"]["name"] = "{}_op{}".format(self.data["info"]["name"], n)
-            print(self.data["info"]["name"])
 
-            print(displaced_element, [round(c) for c in find_com(frac_element.get_atoms())])
-            print(self, [round(c) for c in find_com(self.get_atoms())])
+            displaced_element.data["info"]["name"] = "{}_op{}".format(self.data["info"]["name"], n)
+
+
 
             for atoms in displaced_element.get_atoms():
                 # print(atom, atom.get_full_id(), atom.is_disordered()>0)
@@ -74,7 +80,7 @@ class CrystalElement(Chain):
                     for p in position:
                         assert p % 1 == 0
                     position = tuple([int(p) for p in position])
-                    displaced_element.data["symmetry"]["positions"].append("".join([str(p) for p in position]))
+                    displaced_element.data["symmetry"]["positions"].append(position)
 
                     if any([p >= 10 for p in position]):
                         print(atom.get_full_id())
@@ -89,16 +95,16 @@ class CrystalElement(Chain):
 
 
 
-            displaced_element.data["symmetry"]["positions"] = list(set(displaced_element.data["symmetry"]["positions"]))
+            displaced_element.data["symmetry"]["positions"] = list(set(
+                displaced_element.data["symmetry"]["positions"]))
             self.data["symmetry"]["positions"].extend(displaced_element.data["symmetry"]["positions"])
-            print(displaced_element.data["symmetry"]["positions"])
+
             self.sym_elements.append(displaced_element)
-            displaced_element.export_data("./exports", displaced_element.data["info"]["name"])
-        print(self.data["symmetry"]["positions"])
-        print(set(self.data["symmetry"]["positions"]))
+            displaced_element.export(data=True)
+            log(5, "Element: {}".format(displaced_element.data["info"]["name"]))
+            log(5, "Positions:", displaced_element.data["symmetry"]["positions"])
+
         self.data["symmetry"]["positions"] = list(set(self.data["symmetry"]["positions"]))
-        print(self.data["symmetry"]["positions"])
-        print(self.sym_elements)
         return self.sym_elements
 
 
@@ -116,12 +122,17 @@ class Crystal(Model):
         super().init(*args, **kwargs)
         self.data["min_monomer_length"] = None
         self.data["oligomer_levels"] = None
+        self.paths["crystal_folder"] = None
 
         self.monomers = None
         self.ligands = None
         return self
 
-    def set_params(self, data:dict, min_monomer_length, oligomer_levels:int|list[int]) -> Self:
+    def set_params(self, data:dict,
+                   min_monomer_length:int,
+                   oligomer_levels:int|list[int],
+                   crystal_folder:str="./crystals"
+                   ) -> Self:
         """
         Set parameters for crystal processing.
         :param data: Data dictionary from parent structure.
@@ -129,11 +140,12 @@ class Crystal(Model):
         :param oligomer_levels: Oligomerisation level/s to consider.
         :return: Self.
         """
-        self.data["params"] = data["params"]
-        self.data["crystal"] = data["crystal"]
-        self.data["info"] = data["info"].copy()
+        self.data = deepcopy(data)
+
+        self.data["info"]["name"] = data["info"]["name"]+"_cryst"
         self.data["min_monomer_length"] = min_monomer_length
         self.data["oligomer_levels"] = oligomer_levels
+        self.paths["crystal_folder"] = crystal_folder
         return self
 
     def process(self) -> Self:
@@ -141,6 +153,7 @@ class Crystal(Model):
         Processes the crystal through the main pipeline. Requires set_params to be run beforehand.
         :return: Self.
         """
+        log(1, "Processing crystal ({})".format(self.data["info"]["name"]))
         self._identyfy_main_elements()
         self._cast_main_elements()
         self._regenerate_crystal()
@@ -153,11 +166,12 @@ class Crystal(Model):
         """
         if self.data["min_monomer_length"] is None:
             log("error", "Crystal: missing param: min_monomer_length", raise_exception=True)
+        log(2, "Identifying elements ({})".format(self.data["info"]["name"]))
         self.monomers = []
         self.ligands = []
         for chain in self.get_chains():
             c_len = len(chain)
-            print(chain, c_len)
+            log(3, chain, c_len)
             if c_len <= self.data["min_monomer_length"]:
                 self.ligands.append(chain)
             else:
@@ -170,49 +184,54 @@ class Crystal(Model):
         Casts monomers and ligands (bi.Chain objects) to their respective classes.
         :return: List of monomers, list of ligands.
         """
+        log(1, "Casting main elements ({})".format(self.data["info"]["name"]))
         for n, mon in enumerate(self.monomers):
             m = Monomer.cast(mon)
             self.monomers[n] = m
         for n, lig in enumerate(self.ligands):
             l = Ligand.cast(lig)
             self.ligands[n] = l
-        log("debug", "Monomers: {}, Ligands: {}".format(self.monomers, self.ligands))
+        log(2, "Monomers: {}".format(self.monomers))
+        log(2, "Ligands: {}".format(self.ligands))
+
         return [self.monomers, self.ligands]
 
 
 
 
     def _regenerate_crystal(self):
-        script = PymolScript("symmetry_generation")
+        log(1, "Regenerating crystal ({})".format(self.data["info"]["name"]))
+        script = PymolScript(name="symmetry_crystal_{}".format(self.data["info"]["name"]),
+                             folder=self.paths["crystal_folder"])
         key = self.data["crystal"]["group_key"]
         operations = dictio_space_groups[key]["symops"]
         params = self.data["params"]
-        print(operations)
+        log(2, "Operations:")
+        [log(3,o, ">", operations[o]) for o in operations]
         sym_monomers = [] # Fractional
         sym_ligands = [] # Fractional
-
+        log(2, "Monomers ({})".format(len(self.monomers)))
         for monomer in self.monomers:
-            log("debug", "Monomer: {}".format(monomer))
+            log("debug", "Monomer: {}".format(monomer.data["info"]["name"]))
             sym_monomers.extend(monomer.generate_symmetries(operations, params, key))
-        print(sym_monomers)
-        [script.load_entity(entity_to_orth(m, params)) for m in sym_monomers]
+        #[script.load_entity(entity_to_orth(m, params)) for m in sym_monomers]
 
+        log(2, "Ligands ({})".format(len(self.ligands)))
         for ligand in self.ligands:
-            log("debug", "Ligand: {}".format(ligand))
             sym_ligands.extend(ligand.generate_symmetries(operations, params, key))
-        [script.load_entity(entity_to_orth(l, params)) for l in sym_ligands]
+        #[script.load_entity(entity_to_orth(l, params)) for l in sym_ligands]
 
 
-        for m in sym_monomers:
-            log("header", m.data["info"]["name"], m.data["symmetry"]["positions"])
+        for m in self.monomers:
+            log("debug", m.data["info"]["name"], m.data["symmetry"]["positions"])
+            print(m.sym_elements)
+        for m in self.ligands:
+            log("debug", m.data["info"]["name"], m.data["symmetry"]["positions"])
+            print(m.sym_elements)
 
 
-        script.write_script("./exports")
+        script.write_script()
         #script.execute()
-
-
-
-
 
 
 
@@ -229,11 +248,23 @@ class Monomer(CrystalElement):
     def init(self, *args, **kwargs):
         super().init(*args, **kwargs)
 
+    def __repr__(self):
+        return "<bi.{} id={}>".format(self.__class__.__name__, self.id)
+
+    def __str__(self):
+        return "<bi.{} id={}>".format(self.__class__.__name__, self.id)
+
 
 
 class Ligand(CrystalElement):
     def init(self, *args, **kwargs):
         super().init(*args, **kwargs)
+
+    def __repr__(self):
+        return "<bi.{} id={}>".format(self.__class__.__name__, self.id)
+
+    def __str__(self):
+        return "<bi.{} id={}>".format(self.__class__.__name__, self.id)
 
 
 

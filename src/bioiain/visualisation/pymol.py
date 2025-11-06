@@ -8,7 +8,7 @@ from ..biopython.base import BiopythonOverlayClass
 def quick_display(entity:BiopythonOverlayClass|list[BiopythonOverlayClass]) -> str:
     """
     Displays entity or list of entities with PyMol. Exports entities to ./.temp and saves generated script in the same
-    directory as quick_display.py. Entities are named as N_[entity_id] following input order.
+    directory as quick_display.pml . Entities are named as N_[entity_id] following input order.
     :param entity: Entity or list of entities.
     :return: Path to the generated script.
     """
@@ -36,29 +36,32 @@ class PymolScript(object):
     :param name: Name of the script. Will de set as a filename. Default is ".temp_pymol_script".
     :return: PymolScript Object.
     """
-    def __init__(self, name=".temp_pymol_script", pymol_path = "pymol"):
+    def __init__(self, name="temp_pymol_script", folder:str="./.temp", pymol_path = "pymol"):
         self.pymol_path = pymol_path
         self._bioiain = "bioiain"
         self.name = name
+        self.folder = folder
+        os.makedirs(self.folder, exist_ok=True)
+        self.subfolder = os.path.join(folder, self.name)
+        os.makedirs(self.subfolder, exist_ok=True)
         self.input = {}
         self.data = {}
         self.commands = []
         self.path = None
 
 
-    def write_script(self,folder:str, filename:str=None) -> str:
+    def write_script(self, filename:str=None) -> str:
         """
         Writes the stored commands to a file. The file can be executed from the terminal or run as a PyMol script.
-        :param folder: Folder where to write the file.
         :param filename: (optional) Path to the file to write to. Uses script name and current wd as default.
         :return: Path to the file.
         """
         if filename is None:
-            filename = self.name+".py"
-        filepath = os.path.join(folder, filename)
+            filename = self.name
+        filepath = os.path.join(self.subfolder, filename+".pml")
         with open(filepath, "w") as f:
             f.write("pymol\n\n")
-            f.write("import {} as bi\n\n\n".format(self._bioiain))
+            #f.write("import {} as bi\n\n\n".format(self._bioiain))
             for cmd in self.commands:
                 f.write(repr(cmd)+"\n")
         self.path = os.path.abspath(filepath)
@@ -170,7 +173,7 @@ class PymolScript(object):
         :return: Generated Command object -> Unknown.
         """
         fun = "load"
-        args = f"'{path}'", f"'{name}'"
+        args = f"'{os.path.abspath(path)}'", f"'{name}'"
         return self.add(fun, *args, **kwargs)
 
     def load_entity(self, entity:BiopythonOverlayClass, name:str|None=None) -> Command:
@@ -181,12 +184,12 @@ class PymolScript(object):
         :return: Generated Command object -> Unknown.
         """
         if name is None:
-            name = entity.id
+            name = entity.data["info"]["name"]
         n = 1
-        while name+".pdb" in os.listdir("./.temp"):
-            name = "{}_{}.pdb".format(entity.id, n)
+        while name+".pdb" in os.listdir(self.subfolder):
+            name = "{}_{}.pdb".format(entity.data["info"]["name"], n)
             n += 1
-        path = entity.export_structure("./.temp", name)
+        path = entity.export(self.subfolder, name, data=False)
         return self.load(path, name)
 
 

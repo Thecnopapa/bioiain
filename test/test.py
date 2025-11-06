@@ -26,7 +26,7 @@ print(t)
 print(t.id)
 
 t.init_crystal()
-t.export("./exports", data=True, structure=False)
+t.export()
 
 model = t.get_list()[0]
 print(model)
@@ -42,7 +42,7 @@ crystal.set_params(
 
 
 crystal.process()
-crystal.export_data("./exports", "crystal")
+crystal.export()
 
 print(crystal, model)
 
