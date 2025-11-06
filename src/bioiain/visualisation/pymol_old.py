@@ -52,22 +52,6 @@ def pymol_reinitialize():
     pymol.cmd.reinitialize()
 
 
-def pymol_load_name(file_name, folder):
-    pymol.cmd.load(os.path.join(folder,file_name), file_name)
-    return file_name
-
-def pymol_load_path(path,  name=None, state = -1,):
-    if name is None:
-        name = os.path.basename(path)
-    print("(PyMol) Loading:",name)
-    pymol.cmd.load(path,name)
-    #pymol.cmd.set("state", state)
-    return name
-
-def pymol_disable(sele="all", silent=True):
-    if not silent:
-        print("(PyMol) Disabling:", sele)
-    pymol.cmd.disable(sele)
 
 def pymol_delete(sele = "all", quiet=False):
     if not quiet:
@@ -264,11 +248,7 @@ def pymol_align_chains_best(chains_to_align, double_best = False, cluster = None
 
 
 
-def pymol_symmetries(obj = None):
-    if obj is None:
-        obj = pymol.cmd.get_names(type='objects')[0]
-    print("(PyMol) Generating symmetries for: ", obj, )
-    pymol.cmd.symexp("sym", obj, obj, 6)
+
 
 def pymol_set_state(state):
     print("(PyMol) Setting state to: ", state, )
@@ -284,26 +264,9 @@ def pymol_orient(enabled = True):
         print("(PyMol) Orienting all")
         pymol.cmd.orient("(all)")
 
-def pymol_show_cell():
-    print("(PyMol) Displaying cell")
-    pymol.cmd.show("cell")
 
-def pymol_group(identifier = "sym", name = None, quiet = False):
-    group = []
-    if name is None:
-        name = identifier
-    if not quiet:
-        print("(PyMol) Grouping:", identifier, "in", name)
-    for obj in pymol.cmd.get_names(type='objects'):
-        if type(identifier) is str:
-            if identifier in obj:
-                group.append(obj)
-        if type(identifier) is list:
-            for i in identifier:
-                if i in obj:
-                    group.append(obj)
 
-    pymol.cmd.group(name, " ".join(group))
+
 
 def pymol_draw_line(coord1, coord2, name = "d", state = -1, quiet= True):
     if not quiet:

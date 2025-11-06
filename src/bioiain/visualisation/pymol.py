@@ -151,6 +151,10 @@ class PymolScript(object):
             sele = f"{sele}"
         return sele
 
+    @staticmethod
+    def _to_str(string):
+        return f"'{string}'"
+
 
     def print(self, *args, **kwargs) -> Command:
         """
@@ -205,7 +209,43 @@ class PymolScript(object):
         return self.add(fun, sele, **kwargs)
 
 
+    def symmetries(self, obj:str="original", prefix:str="sym", distance:int=6, **kwargs) -> Command:
+        fun = "symexp"
+        obj = self._to_str(obj)
+        args = [self._to_str(prefix), obj, obj, str(distance)]
+        return self.add(fun, *args, **kwargs)
 
+
+    def cell(self, **kwargs) -> Command:
+        fun = "show"
+        args = "'cell'"
+        return self.add(fun, args, **kwargs)
+
+    def group(self, prefix:str="sym", name:str|None=None, **kwargs) -> Command:
+        fun = "group"
+        sele = self._to_str(prefix+"*")
+        if name is None:
+            name = prefix
+        args = [self._to_str(name), sele]
+        return self.add(fun, *args, **kwargs)
+
+
+    """def pymol_group(identifier="sym", name=None, quiet=False):
+        group = []
+        if name is None:
+            name = identifier
+        if not quiet:
+            print("(PyMol) Grouping:", identifier, "in", name)
+        for obj in pymol.cmd.get_names(type='objects'):
+            if type(identifier) is str:
+                if identifier in obj:
+                    group.append(obj)
+            if type(identifier) is list:
+                for i in identifier:
+                    if i in obj:
+                        group.append(obj)
+
+        pymol.cmd.group(name, " ".join(group))"""
 
 
 

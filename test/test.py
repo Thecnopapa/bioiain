@@ -49,8 +49,15 @@ print(crystal, model)
 
 
 
+from src.bioiain.visualisation import pymol
 
 
+script = pymol.PymolScript(folder=".", name="test")
+script.load(t.paths["original"], "original", to="pdb")
+script.cell()
+script.symmetries()
+script.group()
+script.write_script()
 
 
 
@@ -59,13 +66,10 @@ print(crystal, model)
 
 
 exit()
-from src.bioiain.visualisation import pymol
 
-
-script = pymol.PymolScript()
 script._bioiain = "sys\nsys.path.append('..')\nimport src.bioiain"
 
-script.load(t.paths["original"], "original", to="pdb")
+
 script.print("pdb")
 script.disable("(all)")
 script.add("bi.log", "'header'", "\"I'm a log\"", is_cmd = False)
@@ -77,7 +81,7 @@ script.add("bi.log", "'header'", "\"I'm a log\"", is_cmd = False)
 
 t.export("./exports", data=True)
 
-script.write_script("./exports")
+
 script.execute()
 
 
