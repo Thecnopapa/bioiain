@@ -43,7 +43,6 @@ class CrystalElement(Chain):
         frac_element = entity_to_frac(self.copy(), params)
         frac_element_com = find_com(frac_element.get_atoms())
 
-        #TODO: Something is not popying right
         for n, operation in operations.items():
             log(4, "Operation: {}".format(n))
             displaced_element = generate_displaced_copy(frac_element.copy(), key=key, op_n=n).copy()
@@ -100,7 +99,6 @@ class CrystalElement(Chain):
             self.data["symmetry"]["positions"].extend(displaced_element.data["symmetry"]["positions"])
 
             self.sym_elements.append(displaced_element)
-            displaced_element.export(data=True)
             log(5, "Element: {}".format(displaced_element.data["info"]["name"]))
             log(5, "Positions:", displaced_element.data["symmetry"]["positions"])
 
@@ -120,15 +118,16 @@ class Crystal(Model):
         :return: Self.
         """
         super().init(*args, **kwargs)
-        self.data["min_monomer_length"] = None
-        self.data["oligomer_levels"] = None
+        self.data["crystal"]["oligomer_levels"] = None
+        self.data["crystal"]["min_monomer_length"] = None
         self.paths["crystal_folder"] = None
+        self.data["info"]["name"] = self.data["info"]["name"] + "_cryst"
 
         self.monomers = None
         self.ligands = None
         return self
 
-    def set_params(self, data:dict,
+    def set_params(self,
                    min_monomer_length:int,
                    oligomer_levels:int|list[int],
                    crystal_folder:str="./crystals"
@@ -140,11 +139,8 @@ class Crystal(Model):
         :param oligomer_levels: Oligomerisation level/s to consider.
         :return: Self.
         """
-        self.data = deepcopy(data)
-
-        self.data["info"]["name"] = data["info"]["name"]+"_cryst"
-        self.data["min_monomer_length"] = min_monomer_length
-        self.data["oligomer_levels"] = oligomer_levels
+        self.data["crystal"]["min_monomer_length"] = min_monomer_length
+        self.data["crystal"]["oligomer_levels"] = oligomer_levels
         self.paths["crystal_folder"] = crystal_folder
         return self
 
@@ -154,6 +150,9 @@ class Crystal(Model):
         :return: Self.
         """
         log(1, "Processing crystal ({})".format(self.data["info"]["name"]))
+        print(self.data)
+        print(self.get_full_id())
+        self.pass_down()
         self._identyfy_main_elements()
         self._cast_main_elements()
         self._regenerate_crystal()
@@ -164,15 +163,16 @@ class Crystal(Model):
         Separates chains in model into monomers and ligands, according to the min_monomer_length parameter.
         :return: List of monomers, list of ligands.
         """
-        if self.data["min_monomer_length"] is None:
+        if self.data["crystal"]["min_monomer_length"] is None:
             log("error", "Crystal: missing param: min_monomer_length", raise_exception=True)
         log(2, "Identifying elements ({})".format(self.data["info"]["name"]))
         self.monomers = []
         self.ligands = []
+        print(self.get_full_id(), self.data["info"]["name"])
         for chain in self.get_chains():
             c_len = len(chain)
-            log(3, chain, c_len)
-            if c_len <= self.data["min_monomer_length"]:
+            log(3, chain, c_len, chain.get_full_id(), chain.data["info"]["name"])
+            if c_len <= self.data["crystal"]["min_monomer_length"]:
                 self.ligands.append(chain)
             else:
                 self.monomers.append(chain)
@@ -186,13 +186,15 @@ class Crystal(Model):
         """
         log(1, "Casting main elements ({})".format(self.data["info"]["name"]))
         for n, mon in enumerate(self.monomers):
+            print(mon.data["info"]["name"])
             m = Monomer.cast(mon)
+            print(m.data["info"]["name"])
             self.monomers[n] = m
         for n, lig in enumerate(self.ligands):
             l = Ligand.cast(lig)
             self.ligands[n] = l
         log(2, "Monomers: {}".format(self.monomers))
-        log(2, "Ligands: {}".format(self.ligands))
+        log(2, "Ligands: {}".format([l.data["info"]["name"] for l in self.ligands]))
 
         return [self.monomers, self.ligands]
 
@@ -203,6 +205,7 @@ class Crystal(Model):
         log(1, "Regenerating crystal ({})".format(self.data["info"]["name"]))
         script = PymolScript(name="symmetry_crystal_{}".format(self.data["info"]["name"]),
                              folder=self.paths["crystal_folder"])
+        script.load(self.paths["original"], "original")
         key = self.data["crystal"]["group_key"]
         operations = dictio_space_groups[key]["symops"]
         params = self.data["params"]
@@ -214,12 +217,12 @@ class Crystal(Model):
         for monomer in self.monomers:
             log("debug", "Monomer: {}".format(monomer.data["info"]["name"]))
             sym_monomers.extend(monomer.generate_symmetries(operations, params, key))
-        #[script.load_entity(entity_to_orth(m, params)) for m in sym_monomers]
+        [script.load_entity(entity_to_orth(m, params)) for m in sym_monomers]
 
         log(2, "Ligands ({})".format(len(self.ligands)))
         for ligand in self.ligands:
             sym_ligands.extend(ligand.generate_symmetries(operations, params, key))
-        #[script.load_entity(entity_to_orth(l, params)) for l in sym_ligands]
+        [script.load_entity(entity_to_orth(l, params)) for l in sym_ligands]
 
 
         for m in self.monomers:
@@ -237,7 +240,7 @@ class Crystal(Model):
 
     def _find_oligomers(self):
 
-        for n in self.data["oligomer_levels"]:
+        for n in self.data["crystal"]["oligomer_levels"]:
             log("debug" "Oligomer level: {}".format(n))
 
 

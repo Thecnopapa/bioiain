@@ -27,16 +27,17 @@ print(t.id)
 
 t.init_crystal()
 t.export()
+t.pass_down()
 
 model = t.get_list()[0]
 print(model)
-print(model.get_full_id())
+print(model.export())
+print(model.get_full_id(), model.data["info"]["name"])
 
 
 crystal = bi.symmetries.Crystal.cast(model.copy())
 crystal.set_params(
-    data = t.data,
-    min_monomer_length=100,
+    min_monomer_length=50,
     oligomer_levels=[2],
 )
 

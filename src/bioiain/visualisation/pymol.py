@@ -19,8 +19,7 @@ def quick_display(entity:BiopythonOverlayClass|list[BiopythonOverlayClass]) -> s
         entity = [entity]
     for n, entity in enumerate(entity):
         name = "{}_{}".format(n, entity.id)
-        path = entity.export_structure("./.temp", name, "pdb")
-        script.load(path, name)
+        script.load_entity(entity, name, overwrite=False)
     script.write_script("./.temp")
     script.execute()
     return script.path
@@ -176,7 +175,7 @@ class PymolScript(object):
         args = f"'{os.path.abspath(path)}'", f"'{name}'"
         return self.add(fun, *args, **kwargs)
 
-    def load_entity(self, entity:BiopythonOverlayClass, name:str|None=None) -> Command:
+    def load_entity(self, entity:BiopythonOverlayClass, name:str|None=None, overwrite:bool=True) -> Command:
         """
         Adds command to load file from entity. Entity is exported to ./.temp as of the cwd.
         :param entity:
@@ -185,11 +184,12 @@ class PymolScript(object):
         """
         if name is None:
             name = entity.data["info"]["name"]
-        n = 1
-        while name+".pdb" in os.listdir(self.subfolder):
-            name = "{}_{}.pdb".format(entity.data["info"]["name"], n)
-            n += 1
-        path = entity.export(self.subfolder, name, data=False)
+        if not overwrite:
+            n = 1
+            while name+".pdb" in os.listdir(self.subfolder):
+                name = "{}_{}".format(entity.data["info"]["name"], n)
+                n += 1
+        path = entity.export(self.subfolder, name, data=True)[0]
         return self.load(path, name)
 
 
