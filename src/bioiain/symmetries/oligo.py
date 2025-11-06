@@ -199,8 +199,6 @@ class Crystal(Model):
         return [self.monomers, self.ligands]
 
 
-
-
     def _regenerate_crystal(self):
         log(1, "Regenerating crystal ({})".format(self.data["info"]["name"]))
         script = PymolScript(name="symmetry_crystal_{}".format(self.data["info"]["name"]),
