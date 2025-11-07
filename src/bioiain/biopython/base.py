@@ -38,8 +38,8 @@ class BiopythonOverlayClass:
                     entity.child_list[n] = e
                     entity.child_dict[n] = e
 
-        if hasattr(entity, "init"):
-            entity.init()
+        if hasattr(entity, "_init"):
+            entity._init()
         return entity
 
 

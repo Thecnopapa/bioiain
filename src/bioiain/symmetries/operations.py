@@ -173,8 +173,16 @@ def generate_displaced_copy(original:bp.Entity.Entity, distance:list[float]|floa
 
 
 
-def get_fractional_distance(coord1, coord2, params, root=False):
-
+def get_fractional_distance(coord1, coord2, params, root=False) -> float:
+    """
+    Calculate the square distance in orthogonal space between two coordinates in fractional space.
+    Optionally returns the root square distance.
+    :param coord1: First coordinate.
+    :param coord2: Second coordinate.
+    :param params: Crystal parameters.
+    :param root: Whether to return the root square distance.
+    :return: Orthogonal square distance (or root square distance).
+    """
     deltaX, deltaY, deltaZ = vector(coord1, coord2)
 
     a = params["A"]

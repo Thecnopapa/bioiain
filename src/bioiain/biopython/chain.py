@@ -11,5 +11,5 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
     def __str__(self):
         return "<bi.{} id={}>".format(self.__class__.__name__, self.id)
 
-    def init(self, *args, **kwargs):
+    def _init(self, *args, **kwargs):
         pass

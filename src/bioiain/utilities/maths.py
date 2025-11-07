@@ -35,26 +35,45 @@ def find_com(atoms:list|GeneratorType|np.ndarray|BiopythonOverlayClass) -> list[
 
 
 
-def vector(b, e):
+def vector(b:list, e:list) -> list[float]|None:
+    """
+    Calculates a vector from given coordinates of 2 or 3 dimensions, otherwise returns None.
+    :param b: First set of coordinates (start point).
+    :param e: Second set of coordinates (end point).
+    :return: Vector (e - b)
+    """
+    assert len(b) == len(e)
     if len(b) == 3:
         x, y, z = b
         X, Y, Z = e
-        return (X - x, Y - y, Z - z)
+        return [X - x, Y - y, Z - z]
     elif len(b) == 2:
         x, y = b
         X, Y = e
-        return (X - x, Y - y)
+        return [X - x, Y - y]
     return None
 
 
-def d2(p0, p1, root=False):
+def d2(p0:list, p1:list, root=False) -> float:
+    """
+    Calculates square distance between two points. Optionally return the square root of the square distance.
+    :param p0: First set of coordinates.
+    :param p1: Second set of coordinates.
+    :param root: Whether to return the square root of the square distance.
+    :return: Square distance (or root square distance).
+    """
     if root:
         return np.sqrt((p0[0] - p1[0]) ** 2 + (p0[1] - p1[1]) ** 2 + (p0[2] - p1[2]) ** 2)
     else:
         return (p0[0] - p1[0]) ** 2 + (p0[1] - p1[1]) ** 2 + (p0[2] - p1[2]) ** 2
 
 
-def length(v):
+def length(v:list) -> float:
+    """
+    Calculates the length of a vector in space of 2 or 3 dimensions.
+    :param v: Vector, can be generated using vector()
+    :return: Length
+    """
     if len(v) == 3:
         x, y, z = v
         return np.sqrt(x * x + y * y + z * z)
@@ -64,5 +83,11 @@ def length(v):
     return None
 
 
-def distance(p0, p1):
+def distance(p0, p1) -> float:
+    """
+    Returns the absolute distance between two points in space. Use d2() for square distance.
+    :param p0: First set of coordinates.
+    :param p1: Second set of coordinates.
+    :return: Absolute distance.
+    """
     return d2(p0, p1, root=True)

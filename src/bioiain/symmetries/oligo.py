@@ -17,10 +17,200 @@ from ..visualisation.pymol import quick_display, PymolScript
 
 
 
+
+
+
+class Crystal(Model):
+    def _init(self, *args, **kwargs) -> Self:
+        """
+        Initialize the crystal. Executed on casting.
+        :param args:
+        :param kwargs:
+        :return: Self.
+        """
+        super()._init(*args, **kwargs)
+        self.data["crystal"]["oligomer_levels"] = None
+        self.data["crystal"]["min_monomer_length"] = None
+        self.paths["crystal_folder"] = None
+        self.data["info"]["name"] = self.data["info"]["name"] + "_cryst"
+
+        self.monomers = None
+        self.ligands = None
+        return self
+
+    def set_params(self,
+                   min_monomer_length:int,
+                   oligomer_levels:int|list[int],
+                   crystal_folder:str="./crystals"
+                   ) -> Self:
+        """
+        Set parameters for crystal processing.
+        :param min_monomer_length: Minimum (inclusive) length of chain to be considered a monomer.
+        :param oligomer_levels: Oligomerisation level/s to consider.
+        :param crystal_folder: Folder to store crystal exports.
+        :return: Self.
+        """
+        self.data["crystal"]["min_monomer_length"] = min_monomer_length
+        self.data["crystal"]["oligomer_levels"] = oligomer_levels
+        self.paths["crystal_folder"] = crystal_folder
+        return self
+
+    def process(self) -> Self:
+        """
+        Processes the crystal through the main pipeline. Requires set_params() to be run beforehand.
+        :return: Self.
+        """
+        log(1, "Processing crystal ({})".format(self.data["info"]["name"]))
+        print(self.data)
+        print(self.get_full_id())
+        self.pass_down()
+        self._identyfy_main_elements()
+        self._cast_main_elements()
+        self._regenerate_crystal()
+        self._calculate_oigomerisation_paths()
+        return self
+
+    def plot(self):
+        """
+        Plots the Centres of Mass of the monomers and their symmetry mates in a crystal using Matplotlib in
+        fractional space.
+        """
+        fig, ax = fig3D(self, preset="crystal-frac")
+        ax.set_title('Crystal {}'.format(self.data["info"]["name"]))
+
+        for n, monomer in enumerate(self.monomers):
+            #print(monomer.data["symmetry"]["CoM-frac"])
+            col = pymol_colours[n%len(pymol_colours)]
+            ax.scatter(*monomer.data["symmetry"]["CoM-frac"], color=col)
+            ax.text(*monomer.data["symmetry"]["CoM-frac"], monomer.id, c=col)
+            for sym_mon in monomer.sym_elements:
+                if sym_mon.data["symmetry"]["operation_n"] == 1:
+                    continue
+
+                #print("  -", sym_mon.data["info"]["name"])
+                for position in sym_mon.data["symmetry"]["positions"]:
+                    displaced_monomer = generate_displaced_copy(
+                        monomer.copy(),
+                        distance=position,
+                        key=sym_mon.data["crystal"]["group_key"],
+                        op_n=sym_mon.data["symmetry"]["operation_n"])
+                    com = find_com(displaced_monomer)
+                    #print("    >", com, position)
+                    #cord = [c + p for c,p in zip(cord, position)]
+                    ax.scatter(*com, facecolors='none', edgecolors=col)
+                    ax.text(*com, sym_mon.data["symmetry"]["operation_n"], c=col)
+
+        fig.show()
+        input("Press Enter to continue...")
+
+    def _identyfy_main_elements(self) -> list[list]:
+        """
+        Separates chains in model into monomers and ligands, according to the min_monomer_length parameter.
+        :return: List of monomers, list of ligands.
+        """
+        if self.data["crystal"]["min_monomer_length"] is None:
+            log("error", "Crystal: missing param: min_monomer_length", raise_exception=True)
+        log(2, "Identifying elements ({})".format(self.data["info"]["name"]))
+        self.monomers = []
+        self.ligands = []
+        print(self.get_full_id(), self.data["info"]["name"])
+        for chain in self.get_chains():
+            c_len = len(chain)
+            log(3, chain, c_len, chain.get_full_id(), chain.data["info"]["name"])
+            if c_len <= self.data["crystal"]["min_monomer_length"]:
+                self.ligands.append(chain)
+            else:
+                self.monomers.append(chain)
+        return [self.monomers, self.ligands]
+
+
+    def _cast_main_elements(self) -> list[list]:
+        """
+        Casts monomers and ligands (bi.Chain objects) to their respective classes.
+        :return: List of monomers, list of ligands.
+        """
+        log(1, "Casting main elements ({})".format(self.data["info"]["name"]))
+        for n, mon in enumerate(self.monomers):
+            print(mon.data["info"]["name"])
+            m = Monomer.cast(mon)
+            print(m.data["info"]["name"])
+            self.monomers[n] = m
+        for n, lig in enumerate(self.ligands):
+            l = Ligand.cast(lig)
+            self.ligands[n] = l
+        log(2, "Monomers: {}".format(self.monomers))
+        log(2, "Ligands: {}".format([l.data["info"]["name"] for l in self.ligands]))
+
+        return [self.monomers, self.ligands]
+
+
+    def _regenerate_crystal(self) -> Self:
+        """
+        Regenerates the crystal from the given monomers and ligands, and optionally calculates contacts between
+        monomers.
+        :return:
+        """
+        log(1, "Regenerating crystal ({})".format(self.data["info"]["name"]))
+        script = PymolScript(name="symmetry_crystal_{}".format(self.data["info"]["name"]),
+                             folder=self.paths["crystal_folder"])
+        script.load(self.paths["original"], "original")
+        key = self.data["crystal"]["group_key"]
+        operations = dictio_space_groups[key]["symops"]
+        params = self.data["params"]
+        log(2, "Operations:")
+        [log(3,o, ">", operations[o]) for o in operations]
+        sym_monomers = [] # Fractional
+        sym_ligands = [] # Fractional
+        log(2, "Monomers ({})".format(len(self.monomers)))
+        for monomer in self.monomers:
+            log("debug", "Monomer: {}".format(monomer.data["info"]["name"]))
+            sym_monomers.extend(monomer.generate_symmetries(self, contacts=True))
+        [script.load_entity(entity_to_orth(m.copy(), params)) for m in sym_monomers]
+
+        log(2, "Ligands ({})".format(len(self.ligands)))
+        for ligand in self.ligands:
+            sym_ligands.extend(ligand.generate_symmetries(self, contacts=False))
+        [script.load_entity(entity_to_orth(l.copy(), params)) for l in sym_ligands]
+
+        script.write_script()
+        return self
+
+
+    def _calculate_oigomerisation_paths(self) -> Self:
+        log(1, "Calculating oligomerisation paths ({})".format(self.data["info"]["name"]))
+
+        path_list = {}
+
+        for n, monomer in enumerate(self.monomers):
+            log(2, "Monomer: {}".format(monomer.data["info"]["name"]))
+            [log(3, c["name"]) for c in monomer.data["contacts"]["all"]]
+
+        return self
+
+
+
+    def _find_oligomers(self) -> Self:
+
+        for m in self.monomers:
+            log("debug", m.data["info"]["name"], m.data["symmetry"]["positions"])
+            print(m.sym_elements)
+        for m in self.ligands:
+            log("debug", m.data["info"]["name"], m.data["symmetry"]["positions"])
+            print(m.sym_elements)
+
+
+
+        for n in self.data["crystal"]["oligomer_levels"]:
+            log("debug" "Oligomer level: {}".format(n))
+
+        return self
+
+
+
 class CrystalElement(Chain):
 
-    def init(self, *args, **kwargs):
-        super().init(*args, **kwargs)
+    def _init(self, *args, **kwargs):
+        super()._init(*args, **kwargs)
         self.data["symmetry"] = {
             "operation": None,
             "operation_n": None,
@@ -46,9 +236,28 @@ class CrystalElement(Chain):
 
 
 
-    def generate_symmetries(self, crystal, operations, params, key, contacts=True, threshold=10, min_contacts=1):
+    def generate_symmetries(self, crystal:Crystal,contacts:bool=True,
+                            threshold:int|float=10, min_contacts:int=1,
+                            contact_method:str="min-contacts") -> list[Self]:
+        """
+        Generates symmetries of crystal elements from a given symmetry element, and (optionally) calculates contacts
+        (theoretically between monomers).
+        A distance threshold in Angstroms and a minimum number of contacts is required for contact calculations.
+        The symmetry Elements generated contain one structure per operation, which is split across different positions.
+        The contacts generated are stored at a monomer level.
+        :param crystal: Crystal object.
+        :param contacts: Whether to calculate contacts between monomers.
+        :param threshold: Threshold in Angstroms to consider a CA-CA contact.
+        :param min_contacts: Minimum contacts to consider a monomer-element contact.
+        :param contact_method: Method to determine contacts between elements.
+        :return: List of generated symmetry Elements
+        """
         log(3, "Generating symmetries ({})".format(self.data["info"]["name"]))
         log(4, self, "CoM:", [round(c) for c in find_com(self.get_atoms())])
+        params = crystal.data["params"]
+        key = crystal.data["crystal"]["group_key"]
+        operations = dictio_space_groups[key]["symops"]
+
         frac_element = entity_to_frac(self, params)
         frac_element_com = find_com(frac_element.get_atoms())
         self.data["symmetry"]["CoM-frac"] = frac_element_com
@@ -79,8 +288,9 @@ class CrystalElement(Chain):
 
             if contacts:
                 contact = {m.id:MonomerContact(m, displaced_element,
-                                          threshold=threshold,
-                                          min_contacts=min_contacts) for m in crystal.monomers if not (
+                                               contact_method=contact_method,
+                                               threshold=threshold,
+                                               min_contacts=min_contacts) for m in crystal.monomers if not (
                     n == 1 and displaced_element.id == m.id
                 )}
 
@@ -178,192 +388,19 @@ class CrystalElement(Chain):
 
 
 
-class Crystal(Model):
-    def init(self, *args, **kwargs) -> Self:
-        """
-        Initialize the crystal. Executed on casting.
-        :param args:
-        :param kwargs:
-        :return: Self.
-        """
-        super().init(*args, **kwargs)
-        self.data["crystal"]["oligomer_levels"] = None
-        self.data["crystal"]["min_monomer_length"] = None
-        self.paths["crystal_folder"] = None
-        self.data["info"]["name"] = self.data["info"]["name"] + "_cryst"
-
-        self.monomers = None
-        self.ligands = None
-        return self
-
-    def set_params(self,
-                   min_monomer_length:int,
-                   oligomer_levels:int|list[int],
-                   crystal_folder:str="./crystals"
-                   ) -> Self:
-        """
-        Set parameters for crystal processing.
-        :param data: Data dictionary from parent structure.
-        :param min_monomer_length: Minimum (inclusive) length of chain to be considered a monomer.
-        :param oligomer_levels: Oligomerisation level/s to consider.
-        :return: Self.
-        """
-        self.data["crystal"]["min_monomer_length"] = min_monomer_length
-        self.data["crystal"]["oligomer_levels"] = oligomer_levels
-        self.paths["crystal_folder"] = crystal_folder
-        return self
-
-    def process(self) -> Self:
-        """
-        Processes the crystal through the main pipeline. Requires set_params to be run beforehand.
-        :return: Self.
-        """
-        log(1, "Processing crystal ({})".format(self.data["info"]["name"]))
-        print(self.data)
-        print(self.get_full_id())
-        self.pass_down()
-        self._identyfy_main_elements()
-        self._cast_main_elements()
-        self._regenerate_crystal()
-        self._calculate_oigomerisation_paths()
-        return self
-
-    def plot(self):
-        fig, ax = fig3D(self, preset="crystal-frac")
-        ax.set_title('Crystal {}'.format(self.data["info"]["name"]))
-
-        for n, monomer in enumerate(self.monomers):
-            #print(monomer.data["symmetry"]["CoM-frac"])
-            col = pymol_colours[n%len(pymol_colours)]
-            ax.scatter(*monomer.data["symmetry"]["CoM-frac"], color=col)
-            ax.text(*monomer.data["symmetry"]["CoM-frac"], monomer.id, c=col)
-            for sym_mon in monomer.sym_elements:
-                if sym_mon.data["symmetry"]["operation_n"] == 1:
-                    continue
-
-                #print("  -", sym_mon.data["info"]["name"])
-                for position in sym_mon.data["symmetry"]["positions"]:
-                    displaced_monomer = generate_displaced_copy(
-                        monomer.copy(),
-                        distance=position,
-                        key=sym_mon.data["crystal"]["group_key"],
-                        op_n=sym_mon.data["symmetry"]["operation_n"])
-                    com = find_com(displaced_monomer)
-                    #print("    >", com, position)
-                    #cord = [c + p for c,p in zip(cord, position)]
-                    ax.scatter(*com, facecolors='none', edgecolors=col)
-                    ax.text(*com, sym_mon.data["symmetry"]["operation_n"], c=col)
-
-        fig.show()
-        input("Press Enter to continue...")
-
-    def _identyfy_main_elements(self) -> list[list[CrystalElement]]:
-        """
-        Separates chains in model into monomers and ligands, according to the min_monomer_length parameter.
-        :return: List of monomers, list of ligands.
-        """
-        if self.data["crystal"]["min_monomer_length"] is None:
-            log("error", "Crystal: missing param: min_monomer_length", raise_exception=True)
-        log(2, "Identifying elements ({})".format(self.data["info"]["name"]))
-        self.monomers = []
-        self.ligands = []
-        print(self.get_full_id(), self.data["info"]["name"])
-        for chain in self.get_chains():
-            c_len = len(chain)
-            log(3, chain, c_len, chain.get_full_id(), chain.data["info"]["name"])
-            if c_len <= self.data["crystal"]["min_monomer_length"]:
-                self.ligands.append(chain)
-            else:
-                self.monomers.append(chain)
-        return [self.monomers, self.ligands]
-
-
-    def _cast_main_elements(self) -> list[list[CrystalElement]]:
-        """
-        Casts monomers and ligands (bi.Chain objects) to their respective classes.
-        :return: List of monomers, list of ligands.
-        """
-        log(1, "Casting main elements ({})".format(self.data["info"]["name"]))
-        for n, mon in enumerate(self.monomers):
-            print(mon.data["info"]["name"])
-            m = Monomer.cast(mon)
-            print(m.data["info"]["name"])
-            self.monomers[n] = m
-        for n, lig in enumerate(self.ligands):
-            l = Ligand.cast(lig)
-            self.ligands[n] = l
-        log(2, "Monomers: {}".format(self.monomers))
-        log(2, "Ligands: {}".format([l.data["info"]["name"] for l in self.ligands]))
-
-        return [self.monomers, self.ligands]
-
-
-    def _regenerate_crystal(self):
-        log(1, "Regenerating crystal ({})".format(self.data["info"]["name"]))
-        script = PymolScript(name="symmetry_crystal_{}".format(self.data["info"]["name"]),
-                             folder=self.paths["crystal_folder"])
-        script.load(self.paths["original"], "original")
-        key = self.data["crystal"]["group_key"]
-        operations = dictio_space_groups[key]["symops"]
-        params = self.data["params"]
-        log(2, "Operations:")
-        [log(3,o, ">", operations[o]) for o in operations]
-        sym_monomers = [] # Fractional
-        sym_ligands = [] # Fractional
-        log(2, "Monomers ({})".format(len(self.monomers)))
-        for monomer in self.monomers:
-            log("debug", "Monomer: {}".format(monomer.data["info"]["name"]))
-            sym_monomers.extend(monomer.generate_symmetries(self, operations, params, key, contacts=True))
-        [script.load_entity(entity_to_orth(m.copy(), params)) for m in sym_monomers]
-
-        log(2, "Ligands ({})".format(len(self.ligands)))
-        for ligand in self.ligands:
-            sym_ligands.extend(ligand.generate_symmetries(self, operations, params, key, contacts=False))
-        [script.load_entity(entity_to_orth(l.copy(), params)) for l in sym_ligands]
-
-
-
-
-        script.write_script()
-        #script.execute()
-
-
-    def _calculate_oigomerisation_paths(self):
-        log(1, "Calculating oligomerisation paths ({})".format(self.data["info"]["name"]))
-
-        path_list = {}
-
-        for n, monomer in enumerate(self.monomers):
-            log(2, "Monomer: {}".format(monomer.data["info"]["name"]))
-            [log(3, c["name"]) for c in monomer.data["contacts"]["all"]]
-
-
-
-    def _find_oligomers(self):
-
-        for m in self.monomers:
-            log("debug", m.data["info"]["name"], m.data["symmetry"]["positions"])
-            print(m.sym_elements)
-        for m in self.ligands:
-            log("debug", m.data["info"]["name"], m.data["symmetry"]["positions"])
-            print(m.sym_elements)
-
-
-
-        for n in self.data["crystal"]["oligomer_levels"]:
-            log("debug" "Oligomer level: {}".format(n))
-
 
 
 class MonomerContact(object):
-    def __init__(self, monomer1, monomer2, mode="min-contacts", threshold=None, min_contacts=None, **kwargs):
-
+    """
+    Class to calculate and store element-element contact information.
+    :param monomer1: First monomer (certain values, such as the parameter dict will be obtained from this entity).
+    :param monomer2: Second monomer.
+    :param kwargs: Other parameters to store in the contact such as the threshold used.
+    """
+    def __init__(self, monomer1, monomer2, **kwargs):
         self.data = {
             "name":"Contact: ({}-{}): Unprocessed".format(monomer1.data["info"]["name"], monomer2.data["info"]["name"]),
             "is_contact": None,
-            "mode": mode,
-            "threshold": threshold,
-            "min_contacts": min_contacts,
             "kwargs": kwargs,
             "monomer1": {
                 "name": monomer1.data["info"]["name"],
@@ -382,18 +419,28 @@ class MonomerContact(object):
             "a-a":[],
         }
 
-        #self._calculate_contact(monomer1, monomer2)
-        #print(json.dumps(self.data, indent=4))
 
-    def add(self, c):
+    def add(self, c:dict) -> dict:
+        """
+        Adds a new atom-atom contact to the list atom-atom contacts. It must be adict with at least the following
+        keywords: "is_contact" and "name", additionally a value for "below_threshold" might be required depending on
+        the contact method.
+        :param c: Dict with the atom-atom contact information.
+        """
         self.data["a-a"].append(c)
+        return c
 
-    def check_min_contacts(self):
+    def check_min_contacts(self) -> bool:
+        """
+        Checks whether this element-element contact meets the required minimum contacts below a certain threshold.
+        Requires the min_contacts kwarg on initialisation.
+        :return: True if the requirement is met, False otherwise.
+        """
         count = 0
         for a in self.data["a-a"]:
             if a["below_threshold"]:
                 count += 1
-                if count >= self.data["min_contacts"]:
+                if count >= self.data["kwargs"].get("min_contacts", 1):
                     self.data["is_contact"] = True
                     self.data["name"] = repr(self)
                     return True
@@ -405,43 +452,8 @@ class MonomerContact(object):
     def __repr__(self):
         return "Contact: ({} <-> {}): {}, N:{}, T:{}, min:{}".format(
             self.data["monomer1"]["name"], self.data["monomer2"]["name"],
-            self.data["is_contact"], len(self.data["a-a"]), self.data["threshold"], self.data["min_contacts"])
-
-    def _calculate_contact(self, monomer1, monomer2):
-        log(5, "Calculating contact for: {} - {}".format(monomer1.data["info"]["name"], monomer2.data["info"]["name"]))
-
-
-        contacts = []
-
-        if self.data["mode"] == "min-contacts":
-            assert self.data["threshold"] is not None
-            assert self.data["kwargs"].get("min_contacts") is not None
-
-            print_all_coords(monomer1)
-            print_all_coords(monomer2)
-
-            monomer1 = entity_to_orth(monomer1.copy(), monomer1.data["params"])
-            monomer2 = entity_to_orth(monomer2.copy(), monomer1.data["params"])
-
-
-            for a1 in monomer1.get_atoms():
-                for a2 in monomer2.get_atoms():
-                    d = d2(a1.coord, a2.coord, root=False)
-                    print(a1, a2, d, end="\r")
-                    if d < self.data["threshold"]**2:
-
-                        contacts.append({
-                            "atom1": a1.get_full_id(),
-                            "atom2": a2.get_full_id(),
-                            "distance": d,
-                            "below_threshold": True,
-                            "threshold": self.data["threshold"],
-                        })
-
-        self.data["contacts"] = contacts
-
-
-
+            self.data["is_contact"], len(self.data["a-a"]),
+            self.data["kwargs"].get("threshold", None), self.data["kwargs"].get("min_contacts", None))
 
 
 
@@ -450,8 +462,8 @@ class MonomerContact(object):
 
 
 class Monomer(CrystalElement):
-    def init(self, *args, **kwargs):
-        super().init(*args, **kwargs)
+    def _init(self, *args, **kwargs):
+        super()._init(*args, **kwargs)
 
     def __repr__(self):
         return "<bi.{} id={}>".format(self.__class__.__name__, self.id)
@@ -462,8 +474,8 @@ class Monomer(CrystalElement):
 
 
 class Ligand(CrystalElement):
-    def init(self, *args, **kwargs):
-        super().init(*args, **kwargs)
+    def _init(self, *args, **kwargs):
+        super()._init(*args, **kwargs)
 
     def __repr__(self):
         return "<bi.{} id={}>".format(self.__class__.__name__, self.id)
