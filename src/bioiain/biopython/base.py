@@ -69,6 +69,12 @@ class BiopythonOverlayClass:
                 child.paths = deepcopy(self.paths)|child.paths
                 child.pass_down()
 
+    def copy_all(self):
+        c = self.copy()
+        c.data = deepcopy(c.data)
+        c.paths = deepcopy(c.paths)
+        return c
+
 
 
     def export(self, folder:str|None=None, filename:str|None=None, data:bool=True,

@@ -1,6 +1,6 @@
 
 import Bio.PDB as bp
-import sys
+import sys, json
 from typing_extensions import Self
 from copy import deepcopy
 
@@ -9,6 +9,7 @@ from .operations import *
 from ..utilities import find_com, print_all_coords
 from ..utilities.logging import log
 from ..utilities import *
+from ..utilities.maths import *
 from ..biopython import Chain, Model
 from ..visualisation import fig3D, mpl_colours, pymol_colours
 from ..visualisation.pymol import quick_display, PymolScript
@@ -274,21 +275,28 @@ class Crystal(Model):
 
         path_list = {}
 
+        left_monomers = self.monomers.copy()
         for n, monomer in enumerate(self.monomers):
             log(2, "Monomer: {}".format(monomer.data["info"]["name"]))
-            monomer_list = path_list[monomer.id] = {}
-            for sym_mon in monomer.sym_elements:
+            monomer_paths= path_list[monomer.id] = {}
+            targets = []
+            [targets.extend(m.sym_elements) for m in left_monomers]
+            left_monomers.pop(0)
+            for sym_mon in targets:
                 log(3, "Symmetry: {}".format(sym_mon.data["info"]["name"]))
                 for position in sym_mon.data["symmetry"]["positions"]:
                     displaced_monomer = generate_displaced_copy(
-                        entity_to_frac(monomer.copy(), monomer.data["params"]),
+                        entity_to_frac(monomer.copy_all(), monomer.data["params"]),
                         distance=position,
                         key=sym_mon.data["crystal"]["group_key"],
                         op_n=sym_mon.data["symmetry"]["operation_n"])
                     displaced_monomer.data["symmetry"]["position"] = position
-                    displaced_monomer.data["info"]["name"] = sym_mon.data["info"]["name"]+"_({})".format(position)
+                    displaced_monomer.data["info"]["name"] = sym_mon.data["info"]["name"]+"_{}".format(position)
                     log(4, "Position: {}".format(displaced_monomer.data["info"]["name"]))
-                    monomer_list[len(monomer_list)] = MonomerContact(monomer, displaced_monomer, mode="min-contacts", threshold=6, min_contacts=3)
+                    monomer_paths[len(monomer_paths)] = MonomerContact(monomer, displaced_monomer,
+                                                                       mode="min-contacts",
+                                                                       threshold=6,
+                                                                       min_contacts=3)
 
 
 
@@ -333,14 +341,41 @@ class MonomerContact(object):
         }
 
         self._calculate_contact(monomer1, monomer2)
+        print(json.dumps(self.data, indent=4))
 
 
     def _calculate_contact(self, monomer1, monomer2):
         log(5, "Calculating contact for: {} - {}".format(monomer1.data["info"]["name"], monomer2.data["info"]["name"]))
-        #print(self.data)
+
+
+        contacts = []
+
         if self.data["mode"] == "min-contacts":
             assert self.data["threshold"] is not None
             assert self.data["kwargs"].get("min_contacts") is not None
+
+            print_all_coords(monomer1)
+            print_all_coords(monomer2)
+
+            monomer1 = entity_to_orth(monomer1.copy(), monomer1.data["params"])
+            monomer2 = entity_to_orth(monomer2.copy(), monomer1.data["params"])
+
+
+            for a1 in monomer1.get_atoms():
+                for a2 in monomer2.get_atoms():
+                    d = d2(a1.coord, a2.coord, root=False)
+                    print(a1, a2, d, end="\r")
+                    if d < self.data["threshold"]**2:
+
+                        contacts.append({
+                            "atom1": a1.get_full_id(),
+                            "atom2": a2.get_full_id(),
+                            "distance": d,
+                            "below_threshold": True,
+                            "threshold": self.data["threshold"],
+                        })
+
+        self.data["contacts"] = contacts
 
 
 

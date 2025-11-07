@@ -46,7 +46,7 @@ crystal.set_params(
 crystal.process()
 crystal.export()
 
-crystal.plot()
+#crystal.plot()
 
 
 

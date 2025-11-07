@@ -156,25 +156,6 @@ def dot(v, w):
     return x * X + y * Y + z * Z
 
 
-def length(v):
-    if len(v) == 3:
-        x, y, z = v
-        return math.sqrt(x * x + y * y + z * z)
-    elif len(v) == 2:
-        x, y = v
-        return math.sqrt(x * x + y * y)
-
-
-
-def vector(b, e):
-    if len(b) == 3:
-        x, y, z = b
-        X, Y, Z = e
-        return (X - x, Y - y, Z - z)
-    elif len(b) == 2:
-        x, y = b
-        X, Y = e
-        return (X - x, Y - y)
 
 
 def unit(v):
@@ -183,15 +164,6 @@ def unit(v):
     return (x / mag, y / mag, z / mag)
 
 
-def distance(p0, p1, **kwargs):
-    return length(vector(p0, p1))
-
-def d2(p0, p1, root = False, **kwargs):
-    #print(p0, p1)
-    if root:
-        return sqrt((p0[0] - p1[0])**2 + (p0[1] - p1[1])**2 + (p0[2] - p1[2])**2)
-    else:
-        return (p0[0] - p1[0])**2 + (p0[1] - p1[1])**2 + (p0[2] - p1[2])**2
 
 def scale(v, sc):
     x, y, z = v
