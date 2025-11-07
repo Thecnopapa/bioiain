@@ -155,7 +155,7 @@ def generate_displaced_copy(original:bp.Entity.Entity, distance:list[float]|floa
     if type(distance) is float or type(distance) is int:
         distance = [distance, distance, distance]
 
-    if key is None and op_n in None:
+    if key is None and op_n is None:
         for atom in displaced.get_atoms():
             if atom.is_disordered() > 0:
                 for d_atom in atom:

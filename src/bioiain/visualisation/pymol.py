@@ -6,7 +6,7 @@ from ..biopython.base import BiopythonOverlayClass
 
 
 
-pymol_colours = ['green', 'cyan', 'red', 'yellow', 'violet','blue',
+pymol_colours = ['lightgreen', 'cyan', 'red', 'yellow', 'violet','blue',
                'salmon', 'lime', 'pink', 'slate', 'magenta', 'orange', 'marine',
                'olive', 'purple', 'teal', 'forest', 'firebrick', 'chocolate',
                'wheat', 'white', 'grey']

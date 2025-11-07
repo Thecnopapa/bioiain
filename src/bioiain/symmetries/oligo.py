@@ -43,7 +43,7 @@ class CrystalElement(Chain):
     def generate_symmetries(self, operations, params, key):
         log(3, "Generating symmetries ({})".format(self.data["info"]["name"]))
         log(4, self, "CoM:", [round(c) for c in find_com(self.get_atoms())])
-        frac_element = entity_to_frac(self.copy(), params)
+        frac_element = entity_to_frac(self, params)
         frac_element_com = find_com(frac_element.get_atoms())
         self.data["symmetry"]["CoM-frac"] = frac_element_com
         self.data["symmetry"]["CoM-orth"] = find_com(self.get_atoms())
@@ -166,6 +166,7 @@ class Crystal(Model):
         self._identyfy_main_elements()
         self._cast_main_elements()
         self._regenerate_crystal()
+        self._calculate_oigomerisation_paths()
         return self
 
     def plot(self):
@@ -173,17 +174,26 @@ class Crystal(Model):
         ax.set_title('Crystal {}'.format(self.data["info"]["name"]))
 
         for n, monomer in enumerate(self.monomers):
-            print(monomer.data["symmetry"]["CoM-frac"])
+            #print(monomer.data["symmetry"]["CoM-frac"])
             col = pymol_colours[n%len(pymol_colours)]
             ax.scatter(*monomer.data["symmetry"]["CoM-frac"], color=col)
             ax.text(*monomer.data["symmetry"]["CoM-frac"], monomer.id, c=col)
             for sym_mon in monomer.sym_elements:
-                print("  -", sym_mon.data["symmetry"]["CoM-frac"])
+                if sym_mon.data["symmetry"]["operation_n"] == 1:
+                    continue
+
+                #print("  -", sym_mon.data["info"]["name"])
                 for position in sym_mon.data["symmetry"]["positions"]:
-                    cord = sym_mon.data["symmetry"]["CoM-frac"]
-                    print(cord, position)
+                    displaced_monomer = generate_displaced_copy(
+                        monomer.copy(),
+                        distance=position,
+                        key=sym_mon.data["crystal"]["group_key"],
+                        op_n=sym_mon.data["symmetry"]["operation_n"])
+                    com = find_com(displaced_monomer)
+                    #print("    >", com, position)
                     #cord = [c + p for c,p in zip(cord, position)]
-                    ax.scatter(*cord, facecolors='none', edgecolors=col)
+                    ax.scatter(*com, facecolors='none', edgecolors=col)
+                    ax.text(*com, sym_mon.data["symmetry"]["operation_n"], c=col)
 
         fig.show()
         input("Press Enter to continue...")
@@ -245,12 +255,12 @@ class Crystal(Model):
         for monomer in self.monomers:
             log("debug", "Monomer: {}".format(monomer.data["info"]["name"]))
             sym_monomers.extend(monomer.generate_symmetries(operations, params, key))
-        [script.load_entity(entity_to_orth(m, params)) for m in sym_monomers]
+        [script.load_entity(entity_to_orth(m.copy(), params)) for m in sym_monomers]
 
         log(2, "Ligands ({})".format(len(self.ligands)))
         for ligand in self.ligands:
             sym_ligands.extend(ligand.generate_symmetries(operations, params, key))
-        [script.load_entity(entity_to_orth(l, params)) for l in sym_ligands]
+        [script.load_entity(entity_to_orth(l.copy(), params)) for l in sym_ligands]
 
 
 
@@ -261,6 +271,24 @@ class Crystal(Model):
 
     def _calculate_oigomerisation_paths(self):
         log(1, "Calculating oligomerisation paths ({})".format(self.data["info"]["name"]))
+
+        path_list = {}
+
+        for n, monomer in enumerate(self.monomers):
+            log(2, "Monomer: {}".format(monomer.data["info"]["name"]))
+            monomer_list = path_list[monomer.id] = {}
+            for sym_mon in monomer.sym_elements:
+                log(3, "Symmetry: {}".format(sym_mon.data["info"]["name"]))
+                for position in sym_mon.data["symmetry"]["positions"]:
+                    displaced_monomer = generate_displaced_copy(
+                        entity_to_frac(monomer.copy(), monomer.data["params"]),
+                        distance=position,
+                        key=sym_mon.data["crystal"]["group_key"],
+                        op_n=sym_mon.data["symmetry"]["operation_n"])
+                    displaced_monomer.data["symmetry"]["position"] = position
+                    displaced_monomer.data["info"]["name"] = sym_mon.data["info"]["name"]+"_({})".format(position)
+                    log(4, "Position: {}".format(displaced_monomer.data["info"]["name"]))
+                    monomer_list[len(monomer_list)] = MonomerContact(monomer, displaced_monomer, mode="min-contacts", threshold=6, min_contacts=3)
 
 
 
@@ -277,6 +305,47 @@ class Crystal(Model):
 
         for n in self.data["crystal"]["oligomer_levels"]:
             log("debug" "Oligomer level: {}".format(n))
+
+
+
+class MonomerContact(object):
+    def __init__(self, monomer1, monomer2, mode="min-contacts", threshold=None, **kwargs):
+
+        self.data = {
+            "is_contact": None,
+            "mode": mode,
+            "threshold": threshold,
+            "kwargs": kwargs,
+            "monomer1": {
+                "name": monomer1.data["info"]["name"],
+                "id": monomer1.id,
+                "operation": monomer1.data["symmetry"]["operation_n"],
+                "is_symmetry": monomer1.data["symmetry"]["is_symmetry"],
+                "position": monomer1.data["symmetry"].get("position", None),
+            },
+            "monomer2": {
+                "name": monomer2.data["info"]["name"],
+                "id": monomer2.id,
+                "operation": monomer2.data["symmetry"]["operation_n"],
+                "is_symmetry": monomer2.data["symmetry"]["is_symmetry"],
+                "position": monomer2.data["symmetry"].get("position", None),
+            }
+        }
+
+        self._calculate_contact(monomer1, monomer2)
+
+
+    def _calculate_contact(self, monomer1, monomer2):
+        log(5, "Calculating contact for: {} - {}".format(monomer1.data["info"]["name"], monomer2.data["info"]["name"]))
+        #print(self.data)
+        if self.data["mode"] == "min-contacts":
+            assert self.data["threshold"] is not None
+            assert self.data["kwargs"].get("min_contacts") is not None
+
+
+
+
+
 
 
 
