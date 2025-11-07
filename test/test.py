@@ -14,6 +14,7 @@ import src.bioiain as bi
 
 
 
+
 file_folder = downloadPDB("./data", "test_list", ["5JJM", "6nwl"],
                           file_path="./pdb_list.txt", file_format="pdb",
                           overwrite=False)
@@ -45,7 +46,8 @@ crystal.set_params(
 crystal.process()
 crystal.export()
 
-print(crystal, model)
+crystal.plot()
+
 
 
 

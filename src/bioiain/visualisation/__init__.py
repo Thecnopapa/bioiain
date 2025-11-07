@@ -1,4 +1,5 @@
-__all__ = ["pymol"]
+__all__ = ["pymol", "plots"]
 
 from .pymol import *
 from .pymol import quick_display
+from .plots import *

@@ -5,6 +5,14 @@ from ..utilities import *
 from ..biopython.base import BiopythonOverlayClass
 
 
+
+pymol_colours = ['green', 'cyan', 'red', 'yellow', 'violet','blue',
+               'salmon', 'lime', 'pink', 'slate', 'magenta', 'orange', 'marine',
+               'olive', 'purple', 'teal', 'forest', 'firebrick', 'chocolate',
+               'wheat', 'white', 'grey']
+
+
+
 def quick_display(entity:BiopythonOverlayClass|list[BiopythonOverlayClass]) -> str:
     """
     Displays entity or list of entities with PyMol. Exports entities to ./.temp and saves generated script in the same

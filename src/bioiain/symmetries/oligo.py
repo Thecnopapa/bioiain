@@ -10,6 +10,7 @@ from ..utilities import find_com, print_all_coords
 from ..utilities.logging import log
 from ..utilities import *
 from ..biopython import Chain, Model
+from ..visualisation import fig3D, mpl_colours, pymol_colours
 from ..visualisation.pymol import quick_display, PymolScript
 
 
@@ -24,6 +25,8 @@ class CrystalElement(Chain):
             "operation_n": None,
             "is_symmetry": False,
             "positions": [],
+            "CoM-frac": None,
+            "CoM-orth": None,
         }
         self.sym_elements = []
 
@@ -42,6 +45,8 @@ class CrystalElement(Chain):
         log(4, self, "CoM:", [round(c) for c in find_com(self.get_atoms())])
         frac_element = entity_to_frac(self.copy(), params)
         frac_element_com = find_com(frac_element.get_atoms())
+        self.data["symmetry"]["CoM-frac"] = frac_element_com
+        self.data["symmetry"]["CoM-orth"] = find_com(self.get_atoms())
 
         for n, operation in operations.items():
             log(4, "Operation: {}".format(n))
@@ -52,6 +57,8 @@ class CrystalElement(Chain):
                 "operation": operation,
                 "is_symmetry": True,
                 "positions": [],
+                "CoM-frac": None,
+                "CoM-orth": None,
             }
 
             displaced_element.data["info"]["name"] = "{}_op{}".format(self.data["info"]["name"], n)
@@ -96,6 +103,9 @@ class CrystalElement(Chain):
 
             displaced_element.data["symmetry"]["positions"] = list(set(
                 displaced_element.data["symmetry"]["positions"]))
+            displaced_element.data["symmetry"]["CoM-frac"] = find_com(displaced_element.get_atoms())
+
+
             self.data["symmetry"]["positions"].extend(displaced_element.data["symmetry"]["positions"])
 
             self.sym_elements.append(displaced_element)
@@ -157,6 +167,26 @@ class Crystal(Model):
         self._cast_main_elements()
         self._regenerate_crystal()
         return self
+
+    def plot(self):
+        fig, ax = fig3D(self, preset="crystal-frac")
+        ax.set_title('Crystal {}'.format(self.data["info"]["name"]))
+
+        for n, monomer in enumerate(self.monomers):
+            print(monomer.data["symmetry"]["CoM-frac"])
+            col = pymol_colours[n%len(pymol_colours)]
+            ax.scatter(*monomer.data["symmetry"]["CoM-frac"], color=col)
+            ax.text(*monomer.data["symmetry"]["CoM-frac"], monomer.id, c=col)
+            for sym_mon in monomer.sym_elements:
+                print("  -", sym_mon.data["symmetry"]["CoM-frac"])
+                for position in sym_mon.data["symmetry"]["positions"]:
+                    cord = sym_mon.data["symmetry"]["CoM-frac"]
+                    print(cord, position)
+                    #cord = [c + p for c,p in zip(cord, position)]
+                    ax.scatter(*cord, facecolors='none', edgecolors=col)
+
+        fig.show()
+        input("Press Enter to continue...")
 
     def _identyfy_main_elements(self) -> list[list[CrystalElement]]:
         """
@@ -223,6 +253,19 @@ class Crystal(Model):
         [script.load_entity(entity_to_orth(l, params)) for l in sym_ligands]
 
 
+
+
+        script.write_script()
+        #script.execute()
+
+
+    def _calculate_oigomerisation_paths(self):
+        log(1, "Calculating oligomerisation paths ({})".format(self.data["info"]["name"]))
+
+
+
+    def _find_oligomers(self):
+
         for m in self.monomers:
             log("debug", m.data["info"]["name"], m.data["symmetry"]["positions"])
             print(m.sym_elements)
@@ -231,12 +274,6 @@ class Crystal(Model):
             print(m.sym_elements)
 
 
-        script.write_script()
-        #script.execute()
-
-
-
-    def _find_oligomers(self):
 
         for n in self.data["crystal"]["oligomer_levels"]:
             log("debug" "Oligomer level: {}".format(n))
