@@ -25,9 +25,14 @@ class CrystalElement(Chain):
             "operation": None,
             "operation_n": None,
             "is_symmetry": False,
-            "positions": [],
+            "positions": None,
             "CoM-frac": None,
             "CoM-orth": None,
+            "contacts": None,
+        }
+        self.data["contacts"] = {
+            "all": [],
+            "paths": None,
         }
         self.sym_elements = []
 
@@ -41,15 +46,21 @@ class CrystalElement(Chain):
 
 
 
-    def generate_symmetries(self, operations, params, key):
+    def generate_symmetries(self, crystal, operations, params, key, contacts=True, threshold=10, min_contacts=1):
         log(3, "Generating symmetries ({})".format(self.data["info"]["name"]))
         log(4, self, "CoM:", [round(c) for c in find_com(self.get_atoms())])
         frac_element = entity_to_frac(self, params)
         frac_element_com = find_com(frac_element.get_atoms())
         self.data["symmetry"]["CoM-frac"] = frac_element_com
         self.data["symmetry"]["CoM-orth"] = find_com(self.get_atoms())
+        self.data["symmetry"]["positions"] = []
+        if contacts:
+            self.data["contacts"]["all"] = []
+            self.data["contacts"]["threshold"] = threshold
+            self.data["contacts"]["min_contacts"] = min_contacts
 
         for n, operation in operations.items():
+
             log(4, "Operation: {}".format(n))
             displaced_element = generate_displaced_copy(frac_element.copy(), key=key, op_n=n).copy()
             displaced_element.data = deepcopy(displaced_element.data)
@@ -60,14 +71,22 @@ class CrystalElement(Chain):
                 "positions": [],
                 "CoM-frac": None,
                 "CoM-orth": None,
+                "contacts": {}
             }
+            displaced_element.data.pop("contacts")
 
             displaced_element.data["info"]["name"] = "{}_op{}".format(self.data["info"]["name"], n)
+
+            if contacts:
+                contact = {m.id:MonomerContact(m, displaced_element,
+                                          threshold=threshold,
+                                          min_contacts=min_contacts) for m in crystal.monomers if not (
+                    n == 1 and displaced_element.id == m.id
+                )}
 
 
 
             for atoms in displaced_element.get_atoms():
-                # print(atom, atom.get_full_id(), atom.is_disordered()>0)
 
                 if not atoms.is_disordered() > 0:
                     atoms = [atoms]
@@ -100,6 +119,39 @@ class CrystalElement(Chain):
                     atom.coord = new_coord
                     atom.position = position
 
+                    if contacts and atom.id == "CA":
+                        for m in crystal.monomers:
+                            if n == 1 and displaced_element.id == m.id:
+                                continue
+                            for a in m.get_atoms():
+                                if not a.id == "CA":
+                                    continue
+                                d = get_fractional_distance(a.coord, atom.coord, self.data["params"])
+                                print(atom.parent.id[1], atom.parent.resname, "\t", a.parent.id[1], a.parent.resname, "\t", d, end="\t")
+
+                                if d <= threshold**2:
+                                    print("true", end="\r")
+                                    contact[m.id].add({
+                                        "atom1": a.get_full_id(),
+                                        "atom2": atom.get_full_id(),
+                                        "distance": d,
+                                        "below_threshold": True,
+                                        "threshold": threshold,
+                                    })
+                                else:
+                                    print("false", end="\r")
+
+            if contacts:
+
+                for m in crystal.monomers:
+                    if n == 1 and displaced_element.id == m.id:
+                        continue
+                    displaced_element.data["symmetry"]["contacts"][m.id] = contact[m.id].data
+                    if contact[m.id].check_min_contacts():
+                        m.data["contacts"]["all"].append(contact[m.id].data)
+
+
+
 
 
             displaced_element.data["symmetry"]["positions"] = list(set(
@@ -113,7 +165,13 @@ class CrystalElement(Chain):
             log(5, "Element: {}".format(displaced_element.data["info"]["name"]))
             log(5, "Positions:", displaced_element.data["symmetry"]["positions"])
 
+        if contacts:
+            log(4, "Elements in contact: {}".format(len(self.data["contacts"]["all"])))
+            for c in self.data["contacts"]["all"]:
+                log(5, c["name"])
+
         self.data["symmetry"]["positions"] = list(set(self.data["symmetry"]["positions"]))
+        self.export(structure=False)
         return self.sym_elements
 
 
@@ -255,12 +313,12 @@ class Crystal(Model):
         log(2, "Monomers ({})".format(len(self.monomers)))
         for monomer in self.monomers:
             log("debug", "Monomer: {}".format(monomer.data["info"]["name"]))
-            sym_monomers.extend(monomer.generate_symmetries(operations, params, key))
+            sym_monomers.extend(monomer.generate_symmetries(self, operations, params, key, contacts=True))
         [script.load_entity(entity_to_orth(m.copy(), params)) for m in sym_monomers]
 
         log(2, "Ligands ({})".format(len(self.ligands)))
         for ligand in self.ligands:
-            sym_ligands.extend(ligand.generate_symmetries(operations, params, key))
+            sym_ligands.extend(ligand.generate_symmetries(self, operations, params, key, contacts=False))
         [script.load_entity(entity_to_orth(l.copy(), params)) for l in sym_ligands]
 
 
@@ -275,28 +333,9 @@ class Crystal(Model):
 
         path_list = {}
 
-        left_monomers = self.monomers.copy()
         for n, monomer in enumerate(self.monomers):
             log(2, "Monomer: {}".format(monomer.data["info"]["name"]))
-            monomer_paths= path_list[monomer.id] = {}
-            targets = []
-            [targets.extend(m.sym_elements) for m in left_monomers]
-            left_monomers.pop(0)
-            for sym_mon in targets:
-                log(3, "Symmetry: {}".format(sym_mon.data["info"]["name"]))
-                for position in sym_mon.data["symmetry"]["positions"]:
-                    displaced_monomer = generate_displaced_copy(
-                        entity_to_frac(monomer.copy_all(), monomer.data["params"]),
-                        distance=position,
-                        key=sym_mon.data["crystal"]["group_key"],
-                        op_n=sym_mon.data["symmetry"]["operation_n"])
-                    displaced_monomer.data["symmetry"]["position"] = position
-                    displaced_monomer.data["info"]["name"] = sym_mon.data["info"]["name"]+"_{}".format(position)
-                    log(4, "Position: {}".format(displaced_monomer.data["info"]["name"]))
-                    monomer_paths[len(monomer_paths)] = MonomerContact(monomer, displaced_monomer,
-                                                                       mode="min-contacts",
-                                                                       threshold=6,
-                                                                       min_contacts=3)
+            [log(3, c["name"]) for c in monomer.data["contacts"]["all"]]
 
 
 
@@ -317,12 +356,14 @@ class Crystal(Model):
 
 
 class MonomerContact(object):
-    def __init__(self, monomer1, monomer2, mode="min-contacts", threshold=None, **kwargs):
+    def __init__(self, monomer1, monomer2, mode="min-contacts", threshold=None, min_contacts=None, **kwargs):
 
         self.data = {
+            "name":"Contact: ({}-{}): Unprocessed".format(monomer1.data["info"]["name"], monomer2.data["info"]["name"]),
             "is_contact": None,
             "mode": mode,
             "threshold": threshold,
+            "min_contacts": min_contacts,
             "kwargs": kwargs,
             "monomer1": {
                 "name": monomer1.data["info"]["name"],
@@ -337,12 +378,34 @@ class MonomerContact(object):
                 "operation": monomer2.data["symmetry"]["operation_n"],
                 "is_symmetry": monomer2.data["symmetry"]["is_symmetry"],
                 "position": monomer2.data["symmetry"].get("position", None),
-            }
+            },
+            "a-a":[],
         }
 
-        self._calculate_contact(monomer1, monomer2)
-        print(json.dumps(self.data, indent=4))
+        #self._calculate_contact(monomer1, monomer2)
+        #print(json.dumps(self.data, indent=4))
 
+    def add(self, c):
+        self.data["a-a"].append(c)
+
+    def check_min_contacts(self):
+        count = 0
+        for a in self.data["a-a"]:
+            if a["below_threshold"]:
+                count += 1
+                if count >= self.data["min_contacts"]:
+                    self.data["is_contact"] = True
+                    self.data["name"] = repr(self)
+                    return True
+        self.data["is_contact"] = False
+        self.data["name"] = repr(self)
+        return False
+
+
+    def __repr__(self):
+        return "Contact: ({} <-> {}): {}, N:{}, T:{}, min:{}".format(
+            self.data["monomer1"]["name"], self.data["monomer2"]["name"],
+            self.data["is_contact"], len(self.data["a-a"]), self.data["threshold"], self.data["min_contacts"])
 
     def _calculate_contact(self, monomer1, monomer2):
         log(5, "Calculating contact for: {} - {}".format(monomer1.data["info"]["name"], monomer2.data["info"]["name"]))

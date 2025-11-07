@@ -1,6 +1,6 @@
 from .space_groups import dictio_space_groups
 import Bio.PDB as bp
-
+import numpy as np
 from ..utilities import vector
 
 
@@ -173,7 +173,7 @@ def generate_displaced_copy(original:bp.Entity.Entity, distance:list[float]|floa
 
 
 
-def get_fractional_distance(coord1, coord2, params):
+def get_fractional_distance(coord1, coord2, params, root=False):
 
     deltaX, deltaY, deltaZ = vector(coord1, coord2)
 
@@ -185,8 +185,10 @@ def get_fractional_distance(coord1, coord2, params):
     c_g = params["c_g"]
 
     d2 = (a**2)*(deltaX**2) + (b**2)*(deltaY**2) + (c**2)*(deltaZ**2) +2*b*c*c_a*deltaY*deltaZ +2*a*c*c_b*deltaX*deltaZ +2*a*b*c_g*deltaX*deltaY
-
-    return d2
+    if root:
+        return np.sqrt(*d2)
+    else:
+        return d2
 
 
 
