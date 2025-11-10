@@ -39,7 +39,7 @@ print(model.get_full_id(), model.data["info"]["name"])
 crystal = bi.symmetries.Crystal.cast(model.copy())
 crystal.set_params(
     min_monomer_length=50,
-    oligomer_levels=[2],
+    oligomer_levels=[2, 4],
 )
 
 
