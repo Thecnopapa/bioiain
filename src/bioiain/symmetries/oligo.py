@@ -11,7 +11,7 @@ from ..utilities.logging import log
 from ..utilities import *
 from ..utilities.maths import *
 from ..biopython import Chain, Model
-from ..visualisation import fig3D, mpl_colours, pymol_colours
+from ..visualisation import fig3D, mpl_colours, pymol_colours, Arrow3D
 from ..visualisation.pymol import quick_display, PymolScript
 
 
@@ -70,7 +70,7 @@ class Crystal(Model):
         self._calculate_oigomerisation_paths()
         return self
 
-    def plot(self):
+    def plot(self, paths=False, show=True):
         """
         Plots the Centres of Mass of the monomers and their symmetry mates in a crystal using Matplotlib in
         fractional space.
@@ -99,9 +99,10 @@ class Crystal(Model):
                     #cord = [c + p for c,p in zip(cord, position)]
                     ax.scatter(*com, facecolors='none', edgecolors=col)
                     ax.text(*com, sym_mon.data["symmetry"]["operation_n"], c=col)
-
-        fig.show()
-        input("Press Enter to continue...")
+        if show:
+            fig.show()
+            input("Press Enter to continue...")
+        return fig, ax
 
     def _identyfy_main_elements(self) -> list[list]:
         """
@@ -180,13 +181,39 @@ class Crystal(Model):
         log(1, "Calculating oligomerisation paths ({})".format(self.data["info"]["name"]))
 
         path_list = {}
+        fig, ax = self.plot(show=False)
 
         for n, monomer in enumerate(self.monomers):
             log(2, "Monomer: {}".format(monomer.data["info"]["name"]))
-            [log(3, c["name"]) for c in monomer.data["contacts"]["all"]]
+            for c in monomer.data["contacts"]["all"]:
+                log(3, c["name"])
+                com1 = c["monomer1"]["CoM-frac"]
+                com2 = c["monomer2"]["CoM-frac"]
+                if com2 is None:
+                    if c["monomer2"]["operation"] != None:
+                        target_mon = [m for m in self.monomers if m.id == c["monomer2"]["id"]][0]
+                        print_all_coords(target_mon)
+                        print(c["positions"])
+                        for position in c["positions"]:
+                            displaced_monomer = generate_displaced_copy(
+                                target_mon.copy(),
+                                distance=position,
+                                key=self.data["crystal"]["group_key"],
+                                op_n=c["monomer2"]["operation"])
+                            com2 = find_com(displaced_monomer)
+                            log(4, com1, com2)
+                            ax.add_artist(Arrow3D(*zip(com1, com2), color=pymol_colours[n]))
+                    else:
+                        log("warning", "Monomer2 hs no operation")
+                        com2 = find_com([m for m in self.monomers if m.id == c["monomer2"]["id"]][0])
+                        log(4, com1, com2)
+                        ax.add_artist(Arrow3D(*zip(com1, com2),color=pymol_colours[n]))
+
+        fig.show()
+        input("Press Enter to continue...")
+
 
         return self
-
 
 
     def _find_oligomers(self) -> Self:
@@ -347,6 +374,7 @@ class CrystalElement(Chain):
                                         "distance": d,
                                         "below_threshold": True,
                                         "threshold": threshold,
+                                        "position": atom.position,
                                     })
                                 else:
                                     print("false", end="\r")
@@ -401,6 +429,7 @@ class MonomerContact(object):
         self.data = {
             "name":"Contact: ({}-{}): Unprocessed".format(monomer1.data["info"]["name"], monomer2.data["info"]["name"]),
             "is_contact": None,
+            "positions": [],
             "kwargs": kwargs,
             "monomer1": {
                 "name": monomer1.data["info"]["name"],
@@ -408,6 +437,7 @@ class MonomerContact(object):
                 "operation": monomer1.data["symmetry"]["operation_n"],
                 "is_symmetry": monomer1.data["symmetry"]["is_symmetry"],
                 "position": monomer1.data["symmetry"].get("position", None),
+                "CoM-frac": monomer1.data["symmetry"]["CoM-frac"],
             },
             "monomer2": {
                 "name": monomer2.data["info"]["name"],
@@ -415,6 +445,8 @@ class MonomerContact(object):
                 "operation": monomer2.data["symmetry"]["operation_n"],
                 "is_symmetry": monomer2.data["symmetry"]["is_symmetry"],
                 "position": monomer2.data["symmetry"].get("position", None),
+                "CoM-frac": monomer2.data["symmetry"]["CoM-frac"],
+
             },
             "a-a":[],
         }
@@ -436,17 +468,24 @@ class MonomerContact(object):
         Requires the min_contacts kwarg on initialisation.
         :return: True if the requirement is met, False otherwise.
         """
-        count = 0
+        self.data["is_contact"] = False
+        pos_dict = {}
         for a in self.data["a-a"]:
             if a["below_threshold"]:
-                count += 1
-                if count >= self.data["kwargs"].get("min_contacts", 1):
+                if str(["position"]) in pos_dict:
+                    pos_dict[str(["position"])] += 1
+                else:
+                    pos_dict[str(["position"])] = 1
+                if pos_dict[str(["position"])]  >= self.data["kwargs"].get("min_contacts", 1):
                     self.data["is_contact"] = True
+                    self.data["positions"].append(a["position"])
                     self.data["name"] = repr(self)
-                    return True
-        self.data["is_contact"] = False
-        self.data["name"] = repr(self)
-        return False
+        if self.data["is_contact"]:
+            self.data["positions"] = list(set(self.data["positions"]))
+            return True
+        else:
+            self.data["name"] = repr(self)
+            return False
 
 
     def __repr__(self):

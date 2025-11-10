@@ -151,6 +151,8 @@ def generate_displaced_copy(original:bp.Entity.Entity, distance:list[float]|floa
         return None
     displaced = original.copy()
 
+    if distance is None:
+        distance = [0, 0, 0]
 
     if type(distance) is float or type(distance) is int:
         distance = [distance, distance, distance]
