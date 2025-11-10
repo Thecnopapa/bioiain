@@ -33,7 +33,8 @@ class Crystal(Model):
         self.data["crystal"]["min_monomer_length"] = None
         self.paths["crystal_folder"] = None
         self.data["info"]["name"] = self.data["info"]["name"] + "_cryst"
-        self.data["symmetries"] = {"paths": None}
+        self.data["symmetries"] = {"all_paths": None,
+                                   "unique_paths": None}
 
         self.monomers = None
         self.ligands = None
@@ -199,7 +200,7 @@ class Crystal(Model):
                         for position in oc["positions"]:
                             c = deepcopy(oc)
                             c["name"] = c["name"] + ", pos_{}".format("".join([str(p) for p in position]))
-                            c["position"] = "".join([str(p) for p in position])
+                            c["position"] = position
                             log(4, "Monomer 2 at:", position)
                             displaced_monomer = generate_displaced_copy(
                                 target_mon.copy(),
@@ -222,9 +223,9 @@ class Crystal(Model):
                         monomer.data["contacts"]["paths"]["{}{}".format(
                             monomer.id,
                             len(monomer.data["contacts"]["paths"].keys()))] = c
-        self.data["symmetries"]["paths"] = {}
+        self.data["symmetries"]["all_paths"] = {}
         for m in self.monomers:
-            self.data["symmetries"]["paths"].update(m.data["contacts"]["paths"])
+            self.data["symmetries"]["all_paths"].update(m.data["contacts"]["paths"])
         self.export()
         if show:
             fig.show()
@@ -240,51 +241,161 @@ class Crystal(Model):
         log(2, "Oligomer levels: {}".format(self.data["crystal"]["oligomer_levels"]))
 
         log(2, "Available paths:")
-        for k, contact in self.data["symmetries"]["paths"].items():
+        for k, contact in self.data["symmetries"]["all_paths"].items():
             log(3,k, ":", contact["name"])
         total_paths = []
-        #for k, contact in self.data["symmetries"]["paths"].items():
-        #    log(2,k, ":", contact["name"])
+
         p = Path(self.data["info"]["name"])
-        total_paths.extend(self._extend_path(p, self.data["symmetries"]["paths"], self.data["crystal"]["oligomer_levels"]))
-
-
+        total_paths.extend(self._extend_path(p,
+                                             self.data["symmetries"]["all_paths"],
+                                             self.data["crystal"]["oligomer_levels"]))
         log(2, "Total paths:", len(total_paths))
+
+        unique_paths = []
+
+        for path in total_paths:
+            steps = [k["key"] for k in path["path"]]
+            path["steps"] = steps
+            exists = False
+            if steps in unique_paths or steps.copy().reverse() in unique_paths:
+                exists = True
+                continue
+            for i in range(1,len(steps)-1):
+                if steps[i:]+steps[:i] in unique_paths:
+                    exists = True
+            if not exists:
+                unique_paths.append(path)
+
+
+        log(2, "Unique paths:", len(unique_paths))
+        [log(3, path["steps"]) for path in unique_paths]
+        log(2, "Unique paths:", len(unique_paths))
+
+        all_paths = self.data["symmetries"]["all_paths"]
+        print(all_paths.keys())
+        mons = {
+            m.id: m for m in self.monomers
+        }
+
+
+
+        for n, path in enumerate(unique_paths):
+            if path["o_level"] == 2:
+                continue
+            log(3, "Path: {}, level: {}".format(n, path["o_level"]) )
+            log(4, "Steps: {}".format(path["steps"]))
+            starting_monomer = path["steps"][0][0]
+            log(4, "Starting monomer: {}".format(starting_monomer))
+
+
+            fig, ax = self.plot(show=False)
+
+            point_list = []
+            operation_list = []
+            current_pos = [0, 0, 0]
+
+            coms = {
+                m.id: find_com(m) for m in self.monomers
+            }
+            print("COMS:", coms)
+            point_list.append(coms[starting_monomer])
+
+            for step in path["path"]:
+                step_info = all_paths[step["key"]]
+                print("###")
+                print(step_info)
+                print("###")
+                print(step)
+                print("###")
+                op_n = step_info["monomer2"]["operation"]
+                key = self.data["crystal"]["group_key"]
+                params = self.data["params"]
+                position = step_info["position"]
+                reverse = step["reverse"]
+
+
+                print(dict(
+                    op_n=op_n,
+                    key=key,
+                    params=params,
+                    position=position,
+                    reverse=reverse,
+                ))
+
+                id1 = step_info["monomer1"]["id"]
+                id2 = step_info["monomer2"]["id"]
+                if reverse:
+                    id1, id2 = id2, id1
+
+                print(id1, "-->", id2)
+
+
+                print(coms[id2], "-->", end=" ")
+
+                # Maybe log all operations and carry them every time, but should be the same
+
+                coms = {k: coord_operation(v, key, op_n, position) for k, v in coms.items()}
+                moving_com = coms[id2]
+                print(moving_com)
+                point_list.append(moving_com)
+                ax.add_artist(Arrow3D(*zip(point_list[-2], point_list[-1]), color="black"))
+
+                # Check for early circle closures
+                # Remove if so
+
+                # Then classify linear/circular based on final point
+
+
+            fig.show()
+            input("Press Enter to continue...")
+
+
+
+            print(point_list)
+            print(operation_list)
+
+
+
+
+
+        self.data["symmetries"]["unique_paths"] = unique_paths
+
 
         return self
 
     @staticmethod
-    def _extend_path(path, options, o_levels, depth=0):
-        new_p = []
+    def _extend_path(path, options, o_levels, depth=3):
+        branches = []
         o_levels = deepcopy(o_levels)
         if path.length in o_levels:
             path = deepcopy(path)
             path.close()
-            new_p.append(deepcopy(path))
+            branches.append(deepcopy(path.data))
             o_levels.remove(path.length)
             if len(o_levels) == 0:
                 log(depth, "DONE", path.length, o_levels, len(o_levels))
-                return new_p
+                return branches
         log(depth, path.length, o_levels, len(o_levels))
 
-        branches = []
-        last_mon = "AU"
+
+        last_mon = None
         if path.length == 1:
             available_options = options
         else:
             last_path = path.data["path"][-1]["key"]
-            last_mon = path.data["contacts"][-1]["monomer2"]["id"]
+            last_mon = path.contacts[-1]["monomer2"]["id"]
             available_options = {k:o for k, o in options.items()
                                  if (k.startswith(last_mon) or k.endswith(last_mon)) and k != last_path}
             #log(depth,"Available", available_options.keys(), last_path, last_mon)
 
 
 
-
+        reverse = False
         for k, v in available_options.items():
             log(depth, "Branching to {}".format(k))
             branch_path = deepcopy(path)
-            reverse = not k.startswith(last_mon)
+            if last_mon is not None:
+                reverse = not k.startswith(last_mon)
             branch_path.add(k,v, reverse=reverse)
             branches.extend(Crystal._extend_path(branch_path, options, o_levels, depth=depth+1))
 
@@ -306,7 +417,7 @@ class Path(object):
         self.data = {}
         self.data["name"] = name
         self.data["path"] = []
-        self.data["contacts"] = []
+        self.contacts = []
         self.data["o_level"] = None
         self.data["complete"] = False
         self.length = 1
@@ -324,7 +435,7 @@ class Path(object):
             "key": path,
             "reverse":reverse
         })
-        self.data["contacts"].append(contact)
+        self.contacts.append(contact)
 
     def __repr__(self):
         return "<Path in {}: {}, level: {}, closed: {}>".format(
@@ -532,6 +643,7 @@ class MonomerContact(object):
             "name":"Contact: ({}-{}): Unprocessed".format(monomer1.data["info"]["name"], monomer2.data["info"]["name"]),
             "is_contact": None,
             "positions": [],
+            "position": None,
             "kwargs": kwargs,
             "monomer1": {
                 "name": monomer1.data["info"]["name"],
@@ -550,8 +662,8 @@ class MonomerContact(object):
                 "CoM-frac": monomer2.data["symmetry"]["CoM-frac"],
 
             },
-            "a-a":[],
         }
+        self.a_a = []
 
 
     def add(self, c:dict) -> dict:
@@ -561,7 +673,7 @@ class MonomerContact(object):
         the contact method.
         :param c: Dict with the atom-atom contact information.
         """
-        self.data["a-a"].append(c)
+        self.a_a.append(c)
         return c
 
     def check_min_contacts(self) -> bool:
@@ -572,7 +684,7 @@ class MonomerContact(object):
         """
         self.data["is_contact"] = False
         pos_dict = {}
-        for a in self.data["a-a"]:
+        for a in self.a_a:
             if a["below_threshold"]:
                 if str(["position"]) in pos_dict:
                     pos_dict[str(["position"])] += 1
@@ -593,15 +705,9 @@ class MonomerContact(object):
     def __repr__(self):
         return "Contact: ({} <-> {}): {}, N:{}, T:{}, min:{}".format(
             self.data["monomer1"]["name"], self.data["monomer2"]["name"],
-            self.data["is_contact"], len(self.data["a-a"]),
+            self.data["is_contact"], len(self.a_a),
             self.data["kwargs"].get("threshold", None), self.data["kwargs"].get("min_contacts", None))
 
-    def  plot(self, fig, ax):
-
-
-
-
-        return fig, ax
 
 
 
