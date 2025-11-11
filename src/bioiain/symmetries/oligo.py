@@ -1,6 +1,8 @@
 
 import Bio.PDB as bp
 import sys, json
+
+from docutils.utils.math.mathml_elements import mover
 from typing_extensions import Self
 from copy import deepcopy
 
@@ -276,7 +278,9 @@ class Crystal(Model):
         mons = {
             m.id: m for m in self.monomers
         }
-
+        o_coms = {
+            m.id: find_com(m) for m in self.monomers
+        }
 
 
         for n, path in enumerate(unique_paths):
@@ -294,51 +298,83 @@ class Crystal(Model):
             operation_list = []
             current_pos = [0, 0, 0]
 
-            coms = {
-                m.id: find_com(m) for m in self.monomers
-            }
+            coms = deepcopy(o_coms)
             print("COMS:", coms)
             point_list.append(coms[starting_monomer])
 
-            for step in path["path"]:
+            for s, step in enumerate(path["path"]):
                 step_info = all_paths[step["key"]]
-                print("###")
-                print(step_info)
+                #print("###")
+                #print(step_info)
                 print("###")
                 print(step)
-                print("###")
+                #print("###")
                 op_n = step_info["monomer2"]["operation"]
                 key = self.data["crystal"]["group_key"]
                 params = self.data["params"]
-                position = step_info["position"]
+                pos = step_info["position"]
+
                 reverse = step["reverse"]
 
+                # if reverse:
+                #     new_pos = [c-p for p,c in zip(pos, current_pos)]
+                # else:
+                #     new_pos = [c+p for p,c in zip(pos, current_pos)]
 
-                print(dict(
-                    op_n=op_n,
-                    key=key,
-                    params=params,
-                    position=position,
-                    reverse=reverse,
-                ))
+                #print("new_pos:", new_pos)
+                print("pos:", pos)
+
+
+                # print(dict(
+                #     op_n=op_n,
+                #     key=key,
+                #     params=params,
+                #     position=position,
+                #     reverse=reverse,
+                # ))
 
                 id1 = step_info["monomer1"]["id"]
                 id2 = step_info["monomer2"]["id"]
+                d = [1/p if p != 0 else 0 for p in pos]
+                #if reverse:
+                #    d = [-p for p in pos]
+
                 if reverse:
                     id1, id2 = id2, id1
 
                 print(id1, "-->", id2)
 
 
-                print(coms[id2], "-->", end=" ")
+
 
                 # Maybe log all operations and carry them every time, but should be the same
-
-                coms = {k: coord_operation(v, key, op_n, position) for k, v in coms.items()}
-                moving_com = coms[id2]
+                print("current pos:", current_pos)
+                print(coms[id2], "-->", end=" ")
+                current_pos = [c + p for c, p in zip(current_pos, d)]
+                print(current_pos)
+                dcoms = {k: coord_add(v,d, True) for k, v in coms.items()}
+                ax.scatter(*dcoms[id2])
+                ax.text()
+                coms = {k: coord_operation(v, key, op_n, current_pos) for k, v in dcoms.items()}
+                moving_com = [c+p for c, p in zip(coms[id2], d)]
                 print(moving_com)
+
+
+
+                #moving_com = [p%1 for p in coms[id2]]
+
                 point_list.append(moving_com)
                 ax.add_artist(Arrow3D(*zip(point_list[-2], point_list[-1]), color="black"))
+
+                plane = {"x": [0,10], "y": [0,10], "z": [0,10]}
+                if pos[0] != 0:
+                    plane["x"][0] = int(1 / pos[0] * 10)
+                if pos[1] != 0:
+                    plane["y"][0] = int(1 / pos[1] * 10)
+                if pos[2] != 0:
+                    plane["z"][0] = int(1 / pos[2] * 10)
+
+
 
                 # Check for early circle closures
                 # Remove if so
@@ -378,14 +414,19 @@ class Crystal(Model):
         log(depth, path.length, o_levels, len(o_levels))
 
 
-        last_mon = None
+        last_id = None
         if path.length == 1:
             available_options = options
         else:
-            last_path = path.data["path"][-1]["key"]
-            last_mon = path.contacts[-1]["monomer2"]["id"]
+            last_path = path.data["path"][-1]
+            last_key = last_path["key"]
+            if last_path["reverse"]:
+                last_id = last_key[0]
+            else:
+                last_id = last_key[-1]
+
             available_options = {k:o for k, o in options.items()
-                                 if (k.startswith(last_mon) or k.endswith(last_mon)) and k != last_path}
+                                 if (k.startswith(last_id) or k.endswith(last_id)) and k != last_key}
             #log(depth,"Available", available_options.keys(), last_path, last_mon)
 
 
@@ -394,8 +435,8 @@ class Crystal(Model):
         for k, v in available_options.items():
             log(depth, "Branching to {}".format(k))
             branch_path = deepcopy(path)
-            if last_mon is not None:
-                reverse = not k.startswith(last_mon)
+            if last_id is not None:
+                reverse = not k.startswith(last_id)
             branch_path.add(k,v, reverse=reverse)
             branches.extend(Crystal._extend_path(branch_path, options, o_levels, depth=depth+1))
 

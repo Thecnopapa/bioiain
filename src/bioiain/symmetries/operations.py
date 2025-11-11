@@ -34,7 +34,7 @@ def coord_add(coord:list[float], deltas:list[float], subtract:bool = False) -> l
     return [nx, ny, nz]
 
 
-def coord_operation(coord:list[float], key:int, op_n:int, distance:list[float] = (0,0,0), reverse=False) -> list:
+def coord_operation(coord:list[float], key:int, op_n:int, distance:list[float]|None = None, reverse=False) -> list:
     """
     Perform a symmetry operation on a coordinate.
     :param coord: Coordinate (X, Y, Z)
@@ -44,6 +44,10 @@ def coord_operation(coord:list[float], key:int, op_n:int, distance:list[float] =
     :param reverse: !!Definitely does not work, mathematically incorrect I'm sure!! True to reverse the operation
     :return: New coordinate
     """
+
+    if distance is None:
+        distance = [0,0,0]
+
     rotation = dictio_space_groups[key]
     operation = rotation["symops"][op_n]
     rot = operation["rot"]
@@ -55,9 +59,9 @@ def coord_operation(coord:list[float], key:int, op_n:int, distance:list[float] =
 
 
 
-    nx = (rot[0][0] * x) + (rot[0][1] * y) + (rot[0][2] * z) + tra[0]+distance[0]
-    ny = (rot[1][0] * x) + (rot[1][1] * y) + (rot[1][2] * z) + tra[1]+distance[1]
-    nz = (rot[2][0] * x) + (rot[2][1] * y) + (rot[2][2] * z) + tra[2]+distance[2]
+    nx = (rot[0][0] * x) + (rot[0][1] * y) + (rot[0][2] * z) + tra[0]+ distance[0]
+    ny = (rot[1][0] * x) + (rot[1][1] * y) + (rot[1][2] * z) + tra[1]+ distance[1]
+    nz = (rot[2][0] * x) + (rot[2][1] * y) + (rot[2][2] * z) + tra[2]+ distance[2]
 
     if reverse:
         nx, ny, nz = -nx, -ny, -nz
