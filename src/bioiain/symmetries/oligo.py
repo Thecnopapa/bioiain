@@ -182,7 +182,7 @@ class Crystal(Model):
         return self
 
 
-    def _calculate_oigomerisation_paths(self, show=False) -> Self:
+    def _calculate_oigomerisation_paths(self, show=True) -> Self:
         log(1, "Calculating oligomerisation paths ({})".format(self.data["info"]["name"]))
 
         fig, ax = self.plot(show=False)
@@ -316,63 +316,75 @@ class Crystal(Model):
 
                 reverse = step["reverse"]
 
-                # if reverse:
-                #     new_pos = [c-p for p,c in zip(pos, current_pos)]
-                # else:
-                #     new_pos = [c+p for p,c in zip(pos, current_pos)]
-
-                #print("new_pos:", new_pos)
                 print("pos:", pos)
-
-
-                # print(dict(
-                #     op_n=op_n,
-                #     key=key,
-                #     params=params,
-                #     position=position,
-                #     reverse=reverse,
-                # ))
+                print("op_list:", operation_list)
 
                 id1 = step_info["monomer1"]["id"]
                 id2 = step_info["monomer2"]["id"]
-                d = [1/p if p != 0 else 0 for p in pos]
-                #if reverse:
-                #    d = [-p for p in pos]
-
-                if reverse:
-                    id1, id2 = id2, id1
-
-                print(id1, "-->", id2)
 
 
 
 
                 # Maybe log all operations and carry them every time, but should be the same
-                print("current pos:", current_pos)
-                print(coms[id2], "-->", end=" ")
-                current_pos = [c + p for c, p in zip(current_pos, d)]
-                print(current_pos)
-                dcoms = {k: coord_add(v,d, True) for k, v in coms.items()}
-                ax.scatter(*dcoms[id2])
-                ax.text()
-                coms = {k: coord_operation(v, key, op_n, current_pos) for k, v in dcoms.items()}
-                moving_com = [c+p for c, p in zip(coms[id2], d)]
-                print(moving_com)
+
+                if len(operation_list) == 0:
+                    com1 = coms[id1]
+                    displaced_monomer2 = generate_displaced_copy(
+                        mons[id2].copy(),
+                        distance=pos,
+                        key=self.data["crystal"]["group_key"],
+                        op_n=op_n)
+                    com2 = find_com(displaced_monomer2)
+                else:
+                    displaced_monomer1 = mons[id1].copy()
+                    displaced_monomer2 = mons[id2].copy()
+                    for op in operation_list:
+                        displaced_monomer1 = generate_displaced_copy(
+                            displaced_monomer1,
+                            distance=op["pos"],
+                            key=self.data["crystal"]["group_key"],
+                            op_n=op["op_n"])
+
+                        displaced_monomer2 = generate_displaced_copy(
+                            displaced_monomer2,
+                            distance=op["pos"],
+                            key=self.data["crystal"]["group_key"],
+                            op_n=op["op_n"])
+
+                    displaced_monomer2 = generate_displaced_copy(
+                        displaced_monomer2,
+                        distance=pos,
+                        key=self.data["crystal"]["group_key"],
+                        op_n=op_n)
+
+                    com1 = find_com(displaced_monomer1)
+                    com2 = find_com(displaced_monomer2)
+
+
+                print("Com1:", com1)
+
+
+                print("Com2:", com2)
+
+                if reverse:
+                    print(id1, "<--", id2)
+                else:
+                    print(id1, "-->", id2)
+
+                operation_list.append({
+                    "op_n": op_n,
+                    "pos": pos,
+                    "key": key
+                })
+
+                if reverse:
+                    ax.add_artist(Arrow3D(*zip(com2, com1),color="blue", alpha=0.5))
+                else:
+                    ax.add_artist(Arrow3D(*zip(com1, com2),color="red", alpha=0.5))
 
 
 
-                #moving_com = [p%1 for p in coms[id2]]
 
-                point_list.append(moving_com)
-                ax.add_artist(Arrow3D(*zip(point_list[-2], point_list[-1]), color="black"))
-
-                plane = {"x": [0,10], "y": [0,10], "z": [0,10]}
-                if pos[0] != 0:
-                    plane["x"][0] = int(1 / pos[0] * 10)
-                if pos[1] != 0:
-                    plane["y"][0] = int(1 / pos[1] * 10)
-                if pos[2] != 0:
-                    plane["z"][0] = int(1 / pos[2] * 10)
 
 
 
@@ -518,7 +530,7 @@ class CrystalElement(Chain):
 
 
     def generate_symmetries(self, crystal:Crystal,contacts:bool=True,
-                            threshold:int|float=10, min_contacts:int=1,
+                            threshold:int|float=15, min_contacts:int=10,
                             contact_method:str="min-contacts") -> list[Self]:
         """
         Generates symmetries of crystal elements from a given symmetry element, and (optionally) calculates contacts

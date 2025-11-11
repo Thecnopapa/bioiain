@@ -34,7 +34,7 @@ def coord_add(coord:list[float], deltas:list[float], subtract:bool = False) -> l
     return [nx, ny, nz]
 
 
-def coord_operation(coord:list[float], key:int, op_n:int, distance:list[float]|None = None, reverse=False) -> list:
+def coord_operation(coord:list[float], key:int, op_n:int, distance:list[float]|None = None, reverse=False, offset=[0,0,0]) -> list:
     """
     Perform a symmetry operation on a coordinate.
     :param coord: Coordinate (X, Y, Z)
@@ -45,6 +45,10 @@ def coord_operation(coord:list[float], key:int, op_n:int, distance:list[float]|N
     :return: New coordinate
     """
 
+    if offset is None:
+        offset = [0,0,0]
+
+
     if distance is None:
         distance = [0,0,0]
 
@@ -53,9 +57,11 @@ def coord_operation(coord:list[float], key:int, op_n:int, distance:list[float]|N
     rot = operation["rot"]
     tra = operation["tra"]
 
-
+    coord = [c-o for c,o in zip(coord,offset)]
 
     x, y, z = coord
+
+
 
 
 
@@ -65,6 +71,9 @@ def coord_operation(coord:list[float], key:int, op_n:int, distance:list[float]|N
 
     if reverse:
         nx, ny, nz = -nx, -ny, -nz
+
+    nx, ny, nz = [c + o for c, o in zip([nx, ny, nz], offset)]
+
 
     return [nx, ny, nz]
 
