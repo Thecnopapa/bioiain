@@ -24,7 +24,11 @@ file_folder = downloadPDB("./data", "test_list", ["5JJM", "6nwl"],
 bi.log("header", file_folder)
 
 
-t = bi.imports.loadPDB(os.path.join(file_folder,os.listdir(file_folder)[0]))
+t = bi.imports.recover("5JJM")
+
+if t is None:
+    t = bi.imports.loadPDB(os.path.join(file_folder, "5JJM.pdb"))
+#t = bi.imports.loadPDB(os.path.join(file_folder,os.listdir(file_folder)[0]))
 print(t)
 print(t.id)
 
