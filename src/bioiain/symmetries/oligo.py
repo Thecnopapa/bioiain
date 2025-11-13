@@ -210,6 +210,7 @@ class Crystal(Model):
                                 key=self.data["crystal"]["group_key"],
                                 op_n=c["monomer2"]["operation"])
                             com2 = find_com(displaced_monomer)
+                            c["vector"] = {"start": com1, "end": com2}
                             ax.add_artist(Arrow3D(*zip(com1, com2), color=pymol_colours[n]))
                             monomer.data["contacts"]["paths"]["{}{}{}".format(
                                 monomer.id,
@@ -329,81 +330,32 @@ class Crystal(Model):
 
 
                 origin = [0,0,0]
-                position = [0,0,0]
+
                 if len(operation_list) == 0:
                     ax.scatter(*origin, color="purple")
                     ax.text(*origin, "o", color="purple")
-                    com1 = coms[id1]
-                    displaced_monomer2 = generate_displaced_copy(
-                        mons[id2].copy(),
-                        distance=pos,
-                        key=self.data["crystal"]["group_key"],
-                        op_n=op_n)
-                    com2 = find_com(displaced_monomer2)
-
+                    com1 = step_info["vector"]["start"]
+                    com2 = step_info["vector"]["end"]
+                    position = com2
 
                 else:
-                    displaced_monomer1 = mons[id1].copy()
-                    displaced_monomer2 = mons[id2].copy()
+                    com1 = operation_list[-1]["position"]
 
+                    vec = deepcopy(step_info["vector"])
                     for o, op in enumerate(operation_list):
-
-
-                        position = coord_operation(
-                            deepcopy(op["pos"]),
-                            key=self.data["crystal"]["group_key"],
-                            op_n=op["op_n"],
-                            distance=None,
-                            offset=None
-                        )
-
-
-                        displaced_monomer1 = generate_displaced_copy(
-                            displaced_monomer1,
-                            distance=op["pos"],
-                            key=self.data["crystal"]["group_key"],
-                            op_n=op["op_n"],
-                            offset=origin
-                        )
-
-                        displaced_monomer2 = generate_displaced_copy(
-                            displaced_monomer2,
-                            distance=op["pos"],
-                            key=self.data["crystal"]["group_key"],
-                            op_n=op["op_n"],
-                            offset=origin
-                        )
-                        origin = coord_operation(
-                            origin,
-                            key=self.data["crystal"]["group_key"],
-                            op_n=op["op_n"],
-                            distance=op["pos"],
-                            offset=origin,
-
-                        )
+                        for k, v in vec.items():
+                            vec[k] = coord_operation(
+                                v,
+                                key=key,
+                                op_n=op["op_n"]
+                            )
+                    c2 = vector(vec["start"], vec["end"])
+                    print("c2:", c2)
 
 
 
-
-                        ax.scatter(*origin, color="b")
-                        ax.text(*origin, o + 1, color="b")
-
-                    position = coord_operation(
-                        deepcopy(pos),
-                        key=self.data["crystal"]["group_key"],
-                        op_n=op_n,
-                        distance=pos,
-                    )
-                    displaced_monomer2 = generate_displaced_copy(
-                        displaced_monomer2,
-                        distance=pos,
-                        key=self.data["crystal"]["group_key"],
-                        op_n=op_n,
-                        offset=origin,
-                    )
-
-                    com1 = find_com(displaced_monomer1)
-                    com2 = find_com(displaced_monomer2)
+                    com2 = coord_add(com1, c2)
+                    position = com2
 
 
                 print("Com1:", com1)
@@ -419,8 +371,10 @@ class Crystal(Model):
 
                 operation_list.append({
                     "op_n": op_n,
-                    "pos": position,
+                    "pos": pos,
                     "key": key,
+                    "vector": step_info["vector"],
+                    "position": position,
 
                 })
 
