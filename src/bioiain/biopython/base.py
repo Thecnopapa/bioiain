@@ -58,7 +58,8 @@ class BiopythonOverlayClass:
         self.data["info"]["id"] = id(self)
         self.data["info"]["repr"] = repr(self)
         if not hasattr(self, "paths"):
-            self.paths = {"export_folder": os.path.abspath("./exports")}
+            self.paths = {"export_folder": os.path.abspath("./exports"),
+                          "self":None}
             os.makedirs(self.paths["export_folder"], exist_ok=True)
 
     def pass_down(self):
@@ -67,6 +68,8 @@ class BiopythonOverlayClass:
                 child.data = deepcopy(self.data)|child.data
                 child.data["info"]["name"] = self.data["info"]["name"] + "_" + str(child.id)
                 child.paths = deepcopy(self.paths)|child.paths
+                child.paths["self"] = None
+                child.paths["parent"] = self.paths["self"]
                 child.pass_down()
 
     def copy_all(self):

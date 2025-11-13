@@ -29,6 +29,7 @@ def loadPDB(file_path:str, name:str=None, quiet=True) -> Structure|None:
     assert isinstance(parsed, bp.Structure.Structure)
     structure = Structure.cast(parsed)
     structure.paths["original"] = os.path.abspath(file_path)
+    structure.paths["self"] = os.path.abspath(file_path)
     structure.data["info"]["name"] = name
     structure.data["info"]["o_name"] = name
     return structure

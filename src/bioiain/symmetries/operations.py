@@ -1,3 +1,4 @@
+
 from .space_groups import dictio_space_groups
 import Bio.PDB as bp
 import numpy as np
@@ -78,7 +79,7 @@ def coord_operation(coord:list[float], key:int, op_n:int, distance:list[float]|N
     return [nx, ny, nz]
 
 
-def coord_operation_entity(entity:bp.Entity.Entity, key:int, op_n:int, distance:list[float] = (0,0,0)) -> bp.Entity.Entity:
+def coord_operation_entity(entity:bp.Entity.Entity, key:int, op_n:int, distance:list[float] = (0,0,0), offset=[0,0,0]) -> bp.Entity.Entity:
     """
     Perform a symmetry operation on an Entity in-place.
     :param entity: Entity to perform symmetry operation on
@@ -90,8 +91,8 @@ def coord_operation_entity(entity:bp.Entity.Entity, key:int, op_n:int, distance:
     for atom in entity.get_atoms():
         if atom.is_disordered() > 0:
             for d_atom in atom:
-                d_atom.coord = coord_operation(d_atom.coord, key, op_n, distance =distance)
-        atom.coord = coord_operation(atom.coord, key, op_n, distance=distance)
+                d_atom.coord = coord_operation(d_atom.coord, key, op_n, distance =distance, offset=offset)
+        atom.coord = coord_operation(atom.coord, key, op_n, distance=distance, offset=offset)
     return entity
 
 
@@ -159,7 +160,7 @@ def entity_to_orth(entity:bp.Entity.Entity, parameters:dict) -> bp.Entity.Entity
     return entity
 
 
-def generate_displaced_copy(original:bp.Entity.Entity, distance:list[float]|float = 99.5, key:int = None, op_n:int = None) -> bp.Entity.Entity:
+def generate_displaced_copy(original:bp.Entity.Entity, distance:list[float]|float = 99.5, key:int = None, op_n:int = None, offset=[0,0,0]) -> bp.Entity.Entity:
     """
     Create a copy of an Entity displaced a defined distance in-place.
     :param original: Original Entity
@@ -186,7 +187,7 @@ def generate_displaced_copy(original:bp.Entity.Entity, distance:list[float]|floa
             else:
                 atom.coord = [x+d for x, d in zip(atom.coord, distance)]
     else:
-        coord_operation_entity(displaced, key=key, op_n=op_n, distance =distance)
+        coord_operation_entity(displaced, key=key, op_n=op_n, distance =distance, offset=offset)
         for atom in displaced.get_atoms():
             if atom.is_disordered() > 0:
                 pass

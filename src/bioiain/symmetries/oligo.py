@@ -327,7 +327,11 @@ class Crystal(Model):
 
                 # Maybe log all operations and carry them every time, but should be the same
 
+
+                origin = [0,0,0]
                 if len(operation_list) == 0:
+                    ax.scatter(*origin, color="purple")
+                    ax.text(*origin, "o", color="purple")
                     com1 = coms[id1]
                     displaced_monomer2 = generate_displaced_copy(
                         mons[id2].copy(),
@@ -335,21 +339,39 @@ class Crystal(Model):
                         key=self.data["crystal"]["group_key"],
                         op_n=op_n)
                     com2 = find_com(displaced_monomer2)
+
+
                 else:
                     displaced_monomer1 = mons[id1].copy()
                     displaced_monomer2 = mons[id2].copy()
-                    for op in operation_list:
+
+                    for o, op in enumerate(operation_list):
+
                         displaced_monomer1 = generate_displaced_copy(
                             displaced_monomer1,
-                            distance=op["pos"],
+                            distance=coord_add(op["pos"],origin, True),
                             key=self.data["crystal"]["group_key"],
-                            op_n=op["op_n"])
+                            op_n=op["op_n"],
+                            offset=origin
+                        )
 
                         displaced_monomer2 = generate_displaced_copy(
                             displaced_monomer2,
-                            distance=op["pos"],
+                            distance=coord_add(op["pos"],origin, True),
                             key=self.data["crystal"]["group_key"],
-                            op_n=op["op_n"])
+                            op_n=op["op_n"],
+                            offset=origin
+                        )
+                        origin = coord_operation(
+                            origin,
+                            key=self.data["crystal"]["group_key"],
+                            op_n=op["op_n"],
+                            distance=coord_add(op["pos"],origin, False),
+
+                        )
+                        ax.scatter(*origin, color="b")
+                        ax.text(*origin, o + 1, color="b")
+
 
                     displaced_monomer2 = generate_displaced_copy(
                         displaced_monomer2,
