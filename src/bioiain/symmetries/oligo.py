@@ -1,6 +1,6 @@
 
 import Bio.PDB as bp
-import sys, json
+import sys, json, os
 
 
 from typing_extensions import Self
@@ -182,7 +182,7 @@ class Crystal(Model):
         return self
 
 
-    def _calculate_oigomerisation_paths(self, show=True) -> Self:
+    def _calculate_oigomerisation_paths(self, show=False) -> Self:
         log(1, "Calculating oligomerisation paths ({})".format(self.data["info"]["name"]))
 
         fig, ax = self.plot(show=False)
@@ -325,10 +325,6 @@ class Crystal(Model):
 
 
 
-
-                # Maybe log all operations and carry them every time, but should be the same
-
-
                 origin = [0,0,0]
 
                 if len(operation_list) == 0:
@@ -354,10 +350,10 @@ class Crystal(Model):
 
 
 
-                    com2 = coord_add(com1, c2)
+                    com2 = coord_add(com1, c2, reverse)
                     position = com2
 
-
+                # Fix reverse
                 print("Com1:", com1)
 
 
@@ -379,9 +375,13 @@ class Crystal(Model):
                 })
 
                 if reverse:
-                    ax.add_artist(Arrow3D(*zip(com2, com1),color="blue", alpha=0.5))
+                    ax.add_artist(Arrow3D(*zip(com1, com2),color="blue", alpha=0.5))
                 else:
                     ax.add_artist(Arrow3D(*zip(com1, com2),color="red", alpha=0.5))
+
+                if reverse:
+                    fig.show()
+                    input("Press Enter to continue...")
 
 
 
@@ -394,9 +394,11 @@ class Crystal(Model):
 
                 # Then classify linear/circular based on final point
 
-
-            fig.show()
-            input("Press Enter to continue...")
+            fig_path = os.path.join(self.paths["export_folder"], "figs")
+            os.makedirs(fig_path, exist_ok=True)
+            fig.savefig(os.path.join(fig_path,"{}_path_{}_{}.png".format(self.data["info"]["name"], path["o_level"], n)))
+            #fig.show()
+            #input("Press Enter to continue...")
 
 
 

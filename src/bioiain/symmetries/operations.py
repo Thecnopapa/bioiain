@@ -65,13 +65,15 @@ def coord_operation(coord:list[float], key:int, op_n:int, distance:list[float]|N
 
 
 
-
-    nx = (rot[0][0] * x) + (rot[0][1] * y) + (rot[0][2] * z) + tra[0]+ distance[0]
-    ny = (rot[1][0] * x) + (rot[1][1] * y) + (rot[1][2] * z) + tra[1]+ distance[1]
-    nz = (rot[2][0] * x) + (rot[2][1] * y) + (rot[2][2] * z) + tra[2]+ distance[2]
+    if not reverse:
+        nx = (rot[0][0] * x) + (rot[0][1] * y) + (rot[0][2] * z) + tra[0]+ distance[0]
+        ny = (rot[1][0] * x) + (rot[1][1] * y) + (rot[1][2] * z) + tra[1]+ distance[1]
+        nz = (rot[2][0] * x) + (rot[2][1] * y) + (rot[2][2] * z) + tra[2]+ distance[2]
 
     if reverse:
-        nx, ny, nz = -nx, -ny, -nz
+        nx = (rot[0][0] * x) - (rot[0][1] * y) - (rot[0][2] * z) - tra[0] - distance[0]
+        ny = (rot[1][0] * x) - (rot[1][1] * y) - (rot[1][2] * z) - tra[1] - distance[1]
+        nz = (rot[2][0] * x) - (rot[2][1] * y) - (rot[2][2] * z) - tra[2] - distance[2]
 
     nx, ny, nz = [c + o for c, o in zip([nx, ny, nz], offset)]
 
