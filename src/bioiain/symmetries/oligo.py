@@ -329,6 +329,7 @@ class Crystal(Model):
 
 
                 origin = [0,0,0]
+                position = [0,0,0]
                 if len(operation_list) == 0:
                     ax.scatter(*origin, color="purple")
                     ax.text(*origin, "o", color="purple")
@@ -347,9 +348,19 @@ class Crystal(Model):
 
                     for o, op in enumerate(operation_list):
 
+
+                        position = coord_operation(
+                            deepcopy(op["pos"]),
+                            key=self.data["crystal"]["group_key"],
+                            op_n=op["op_n"],
+                            distance=None,
+                            offset=None
+                        )
+
+
                         displaced_monomer1 = generate_displaced_copy(
                             displaced_monomer1,
-                            distance=coord_add(op["pos"],origin, True),
+                            distance=op["pos"],
                             key=self.data["crystal"]["group_key"],
                             op_n=op["op_n"],
                             offset=origin
@@ -357,7 +368,7 @@ class Crystal(Model):
 
                         displaced_monomer2 = generate_displaced_copy(
                             displaced_monomer2,
-                            distance=coord_add(op["pos"],origin, True),
+                            distance=op["pos"],
                             key=self.data["crystal"]["group_key"],
                             op_n=op["op_n"],
                             offset=origin
@@ -366,18 +377,30 @@ class Crystal(Model):
                             origin,
                             key=self.data["crystal"]["group_key"],
                             op_n=op["op_n"],
-                            distance=coord_add(op["pos"],origin, False),
+                            distance=op["pos"],
+                            offset=origin,
 
                         )
+
+
+
+
                         ax.scatter(*origin, color="b")
                         ax.text(*origin, o + 1, color="b")
 
-
+                    position = coord_operation(
+                        deepcopy(pos),
+                        key=self.data["crystal"]["group_key"],
+                        op_n=op_n,
+                        distance=pos,
+                    )
                     displaced_monomer2 = generate_displaced_copy(
                         displaced_monomer2,
                         distance=pos,
                         key=self.data["crystal"]["group_key"],
-                        op_n=op_n)
+                        op_n=op_n,
+                        offset=origin,
+                    )
 
                     com1 = find_com(displaced_monomer1)
                     com2 = find_com(displaced_monomer2)
@@ -393,10 +416,12 @@ class Crystal(Model):
                 else:
                     print(id1, "-->", id2)
 
+
                 operation_list.append({
                     "op_n": op_n,
-                    "pos": pos,
-                    "key": key
+                    "pos": position,
+                    "key": key,
+
                 })
 
                 if reverse:
