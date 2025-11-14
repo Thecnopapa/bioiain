@@ -96,15 +96,21 @@ if [[ $CONDA_ENV == "default" ]]; then
 	CONDA_ENV=$PROJECT_NAME
 fi
 
-if [ -d "$CONDA_PREFIX/envs/$CONDA_ENV" ]; then
-  echo "* $CONDA_ENV already exists";
+if [[ $CONDA_PREFIX == "*$CONDA_ENV" ]]; then
+  echo "* $CONDA_ENV environment already active"
 else
-  echo "* Creating conda env: $CONDA_ENV";
-  conda create -y -n $CONDA_ENV || exit 1
+  if [ -d "$CONDA_PREFIX/envs/$CONDA_ENV" ]; then
+    echo "* $CONDA_ENV already exists";
+  else
+    echo "* Creating conda env: $CONDA_ENV";
+    conda create -y -n $CONDA_ENV || exit 1
+  fi
+
+  conda activate $CONDA_ENV && CONDA_ENV=$(echo "$CONDA_PREFIX" | rev | cut -d "/" -f1| rev)
+  echo "* $CONDA_ENV environment activated"
 fi
 
-conda activate $CONDA_ENV && CONDA_ENV=$(echo "$CONDA_PREFIX" | rev | cut -d "/" -f1| rev)
-echo "* $CONDA_ENV environment activated"
+
 echo "* Installing pip"
 conda install -y pip
 echo "* Installing requirements"
