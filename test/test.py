@@ -15,53 +15,39 @@ import src.bioiain as bi
 import numpy as np
 
 
-
+bi.log("start", "test.py")
 
 file_folder = downloadPDB("./data", "test_list", ["5JJM", "6nwl"],
                           file_path="./pdb_list.txt", file_format="pdb",
                           overwrite=False)
 
-bi.log("header", file_folder)
+bi.log(1, "File folder:", file_folder)
 
 
-t = bi.imports.recover("5JJM")
+structure = bi.imports.recover("5JJM")
 
-if t is None:
-    t = bi.imports.loadPDB(os.path.join(file_folder, "5JJM.pdb"))
-#t = bi.imports.loadPDB(os.path.join(file_folder,os.listdir(file_folder)[0]))
-print(t)
-print(t.id)
+if structure is None:
+    structure = bi.imports.loadPDB(os.path.join(file_folder, "5JJM.pdb"))
 
-t.init_crystal()
-t.export()
-t.pass_down()
+bi.log("header", structure)
 
-model = t.get_list()[0]
-print(model)
-print(model.export())
-print(model.get_full_id(), model.data["info"]["name"])
+structure.init_all()
 
+crystal = structure.get_crystals()
 
-crystal = bi.symmetries.Crystal.cast(model.copy())
 crystal.set_params(
     min_monomer_length=50,
     oligomer_levels=[2, 4],
 )
 
-
 crystal.process()
-crystal.export()
-
-#crystal.plot()
-
 
 
 
 from src.bioiain.visualisation import pymol
 
-
 script = pymol.PymolScript(folder=".", name="test")
-script.load(t.paths["original"], "original", to="pdb")
+script.load(crystal.paths["original"], "original", to="pdb")
 script.cell()
 script.symmetries()
 script.group()
@@ -72,31 +58,7 @@ script.write_script()
 
 
 
-
+bi.log("end", "DONE")
 exit()
-
-script._bioiain = "sys\nsys.path.append('..')\nimport src.bioiain"
-
-
-script.print("pdb")
-script.disable("(all)")
-script.add("bi.log", "'header'", "\"I'm a log\"", is_cmd = False)
-
-
-
-
-
-
-t.export("./exports", data=True)
-
-
-script.execute()
-
-
-
-
-
-
-
 
 
