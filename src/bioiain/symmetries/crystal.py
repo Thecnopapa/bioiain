@@ -54,8 +54,6 @@ class Crystal(Model):
         :return: Self.
         """
         log(1, "Processing crystal ({})".format(self.data["info"]["name"]))
-        print(self.data)
-        print(self.get_full_id())
         self.pass_down()
         self.export()
         self._identyfy_main_elements()
@@ -67,6 +65,8 @@ class Crystal(Model):
         self._calculate_oigomerisation_paths()
         self.export()
         self._find_oligomers()
+        self.export()
+        self._build_oligomers()
         self.export()
         return self
 
@@ -492,9 +492,11 @@ class Crystal(Model):
         return branches
 
     def _build_oligomers(self):
-        from .oligomer import Oligomer
+        from .oligomer import OligomerBuilder
         for path in self.data["symmetries"]["relevant_paths"]:
             print(path)
+            oligo = OligomerBuilder()
+            oligo.build(self, path)
 
 
 
