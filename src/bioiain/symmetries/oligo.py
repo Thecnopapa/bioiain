@@ -238,7 +238,7 @@ class Crystal(Model):
         return self
 
 
-    def _find_oligomers(self) -> Self:
+    def _find_oligomers(self, plot=False) -> Self:
 
         log(1, "Pathing oligomers ({})".format(self.data["info"]["name"]))
         log(2, "Oligomer levels: {}".format(self.data["crystal"]["oligomer_levels"]))
@@ -283,8 +283,11 @@ class Crystal(Model):
             m.id: find_com(m) for m in self.monomers
         }
 
+        final_paths = {k:[] for k in self.data["crystal"]["oligomer_levels"]}
 
         for n, path in enumerate(unique_paths):
+            omit = False
+            relevant = False
             if path["o_level"] == 2:
                 continue
             log(3, "Path: {}, level: {}".format(n, path["o_level"]) )
@@ -292,23 +295,23 @@ class Crystal(Model):
             starting_monomer = path["steps"][0][0]
             log(4, "Starting monomer: {}".format(starting_monomer))
 
-
-            fig, ax = self.plot(show=False)
+            if plot:
+                fig, ax = self.plot(show=False)
 
             point_list = []
             operation_list = []
             current_pos = [0, 0, 0]
 
             coms = deepcopy(o_coms)
-            print("COMS:", coms)
+            #print("COMS:", coms)
             point_list.append(coms[starting_monomer])
 
             for s, step in enumerate(path["path"]):
                 step_info = all_paths[step["key"]]
                 #print("###")
                 #print(step_info)
-                print("###")
-                print(step)
+                #print("###")
+                #print(step)
                 #print("###")
                 op_n = step_info["monomer2"]["operation"]
                 key = self.data["crystal"]["group_key"]
@@ -316,9 +319,15 @@ class Crystal(Model):
                 pos = step_info["position"]
 
                 reverse = step["reverse"]
+                # Fix reverse / Revisit revesed / Skipped for now
+                if reverse:
+                    log("warning", "Reverse operations not yet supported, will revisit if needed ")
+                    omit = True
+                    break
 
-                print("pos:", pos)
-                print("op_list:", operation_list)
+                #print("pos:", pos)
+                #print("op_n:", op_n)
+                #print("op_list:", operation_list)
 
                 id1 = step_info["monomer1"]["id"]
                 id2 = step_info["monomer2"]["id"]
@@ -328,8 +337,9 @@ class Crystal(Model):
                 origin = [0,0,0]
 
                 if len(operation_list) == 0:
-                    ax.scatter(*origin, color="purple")
-                    ax.text(*origin, "o", color="purple")
+                    if plot:
+                        ax.scatter(*origin, color="purple")
+                        ax.text(*origin, "o", color="purple")
                     com1 = step_info["vector"]["start"]
                     com2 = step_info["vector"]["end"]
                     position = com2
@@ -343,26 +353,50 @@ class Crystal(Model):
                             vec[k] = coord_operation(
                                 v,
                                 key=key,
-                                op_n=op["op_n"]
+                                op_n=op["op_n"],
+                                #distance=op["pos"],
                             )
-                    c2 = vector(vec["start"], vec["end"])
-                    print("c2:", c2)
+
+                    if reverse:
+                        for k, v in vec.items():
+                            vec[k] = coord_operation(
+                                v,
+                                key=key,
+                                op_n=op["op_n"],
+                                #distance=op["pos"],
+                                reverse=True
+                            )
+
+                    if not reverse:
+                        c2 = vector(vec["start"], vec["end"])
+                    else:
+                        c2 = vector(vec["end"], vec["start"])
+                    #print("c2:", c2)
 
 
 
-                    com2 = coord_add(com1, c2, reverse)
+                    com2 = coord_add(com1, c2)
                     position = com2
 
-                # Fix reverse
-                print("Com1:", com1)
+                    if position in [oi["position"] for oi in operation_list]:
+                        omit = True
+                        log(4, "Path does walkback".format(path["steps"]))
+                        break
+
+                if omit:
+                    log("warning", "Path: {} discarded".format(path["steps"]))
+                    break
 
 
-                print("Com2:", com2)
+                #print("Com1:", com1)
+                #print("Com2:", com2)
 
                 if reverse:
-                    print(id1, "<--", id2)
+                    #print(id1, "<--", id2)
+                    pass
                 else:
-                    print(id1, "-->", id2)
+                    #print(id1, "-->", id2)
+                    pass
 
 
                 operation_list.append({
@@ -371,45 +405,44 @@ class Crystal(Model):
                     "key": key,
                     "vector": step_info["vector"],
                     "position": position,
+                    "reverse": reverse,
 
                 })
 
-                if reverse:
-                    ax.add_artist(Arrow3D(*zip(com1, com2),color="blue", alpha=0.5))
-                else:
-                    ax.add_artist(Arrow3D(*zip(com1, com2),color="red", alpha=0.5))
-
-                if reverse:
-                    fig.show()
-                    input("Press Enter to continue...")
+                if plot:
+                    if reverse:
+                        ax.add_artist(Arrow3D(*zip(com1, com2),color="blue", alpha=0.5))
+                        ax.add_artist(Arrow3D(*zip(*step_info["vector"].values()),color="green", alpha=0.5))
+                    else:
+                        ax.add_artist(Arrow3D(*zip(com1, com2),color="red", alpha=0.5))
 
 
+                # Check for early circle closures -> Remove if so
+
+            # Then classify linear/circular based on final point (whether is on direct contact with ASU)
+            # -> final point in vector ends list
+            relevant = True
+
+            if (not omit) and relevant:
+                log(4, "Saving path...")
+                if plot:
+                    fig_path = os.path.join(self.paths["export_folder"], "figs")
+                    os.makedirs(fig_path, exist_ok=True)
+                    path["fig_path"] = fig.savefig(os.path.join(fig_path,"{}_path_{}_{}.png".format(
+                        self.data["info"]["name"],
+                        path["o_level"], n)))
+                    log(4, "Figure saved at: {}".format(path["fig_path"]))
+                final_paths[path["o_level"]].append(path)
 
 
+        self.data["symmetries"]["relevant_paths"] = final_paths
+        log(2, "Relevant paths:")
+        for ol in final_paths.keys():
+            log(3, "Oligomer level:", ol)
+            log(4, "Total:", len(final_paths[ol]))
+            [log(5, path["steps"]) for path in final_paths[ol]]
+            log(4, "Total:", len(final_paths[ol]))
 
-
-
-                # Check for early circle closures
-                # Remove if so
-
-                # Then classify linear/circular based on final point
-
-            fig_path = os.path.join(self.paths["export_folder"], "figs")
-            os.makedirs(fig_path, exist_ok=True)
-            fig.savefig(os.path.join(fig_path,"{}_path_{}_{}.png".format(self.data["info"]["name"], path["o_level"], n)))
-            #fig.show()
-            #input("Press Enter to continue...")
-
-
-
-            print(point_list)
-            print(operation_list)
-
-
-
-
-
-        self.data["symmetries"]["unique_paths"] = unique_paths
 
 
         return self
