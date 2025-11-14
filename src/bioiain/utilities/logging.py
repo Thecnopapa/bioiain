@@ -1,6 +1,8 @@
 
 import os, shutil
 import warnings
+import time, datetime
+import math
 
 
 def log(level:int|str=1, *args, **kwargs):
@@ -42,32 +44,54 @@ def log(level:int|str=1, *args, **kwargs):
             elif v > 0:
                 if level == 0 or level is None:
                     print(*args, **kwargs)
-                elif level == "title":
+                elif level == "start":
                     tprint(*args, **kwargs)
                 elif level == "header":
                     sprint(*args, **kwargs)
+                elif level == "end":
+                    eprint(*args, **kwargs)
                 elif type(level) is int:
                     if v >= level:
                         print1(*args, space=2*level, **kwargs)
+                    else:
+                        print1("...", space=2 * level, **kwargs)
                 else:
                     print("Unknown log level: {}".format(level))
+                    print(*args, **kwargs)
 
+start_time = None
 
-
-def tprint(*strings:str, head:int=10, style:str="#", end:str="\n", sep:str=" "):  # Print section title
+def tprint(*strings:str, head:int=10, style:str="#", end:str="\n", sep:str=" ", reset_timer=True, print_timer=False):  # Print section title
+    global start_time
     width = shutil.get_terminal_size()[0] -2
     string = " ".join(strings)
-    tail = width - head - len(string)
-    out = "\n{}{}{}{}{}".format(style*head, sep, string, sep, style*tail)
-    print(out, end=end)
+    timer = ""
+    if print_timer and start_time is not None:
+        timer = "{}{}{}".format(sep, datetime.timedelta(seconds =time.time() - start_time), sep)
 
-def eprint(*strings, head=10, style = "^", sep=" "):  # Print end of section
-    tprint(*strings, head=head, style=style, end="\n\n", sep=sep)
+    tail2 = 3 * style
+    tail1_len = width - head - len(string) - len(timer) - len(tail2)
+
+    if tail1_len < 0:
+        tail1_len = 0
+        tail2=""
+    tail1 = style*tail1_len
+
+    out = "\n{}{}{}{}{}{}{}".format(style*head, sep, string, sep, tail1, timer, tail2 )
+    print(out, end=end)
+    if reset_timer:
+        start_time = time.time()
+
+def eprint(*strings, style = "^", **kwargs):  # Print end of section
+    tprint(*strings, style=style, end="\n\n", print_timer=True, **kwargs)
+
+
+
 
 def sprint(*strings:str, **kwargs): # Print Subtitle
     str_strings = map(str, strings)
     prefix = "\n"
-    out = " # "+ " ".join(str_strings)
+    out = " * "+ " ".join(str_strings)
     print(prefix+out,**kwargs)
 
 def print1(*strings:str, space:int=2, **kwargs): # Print with 1 indent
