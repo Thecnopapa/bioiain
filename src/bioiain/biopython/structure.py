@@ -3,6 +3,7 @@ from .base import BiopythonOverlayClass
 from .model import Model
 
 
+
 class Structure(bp.Structure.Structure, BiopythonOverlayClass):
     child_class = Model
 
@@ -17,6 +18,20 @@ class Structure(bp.Structure.Structure, BiopythonOverlayClass):
         self.data["crystal"] =  parse_crystal_card(self.paths["original"])
         self.data["params"] = calculate_parameters(self.data["crystal"])
 
+        self.pass_down()
+        self.export()
+
 
     def init_all(self):
         self.init_crystal()
+
+        self.pass_down()
+        self.export()
+
+    def get_crystals(self, first_model_only=True):
+        from ..symmetries import Crystal
+        if first_model_only:
+            return Crystal.cast(self.get_list()[0].copy())
+        else:
+            models = self.get_list()
+            return [Crystal.cast(m.copy()) for m in models]

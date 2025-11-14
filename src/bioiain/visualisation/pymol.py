@@ -43,7 +43,7 @@ class PymolScript(object):
     :param name: Name of the script. Will de set as a filename. Default is ".temp_pymol_script".
     :return: PymolScript Object.
     """
-    def __init__(self, name="temp_pymol_script", folder:str="./.temp", pymol_path = "pymol"):
+    def __init__(self, name="temp_pymol_script", folder:str="./temp", pymol_path = "pymol"):
         self.pymol_path = pymol_path
         self._bioiain = "bioiain"
         self.name = name

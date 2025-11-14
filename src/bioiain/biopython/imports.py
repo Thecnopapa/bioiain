@@ -103,7 +103,7 @@ def downloadPDB(data_dir:str, list_name:str, pdb_list:list=None, file_path:str =
 
 
 def recover(name, export_folder="./exports", download_dir="./data", download=True):
-    log("debug", "Recocering structure: {}".format(name))
+    log(2, "Recovering structure: {}".format(name))
     pdb_code = name.split("_")[0].upper()
     log("debug", "PDB code: {}".format(pdb_code))
 
@@ -120,13 +120,13 @@ def recover(name, export_folder="./exports", download_dir="./data", download=Tru
             print(os.path.abspath(json_path))
             with open(json_path, "r") as f:
                 data = json.load(f)
-            print(data)
+            #print(data)
             
             structure = loadPDB(data["paths"]["original"])
             for k, v in data.items():
                 setattr(structure, k, v)
-            print(structure.data)
-            print(structure.paths)
+            #print(structure.data)
+            #print(structure.paths)
             return structure
 
 

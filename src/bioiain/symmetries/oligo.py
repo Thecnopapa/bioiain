@@ -33,10 +33,10 @@ class Crystal(Model):
         super()._init(*args, **kwargs)
         self.data["crystal"]["oligomer_levels"] = None
         self.data["crystal"]["min_monomer_length"] = None
-        self.paths["crystal_folder"] = None
         self.data["info"]["name"] = self.data["info"]["name"] + "_cryst"
         self.data["symmetries"] = {"all_paths": None,
                                    "unique_paths": None}
+        self.paths["export_folder"] = os.path.join(self.paths["export_folder"], "crystal")
 
         self.monomers = None
         self.ligands = None
@@ -45,21 +45,18 @@ class Crystal(Model):
     def set_params(self,
                    min_monomer_length:int,
                    oligomer_levels:int|list[int],
-                   crystal_folder:str="./crystals"
                    ) -> Self:
         """
         Set parameters for crystal processing.
         :param min_monomer_length: Minimum (inclusive) length of chain to be considered a monomer.
         :param oligomer_levels: Oligomerisation level/s to consider.
-        :param crystal_folder: Folder to store crystal exports.
         :return: Self.
         """
         self.data["crystal"]["min_monomer_length"] = min_monomer_length
         self.data["crystal"]["oligomer_levels"] = oligomer_levels
-        self.paths["crystal_folder"] = crystal_folder
         return self
 
-    def process(self) -> Self:
+    def process(self, force=False) -> Self:
         """
         Processes the crystal through the main pipeline. Requires set_params() to be run beforehand.
         :return: Self.
@@ -68,11 +65,17 @@ class Crystal(Model):
         print(self.data)
         print(self.get_full_id())
         self.pass_down()
+        self.export()
         self._identyfy_main_elements()
+        self.export()
         self._cast_main_elements()
+        self.export()
         self._regenerate_crystal()
+        self.export()
         self._calculate_oigomerisation_paths()
+        self.export()
         self._find_oligomers()
+        self.export()
         return self
 
     def plot(self, paths=False, show=True):
@@ -158,7 +161,7 @@ class Crystal(Model):
         """
         log(1, "Regenerating crystal ({})".format(self.data["info"]["name"]))
         script = PymolScript(name="symmetry_crystal_{}".format(self.data["info"]["name"]),
-                             folder=self.paths["crystal_folder"])
+                             folder=os.path.join(self.paths["export_folder"], "pymol"))
         script.load(self.paths["original"], "original")
         key = self.data["crystal"]["group_key"]
         operations = dictio_space_groups[key]["symops"]
@@ -288,8 +291,7 @@ class Crystal(Model):
         for n, path in enumerate(unique_paths):
             omit = False
             relevant = False
-            if path["o_level"] == 2:
-                continue
+
             log(3, "Path: {}, level: {}".format(n, path["o_level"]) )
             log(4, "Steps: {}".format(path["steps"]))
             starting_monomer = path["steps"][0][0]
@@ -378,13 +380,14 @@ class Crystal(Model):
 
 
                     com2 = coord_add(com1, c2)
-                    point_list.append(com2)
                     position = com2
 
                     if com2 in point_list:
                         omit = True
-                        log(4, "Path does walkback".format(path["steps"]))
+                        log("warning", "Path does walkback".format(path["steps"]))
                         break
+
+                    point_list.append(com2)
 
                 if omit:
                     log("warning", "Path: {} discarded".format(path["steps"]))
@@ -445,10 +448,8 @@ class Crystal(Model):
             log(4, "Total:", len(final_paths[ol]))
             [log(5, path["steps"]) for path in final_paths[ol]]
             log(4, "Total:", len(final_paths[ol]))
-
-
-
         return self
+
 
     @staticmethod
     def _extend_path(path, options, o_levels, depth=3):
@@ -477,7 +478,9 @@ class Crystal(Model):
                 last_id = last_key[-1]
 
             available_options = {k:o for k, o in options.items()
-                                 if (k.startswith(last_id) or k.endswith(last_id)) and k != last_key}
+                                 if (k.startswith(last_id)
+                                     #or k.endswith(last_id) # Reverse disabled
+                                     ) and k != last_key}
             #log(depth,"Available", available_options.keys(), last_path, last_mon)
 
 
@@ -493,6 +496,10 @@ class Crystal(Model):
 
 
         return branches
+
+    def _build_oligomers(self):
+        for path in self.data["symmetries"]["relevant_paths"]:
+            print(path)
 
 
 
@@ -831,6 +838,10 @@ class Ligand(CrystalElement):
         return "<bi.{} id={}>".format(self.__class__.__name__, self.id)
 
 
+
+class Oligomer(Crystal):
+    def build(self, path):
+        self.path=path
 
 
 

@@ -50,6 +50,7 @@ class BiopythonOverlayClass:
         if not hasattr(self, "data"):
             self.data =  {"info":{
                 "name": "_".join([str(i) for i in self.get_full_id()]),
+                "o_name": "_".join([str(i) for i in self.get_full_id()]),
                 "cls": "",
                 "id": 0,
                 "repr": "",
@@ -57,8 +58,9 @@ class BiopythonOverlayClass:
         self.data["info"]["cls"] = self.__class__.__name__
         self.data["info"]["id"] = id(self)
         self.data["info"]["repr"] = repr(self)
+        os.makedirs(os.path.abspath("./exports"), exist_ok=True)
         if not hasattr(self, "paths"):
-            self.paths = {"export_folder": os.path.abspath("./exports"),
+            self.paths = {"export_folder": os.path.abspath(f"./exports/{self.data["info"]["o_name"]}"),
                           "self":None}
             os.makedirs(self.paths["export_folder"], exist_ok=True)
 
@@ -86,7 +88,7 @@ class BiopythonOverlayClass:
         if filename is None:
             filename = self.data["info"]["name"]
         if folder is None:
-            folder = os.path.join(self.paths["export_folder"], filename.split("_")[0])
+            folder = self.paths["export_folder"]
         structure_format = structure_format.lower()
         assert structure_format in ["pdb", "cif"]
 
@@ -103,8 +105,9 @@ class BiopythonOverlayClass:
         return paths
 
     def _export_structure(self, folder, filename, extension="pdb") -> str|None:
-        filename = "{}.{}".format(filename, extension)
+        filename = "{}.structure.{}".format(filename, extension)
         filepath = os.path.join(folder, filename)
+        self.paths["self"] = filepath
         if extension == "pdb":
             exp = bp.PDBIO()
             exp.set_structure(self)
@@ -124,4 +127,5 @@ class BiopythonOverlayClass:
         exp = {e: self.__getattribute__(e) for e in self.exporting if hasattr(self, e)}
         with open(filepath, "w") as f:
             f.write(json.dumps(exp, indent=4 ))
+        self.paths["data"] = filepath
         return filepath
