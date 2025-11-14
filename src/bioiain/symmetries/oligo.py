@@ -343,6 +343,8 @@ class Crystal(Model):
                     com1 = step_info["vector"]["start"]
                     com2 = step_info["vector"]["end"]
                     position = com2
+                    point_list.append(com1)
+                    point_list.append(com2)
 
                 else:
                     com1 = operation_list[-1]["position"]
@@ -376,9 +378,10 @@ class Crystal(Model):
 
 
                     com2 = coord_add(com1, c2)
+                    point_list.append(com2)
                     position = com2
 
-                    if position in [oi["position"] for oi in operation_list]:
+                    if com2 in point_list:
                         omit = True
                         log(4, "Path does walkback".format(path["steps"]))
                         break
