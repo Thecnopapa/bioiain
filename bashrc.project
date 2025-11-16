@@ -124,7 +124,7 @@ fi
 echo "* Installing pip..."
 conda install -y -q pip
 echo "* Installing requirements..."
-pip install -r -q requirements.txt && echo "* Requirements installed"
+pip install -r requirements.txt && echo "* Requirements installed"
 echo "* Environment up to date!"
 
 
