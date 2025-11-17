@@ -1,15 +1,9 @@
 import os
 import sys
 
-
-
 sys.path.append('..')
-import Bio.PDB as bp
-
-
 
 from src.bioiain.biopython import downloadPDB
-from src.bioiain.biopython.base import BiopythonOverlayClass
 import src.bioiain as bi
 
 import numpy as np

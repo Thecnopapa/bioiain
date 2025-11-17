@@ -206,3 +206,12 @@ close(){
   cd "$OLD_WD" || cd || exit 0
   unset OLD_WD
 }
+
+
+
+
+test(){
+  cd $FOLDER_PATH/test && python test.py
+}
+
+
