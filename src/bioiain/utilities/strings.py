@@ -54,3 +54,12 @@ def string_to_list(line:str, delimiter:str=" ") -> list:
             continue
         nl.append(c)
     return nl
+
+
+def add_front_0(string, digits=2, zero = "0"):
+    ret = ""
+    string = str(string)
+    for i in range(digits-len(string)):
+        ret += zero
+    ret += string
+    return ret

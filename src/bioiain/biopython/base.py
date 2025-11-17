@@ -60,7 +60,7 @@ class BiopythonOverlayClass:
         self.data["info"]["repr"] = repr(self)
         os.makedirs(os.path.abspath("./exports"), exist_ok=True)
         if not hasattr(self, "paths"):
-            self.paths = {"export_folder": os.path.abspath(f"./exports/{self.data["info"]["o_name"]}"),
+            self.paths = {"export_folder": os.path.abspath("./exports/{}".format(self.data["info"]["o_name"])),
                           "self":None}
             os.makedirs(self.paths["export_folder"], exist_ok=True)
 
@@ -125,14 +125,15 @@ class BiopythonOverlayClass:
         filename = "{}.data.json".format(filename)
         filepath = os.path.join(folder, filename)
         exp = {e: self.__getattribute__(e) for e in self.exporting if hasattr(self, e)}
+        self.paths["data"] = filepath
         with open(filepath, "w") as f:
             f.write(json.dumps(exp, indent=4 ))
-        self.paths["data"] = filepath
+
         return filepath
 
     def recover(self):
         if os.path.exists(self.paths["export_folder"]):
-            data_path = os.path.join(self.paths["export_folder"], f"{self.data["info"]["name"]}.data.json")
+            data_path = os.path.join(self.paths["export_folder"], "{}.data.json".format(self.data["info"]["name"]))
             if os.path.exists(data_path):
                 log("debug", "recovering data for: {}".format(self.data["info"]["name"]))
                 old_data = json.load(open(data_path))

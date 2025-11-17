@@ -504,15 +504,17 @@ class Crystal(Model):
 
     def _build_oligomers(self):
         log(1, "Building oligomers ({})".format(self.data["info"]["name"]))
+        oligo_folder = None
         from .oligomer import OligomerBuilder
         if not self.data["symmetries"].get("relevant_paths", False):
             self._find_oligomers()
         for ol in self.data["symmetries"]["relevant_paths"].keys():
             log(2, "O level:", ol)
-            for path in self.data["symmetries"]["relevant_paths"][ol]:
+            for n, path in enumerate(self.data["symmetries"]["relevant_paths"][ol]):
                 oligo = OligomerBuilder()
-                oligo.build(self, path)
-
+                oligo_folder = oligo.build(self, path, number=n)
+        self.paths["oligo_folder"] = oligo_folder
+        return self
 
 
 
@@ -534,11 +536,12 @@ class Path(object):
         self.data["complete"] = True
         self.data["o_level"] = len(self.data["path"])+1
 
-    def add(self, path, contact, reverse=False):
+    def add(self, path, contact, reverse=False ):
         self.length += 1
         self.data["path"].append({
             "key": path,
-            "reverse":reverse
+            "reverse":reverse,
+            "op_n": contact["monomer2"]["operation"],
         })
         self.contacts.append(contact)
 

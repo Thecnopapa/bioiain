@@ -1,3 +1,4 @@
+#python >= 3.13
 setuptools >= 77.0.3
 biopython >= 1.85
 pandas >= 2.2.3

@@ -34,7 +34,7 @@ crystal.set_params(
     oligomer_levels=[2, 4],
 )
 
-crystal.process()
+crystal.process(force="force" in sys.argv)
 
 
 
