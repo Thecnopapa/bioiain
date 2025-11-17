@@ -22,6 +22,7 @@ class Crystal(Model):
         :param kwargs:
         :return: Self.
         """
+        self.force = False
         super()._init(*args, **kwargs)
         self.data["crystal"]["oligomer_levels"] = None
         self.data["crystal"]["min_monomer_length"] = None
@@ -53,19 +54,22 @@ class Crystal(Model):
         Processes the crystal through the main pipeline. Requires set_params() to be run beforehand.
         :return: Self.
         """
-        log(1, "Processing crystal ({})".format(self.data["info"]["name"]))
-        self.pass_down()
-        self.export()
-        self._identyfy_main_elements()
-        self.export()
-        self._cast_main_elements()
-        self.export()
-        self._regenerate_crystal()
-        self.export()
-        self._calculate_oigomerisation_paths()
-        self.export()
-        self._find_oligomers()
-        self.export()
+        self.force = force
+        log(1, "Processing crystal ({}), FORCE:{}".format(self.data["info"]["name"], self.force))
+
+        if self.force:
+            self.pass_down()
+            self.export()
+            self._identyfy_main_elements()
+            self.export()
+            self._regenerate_crystal()
+            self.export()
+            self._calculate_oligomerisation_paths()
+            self.export()
+            self._find_oligomers()
+            self.export()
+        else:
+            self.recover()
         self._build_oligomers()
         self.export()
         return self
@@ -122,6 +126,7 @@ class Crystal(Model):
                 self.ligands.append(chain)
             else:
                 self.monomers.append(chain)
+        self._cast_main_elements()
         return [self.monomers, self.ligands]
 
 
@@ -179,7 +184,11 @@ class Crystal(Model):
         return self
 
 
-    def _calculate_oigomerisation_paths(self, show=False) -> Self:
+    def _calculate_oligomerisation_paths(self, show=False) -> Self:
+        if self.monomers is None:
+            self._identyfy_main_elements()
+            self._regenerate_crystal()
+
         log(1, "Calculating oligomerisation paths ({})".format(self.data["info"]["name"]))
 
         fig, ax = self.plot(show=False)
@@ -236,6 +245,8 @@ class Crystal(Model):
 
 
     def _find_oligomers(self, plot=False) -> Self:
+        if not self.data["symmetries"].get("all_paths", False):
+            self._calculate_oligomerisation_paths()
 
         log(1, "Pathing oligomers ({})".format(self.data["info"]["name"]))
         log(2, "Oligomer levels: {}".format(self.data["crystal"]["oligomer_levels"]))
@@ -492,11 +503,15 @@ class Crystal(Model):
         return branches
 
     def _build_oligomers(self):
+        log(1, "Building oligomers ({})".format(self.data["info"]["name"]))
         from .oligomer import OligomerBuilder
-        for path in self.data["symmetries"]["relevant_paths"]:
-            print(path)
-            oligo = OligomerBuilder()
-            oligo.build(self, path)
+        if not self.data["symmetries"].get("relevant_paths", False):
+            self._find_oligomers()
+        for ol in self.data["symmetries"]["relevant_paths"].keys():
+            log(2, "O level:", ol)
+            for path in self.data["symmetries"]["relevant_paths"][ol]:
+                oligo = OligomerBuilder()
+                oligo.build(self, path)
 
 
 

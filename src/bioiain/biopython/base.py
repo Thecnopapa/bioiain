@@ -129,3 +129,14 @@ class BiopythonOverlayClass:
             f.write(json.dumps(exp, indent=4 ))
         self.paths["data"] = filepath
         return filepath
+
+    def recover(self):
+        if os.path.exists(self.paths["export_folder"]):
+            data_path = os.path.join(self.paths["export_folder"], f"{self.data["info"]["name"]}.data.json")
+            if os.path.exists(data_path):
+                log("debug", "recovering data for: {}".format(self.data["info"]["name"]))
+                old_data = json.load(open(data_path))
+                self.data = self.data | old_data["data"]
+                self.paths = self.paths | old_data["paths"]
+            else:
+                log("debug", "no previous data found for: {}".format(self.data["info"]["name"]))

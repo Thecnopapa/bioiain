@@ -1,4 +1,4 @@
-
+import os
 from typing_extensions import Self
 from copy import deepcopy
 
@@ -29,6 +29,7 @@ class CrystalElement(Chain):
             "paths": None,
         }
         self.sym_elements = []
+        self.paths["export_folder"] = os.path.join(self.paths["export_folder"], "crystal")
 
     def __repr__(self):
         return "<bi.{} id={} op:{}>".format(

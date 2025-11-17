@@ -1,6 +1,7 @@
 
 from .crystal import Crystal, Path
 from ..biopython import Model, Chain
+from ..utilities import log
 
 
 
@@ -23,6 +24,14 @@ class Oligomer(Model):
 class OligomerBuilder(object):
 
     def build(self, crystal:Crystal, path:Path):
-        print(crystal)
-        print(path)
+        log(3, "Building Oligomer")
+        log(4, crystal)
+        log(4, path)
         self.path=path
+        self.model=Model(0)
+        log(4, self.model)
+        self.chains = []
+        starting_chain = self.path["path"][0]["key"][0]
+        log(5, "starting chain:", starting_chain)
+        self.chains.append([c for c in crystal.get_list() if c.id ==starting_chain][0])
+        print(self.chains)
