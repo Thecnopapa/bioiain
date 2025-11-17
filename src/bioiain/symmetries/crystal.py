@@ -386,8 +386,11 @@ class Crystal(Model):
 
                     com2 = coord_add(com1, c2)
                     position = com2
-
-                    if str(com2) in [str(point) for point in point_list]:
+                    ca = "".join([str(round(c, 3)) for c in com2])
+                    cl = ["".join([str(round(c, 3)) for c in cp]) for cp in point_list]
+                    print(ca)
+                    print(cl)
+                    if ca in cl:
                         omit = True
                         log("warning", "Path does walkback".format(path["steps"]))
                         break
