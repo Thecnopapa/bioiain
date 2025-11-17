@@ -62,7 +62,7 @@ class BiopythonOverlayClass:
         if not hasattr(self, "paths"):
             self.paths = {"export_folder": os.path.abspath("./exports/{}".format(self.data["info"]["o_name"])),
                           "self":None}
-            os.makedirs(self.paths["export_folder"], exist_ok=True)
+
 
     def pass_down(self):
         if "child_list" in self.__dict__.keys():

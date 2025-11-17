@@ -387,7 +387,7 @@ class Crystal(Model):
                     com2 = coord_add(com1, c2)
                     position = com2
 
-                    if com2 in point_list:
+                    if str(com2) in [str(point) for point in point_list]:
                         omit = True
                         log("warning", "Path does walkback".format(path["steps"]))
                         break
@@ -436,6 +436,7 @@ class Crystal(Model):
 
             if (not omit) and relevant:
                 log(4, "Saving path...")
+                path["coms"] = point_list
                 if plot:
                     fig_path = os.path.join(self.paths["export_folder"], "figs")
                     os.makedirs(fig_path, exist_ok=True)

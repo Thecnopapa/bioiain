@@ -64,6 +64,7 @@ class CrystalElement(Chain):
         operations = dictio_space_groups[key]["symops"]
 
         frac_element = entity_to_frac(self, params)
+        self.is_frac = True
         frac_element_com = find_com(frac_element.get_atoms())
         self.data["symmetry"]["CoM-frac"] = frac_element_com
         self.data["symmetry"]["CoM-orth"] = find_com(self.get_atoms())
