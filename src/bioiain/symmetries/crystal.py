@@ -38,6 +38,8 @@ class Crystal(Model):
     def set_params(self,
                    min_monomer_length:int,
                    oligomer_levels:int|list[int],
+                   min_contacts,
+                   min_contact_distance,
                    ) -> Self:
         """
         Set parameters for crystal processing.
@@ -47,6 +49,8 @@ class Crystal(Model):
         """
         self.data["crystal"]["min_monomer_length"] = min_monomer_length
         self.data["crystal"]["oligomer_levels"] = oligomer_levels
+        self.data["crystal"]["min_contacts"] = min_contacts
+        self.data["crystal"]["min_contact_distance"] = min_contact_distance
         return self
 
     def process(self, force=False) -> Self:

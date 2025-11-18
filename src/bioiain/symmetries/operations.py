@@ -162,7 +162,8 @@ def entity_to_orth(entity:bp.Entity.Entity, parameters:dict) -> bp.Entity.Entity
     return entity
 
 
-def generate_displaced_copy(original:bp.Entity.Entity, distance:list[float]|float = 99.5, key:int = None, op_n:int = None, offset=[0,0,0]) -> bp.Entity.Entity:
+def generate_displaced_copy(original:bp.Entity.Entity, distance:list[float]|float = 99.5, key:int = None,
+                            op_n:int = None, offset=[0,0,0], copy=True) -> bp.Entity.Entity:
     """
     Create a copy of an Entity displaced a defined distance in-place.
     :param original: Original Entity
@@ -173,7 +174,10 @@ def generate_displaced_copy(original:bp.Entity.Entity, distance:list[float]|floa
     """
     if original is None:
         return None
-    displaced = original.copy()
+    if copy:
+        displaced = original.copy()
+    else:
+        displaced = original
 
     if distance is None:
         distance = [0, 0, 0]

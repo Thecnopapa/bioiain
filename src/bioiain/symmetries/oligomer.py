@@ -1,9 +1,10 @@
 from copy import deepcopy
 
-from . import entity_to_frac, coord_operation_entity, entity_to_orth
+from . import entity_to_frac, coord_operation_entity, entity_to_orth, generate_displaced_copy
 from .crystal import Crystal, Path
 from ..biopython import Model, Chain
-from ..utilities import log, add_front_0
+from ..utilities import log, add_front_0, find_com
+from .operations import coord_add
 
 
 class Oligomer(Model):
@@ -36,25 +37,29 @@ class OligomerBuilder(object):
         self.chains = []
         starting_chain = self.path["path"][0]["key"][0]
         log(5, "starting chain:", starting_chain)
-        self.chains.append([c.copy() for c in crystal.get_list() if c.id ==starting_chain][0])
+        self.chains.append([c for c in crystal.get_list() if c.id ==starting_chain][0].copy())
         #print(self.chains)
         if getattr(self.chains[0], "is_frac", False):
             self.chains[0] = entity_to_orth(self.chains[0], crystal.data["params"])
 
 
         # TODO: Work this out:
-        for n, step in enumerate(self.path["path"]):
+        z = list(zip(self.path["path"], self.path["coms"][2:]))
+        for n, (step, com) in enumerate(z):
+            print(n, step, com)
             chain_id = step["key"][-1]
-            chain = [c.copy() for c in crystal.get_list() if c.id == chain_id][0]
+            chain = [c for c in crystal.get_list() if c.id == chain_id][0].copy()
             chain.id = str(n)
             if not getattr(chain,"is_frac", False):
                 entity_to_frac(chain, crystal.data["params"])
-            for sstep in self.path["path"][:n]:
+            for sstep in self.path["path"][n:n]:
                 coord_operation_entity(chain,
                                        key=crystal.data["crystal"]["group_key"],
                                        op_n=sstep["op_n"]
                                        )
-
+            new_com = find_com(chain)
+            delta = coord_add(com,new_com, True)
+            generate_displaced_copy(chain, delta, copy=False)
             entity_to_orth(chain, crystal.data["params"])
             self.chains.append(chain)
 
