@@ -38,8 +38,8 @@ class Crystal(Model):
     def set_params(self,
                    min_monomer_length:int,
                    oligomer_levels:int|list[int],
-                   min_contacts,
-                   min_contact_distance,
+                   min_contacts:int=10,
+                   contact_threshold:float|int=15,
                    ) -> Self:
         """
         Set parameters for crystal processing.
@@ -50,7 +50,7 @@ class Crystal(Model):
         self.data["crystal"]["min_monomer_length"] = min_monomer_length
         self.data["crystal"]["oligomer_levels"] = oligomer_levels
         self.data["crystal"]["min_contacts"] = min_contacts
-        self.data["crystal"]["min_contact_distance"] = min_contact_distance
+        self.data["crystal"]["contact_threshold"] = contact_threshold
         return self
 
     def process(self, force=False) -> Self:
@@ -176,12 +176,18 @@ class Crystal(Model):
         log(2, "Monomers ({})".format(len(self.monomers)))
         for monomer in self.monomers:
             log("debug", "Monomer: {}".format(monomer.data["info"]["name"]))
-            sym_monomers.extend(monomer.generate_symmetries(self, contacts=True))
+            sym_monomers.extend(monomer.generate_symmetries(self,
+                                                            threshold=self.data["crystal"]["contact_threshold"],
+                                                            min_contacts=self.data["crystal"]["min_contacts"],
+                                                            contacts=True))
         [script.load_entity(entity_to_orth(m.copy(), params)) for m in sym_monomers]
 
         log(2, "Ligands ({})".format(len(self.ligands)))
         for ligand in self.ligands:
-            sym_ligands.extend(ligand.generate_symmetries(self, contacts=False))
+            sym_ligands.extend(ligand.generate_symmetries(self,
+                                                          threshold=self.data["crystal"]["contact_threshold"],
+                                                          min_contacts=self.data["crystal"]["min_contacts"],
+                                                          contacts=False))
         [script.load_entity(entity_to_orth(l.copy(), params)) for l in sym_ligands]
 
         script.write_script()
@@ -550,6 +556,7 @@ class Path(object):
             "key": path,
             "reverse":reverse,
             "op_n": contact["monomer2"]["operation"],
+            "pos": contact["position"],
         })
         self.contacts.append(contact)
 

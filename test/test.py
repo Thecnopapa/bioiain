@@ -32,6 +32,8 @@ crystal = structure.get_crystals()
 crystal.set_params(
     min_monomer_length=50,
     oligomer_levels=[2, 4],
+    min_contacts=10,
+    contact_threshold=15,
 )
 
 crystal.process(force="force" in sys.argv)

@@ -35,7 +35,8 @@ def coord_add(coord:list[float], deltas:list[float], subtract:bool = False) -> l
     return [nx, ny, nz]
 
 
-def coord_operation(coord:list[float], key:int, op_n:int, distance:list[float]|None = None, reverse=False, offset=[0,0,0]) -> list:
+def coord_operation(coord:list[float], key:int=None, op_n:int=None, distance:list[float]|None = None, reverse=False,
+                    offset=[0,0,0], operation=None) -> list:
     """
     Perform a symmetry operation on a coordinate.
     :param coord: Coordinate (X, Y, Z)
@@ -53,8 +54,10 @@ def coord_operation(coord:list[float], key:int, op_n:int, distance:list[float]|N
     if distance is None:
         distance = [0,0,0]
 
-    rotation = dictio_space_groups[key]
-    operation = rotation["symops"][op_n]
+
+    if operation is None:
+        rotation = dictio_space_groups[key]
+        operation = rotation["symops"][op_n]
     rot = operation["rot"]
     tra = operation["tra"]
 
@@ -81,7 +84,8 @@ def coord_operation(coord:list[float], key:int, op_n:int, distance:list[float]|N
     return [nx, ny, nz]
 
 
-def coord_operation_entity(entity:bp.Entity.Entity, key:int, op_n:int, distance:list[float] = (0,0,0), offset=[0,0,0]) -> bp.Entity.Entity:
+def coord_operation_entity(entity:bp.Entity.Entity, key:int=None, op_n:int=None, distance:list[float] = (0,0,0),
+                           offset=[0,0,0], operation=None) -> bp.Entity.Entity:
     """
     Perform a symmetry operation on an Entity in-place.
     :param entity: Entity to perform symmetry operation on
@@ -93,8 +97,8 @@ def coord_operation_entity(entity:bp.Entity.Entity, key:int, op_n:int, distance:
     for atom in entity.get_atoms():
         if atom.is_disordered() > 0:
             for d_atom in atom:
-                d_atom.coord = coord_operation(d_atom.coord, key, op_n, distance =distance, offset=offset)
-        atom.coord = coord_operation(atom.coord, key, op_n, distance=distance, offset=offset)
+                d_atom.coord = coord_operation(d_atom.coord, key, op_n, distance =distance, offset=offset, operation=operation)
+        atom.coord = coord_operation(atom.coord, key, op_n, distance=distance, offset=offset, operation=operation)
     return entity
 
 

@@ -5,6 +5,7 @@ from .crystal import Crystal, Path
 from ..biopython import Model, Chain
 from ..utilities import log, add_front_0, find_com
 from .operations import coord_add
+from ..utilities import vector, rotation_matrix_from_vectors
 
 
 class Oligomer(Model):
@@ -25,6 +26,8 @@ class Oligomer(Model):
 class OligomerBuilder(object):
 
     def build(self, crystal:Crystal, path:Path, number:int):
+        if not(number == 3 and path["o_level"] == 4):
+            return None
         log(3, "Building Oligomer number {}".format(number))
         log(4, crystal)
         log(4, path)
@@ -52,11 +55,35 @@ class OligomerBuilder(object):
             chain.id = str(n)
             if not getattr(chain,"is_frac", False):
                 entity_to_frac(chain, crystal.data["params"])
-            for sstep in self.path["path"][n:n]:
-                coord_operation_entity(chain,
-                                       key=crystal.data["crystal"]["group_key"],
-                                       op_n=sstep["op_n"]
-                                       )
+
+            old_vec = vector(crystal.data["symmetries"]["all_paths"][step["key"]]["vector"]["start"],
+                             crystal.data["symmetries"]["all_paths"][step["key"]]["vector"]["end"])
+            new_vec = vector(self.path["coms"][n+1], com)
+
+            print("old_vec", old_vec)
+            print("new_vec", new_vec)
+
+            rot_mat = rotation_matrix_from_vectors(old_vec, new_vec)
+            print(rot_mat)
+            operation = {
+                "rot": rot_mat,
+                "tra": [0,0,0],
+            }
+            coord_operation_entity(chain,
+                                   key=crystal.data["crystal"]["group_key"],
+                                   op_n=step["op_n"],
+                                   )
+            coord_operation_entity(chain,operation=operation)
+
+
+
+            # for sstep in self.path["path"][n:n]:
+            #     coord_operation_entity(chain,
+            #                            key=crystal.data["crystal"]["group_key"],
+            #                            op_n=sstep["op_n"],
+            #                            offset=sstep["position"],
+            #                            )
+
             new_com = find_com(chain)
             delta = coord_add(com,new_com, True)
             generate_displaced_copy(chain, delta, copy=False)
@@ -78,6 +105,8 @@ class OligomerBuilder(object):
         oligomer.pass_down()
         oligomer.export()
         log(4, oligomer)
+        if number == 3 and path["o_level"] == 4:
+            exit()
         return oligomer.paths["export_folder"]
 
 
