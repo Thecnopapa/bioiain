@@ -26,8 +26,8 @@ class Oligomer(Model):
 class OligomerBuilder(object):
 
     def build(self, crystal:Crystal, path:Path, number:int):
-        if not(number == 3 and path["o_level"] == 4):
-            return None
+        #if not(number == 3 and path["o_level"] == 4):
+        #    return None
         log(3, "Building Oligomer number {}".format(number))
         log(4, crystal)
         log(4, path)
@@ -69,10 +69,10 @@ class OligomerBuilder(object):
                 "rot": rot_mat,
                 "tra": [0,0,0],
             }
-            coord_operation_entity(chain,
-                                   key=crystal.data["crystal"]["group_key"],
-                                   op_n=step["op_n"],
-                                   )
+            # coord_operation_entity(chain,
+            #                        key=crystal.data["crystal"]["group_key"],
+            #                        op_n=step["op_n"],
+            #                        )
             coord_operation_entity(chain,operation=operation)
 
 
@@ -105,8 +105,6 @@ class OligomerBuilder(object):
         oligomer.pass_down()
         oligomer.export()
         log(4, oligomer)
-        if number == 3 and path["o_level"] == 4:
-            exit()
         return oligomer.paths["export_folder"]
 
 
