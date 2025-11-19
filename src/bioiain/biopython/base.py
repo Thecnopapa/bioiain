@@ -10,6 +10,18 @@ from typing_extensions import Self
 
 class BiopythonOverlayClass:
     child_class = None
+
+    def _getitem(self, item):
+        l = [c for c in self.child_dict.values() if c.id == item]
+        if len(l) == 0:
+            raise KeyError(item)
+        elif len(l) == 1:
+            return l[0]
+        else:
+            raise Exception("Multiple children with matching id")
+
+
+
     @classmethod
     def cast(cls, entity:bp.Entity.Entity|Self):
         """
