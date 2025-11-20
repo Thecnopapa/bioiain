@@ -125,10 +125,23 @@ def ss_to_index(ss):
     """
     if ss == "H":
         return 0
-    if ss == "E":
+    if ss == "B":
         return 1
-    if ss == "C":
+    if ss == "E":
         return 2
+    if ss == "G":
+        return 3
+    if ss == "I":
+        return 4
+    if ss == "T":
+        return 5
+    if ss == "S":
+        return 6
+    if ss == "-":
+        return 7
+    from .logging import log
+    log("warning", "SS not recognised:", ss)
+    return 7
     assert 0
 
 
