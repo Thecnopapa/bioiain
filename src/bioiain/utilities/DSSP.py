@@ -140,7 +140,7 @@ def ss_to_index(ss):
     if ss == "-":
         return 7
     from .logging import log
-    log("warning", "SS not recognised:", ss)
+    #log("warning", "SS not recognised:", ss)
     return 7
     assert 0
 
