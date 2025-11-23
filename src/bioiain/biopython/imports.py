@@ -62,7 +62,10 @@ def downloadPDB(data_dir:str, list_name:str, pdb_list:list=None, file_path:str =
                     pdb_list.append(n)
     pdb_list = sorted(list(set([p.upper() for p in pdb_list])))
 
-    log("debug", "Codes:", pdb_list)
+    if len(pdb_list) <= 10:
+        log("debug", "Codes:", pdb_list)
+    else:
+        log("debug", "Codes:", len(pdb_list))
 
     os.makedirs(data_dir, exist_ok=True)
     list_folder = os.path.join(data_dir, list_name)
@@ -121,7 +124,7 @@ def recover(name, export_folder="./exports", download_dir="./data", download=Tru
             with open(json_path, "r") as f:
                 data = json.load(f)
             #print(data)
-            
+
             structure = loadPDB(data["paths"]["original"])
             for k, v in data.items():
                 setattr(structure, k, v)
