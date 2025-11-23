@@ -137,11 +137,40 @@ def ss_to_index(ss):
         return 5
     if ss == "S":
         return 6
-    if ss == "-":
+    if ss == "-" or ss == " " or ss=="#":
         return 7
     from .logging import log
     #log("warning", "SS not recognised:", ss)
     return 7
+    assert 0
+
+
+def index_to_ss(ss):
+    """Secondary structure symbol to index.
+
+    H=0
+    E=1
+    C=2
+    """
+    if ss == 0:
+        return "H"
+    if ss == 1:
+        return "B"
+    if ss == 2:
+        return "E"
+    if ss == 3:
+        return "G"
+    if ss == 4:
+        return "I"
+    if ss == 5:
+        return "T"
+    if ss == 6:
+        return "S"
+    if ss == 7:
+        return "#"
+    from .logging import log
+    #log("warning", "SS not recognised:", ss)
+    return "-"
     assert 0
 
 
