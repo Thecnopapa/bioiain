@@ -6,7 +6,7 @@ from ..biopython.base import BiopythonOverlayClass
 
 
 
-pymol_colours = ['lightgreen', 'cyan', 'red', 'yellow', 'violet','blue',
+pymol_colours = ['green', 'cyan', 'red', 'yellow', 'violet','blue',
                'salmon', 'lime', 'pink', 'slate', 'magenta', 'orange', 'marine',
                'olive', 'purple', 'teal', 'forest', 'firebrick', 'chocolate',
                'wheat', 'white', 'grey']
@@ -136,7 +136,7 @@ class PymolScript(object):
                 arg_str = self.args
             else:
                 arg_str = ", ".join(self.args)
-            kwarg_str = ", ".join(["{}={}" for k, v in self.kwargs.items()])
+            kwarg_str = ", ".join([f"{k}={v}" for k, v in self.kwargs.items()])
             c = "{}({},{})".format(self.fun, arg_str, kwarg_str)
             if self.is_cmd:
                 c = "cmd."+ c
@@ -236,6 +236,30 @@ class PymolScript(object):
             name = prefix
         args = [self._to_str(name), sele]
         return self.add(fun, *args, **kwargs)
+
+
+    def color(self, sele:str, color:str|int="black", **kwargs) -> Command:
+        fun = "color"
+        sele = self._to_str(sele)
+        if type(color) is int:
+            color = pymol_colours[len(pymol_colours) % (color+1)]
+        color = self._to_str(color)
+        args = [color, sele]
+
+        return self.add(fun, *args, **kwargs)
+
+    def spectrum(self, sele: str, spectrum: str = "b", color="rainbow", **kwargs) -> Command:
+        fun = "spectrum"
+        sele = self._to_str(sele)
+        spectrum = self._to_str(spectrum)
+        color = self._to_str(color)
+        args = [spectrum, color, sele]
+        #kwargs["spectrum"] = spectrum
+
+        return self.add(fun, *args, **kwargs)
+
+
+
 
 
     """def pymol_group(identifier="sym", name=None, quiet=False):
