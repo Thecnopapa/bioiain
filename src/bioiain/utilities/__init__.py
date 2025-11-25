@@ -1,4 +1,4 @@
-__all__ = ["logging", "strings", "entities", "maths"]
+__all__ = ["logging", "strings", "entities", "maths", "sequences"]
 
 
 from .logging import log

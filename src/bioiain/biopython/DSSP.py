@@ -127,22 +127,22 @@ def ss_to_index(ss):
         return 0
     if ss == "B":
         return 1
-    if ss == "E":
-        return 2
     if ss == "G":
-        return 3
+        return 2
     if ss == "I":
+        return 3
+    if ss == "P":
         return 4
-    if ss == "T":
+    if ss == "E":
         return 5
-    if ss == "S":
+    if ss == "T":
         return 6
-    if ss == "-" or ss == " " or ss=="#":
+    if ss == "S":
         return 7
-    from .logging import log
-    #log("warning", "SS not recognised:", ss)
-    return 7
-    assert 0
+    if ss == "-" or ss == " " or ss=="#":
+        return 8
+    return 8
+
 
 
 def index_to_ss(ss):
@@ -157,21 +157,20 @@ def index_to_ss(ss):
     if ss == 1:
         return "B"
     if ss == 2:
-        return "E"
-    if ss == 3:
         return "G"
-    if ss == 4:
+    if ss == 3:
         return "I"
+    if ss == 4:
+        return "P"
     if ss == 5:
-        return "T"
+        return "E"
     if ss == 6:
-        return "S"
+        return "T"
     if ss == 7:
+        return "S"
+    if ss == 8:
         return "#"
-    from .logging import log
-    #log("warning", "SS not recognised:", ss)
     return "-"
-    assert 0
 
 
 def dssp_dict_from_pdb_file(in_file, DSSP="dssp", dssp_version="3.9.9"):
