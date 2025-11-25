@@ -5,3 +5,4 @@ from .logging import log
 from .strings import *
 from .entities import *
 from .maths import *
+from .sequences import *
