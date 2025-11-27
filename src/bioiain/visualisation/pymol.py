@@ -84,7 +84,10 @@ class PymolScript(object):
         cmd = [self.pymol_path, self.path]
 
         logging.log("debug", "$ " + " ".join(cmd))
-        subprocess.run(cmd)
+        try:
+            subprocess.run(cmd)
+        except Exception as e:
+            print(e)
 
 
     def add(self, fun, *args, **kwargs) -> Command:
