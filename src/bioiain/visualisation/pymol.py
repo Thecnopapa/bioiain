@@ -20,15 +20,14 @@ def quick_display(entity:BiopythonOverlayClass|list[BiopythonOverlayClass]) -> s
     :param entity: Entity or list of entities.
     :return: Path to the generated script.
     """
-    script = PymolScript("quick_display")
-    os.makedirs("./.temp", exist_ok=True)
+    script = PymolScript("quick_display", folder=".temp")
 
     if type(entity) is not list:
         entity = [entity]
     for n, entity in enumerate(entity):
         name = "{}_{}".format(n, entity.id)
         script.load_entity(entity, name, overwrite=False)
-    script.write_script("./.temp")
+    script.write_script(".temp")
     script.execute()
     return script.path
 
@@ -43,7 +42,7 @@ class PymolScript(object):
     :param name: Name of the script. Will de set as a filename. Default is ".temp_pymol_script".
     :return: PymolScript Object.
     """
-    def __init__(self, name="temp_pymol_script", folder:str="./temp", pymol_path = "pymol"):
+    def __init__(self, name="temp_pymol_script", folder:str=".temp", pymol_path = "pymol"):
         self.pymol_path = pymol_path
         self._bioiain = "bioiain"
         self.name = name
