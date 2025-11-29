@@ -66,9 +66,9 @@ def add_front_0(string, digits=2, zero = "0"):
 
 
 
-def str_to_list_with_literals(str, delimiter=" ", literal_delimiters=["\"","\'"], keep_delimiters=True, remove=["\n"]):
+def str_to_list_with_literals(str, delimiter=" ", literal_delimiters=["\"","\'"], keep_delimiters=False, remove=["\n"]):
     out = []
-    #print("#####")
+
     for r in remove:
         str = str.replace(r, "")
     strings = str.split(delimiter)
@@ -76,41 +76,40 @@ def str_to_list_with_literals(str, delimiter=" ", literal_delimiters=["\"","\'"]
     in_literal = False
     literal_delim = None
     literal = None
+
     for s in strings:
         if s == "":
-            #print(repr(s), in_literal)
             if in_literal:
-                s = delimiter
-            else:
-                continue
+                literal += delimiter
+                print(repr(literal))
+            continue
 
         if s[0] in literal_delimiters:
             in_literal = True
             literal_delim = s[0]
             if not keep_delimiters:
                 s = s[1:]
-            literal = s
-            continue
+            literal = ""
+
 
         if s[-1] == literal_delim:
-            in_literal = False
             literal_delim = None
             if not keep_delimiters:
                 s = s[:-1]
-            literal += s
-            #out.append(literal)
-            #continue
+
 
         if in_literal:
-            literal += s
-
-        #print(s)
-        if s in remove:
+            literal += delimiter+s
+        else:
+            if s in remove:
+                continue
+            out.append(s)
             continue
 
-        out.append(s)
-    #print(out)
-    #print("^^^^^^^")
+        if in_literal and literal_delim is None:
+            in_literal = False
+            out.append(literal)
+
     return out
 
 
