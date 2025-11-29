@@ -200,7 +200,7 @@ def read_mmcif(file_path, subset:list|str=None, exclude:list|str=None) -> dict:
                     #print(repr(line))
                     #print(repr(line[-3:-3]))
                     multi_line = False
-                    if in_loop:
+                    if not in_loop:
                         v.append(multi_cached)
                         print("MULTI LINE END")
                     else:
