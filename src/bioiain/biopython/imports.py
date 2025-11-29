@@ -154,6 +154,7 @@ def read_mmcif(file_path, subset:list|str=None, exclude:list|str=None) -> dict:
         multi_line = False
         multi_cached = None
         multi_delimiters = ["\'","\"",";"]
+        looping = False
         while not eof:
             n+=1
             line = next_line
@@ -172,6 +173,7 @@ def read_mmcif(file_path, subset:list|str=None, exclude:list|str=None) -> dict:
                 else:
                     print("SECTION END")
                 in_loop = False
+                looping = False
                 group_key = None
                 continue
 
@@ -202,6 +204,7 @@ def read_mmcif(file_path, subset:list|str=None, exclude:list|str=None) -> dict:
                         v.append(multi_cached)
                         print("MULTI LINE END")
                     else:
+                        loop_values[-1].append(multi_cached)
                         print("MULTI LINE END (in-loop)")
                     multi_cached = None
 
@@ -250,16 +253,28 @@ def read_mmcif(file_path, subset:list|str=None, exclude:list|str=None) -> dict:
 
 
             else: # IN LOOP
-                if line.startswith("_"):
+                if line.startswith("_") and not looping:
                     group_key.append(line.split(".")[0])
                     loop_keys.append(line.split(" ")[0].split(".")[1])
                     continue
                 else:
+                    looping = True
                     if next_line[0] in multi_delimiters:
                         print("MULTI LINE START (in-loop)")
                         multi_line = True
                         continue
-                    loop_values.append(line)
+                    print(line)
+                    loop_values.append(str_to_list_with_literals(line))
+                    if next_line[0] == "#":
+                        loop_list = []
+                        for l in loop_values:
+                            print(list(set(group_key)))
+                            print(loop_keys)
+                            print(l)
+                            print(json.dumps(loop_values, indent=4))
+                            assert len(l) == len(loop_keys)
+                            d = {k:v for k, v in zip(loop_keys, l)}
+
 
     json.dump(data, open("out.json", "w"), indent=4)
 
