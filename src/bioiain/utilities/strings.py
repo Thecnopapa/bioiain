@@ -63,3 +63,56 @@ def add_front_0(string, digits=2, zero = "0"):
         ret += zero
     ret += string
     return ret
+
+
+
+def str_to_list_with_literals(str, delimiter=" ", literal_delimiters=["\"","\'"], keep_delimiters=True, remove=["\n"]):
+    out = []
+    #print("#####")
+    for r in remove:
+        str = str.replace(r, "")
+    strings = str.split(delimiter)
+
+    in_literal = False
+    literal_delim = None
+    literal = None
+    for s in strings:
+        if s == "":
+            #print(repr(s), in_literal)
+            if in_literal:
+                s = delimiter
+            else:
+                continue
+
+        if s[0] in literal_delimiters:
+            in_literal = True
+            literal_delim = s[0]
+            if not keep_delimiters:
+                s = s[1:]
+            literal = s
+            continue
+
+        if s[-1] == literal_delim:
+            in_literal = False
+            literal_delim = None
+            if not keep_delimiters:
+                s = s[:-1]
+            literal += s
+            #out.append(literal)
+            #continue
+
+        if in_literal:
+            literal += s
+
+        #print(s)
+        if s in remove:
+            continue
+
+        out.append(s)
+    #print(out)
+    #print("^^^^^^^")
+    return out
+
+
+
+

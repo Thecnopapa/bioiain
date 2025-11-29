@@ -141,24 +141,24 @@ def recover(name, export_folder="./exports", download_dir="./data", download=Tru
 
 
 def read_mmcif(file_path, subset:list|str=None, exclude:list|str=None) -> dict:
+    from ..utilities.strings import str_to_list_with_literals
     data = {}
     with open(file_path, "r") as f:
         n = -1
         in_loop = False
         group_key = None
-        loop_keys = []
-        loop_values = []
+        loop_keys = None
+        loop_values = None
         next_line = None
-        line = None
         eof = False
         multi_line = False
         multi_cached = None
-        multi_delimiters = ["\'","\"", ";"]
+        multi_delimiters = ["\'","\"",";"]
         while not eof:
             n+=1
             line = next_line
             next_line = next(f, None)
-            print(f"{n}>>{repr(line)}<<")
+            #print(f"{n}>>{repr(line)}<<")
 
 
 
@@ -167,6 +167,10 @@ def read_mmcif(file_path, subset:list|str=None, exclude:list|str=None) -> dict:
             if next_line is None:
                 eof = True
             if line.startswith("#"):
+                if in_loop:
+                    print("LOOP END")
+                else:
+                    print("SECTION END")
                 in_loop = False
                 group_key = None
                 continue
@@ -175,44 +179,89 @@ def read_mmcif(file_path, subset:list|str=None, exclude:list|str=None) -> dict:
                 in_loop = True
                 loop_keys = []
                 loop_values = []
-            if not in_loop:
-                if multi_line:
-                    if multi_cached is None:
-                        multi_cached = ""
-                    if line != "\n":
-                        print(repr(line))
-                        if line[-3:-3] not in multi_delimiters:
-                            multi_line = False
-                            if not in_loop:
-                                v.append(multi_cached)
-                            print("MULTI LINE END")
-                            multi_cached = None
+                group_key = []
+                print("LOOP START")
+                continue
 
+            if multi_line:
+                #print(multi_line)
+                if multi_cached is None:
+                    multi_cached = ""
+                if line == "\n":
+                    multi_cached += line
+                    continue
+                # print(repr(line))
+                # print([l for l in line])
+                # if line.startswith(";\n"):
+                #     break
+                if line[-2] in multi_delimiters:
+                    #print(repr(line))
+                    #print(repr(line[-3:-3]))
+                    multi_line = False
+                    if in_loop:
+                        v.append(multi_cached)
+                        print("MULTI LINE END")
                     else:
-                        if line[0] in multi_delimiters:
-                            line = line[1:]
-                        multi_cached += line
-                        continue
+                        print("MULTI LINE END (in-loop)")
+                    multi_cached = None
 
                 else:
-                    if len(line.split(" ")) <= 1:
+                    if line[0] in multi_delimiters:
+                        multi_cached += line[1:]
+                    else:
+                        multi_cached += line
+
+
+
+            if not in_loop:
+
+                if not multi_line:
+                    #print(line)
+                    line_list = str_to_list_with_literals(line)
+                    #print(repr(line_list))
+                    if len(line_list) == 0:
                         continue
-                    group_key = line.split(".")[0]
-                    k = line.split(" ")[0].split(".")[1]
-                    v = [l for l in line.split(" ") if l not in ["", "\n"]][1:]
+                    group_key = line_list[0].split(".")[0]
+                    try:
+                        k = line_list[0].split(".")[1]
+                    except IndexError:
+
+                        k = group_key
+                        group_key = None
+
+                    if len(line_list) == 1:
+                        v = []
+                    else:
+                        v = line_list[1:]
 
                 if next_line[0] in multi_delimiters:
                     print("MULTI LINE START")
                     multi_line = True
                     continue
 
-                if group_key not in data.keys():
-                    data[group_key] = {}
-                data[group_key][k] = v
-            else:
-                pass
-    json.dump(data, open("out.json", "w"), indent=4)
+                if group_key is None:
+                    print(repr(line))
+                    print(line_list)
+                    log("warning", "no key-value structure found in:", repr(line))
+                if not multi_line:
+                    if group_key not in data.keys():
+                        data[group_key] = {}
+                    data[group_key][k] = " ".join(v)
 
+
+            else: # IN LOOP
+                if line.startswith("_"):
+                    group_key.append(line.split(".")[0])
+                    loop_keys.append(line.split(" ")[0].split(".")[1])
+                    continue
+                else:
+                    if next_line[0] in multi_delimiters:
+                        print("MULTI LINE START (in-loop)")
+                        multi_line = True
+                        continue
+                    loop_values.append(line)
+
+    json.dump(data, open("out.json", "w"), indent=4)
 
 
 
