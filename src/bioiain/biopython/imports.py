@@ -140,3 +140,79 @@ def recover(name, export_folder="./exports", download_dir="./data", download=Tru
     return None
 
 
+def read_mmcif(file_path, subset:list|str=None, exclude:list|str=None) -> dict:
+    data = {}
+    with open(file_path, "r") as f:
+        n = -1
+        in_loop = False
+        group_key = None
+        loop_keys = []
+        loop_values = []
+        next_line = None
+        line = None
+        eof = False
+        multi_line = False
+        multi_cached = None
+        multi_delimiters = ["\'","\"", ";"]
+        while not eof:
+            n+=1
+            line = next_line
+            next_line = next(f, None)
+            print(f"{n}>>{repr(line)}<<")
+
+
+
+            if line is None:
+                continue
+            if next_line is None:
+                eof = True
+            if line.startswith("#"):
+                in_loop = False
+                group_key = None
+                continue
+
+            if line.startswith("loop_"):
+                in_loop = True
+                loop_keys = []
+                loop_values = []
+            if not in_loop:
+                if multi_line:
+                    if multi_cached is None:
+                        multi_cached = ""
+                    if line != "\n":
+                        print(repr(line))
+                        if line[-3:-3] not in multi_delimiters:
+                            multi_line = False
+                            if not in_loop:
+                                v.append(multi_cached)
+                            print("MULTI LINE END")
+                            multi_cached = None
+
+                    else:
+                        if line[0] in multi_delimiters:
+                            line = line[1:]
+                        multi_cached += line
+                        continue
+
+                else:
+                    if len(line.split(" ")) <= 1:
+                        continue
+                    group_key = line.split(".")[0]
+                    k = line.split(" ")[0].split(".")[1]
+                    v = [l for l in line.split(" ") if l not in ["", "\n"]][1:]
+
+                if next_line[0] in multi_delimiters:
+                    print("MULTI LINE START")
+                    multi_line = True
+                    continue
+
+                if group_key not in data.keys():
+                    data[group_key] = {}
+                data[group_key][k] = v
+            else:
+                pass
+    json.dump(data, open("out.json", "w"), indent=4)
+
+
+
+
