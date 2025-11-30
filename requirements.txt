@@ -7,3 +7,6 @@ matplotlib >= 3.10.7
 typing-extensions >= 4.15.0
 requests >= 2.32.5
 unidecode >= 1.4.0
+
+
+pdoc3
