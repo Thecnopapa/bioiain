@@ -293,6 +293,8 @@ def read_mmcif(file_path, subset:list|str=None, exclude:list|str=None) -> dict:
                         if len(loop_values) > 0:
                             if len(loop_values[-1]) < len(loop_keys):
                                 loop_values[-1].extend(str_to_list_with_literals(line))
+                            else:
+                                loop_values.append(str_to_list_with_literals(line))
                         else:
                             loop_values.append(str_to_list_with_literals(line))
                     else:
@@ -307,13 +309,18 @@ def read_mmcif(file_path, subset:list|str=None, exclude:list|str=None) -> dict:
                 print(line)
                 if next_line[0] == "#":
                     loop_list = []
+                    assert len(set(group_key)) == 1
+                    group_key = group_key[0]
+                    if group_key not in data.keys():
+                        data[group_key] = []
                     for l in loop_values:
-                        print(list(set(group_key)))
+                        print(group_key)
                         print(loop_keys)
                         print(json.dumps(l, indent=4))
                         print(len(l), len(loop_keys))
                         assert len(l) == len(loop_keys)
                         d = {k:v for k, v in zip(loop_keys, l)}
+                        data[group_key].append(d)
 
 
     json.dump(data, open("out.json", "w"), indent=4)
