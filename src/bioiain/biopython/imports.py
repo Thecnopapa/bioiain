@@ -160,19 +160,11 @@ def read_mmcif(file_path, subset:list|str=None, exclude:list|str=None) -> dict:
             n+=1
             line = next_line
             next_line = next(f, None)
-            #print(f"{n}>>{repr(line)}<<")
-
-
-
             if line is None:
                 continue
             if next_line is None:
                 eof = True
             if line.startswith("#"):
-                if in_loop:
-                    print("LOOP END")
-                else:
-                    print("SECTION END")
                 in_loop = False
                 looping = False
                 group_key = None
@@ -184,37 +176,26 @@ def read_mmcif(file_path, subset:list|str=None, exclude:list|str=None) -> dict:
                 loop_keys = []
                 loop_values = []
                 group_key = []
-                print("LOOP START")
                 continue
 
             if multi_line:
-                #print(multi_line)
                 if multi_cached is None:
                     multi_cached = ""
                 if line == "\n":
                     multi_cached += line
                     continue
-                print("multi line",multi_line)
-                print("loop", in_loop)
-                print("line[-2]", line[-2])
                 if type(multi_cached) is list:
                     line_list, open_lit = str_to_list_with_literals(line, check_open_literal=True )
                 if line[-2] in multi_delimiters:
-                    #print(repr(line))
-                    #print(repr(line[-3:-3]))
                     line = line[-3:]
                     multi_line = False
                     multi_delimiter = None
                     if not in_loop:
                         v.append(multi_cached)
                         multi_cached = None
-                        print("MULTI LINE END")
                         continue
                     else:
-                        print(loop_values)
                         loop_values[-1].append(multi_cached)
-                        print(loop_values[-1])
-                        print("MULTI LINE END (in-loop)")
 
 
                 else:
@@ -231,16 +212,14 @@ def read_mmcif(file_path, subset:list|str=None, exclude:list|str=None) -> dict:
                         else:
                             multi_cached.extend(line_list)
                     else:
-                        raise TypeError("multi line")
+                        raise TypeError("Bioiain mmcif Parser error")
 
 
 
             if not in_loop:
 
                 if not multi_line:
-                    print(line)
                     line_list, open_lit = str_to_list_with_literals(line, check_open_literal=True)
-                    print(repr(line_list))
                     if len(line_list) == 0:
                         continue
                     group_key = line_list[0].split(".")[0]
@@ -256,28 +235,25 @@ def read_mmcif(file_path, subset:list|str=None, exclude:list|str=None) -> dict:
                     else:
                         v = line_list[1:]
                 if open_lit:
-                    print("MULTI LINE START ((open literal)")
                     multi_line = True
                     multi_cache = line_list[-1]
                     multi_delimiter = line_list[-1][0]
                 if next_line[0] in multi_delimiters and not multi_line:
-                    print("MULTI LINE START")
                     multi_line = True
                     multi_delimiter = next_line[0]
                     continue
 
                 if group_key is None:
-                    print("multi line", multi_line)
-                    print("line",repr(line))
-                    print("line_list",line_list)
-                    print(n)
-                    log("warning", "no key-value structure found in:", repr(line))
-                    input("Press any key to continue...")
+                    #print("multi line", multi_line)
+                    #print("line",repr(line))
+                    #print("line_list",line_list)
+                    #print(n)
+                    log("warning", f"no key-value structure found in line {n}:", repr(line))
                 if not multi_line:
 
                     if group_key not in data.keys():
                         data[group_key] = {}
-                    print(f"{group_key}.{k} ->", " ".join(v))
+                    #print(f"{group_key}.{k} ->", " ".join(v))
                     data[group_key][k] = " ".join(v)
 
 
@@ -300,28 +276,22 @@ def read_mmcif(file_path, subset:list|str=None, exclude:list|str=None) -> dict:
                     else:
                         multi_cached = None
                 if (next_line[0] in multi_delimiters) and (not multi_line):
-                    print(f"{n}: MULTI LINE START (in-loop)")
                     multi_line = True
                     multi_delimiter = next_line[0]
                     multi_cache = []
                     continue
 
-                print(line)
                 if next_line[0] == "#":
-                    loop_list = []
                     assert len(set(group_key)) == 1
                     group_key = group_key[0]
                     if group_key not in data.keys():
                         data[group_key] = []
                     for l in loop_values:
-                        print(group_key)
-                        print(loop_keys)
-                        print(json.dumps(l, indent=4))
-                        print(len(l), len(loop_keys))
+
                         assert len(l) == len(loop_keys)
                         d = {k:v for k, v in zip(loop_keys, l)}
                         data[group_key].append(d)
-
+                    #print(f"{group_key} ->", f"list of length: {len(loop_values)}")
 
     json.dump(data, open("out.json", "w"), indent=4)
 
