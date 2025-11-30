@@ -92,7 +92,7 @@ if [[ $* == *"init"* ]]; then
 #end:$PROJECT_NAME\n"
 	sed -i "${START}i \
 		$SCRIPT" $RCFILE
-	echo "* Reinitailising conda" 
+	echo "* Reinitailising conda"
 	conda init $SHELL &&
 	echo "* Init complete!"
 	echo "* Type $RUN_COMMAND to start using the setup"
@@ -215,3 +215,9 @@ test(){
 }
 
 
+update(){
+  cd $FOLDER_PATH | exit 0
+  python3 -m build
+  python3 -m twine upload --repository testpypi dist/*
+  pip install -i https://test.pypi.org/simple/ bioiain -U
+}
