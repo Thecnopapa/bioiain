@@ -66,7 +66,8 @@ def add_front_0(string, digits=2, zero = "0"):
 
 
 
-def str_to_list_with_literals(str, delimiter=" ", literal_delimiters=["\"","\'"], keep_delimiters=False, remove=["\n"]):
+def str_to_list_with_literals(str, delimiter=" ", literal_delimiters=["\"","\'"], keep_delimiters=False, remove=["\n"],
+                              check_open_literal=False) -> list|tuple[list, bool]:
     out = []
 
     for r in remove:
@@ -109,7 +110,10 @@ def str_to_list_with_literals(str, delimiter=" ", literal_delimiters=["\"","\'"]
         if in_literal and literal_delim is None:
             in_literal = False
             out.append(literal)
-
+    if in_literal:
+        out.append(literal)
+    if check_open_literal:
+        return out, in_literal
     return out
 
 
