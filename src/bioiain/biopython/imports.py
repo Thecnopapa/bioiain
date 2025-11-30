@@ -248,9 +248,14 @@ def read_mmcif(file_path, subset:list|str=None, exclude:list|str=None) -> dict:
                     #print("line",repr(line))
                     #print("line_list",line_list)
                     #print(n)
-                    log("warning", f"no key-value structure found in line {n}:", repr(line))
+                    log("warning", f"No key-value structure found in line {n}:", repr(line))
                 if not multi_line:
-
+                    if exclude is not None:
+                        if group_key in exclude:
+                            continue
+                    if subset is not None:
+                        if group_key not in subset:
+                            continue
                     if group_key not in data.keys():
                         data[group_key] = {}
                     #print(f"{group_key}.{k} ->", " ".join(v))
@@ -282,13 +287,26 @@ def read_mmcif(file_path, subset:list|str=None, exclude:list|str=None) -> dict:
                     continue
 
                 if next_line[0] == "#":
-                    assert len(set(group_key)) == 1
+                    try:
+                        assert len(set(group_key)) == 1
+                    except AssertionError:
+                        log("warning", f"Multiple keys structure found in line {n}:", repr(line))
+                        continue
                     group_key = group_key[0]
+                    if exclude is not None:
+                        if group_key in exclude:
+                            continue
+                    if subset is not None:
+                        if group_key not in subset:
+                            continue
                     if group_key not in data.keys():
                         data[group_key] = []
-                    for l in loop_values:
-
-                        assert len(l) == len(loop_keys)
+                    for i, l in enumerate(loop_values):
+                        try:
+                            assert len(l) == len(loop_keys)
+                        except AssertionError:
+                            log("warning", f"Missmatch on key-value numbers in group {group_key}, element {i}")
+                            continue
                         d = {k:v for k, v in zip(loop_keys, l)}
                         data[group_key].append(d)
                     #print(f"{group_key} ->", f"list of length: {len(loop_values)}")
