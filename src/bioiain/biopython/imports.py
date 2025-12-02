@@ -140,9 +140,49 @@ def recover(name, export_folder="./exports", download_dir="./data", download=Tru
     return None
 
 
-def read_mmcif(file_path, subset:list|str=None, exclude:list|str=None) -> dict:
+
+class MMCIF(object):
+    def __init__(self, data):
+        self.data = data
+
+    def save(self, path):
+        json.dump(self.data, open(path, "w"), indent=4)
+
+    def __getitem__(self, key):
+        index = None
+        subkey = None
+        if type(key) in [list, tuple]:
+            if len(key) == 1:
+                key = key[0]
+            if len(key) == 2:
+                key, index = key
+            elif len(key) == 3:
+                key, index, subkey = key
+
+        if index is None:
+            index = 0
+
+
+        ret = self.data[key][index]
+
+        if subkey is not None:
+            ret = ret[subkey]
+
+        return ret
+
+
+
+
+
+
+
+
+
+def read_mmcif(file_path, output_folder="headers", subset:list|str=None, exclude:list|str=None) -> MMCIF:
     from ..utilities.strings import str_to_list_with_literals
     data = {}
+    name = os.path.basename(file_path).split(".")[0]
+    os.makedirs(output_folder, exist_ok=True)
     with open(file_path, "r") as f:
         n = -1
         in_loop = False
@@ -181,13 +221,14 @@ def read_mmcif(file_path, subset:list|str=None, exclude:list|str=None) -> dict:
             if multi_line:
                 if multi_cached is None:
                     multi_cached = ""
-                if line == "\n":
+                if line.replace("\n", "").strip() == "":
                     multi_cached += line
                     continue
                 if type(multi_cached) is list:
                     line_list, open_lit = str_to_list_with_literals(line, check_open_literal=True )
-                if line[-2] in multi_delimiters:
-                    line = line[-3:]
+
+                if line.replace("\n", "").strip()[-1] in multi_delimiters:
+                    line = line.replace("\n", "").strip()[:-2]
                     multi_line = False
                     multi_delimiter = None
                     if not in_loop:
@@ -257,9 +298,9 @@ def read_mmcif(file_path, subset:list|str=None, exclude:list|str=None) -> dict:
                         if group_key not in subset:
                             continue
                     if group_key not in data.keys():
-                        data[group_key] = {}
+                        data[group_key] = [{}]
                     #print(f"{group_key}.{k} ->", " ".join(v))
-                    data[group_key][k] = " ".join(v)
+                    data[group_key][0][k] = " ".join(v)
 
 
             else: # IN LOOP
@@ -310,8 +351,11 @@ def read_mmcif(file_path, subset:list|str=None, exclude:list|str=None) -> dict:
                         d = {k:v for k, v in zip(loop_keys, l)}
                         data[group_key].append(d)
                     #print(f"{group_key} ->", f"list of length: {len(loop_values)}")
-
-    json.dump(data, open("out.json", "w"), indent=4)
+    save_path = os.path.join(output_folder, f"{name}.header.json")
+    log("debug","Headers saved to:", os.path.abspath(save_path))
+    mmcif = MMCIF(data)
+    mmcif.save(save_path)
+    return mmcif
 
 
 

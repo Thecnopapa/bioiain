@@ -88,6 +88,8 @@ def str_to_list_with_literals(str, delimiter=" ", literal_delimiters=["\"","\'"]
             if not keep_delimiters:
                 s = s[1:]
             literal = ""
+        if s == "":
+            continue
         if s[-1] == literal_delim:
             literal_delim = None
             if not keep_delimiters:
