@@ -216,8 +216,13 @@ def read_mmcif(file_path, output_folder="headers", subset:list|str=None, exclude
                 loop_keys = []
                 loop_values = []
                 group_key = []
+                #print("LOOP START")
                 continue
-
+            #print("\nLINE:")
+            #print(repr(line))
+            #print("group_key:", repr(group_key))
+            #print("multi:", multi_line)
+            #print("loop:", in_loop)
             if multi_line:
                 if multi_cached is None:
                     multi_cached = ""
@@ -230,7 +235,9 @@ def read_mmcif(file_path, output_folder="headers", subset:list|str=None, exclude
                 if line.replace("\n", "").strip()[-1] in multi_delimiters:
                     line = line.replace("\n", "").strip()[:-2]
                     multi_line = False
+                    open_lit = False
                     multi_delimiter = None
+                    #print("MULTI LINE END")
                     if not in_loop:
                         v.append(multi_cached)
                         multi_cached = None
@@ -276,10 +283,15 @@ def read_mmcif(file_path, output_folder="headers", subset:list|str=None, exclude
                     else:
                         v = line_list[1:]
                 if open_lit:
+                    #print(multi_cached)
+                    #print(line_list)
+                    #print("MULTI_LINE START (OPEN-LIT)")
                     multi_line = True
                     multi_cache = line_list[-1]
                     multi_delimiter = line_list[-1][0]
+                    exit()
                 if next_line[0] in multi_delimiters and not multi_line:
+                    #print("MULTI_LINE START")
                     multi_line = True
                     multi_delimiter = next_line[0]
                     continue
@@ -289,7 +301,10 @@ def read_mmcif(file_path, output_folder="headers", subset:list|str=None, exclude
                     #print("line",repr(line))
                     #print("line_list",line_list)
                     #print(n)
-                    log("warning", f"No key-value structure found in line {n}:", repr(line))
+                    if n != 1:
+                        log("warning", f"No key-value structure found in line {n}:", repr(line))
+                    else:
+                        print("Parsing:", line.replace("\n", "").strip())
                 if not multi_line:
                     if exclude is not None:
                         if group_key in exclude:
@@ -304,6 +319,7 @@ def read_mmcif(file_path, output_folder="headers", subset:list|str=None, exclude
 
 
             else: # IN LOOP
+                #print("MULTI:", multi_line)
                 if not multi_line:
                     if line.startswith("_") and not looping:
                         group_key.append(line.split(".")[0])
@@ -331,7 +347,9 @@ def read_mmcif(file_path, output_folder="headers", subset:list|str=None, exclude
                     try:
                         assert len(set(group_key)) == 1
                     except AssertionError:
+                        print(group_key)
                         log("warning", f"Multiple keys structure found in line {n}:", repr(line))
+                        exit()
                         continue
                     group_key = group_key[0]
                     if exclude is not None:

@@ -71,18 +71,21 @@ def str_to_list_with_literals(str, delimiter=" ", literal_delimiters=["\"","\'"]
     out = []
     for r in remove:
         str = str.replace(r, "")
+    str = str.strip()
     strings = str.split(delimiter)
     in_literal = False
     literal_delim = None
     literal = None
+    #print("IN:", strings)
 
-    for s in strings:
+    for n, s in enumerate(strings):
+        #print(n, s)
         if s == "":
             if in_literal:
                 literal += delimiter
                 print(repr(literal))
             continue
-        if s[0] in literal_delimiters:
+        if s[0] in literal_delimiters and not in_literal:
             in_literal = True
             literal_delim = s[0]
             if not keep_delimiters:
@@ -106,6 +109,7 @@ def str_to_list_with_literals(str, delimiter=" ", literal_delimiters=["\"","\'"]
             out.append(literal)
     if in_literal:
         out.append(literal)
+    #print("OUT:", out)
     if check_open_literal:
         return out, in_literal
     return out
