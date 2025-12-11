@@ -107,6 +107,14 @@ def print1(*strings:str, space:int=2, **kwargs): # Print with 1 indent
     print(out, **kwargs)
 
 
+def print_children(d):
+    if type(d) == list:
+        d = d[0]
+        print("(list)[0]")
+    print("strings:")
+    [print(k, v) for k, v in d.items() if type(v) == str]
+    print("other:")
+    [print(k, type(v), len(v)) for k, v in d.items() if type(v) != str and v is not None]
 
 
 

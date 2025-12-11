@@ -1,4 +1,4 @@
-__all__ = ["biopython", "symmetries", "utilities", "visualisation"]
+__all__ = ["biopython", "symmetries", "utilities", "visualisation" ,"tools"]
 
 import Bio.PDB as bp
 
