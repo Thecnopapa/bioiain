@@ -1,6 +1,6 @@
 import os, sys, subprocess, json
-from src.bioiain.utilities.logging import log
-from src.bioiain.utilities.sequences import d3to1
+from ..utilities.logging import log
+from ..utilities.sequences import d3to1
 
 def ss_to_index(ss):
 
