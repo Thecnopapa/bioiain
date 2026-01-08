@@ -12,6 +12,12 @@ Many features are still not commented/documented or even mentioned. Feel free to
 Can be downloaded from the [test PiPy repository](https://test.pypi.org/) but note the used version as any function might change during development.
 
 
+_INFO_
+
+Relevant python code can be found in the `src` folder within their relevant folders.
+
+Preset workflows are being developend, including the [projectDimer](Https://GitHub.com/Thecnopapa/projectDimer) workflow. (WIP)
+
 Works with wrappers of the main Biopython classes. Adding functionality without loosing their original value 
 
 Includes general-purpose tools and pipelines for importing, processing, and exporting structures.
