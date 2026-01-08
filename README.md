@@ -15,7 +15,7 @@ Can be downloaded from the [test PiPy repository](https://test.pypi.org/) but no
 **INFO**
 
 Relevant python code can be found in the `src` folder within their relevant folders.
-The `test` is for development use, and it's contents will me **definitely** deleted/modified at some point.
+The `test` is for development use, and it's contents will be **definitely** deleted/modified at some point.
 
 Preset workflows are being developend, including the [projectDimer](Https://GitHub.com/Thecnopapa/projectDimer) workflow. (WIP)
 
