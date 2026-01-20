@@ -17,3 +17,5 @@ xmltodict >= 0.14.2
 
 #dev
 pdoc3
+twine
+build
