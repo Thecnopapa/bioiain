@@ -19,10 +19,19 @@ def loadPDB(file_path:str, name:str=None, quiet=True) -> Structure|None:
     if name is None:
         name = file_path.split("/")[-1].split(".")[0]
     ext = file_path.split(".")[-1]
+
     if "pdb" in ext:
-        parsed = bp.PDBParser(QUIET=quiet).get_structure(name, file_path)
+        try:
+            parsed = bp.PDBParser(QUIET=quiet).get_structure(name, file_path)
+        except Exception as e:
+            log("error", e)
+            return None
     elif "cif" in ext:
-        parsed = bp.MMCIFParser(QUIET=quiet).get_structure(name, file_path)
+        try:
+            parsed = bp.MMCIFParser(QUIET=quiet).get_structure(name, file_path)
+        except Exception as e:
+            log("error", e)
+            return None
     else:
         log("error", "File format not recognized: {}".format(file_path))
         return None
