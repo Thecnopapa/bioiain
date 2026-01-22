@@ -21,6 +21,8 @@ file_folder = downloadPDB("/home/iain/projects/vib-ai/internship/data", "recepto
 bi.log(1, "File folder:", file_folder)
 
 for file in os.listdir(file_folder):
+    if not file.endswith(".cif"):
+        continue
     code = file[:4]
     #structure = bi.biopython.recover(code)
     bi.log("title", code)
@@ -41,7 +43,8 @@ for file in os.listdir(file_folder):
         contact_threshold=15,
     )
 
-    crystal.process(force="force" in sys.argv)
+    if crystal.process(force="force" in sys.argv) is None:
+        continue
 
 
     from src.bioiain.symmetries import Oligomer

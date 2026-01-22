@@ -64,8 +64,10 @@ class CrystalElement(Chain):
             params = crystal.data["params"]
             key = crystal.data["crystal"]["group_key"]
             operations = dictio_space_groups[key]["symops"]
+            symmetry_ok = True
         except:
             log("warning", f"Symmetry could not be generated for {crystal}")
+            symmetry_ok = False
             return None
 
         frac_element = entity_to_frac(self, params)

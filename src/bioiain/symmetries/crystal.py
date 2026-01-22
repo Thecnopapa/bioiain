@@ -12,7 +12,14 @@ from ..biopython import Model
 
 from ..visualisation import fig3D, pymol_colours, Arrow3D
 
+class MissingCrystalError(Exception):
+    def __init__(self, id=None):
+        if id is None:
+            self.message = "Missing Crystal Card information"
+        else:
+            self.message = f"Missing Crystal Card information for: {id}"
 
+        super().__init__(self.message)
 
 class Crystal(Model):
     def _init(self, *args, **kwargs) -> Self:
@@ -54,6 +61,7 @@ class Crystal(Model):
         self.data["crystal"]["contact_threshold"] = contact_threshold
         return self
 
+
     def process(self, force=False) -> Self:
         """
         Processes the crystal through the main pipeline. Requires set_params() to be run beforehand.
@@ -61,24 +69,26 @@ class Crystal(Model):
         """
         self.force = force
         log(1, "Processing crystal ({}), FORCE:{}".format(self.data["info"]["name"], self.force))
-
-        if self.force:
-            self.pass_down()
+        try:
+            if self.force:
+                self.pass_down()
+                self.export()
+                self._identyfy_main_elements()
+                self.export()
+                self._regenerate_crystal()
+                self.export()
+                self._calculate_oligomerisation_paths()
+                self.export()
+                self._find_oligomers()
+                self.export()
+            else:
+                self._recover()
+                print(self.data["crystal"])
+            self._build_oligomers()
             self.export()
-            self._identyfy_main_elements()
-            self.export()
-            self._regenerate_crystal()
-            self.export()
-            self._calculate_oligomerisation_paths()
-            self.export()
-            self._find_oligomers()
-            self.export()
-        else:
-            self._recover()
-            print(self.data["crystal"])
-        self._build_oligomers()
-        self.export()
-        return self
+            return self
+        except MissingCrystalError:
+            return None
 
     def plot(self, paths=False, show=True):
         """
@@ -178,6 +188,8 @@ class Crystal(Model):
         except:
             symmetry_ok = False
             log("warning", f"Crystal data not found for: {self}")
+            raise MissingCrystalError(self)
+            return None
 
         sym_monomers = [] # Fractional
         sym_ligands = [] # Fractional
