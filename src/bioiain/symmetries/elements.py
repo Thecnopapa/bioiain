@@ -40,7 +40,7 @@ class CrystalElement(Chain):
 
 
 
-    def generate_symmetries(self, crystal,contacts:bool=True,
+    def generate_symmetries(self, crystal, monomers, ligands, contacts:bool=True,
                             threshold:int|float=15, min_contacts:int=10,
                             contact_method:str="min-contacts") -> list[Self]:
         """
@@ -102,7 +102,7 @@ class CrystalElement(Chain):
                 contact = {m.id:MonomerContact(m, displaced_element,
                                                contact_method=contact_method,
                                                threshold=threshold,
-                                               min_contacts=min_contacts) for m in crystal.monomers if not (
+                                               min_contacts=min_contacts) for m in monomers if not (
                     n == 1 and displaced_element.id == m.id
                 )}
 
@@ -142,7 +142,7 @@ class CrystalElement(Chain):
                     atom.position = position
 
                     if contacts and atom.id == "CA":
-                        for m in crystal.monomers:
+                        for m in monomers:
                             if n == 1 and displaced_element.id == m.id:
                                 continue
                             for a in m.get_atoms():
@@ -166,7 +166,7 @@ class CrystalElement(Chain):
 
             if contacts:
 
-                for m in crystal.monomers:
+                for m in monomers:
                     if n == 1 and displaced_element.id == m.id:
                         continue
                     displaced_element.data["symmetry"]["contacts"][m.id] = contact[m.id].data

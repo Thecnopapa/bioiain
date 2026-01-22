@@ -168,6 +168,12 @@ class Crystal(Model):
 
         return mon_ids, lig_ids
 
+    def _restore_monomer(self, name):
+        return Monomer.recover(name, data_path=os.path.join(self.paths["monomer_folder"], name),
+                                  load_structure=True)
+    def _restore_ligand(self, name):
+        return Ligand.recover(name, data_path=os.path.join(self.paths["ligand_folder"], name),
+                                  load_structure=True)
 
     def _regenerate_crystal(self) -> Self:
         """
@@ -193,19 +199,19 @@ class Crystal(Model):
         sym_monomers = [] # Fractional
         sym_ligands = [] # Fractional
         log(2, "Monomers ({})".format(len(self.monomers)))
-        for monomer in self.monomers:
-
-            monomer = Monomer.recover(monomer, data_path=os.path.join(self.paths["monomer_folder"], monomer), load_structure=True)
+        monomers = [self._restore_monomer(m) for m in self.monomers]
+        ligands = [self._restore_ligand(l) for l in self.ligands]
+        for monomer in monomers:
             log("debug", "Monomer: {}".format(monomer.data["info"]["name"]))
-            sym_monomers.extend(monomer.generate_symmetries(self,
+            sym_monomers.extend(monomer.generate_symmetries(self, monomers, ligands,
                                                             threshold=self.data["crystal"]["contact_threshold"],
                                                             min_contacts=self.data["crystal"]["min_contacts"],
                                                             contacts=True))
         [script.load_entity(entity_to_orth(m.copy(), params)) for m in sym_monomers]
 
         log(2, "Ligands ({})".format(len(self.ligands)))
-        for ligand in self.ligands:
-            sym_ligands.extend(ligand.generate_symmetries(self,
+        for ligand in ligands:
+            sym_ligands.extend(ligand.generate_symmetries(self, monomers, ligands,
                                                           threshold=self.data["crystal"]["contact_threshold"],
                                                           min_contacts=self.data["crystal"]["min_contacts"],
                                                           contacts=False))
