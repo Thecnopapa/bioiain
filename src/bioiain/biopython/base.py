@@ -164,37 +164,37 @@ class BiopythonOverlayClass:
             struc_path = data_path.replace(".data.json", ".structure.cif")
             struc = loadPDB(struc_path, "recovering")
             child = struc
-            print(child.__class__)
-            print(self.__class__)
-            print(issubclass(self.__class__, child.__class__))
+            #print(child.__class__)
+            #print(self.__class__)
+            #print(issubclass(self.__class__, child.__class__))
             while not issubclass(self.__class__, child.__class__):
-                print(child.__class__.__mro__[0])
-                print(self.__class__)
-                print(issubclass(self.__class__, child.__class__))
+                #print(child.__class__.__mro__[0])
+                #print(self.__class__)
+                #print(issubclass(self.__class__, child.__class__))
                 try:
                     child = child[0]
-                    print(child.__class__.__mro__[0])
-                    print(self.__class__)
-                    print(issubclass(self.__class__, child.__class__))
+                    #print(child.__class__.__mro__[0])
+                    #print(self.__class__)
+                    #print(issubclass(self.__class__, child.__class__))
                 except:
                     break
             if issubclass(self.__class__, child.__class__):
-                print(child)
+                #print(child)
                 self = self.cast(child)
             else:
                 raise Exception("Failed to load structure")
 
-        print(self)
+        #print(self)
         r = self._recover(data_path=data_path)
         if r is None:
             log("warning", f"Failed recovery for: {data_path}")
             return None
-        print(self.id)
+        #print(self.id)
         self.parent = {"child_dict": {}}
         #self.__setattr__("_id", self.name())
         #self.__setattr__("id", self.name())
 
-        print(self)
+        #print(self)
         return self
 
 

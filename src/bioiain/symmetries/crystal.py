@@ -35,8 +35,8 @@ class Crystal(Model):
                                    "unique_paths": None}
         self.paths["export_folder"] = os.path.join(self.paths["export_folder"], "crystal")
 
-        self.monomers = None
-        self.ligands = None
+        self.data["monomers"] = None
+        self.data["ligands"] = None
         return self
 
     def set_crystal_params(self,
@@ -70,8 +70,7 @@ class Crystal(Model):
                 self.export()
                 self._regenerate_crystal()
                 self.export()
-                self._calculate_oligomerisation_paths()
-                self.export()
+
             else:
                 self._recover()
                 print(self.data["crystal"])
@@ -89,7 +88,8 @@ class Crystal(Model):
         fig, ax = fig3D(self, preset="crystal-frac")
         ax.set_title('Crystal {}'.format(self.data["info"]["name"]))
 
-        for n, monomer in enumerate(self.monomers):
+        for n, monomer in enumerate(self.data["monomers"]):
+            monomer = self._restore_monomer(monomer)
             #print(monomer.data["symmetry"]["CoM-frac"])
             col = pymol_colours[n%len(pymol_colours)]
             ax.scatter(*monomer.data["symmetry"]["CoM-frac"], color=col)
@@ -134,9 +134,9 @@ class Crystal(Model):
                 ligands.append(chain)
             else:
                 monomers.append(chain)
-        self.monomers, self.ligands = self._cast_main_elements(monomers, ligands)
+        self.data["monomers"], self.data["ligands"] = self._cast_main_elements(monomers, ligands)
 
-        return self.monomers, self.ligands
+        return self.data["monomers"], self.data["ligands"]
 
 
     def _cast_main_elements(self, monomers, ligands) -> tuple[list, list]:
@@ -198,9 +198,9 @@ class Crystal(Model):
 
         sym_monomers = [] # Fractional
         sym_ligands = [] # Fractional
-        log(2, "Monomers ({})".format(len(self.monomers)))
-        monomers = [self._restore_monomer(m) for m in self.monomers]
-        ligands = [self._restore_ligand(l) for l in self.ligands]
+        log(2, "Monomers ({})".format(len(self.data["monomers"])))
+        monomers = [self._restore_monomer(m) for m in self.data["monomers"]]
+        ligands = [self._restore_ligand(l) for l in self.data["ligands"]]
         for monomer in monomers:
             log("debug", "Monomer: {}".format(monomer.data["info"]["name"]))
             sym_monomers.extend(monomer.generate_symmetries(self, monomers, ligands,
@@ -209,7 +209,7 @@ class Crystal(Model):
                                                             contacts=True))
         [script.load_entity(entity_to_orth(m.copy(), params)) for m in sym_monomers]
 
-        log(2, "Ligands ({})".format(len(self.ligands)))
+        log(2, "Ligands ({})".format(len(self.data["ligands"])))
         for ligand in ligands:
             sym_ligands.extend(ligand.generate_symmetries(self, monomers, ligands,
                                                           threshold=self.data["crystal"]["contact_threshold"],
@@ -222,7 +222,6 @@ class Crystal(Model):
 
     def get_oligomers(self, oligomer_levels:int|list[int]):
         self.data["crystal"]["oligomer_levels"] = oligomer_levels
-        self._find_oligomers()
         self._build_oligomers()
         self.export()
         return self

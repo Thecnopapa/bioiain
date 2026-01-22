@@ -46,29 +46,29 @@ for file in os.listdir(file_folder):
         continue
     print(crystal.data["crystal"])
 
-    crystal.get_oligomers(
-        oligomer_levels=[2],
-    )
+    # crystal.get_oligomers(
+    #     oligomer_levels=[2],
+    # )
 
 
-    from src.bioiain.symmetries import Oligomer
-
-    print(crystal.paths["oligo_folder"])
-    for file in sorted(os.listdir(crystal.paths["oligo_folder"]))   :
-        print(file)
-        if file.endswith(".data.json"):
-            oligo = Oligomer.recover(id="recovered",data_path=os.path.join(crystal.paths["oligo_folder"], file))
-            print(oligo)
-
-
-    from src.bioiain.visualisation import pymol
-
-    script = pymol.PymolScript(folder=".", name="test")
-    script.load(crystal.paths["original"], "original", to="pdb")
-    script.cell()
-    script.symmetries()
-    script.group()
-    script.write_script()
+    # from src.bioiain.symmetries import Oligomer
+    #
+    # print(crystal.paths["oligo_folder"])
+    # for file in sorted(os.listdir(crystal.paths["oligo_folder"]))   :
+    #     print(file)
+    #     if file.endswith(".data.json"):
+    #         oligo = Oligomer.recover(id="recovered",data_path=os.path.join(crystal.paths["oligo_folder"], file))
+    #         print(oligo)
+    #
+    #
+    # from src.bioiain.visualisation import pymol
+    #
+    # script = pymol.PymolScript(folder=".", name="test")
+    # script.load(crystal.paths["original"], "original", to="pdb")
+    # script.cell()
+    # script.symmetries()
+    # script.group()
+    # script.write_script()
 
 
 
