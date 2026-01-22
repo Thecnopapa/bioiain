@@ -24,6 +24,7 @@ class Crystal(Model):
         """
         self.force = False
         super()._init(*args, **kwargs)
+        self.data["crystal"] = {}
         self.data["crystal"]["oligomer_levels"] = None
         self.data["crystal"]["min_monomer_length"] = None
         self.data["info"]["name"] = self.data["info"]["name"] + "_cryst"
@@ -73,7 +74,8 @@ class Crystal(Model):
             self._find_oligomers()
             self.export()
         else:
-            self.recover()
+            self._recover()
+            print(self.data["crystal"])
         self._build_oligomers()
         self.export()
         return self
@@ -166,35 +168,42 @@ class Crystal(Model):
         script = PymolScript(name="symmetry_crystal_{}".format(self.data["info"]["name"]),
                              folder=os.path.join(self.paths["export_folder"], "pymol"))
         script.load(self.paths["original"], "original")
-        key = self.data["crystal"]["group_key"]
-        operations = dictio_space_groups[key]["symops"]
-        params = self.data["params"]
-        log(2, "Operations:")
-        [log(3,o, ">", operations[o]) for o in operations]
+        try:
+            key = self.data["crystal"]["group_key"]
+            operations = dictio_space_groups[key]["symops"]
+            params = self.data["params"]
+            log(2, "Operations:")
+            [log(3, o, ">", operations[o]) for o in operations]
+            symmetry_ok = True
+        except:
+            symmetry_ok = False
+            log("warning", f"Crystal data not found for: {self}")
+
         sym_monomers = [] # Fractional
         sym_ligands = [] # Fractional
         log(2, "Monomers ({})".format(len(self.monomers)))
-        for monomer in self.monomers:
-            log("debug", "Monomer: {}".format(monomer.data["info"]["name"]))
-            sym_monomers.extend(monomer.generate_symmetries(self,
-                                                            threshold=self.data["crystal"]["contact_threshold"],
-                                                            min_contacts=self.data["crystal"]["min_contacts"],
-                                                            contacts=True))
-        [script.load_entity(entity_to_orth(m.copy(), params)) for m in sym_monomers]
+        if symmetry_ok:
+            for monomer in self.monomers:
+                log("debug", "Monomer: {}".format(monomer.data["info"]["name"]))
+                sym_monomers.extend(monomer.generate_symmetries(self,
+                                                                threshold=self.data["crystal"]["contact_threshold"],
+                                                                min_contacts=self.data["crystal"]["min_contacts"],
+                                                                contacts=True))
+            [script.load_entity(entity_to_orth(m.copy(), params)) for m in sym_monomers]
 
-        log(2, "Ligands ({})".format(len(self.ligands)))
-        for ligand in self.ligands:
-            sym_ligands.extend(ligand.generate_symmetries(self,
-                                                          threshold=self.data["crystal"]["contact_threshold"],
-                                                          min_contacts=self.data["crystal"]["min_contacts"],
-                                                          contacts=False))
-        [script.load_entity(entity_to_orth(l.copy(), params)) for l in sym_ligands]
+            log(2, "Ligands ({})".format(len(self.ligands)))
+            for ligand in self.ligands:
+                sym_ligands.extend(ligand.generate_symmetries(self,
+                                                              threshold=self.data["crystal"]["contact_threshold"],
+                                                              min_contacts=self.data["crystal"]["min_contacts"],
+                                                              contacts=False))
+            [script.load_entity(entity_to_orth(l.copy(), params)) for l in sym_ligands]
 
         script.write_script()
         return self
 
 
-    def _calculate_oligomerisation_paths(self, show=False) -> Self:
+    def _calculate_oligomerisation_paths(self, show=True) -> Self:
         if self.monomers is None:
             self._identyfy_main_elements()
             self._regenerate_crystal()
@@ -244,7 +253,10 @@ class Crystal(Model):
                             len(monomer.data["contacts"]["paths"].keys()))] = c
         self.data["symmetries"]["all_paths"] = {}
         for m in self.monomers:
-            self.data["symmetries"]["all_paths"].update(m.data["contacts"]["paths"])
+            if m.data["contacts"]["paths"] is not None:
+                #print(m.data.keys())
+                #print(m.data["contacts"])
+                self.data["symmetries"]["all_paths"].update(m.data["contacts"]["paths"])
         self.export()
         if show:
             fig.show()
@@ -525,9 +537,9 @@ class Crystal(Model):
         for ol in self.data["symmetries"]["relevant_paths"].keys():
             log(2, "O level:", ol)
             for n, path in enumerate(self.data["symmetries"]["relevant_paths"][ol]):
-                oligo = OligomerBuilder()
-                oligo_folder = oligo.build(self, path, number=n)
-        self.paths["oligo_folder"] = oligo_folder
+                builder = OligomerBuilder()
+                oligo = builder.build(self, path, number=n)
+                self.paths["oligo_folder"] = oligo.paths["export_folder"]
         return self
 
 

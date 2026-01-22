@@ -11,43 +11,57 @@ import numpy as np
 
 bi.log("start", "test.py")
 
-file_folder = downloadPDB("./data", "test_list", ["5JJM", "6nwl"],
-                          file_path="./pdb_list.txt", file_format="pdb",
+#file_folder = downloadPDB("./data", "test_list", ["5JJM", "6nwl"],
+#                          file_path="./pdb_list.txt", file_format="pdb",
+#                          overwrite=False)
+file_folder = downloadPDB("/home/iain/projects/vib-ai/internship/data", "receptors",
+                          file_path="/home/iain/projects/vib-ai/internship/data/receptors.txt", file_format="cif",
                           overwrite=False)
 
 bi.log(1, "File folder:", file_folder)
 
+for file in os.listdir(file_folder):
+    code = file[:4]
+    #structure = bi.biopython.recover(code)
+    bi.log("title", code)
+    structure = None
+    if structure is None:
+        structure = bi.biopython.loadPDB(os.path.join(file_folder, f"{code}.cif"))
 
-structure = bi.imports.recover("5JJM")
+    bi.log("header", structure)
 
-if structure is None:
-    structure = bi.imports.loadPDB(os.path.join(file_folder, "5JJM.pdb"))
+    structure.init_all()
 
-bi.log("header", structure)
+    crystal = structure.get_crystals()
 
-structure.init_all()
+    crystal.set_params(
+        min_monomer_length=50,
+        oligomer_levels=[2],
+        min_contacts=10,
+        contact_threshold=15,
+    )
 
-crystal = structure.get_crystals()
-
-crystal.set_params(
-    min_monomer_length=50,
-    oligomer_levels=[2, 4],
-    min_contacts=10,
-    contact_threshold=15,
-)
-
-crystal.process(force="force" in sys.argv)
+    crystal.process(force="force" in sys.argv)
 
 
+    from src.bioiain.symmetries import Oligomer
 
-from src.bioiain.visualisation import pymol
+    print(crystal.paths["oligo_folder"])
+    for file in sorted(os.listdir(crystal.paths["oligo_folder"]))   :
+        print(file)
+        if file.endswith(".data.json"):
+            oligo = Oligomer.recover(id="recovered",data_path=os.path.join(crystal.paths["oligo_folder"], file))
+            print(oligo)
 
-script = pymol.PymolScript(folder=".", name="test")
-script.load(crystal.paths["original"], "original", to="pdb")
-script.cell()
-script.symmetries()
-script.group()
-script.write_script()
+
+    from src.bioiain.visualisation import pymol
+
+    script = pymol.PymolScript(folder=".", name="test")
+    script.load(crystal.paths["original"], "original", to="pdb")
+    script.cell()
+    script.symmetries()
+    script.group()
+    script.write_script()
 
 
 

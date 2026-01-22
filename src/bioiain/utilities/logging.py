@@ -41,6 +41,10 @@ def log(level:int|str=1, *args, **kwargs):
                 print("\033[0m")
             elif level == "debug":
                 print(*args, **kwargs)
+            elif level == "title":
+                print("\033]0;")
+                print(*args, **kwargs)
+                print("\a")
             elif v > 0:
                 if level == 0 or level is None:
                     print(*args, **kwargs)

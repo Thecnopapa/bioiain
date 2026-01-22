@@ -57,11 +57,16 @@ class CrystalElement(Chain):
         :param contact_method: Method to determine contacts between elements.
         :return: List of generated symmetry Elements
         """
-        log(3, "Generating symmetries ({})".format(self.data["info"]["name"]))
-        log(4, self, "CoM:", [round(c) for c in find_com(self.get_atoms())])
-        params = crystal.data["params"]
-        key = crystal.data["crystal"]["group_key"]
-        operations = dictio_space_groups[key]["symops"]
+
+        try:
+            log(3, "Generating symmetries ({})".format(self.data["info"]["name"]))
+            log(4, self, "CoM:", [round(c) for c in find_com(self.get_atoms())])
+            params = crystal.data["params"]
+            key = crystal.data["crystal"]["group_key"]
+            operations = dictio_space_groups[key]["symops"]
+        except:
+            log("warning", f"Symmetry could not be generated for {crystal}")
+            return None
 
         frac_element = entity_to_frac(self, params)
         self.is_frac = True
@@ -124,7 +129,7 @@ class CrystalElement(Chain):
                     position = tuple([int(p) for p in position])
                     displaced_element.data["symmetry"]["positions"].append(position)
 
-                    if any([p >= 50 for p in position]):
+                    if any([p >= 10 for p in position]):
                         print(atom.get_full_id())
                         print("Position:", position)
                         print("Original:", atom.coord)

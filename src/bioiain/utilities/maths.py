@@ -31,6 +31,11 @@ def find_com(atoms:list|GeneratorType|np.ndarray|BiopythonOverlayClass) -> list[
     x /= len(atoms)
     y /= len(atoms)
     z /= len(atoms)
+
+    x = float(x)
+    y = float(y)
+    z = float(z)
+
     return [x, y, z]
 
 

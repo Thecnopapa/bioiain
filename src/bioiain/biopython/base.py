@@ -143,19 +143,41 @@ class BiopythonOverlayClass:
 
         return filepath
 
-    def recover(self, data_path=None):
+    @classmethod
+    def recover(cls, *args,data_path=None,  **kwargs, ):
+        try:
+            self = cls()
+        except:
+            self = cls(*args, **kwargs)
+        self.base_init()
+        r = self._recover(data_path=data_path)
+        if r is None:
+            log("warning", f"Failed recovery for: {data_path}")
+            return None
+        self.id = self.data["info"]["name"]
+        return self
+
+
+    def _recover(self, data_path=None):
         if data_path is None:
-            if os.path.exists(self.paths["export_folder"]):
-                data_path = os.path.join(self.paths["export_folder"], "{}.data.json".format(self.data["info"]["name"]))
+            name = self.data["info"]["name"]
+            data_path = os.path.join(self.paths["export_folder"], f"{name}.data.json")
+        else:
+            name = data_path.split(".")[0]
         if data_path is None:
             log("warning", "No data path provided for recover()")
             return None
+
         elif os.path.exists(data_path):
-            log("debug", "recovering data for: {}".format(self.data["info"]["name"]))
+            log("debug", f"recovering data for: {name}")
+            #print(data_path)
             old_data = json.load(open(data_path))
-            self.data = self.data | old_data["data"]
-            self.paths = self.paths | old_data["paths"]
+            #print(self.data)
+            #print(json.dumps(old_data["data"], indent=4))
+            self.data.update(old_data["data"])
+            self.paths.update(old_data["paths"])
+            #print(json.dumps(self.data, indent=4))
             return self
         else:
-            log("warning", "No previous data found for: {}".format(self.data["info"]["name"]))
+            log("warning", f"No previous data found for: {name}")
             return None

@@ -105,7 +105,7 @@ class OligomerBuilder(object):
         oligomer.pass_down()
         oligomer.export()
         log(4, oligomer)
-        return oligomer.paths["export_folder"]
+        return oligomer
 
 
 
