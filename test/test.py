@@ -45,6 +45,8 @@ for file in os.listdir(file_folder):
     if crystal.process(force="force" in sys.argv) is None:
         continue
 
+    exit()
+
     # crystal.get_oligomers(
     #     oligomer_levels=[2],
     # )

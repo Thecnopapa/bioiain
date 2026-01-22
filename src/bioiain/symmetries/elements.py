@@ -1,4 +1,4 @@
-import os
+import os, json
 from typing_extensions import Self
 from copy import deepcopy
 
@@ -21,7 +21,6 @@ class CrystalElement(Chain):
             "positions": None,
             "CoM-frac": None,
             "CoM-orth": None,
-            "contacts": None,
         }
         self.data["contacts"] = {
             "all": [],
@@ -40,9 +39,9 @@ class CrystalElement(Chain):
 
 
 
-    def generate_symmetries(self, crystal, monomers, ligands, contacts:bool=True,
+    def generate_symmetries(self, crystal, monomers, ligands, do_contacts:bool=True,
                             threshold:int|float=15, min_contacts:int=10,
-                            contact_method:str="min-contacts") -> list[Self]:
+                            contact_method:str="min-contacts", intra_contacts=False) -> list[Self]:
         """
         Generates symmetries of crystal elements from a given symmetry element, and (optionally) calculates contacts
         (theoretically between monomers).
@@ -58,7 +57,7 @@ class CrystalElement(Chain):
         """
 
         try:
-            log(3, "Generating symmetries ({})".format(self.data["info"]["name"]))
+            log(3, f"Generating symmetries ({self.name()}) contacts={do_contacts}")
             print(self)
             log(4, self, "CoM:", [round(c) for c in find_com(self.get_atoms())])
             params = crystal.data["params"]
@@ -75,8 +74,9 @@ class CrystalElement(Chain):
         self.data["symmetry"]["CoM-frac"] = frac_element_com
         self.data["symmetry"]["CoM-orth"] = find_com(self.get_atoms())
         self.data["symmetry"]["positions"] = []
-        if contacts:
+        if do_contacts:
             self.data["contacts"]["all"] = []
+            self.data["contacts"]["contact_folder"] = self.paths["export_folder"]+"/contacts"
             self.data["contacts"]["threshold"] = threshold
             self.data["contacts"]["min_contacts"] = min_contacts
 
@@ -97,13 +97,15 @@ class CrystalElement(Chain):
             displaced_element.data.pop("contacts")
 
             displaced_element.data["info"]["name"] = "{}_op{}".format(self.data["info"]["name"], n)
+            if do_contacts:
+                for m in monomers:
+                    if not(n == 1 and displaced_element.id == m.id):
 
-            if contacts:
                 contact = {m.id:MonomerContact(m, displaced_element,
                                                contact_method=contact_method,
                                                threshold=threshold,
                                                min_contacts=min_contacts) for m in monomers if not (
-                    n == 1 and displaced_element.id == m.id
+
                 )}
 
 
@@ -163,7 +165,7 @@ class CrystalElement(Chain):
                                     })
                                 else:
                                     print("false", end="\r")
-
+            exit()
             if contacts:
 
                 for m in monomers:
@@ -273,6 +275,10 @@ class MonomerContact(object):
             self.data["name"] = repr(self)
             return False
 
+    def export(self, folder):
+        fname = f"{}.contact.json"
+        filepath = os.path.join(folder, fname)
+        json.dump(self.data, open(filepath, "w"))
 
     def __repr__(self):
         return "Contact: ({} <-> {}): {}, N:{}, T:{}, min:{}".format(
