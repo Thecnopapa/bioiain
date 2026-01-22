@@ -14,17 +14,22 @@ class Structure(bp.Structure.Structure, BiopythonOverlayClass):
         return "<bi.{} id={}>".format(self.__class__.__name__, self.id)
 
     def init_crystal(self):
-        from ..symmetries import parse_crystal_card, calculate_parameters
-        self.data["crystal"] =  parse_crystal_card(self.paths["original"])
-        self.data["params"] = calculate_parameters(self.data["crystal"])
-
+        from src.bioiain.symmetries import MissingCrystalError
+        try:
+            from ..symmetries import parse_crystal_card, calculate_parameters
+            self.data["crystal"] =  parse_crystal_card(self.paths["original"])
+            self.data["params"] = calculate_parameters(self.data["crystal"])
+        except MissingCrystalError:
+            self.data["crystal"] = {}
+            self.data["params"] = None
+            return None
         self.pass_down()
         self.export()
 
 
+
     def init_all(self):
         self.init_crystal()
-
         self.pass_down()
         self.export()
 

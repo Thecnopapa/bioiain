@@ -28,7 +28,7 @@ def loadPDB(file_path:str, name:str=None, quiet=True) -> Structure|None:
             return None
     elif "cif" in ext:
         try:
-            parsed = bp.MMCIFParser(QUIET=quiet).get_structure(name, file_path)
+            parsed = bp.FastMMCIFParser(QUIET=quiet).get_structure(name, file_path)
         except Exception as e:
             log("error", e)
             return None

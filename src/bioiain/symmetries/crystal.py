@@ -1,26 +1,20 @@
 
-import os
+import os, time
 
 
 from typing_extensions import Self
 from copy import deepcopy
 
+
 from .operations import *
 from ..utilities.logging import log
 from ..utilities.maths import *
 from ..biopython import Model
+from .elements import Monomer, Ligand
 
 from ..visualisation import fig3D, pymol_colours, Arrow3D
 
-class MissingCrystalError(Exception):
-    def __init__(self, id=None):
-        if id is None:
-            self.message = "Missing Crystal Card information"
-        else:
-            self.message = f"Missing Crystal Card information for: {id}"
-
-        super().__init__(self.message)
-
+from .parsing import MissingCrystalError, SuspiciousCrystalError
 class Crystal(Model):
     def _init(self, *args, **kwargs) -> Self:
         """
@@ -31,7 +25,9 @@ class Crystal(Model):
         """
         self.force = False
         super()._init(*args, **kwargs)
-        self.data["crystal"] = {}
+
+        if "crystal" not in self.data:
+            self.data["crystal"] = {}
         self.data["crystal"]["oligomer_levels"] = None
         self.data["crystal"]["min_monomer_length"] = None
         self.data["info"]["name"] = self.data["info"]["name"] + "_cryst"
@@ -43,20 +39,17 @@ class Crystal(Model):
         self.ligands = None
         return self
 
-    def set_params(self,
+    def set_crystal_params(self,
                    min_monomer_length:int,
-                   oligomer_levels:int|list[int],
                    min_contacts:int=10,
                    contact_threshold:float|int=15,
                    ) -> Self:
         """
         Set parameters for crystal processing.
         :param min_monomer_length: Minimum (inclusive) length of chain to be considered a monomer.
-        :param oligomer_levels: Oligomerisation level/s to consider.
         :return: Self.
         """
         self.data["crystal"]["min_monomer_length"] = min_monomer_length
-        self.data["crystal"]["oligomer_levels"] = oligomer_levels
         self.data["crystal"]["min_contacts"] = min_contacts
         self.data["crystal"]["contact_threshold"] = contact_threshold
         return self
@@ -79,16 +72,14 @@ class Crystal(Model):
                 self.export()
                 self._calculate_oligomerisation_paths()
                 self.export()
-                self._find_oligomers()
-                self.export()
             else:
                 self._recover()
                 print(self.data["crystal"])
-            self._build_oligomers()
             self.export()
             return self
         except MissingCrystalError:
             return None
+
 
     def plot(self, paths=False, show=True):
         """
@@ -124,7 +115,7 @@ class Crystal(Model):
             input("Press Enter to continue...")
         return fig, ax
 
-    def _identyfy_main_elements(self) -> list[list]:
+    def _identyfy_main_elements(self) -> tuple[list, list]:
         """
         Separates chains in model into monomers and ligands, according to the min_monomer_length parameter.
         :return: List of monomers, list of ligands.
@@ -132,39 +123,50 @@ class Crystal(Model):
         if self.data["crystal"]["min_monomer_length"] is None:
             log("error", "Crystal: missing param: min_monomer_length", raise_exception=True)
         log(2, "Identifying elements ({})".format(self.data["info"]["name"]))
-        self.monomers = []
-        self.ligands = []
+
+        monomers = []
+        ligands = []
         print(self.get_full_id(), self.data["info"]["name"])
         for chain in self.get_chains():
             c_len = len(chain)
             log(3, chain, c_len, chain.get_full_id(), chain.data["info"]["name"])
             if c_len <= self.data["crystal"]["min_monomer_length"]:
-                self.ligands.append(chain)
+                ligands.append(chain)
             else:
-                self.monomers.append(chain)
-        self._cast_main_elements()
-        return [self.monomers, self.ligands]
+                monomers.append(chain)
+        self.monomers, self.ligands = self._cast_main_elements(monomers, ligands)
+
+        return self.monomers, self.ligands
 
 
-    def _cast_main_elements(self) -> list[list]:
+    def _cast_main_elements(self, monomers, ligands) -> tuple[list, list]:
         """
         Casts monomers and ligands (bi.Chain objects) to their respective classes.
         :return: List of monomers, list of ligands.
         """
         log(1, "Casting main elements ({})".format(self.data["info"]["name"]))
         from .elements import Ligand, Monomer
-        for n, mon in enumerate(self.monomers):
-            print(mon.data["info"]["name"])
+        mon_ids = []
+        lig_ids = []
+        self.paths["monomer_folder"] = None
+        self.paths["ligand_folder"] = None
+        for n, mon in enumerate(monomers):
             m = Monomer.cast(mon)
-            print(m.data["info"]["name"])
-            self.monomers[n] = m
-        for n, lig in enumerate(self.ligands):
-            l = Ligand.cast(lig)
-            self.ligands[n] = l
-        log(2, "Monomers: {}".format(self.monomers))
-        log(2, "Ligands: {}".format([l.data["info"]["name"] for l in self.ligands]))
+            m.export()
+            mon_ids.append(m.name())
+            if n == 0:
+                self.paths["monomer_folder"] = m.paths["export_folder"]
 
-        return [self.monomers, self.ligands]
+        for n, lig in enumerate(ligands):
+            l = Ligand.cast(lig)
+            l.export()
+            lig_ids.append(l.name())
+            if n == 0:
+                self.paths["ligand_folder"] = l.paths["export_folder"]
+        log(2, f"Monomers: {mon_ids}")
+        log(2, f"Ligands: {lig_ids}")
+
+        return mon_ids, lig_ids
 
 
     def _regenerate_crystal(self) -> Self:
@@ -178,44 +180,48 @@ class Crystal(Model):
         script = PymolScript(name="symmetry_crystal_{}".format(self.data["info"]["name"]),
                              folder=os.path.join(self.paths["export_folder"], "pymol"))
         script.load(self.paths["original"], "original")
+
         try:
             key = self.data["crystal"]["group_key"]
             operations = dictio_space_groups[key]["symops"]
             params = self.data["params"]
             log(2, "Operations:")
             [log(3, o, ">", operations[o]) for o in operations]
-            symmetry_ok = True
-        except:
-            symmetry_ok = False
-            log("warning", f"Crystal data not found for: {self}")
+        except KeyError as e:
             raise MissingCrystalError(self)
-            return None
 
         sym_monomers = [] # Fractional
         sym_ligands = [] # Fractional
         log(2, "Monomers ({})".format(len(self.monomers)))
-        if symmetry_ok:
-            for monomer in self.monomers:
-                log("debug", "Monomer: {}".format(monomer.data["info"]["name"]))
-                sym_monomers.extend(monomer.generate_symmetries(self,
-                                                                threshold=self.data["crystal"]["contact_threshold"],
-                                                                min_contacts=self.data["crystal"]["min_contacts"],
-                                                                contacts=True))
-            [script.load_entity(entity_to_orth(m.copy(), params)) for m in sym_monomers]
+        for monomer in self.monomers:
 
-            log(2, "Ligands ({})".format(len(self.ligands)))
-            for ligand in self.ligands:
-                sym_ligands.extend(ligand.generate_symmetries(self,
-                                                              threshold=self.data["crystal"]["contact_threshold"],
-                                                              min_contacts=self.data["crystal"]["min_contacts"],
-                                                              contacts=False))
-            [script.load_entity(entity_to_orth(l.copy(), params)) for l in sym_ligands]
+            monomer = Monomer.recover(monomer, data_path=os.path.join(self.paths["monomer_folder"], monomer), load_structure=True)
+            log("debug", "Monomer: {}".format(monomer.data["info"]["name"]))
+            sym_monomers.extend(monomer.generate_symmetries(self,
+                                                            threshold=self.data["crystal"]["contact_threshold"],
+                                                            min_contacts=self.data["crystal"]["min_contacts"],
+                                                            contacts=True))
+        [script.load_entity(entity_to_orth(m.copy(), params)) for m in sym_monomers]
+
+        log(2, "Ligands ({})".format(len(self.ligands)))
+        for ligand in self.ligands:
+            sym_ligands.extend(ligand.generate_symmetries(self,
+                                                          threshold=self.data["crystal"]["contact_threshold"],
+                                                          min_contacts=self.data["crystal"]["min_contacts"],
+                                                          contacts=False))
+        [script.load_entity(entity_to_orth(l.copy(), params)) for l in sym_ligands]
 
         script.write_script()
         return self
 
+    def get_oligomers(self, oligomer_levels:int|list[int]):
+        self.data["crystal"]["oligomer_levels"] = oligomer_levels
+        self._find_oligomers()
+        self._build_oligomers()
+        self.export()
+        return self
 
-    def _calculate_oligomerisation_paths(self, show=True) -> Self:
+    def _calculate_oligomerisation_paths(self, show=False) -> Self:
         if self.monomers is None:
             self._identyfy_main_elements()
             self._regenerate_crystal()
@@ -318,6 +324,7 @@ class Crystal(Model):
 
         all_paths = self.data["symmetries"]["all_paths"]
         print(all_paths.keys())
+        print(self.monomers)
         mons = {
             m.id: m for m in self.monomers
         }

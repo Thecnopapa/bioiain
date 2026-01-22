@@ -6,7 +6,6 @@ from .operations import *
 from ..utilities.logging import log
 from ..utilities.maths import *
 from ..biopython import Chain
-from .crystal import Crystal
 
 
 
@@ -29,7 +28,7 @@ class CrystalElement(Chain):
             "paths": None,
         }
         self.sym_elements = []
-        self.paths["export_folder"] = os.path.join(self.paths["export_folder"], "crystal")
+
 
     def __repr__(self):
         return "<bi.{} id={} op:{}>".format(
@@ -41,7 +40,7 @@ class CrystalElement(Chain):
 
 
 
-    def generate_symmetries(self, crystal:Crystal,contacts:bool=True,
+    def generate_symmetries(self, crystal,contacts:bool=True,
                             threshold:int|float=15, min_contacts:int=10,
                             contact_method:str="min-contacts") -> list[Self]:
         """
@@ -60,15 +59,15 @@ class CrystalElement(Chain):
 
         try:
             log(3, "Generating symmetries ({})".format(self.data["info"]["name"]))
+            print(self)
             log(4, self, "CoM:", [round(c) for c in find_com(self.get_atoms())])
             params = crystal.data["params"]
             key = crystal.data["crystal"]["group_key"]
             operations = dictio_space_groups[key]["symops"]
-            symmetry_ok = True
-        except:
+
+        except KeyError:
             log("warning", f"Symmetry could not be generated for {crystal}")
-            symmetry_ok = False
-            return None
+            return []
 
         frac_element = entity_to_frac(self, params)
         self.is_frac = True
@@ -291,25 +290,29 @@ class MonomerContact(object):
 
 class Monomer(CrystalElement):
     def _init(self, *args, **kwargs):
+        self.paths["export_folder"] += "/monomers"
+        self.data["info"]["name"] = self.name().replace("cryst", "mon")
         super()._init(*args, **kwargs)
 
     def __repr__(self):
-        return "<bi.{} id={}>".format(self.__class__.__name__, self.id)
+        return f"<bi.{self.__class__.__name__} id={self.id} name={self.name()}>"
 
     def __str__(self):
-        return "<bi.{} id={}>".format(self.__class__.__name__, self.id)
+        return f"<bi.{self.__class__.__name__} id={self.id} name={self.name()}>"
 
 
 
 class Ligand(CrystalElement):
     def _init(self, *args, **kwargs):
+        self.paths["export_folder"] += "/monomers/ligands"
+        self.data["info"]["name"] = self.name().replace("cryst", "lig")
         super()._init(*args, **kwargs)
 
     def __repr__(self):
-        return "<bi.{} id={}>".format(self.__class__.__name__, self.id)
+        return f"<bi.{self.__class__.__name__} id={self.id} name={self.name()}>"
 
     def __str__(self):
-        return "<bi.{} id={}>".format(self.__class__.__name__, self.id)
+        return f"<bi.{self.__class__.__name__} id={self.id} name={self.name()}>"
 
 
 

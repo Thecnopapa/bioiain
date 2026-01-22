@@ -1,11 +1,29 @@
 import os, json
+from sys import orig_argv
 
 import numpy as np
+
 from .space_groups import dictio_space_groups
 from ..biopython import read_mmcif
 from ..utilities.logging import log
 from ..utilities.strings import string_to_list, clean_string
 
+
+
+
+class MissingCrystalError(Exception):
+    def __init__(self, id=None):
+        if id is None:
+            self.message = "Missing Crystal Card information"
+        else:
+            self.message = f"Missing Crystal Card information for: {id}"
+
+        log("error", self.message)
+
+        super().__init__(self.message)
+
+class SuspiciousCrystalError(MissingCrystalError):
+    pass
 
 def parse_crystal_card(file_path) -> dict|None:
     """
@@ -73,7 +91,7 @@ def parse_crystal_card(file_path) -> dict|None:
             )
         except:
             log("error", f"No unit cell found in file: {file_path}")
-            return None
+            raise MissingCrystalError
         try:
             crystal.update(dict(
                 group_name=mmcif("_symmetry", "space_group_name_H-M"),
@@ -103,7 +121,7 @@ def parse_crystal_card(file_path) -> dict|None:
                     float(mmcif("_database_PDB_matrix", "origx_vector[3]"))
                 )
             ))
-        except:
+        except TypeError:
             log("warning", "Error parsing crystal origin")
         try:
             crystal.update(dict(
@@ -126,8 +144,16 @@ def parse_crystal_card(file_path) -> dict|None:
                     float(mmcif("_atom_sites", "fract_transf_vector[3]"))
                 )
             ))
-        except:
+        except TypeError:
             log("warning", "Error parsing crystal scale")
+
+        if crystal["a"] == crystal["b"] == crystal["c"]:
+            if crystal["alpha"] == crystal["beta"] == crystal["gamma"]:
+                if crystal["Z"] == 1.:
+                    if "P" in crystal["group_name"] and "1" in crystal["group_name"]:
+                        if crystal["ori1"][0] + crystal["ori2"][1] + crystal["ori3"][2] == 3.:
+                            if crystal["scale1"][0] + crystal["scale2"][1] + crystal["scale3"][2] == 3.:
+                                raise SuspiciousCrystalError
         #print(json.dumps(crystal, indent=4))
         return crystal
 

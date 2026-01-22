@@ -4,6 +4,8 @@ from copy import deepcopy
 
 import Bio.PDB as bp
 import json
+
+
 from ..utilities.logging import log
 from typing_extensions import Self
 
@@ -36,6 +38,7 @@ class BiopythonOverlayClass:
 
         entity.__class__ = cls
         entity.base_init()
+
         if entity.child_class is not None:
             if "child_list" in entity.__dict__.keys():
                 entity.__setattr__("child_dict", {})
@@ -52,6 +55,7 @@ class BiopythonOverlayClass:
 
         if hasattr(entity, "_init"):
             entity._init()
+
         return entity
 
 
@@ -92,10 +96,11 @@ class BiopythonOverlayClass:
         c.paths = deepcopy(c.paths)
         return c
 
-
+    def name(self):
+        return self.data["info"]["name"]
 
     def export(self, folder:str|None=None, filename:str|None=None, data:bool=True,
-               structure:bool=True, structure_format:str="pdb") -> list[str|None]|str:
+               structure:bool=True, structure_format:str="cif") -> list[str|None]|str:
 
         if filename is None:
             filename = self.data["info"]["name"]
@@ -126,7 +131,8 @@ class BiopythonOverlayClass:
             exp.save(filepath)
             return filepath
         elif extension == "cif":
-            exp = bp.mmcifio.MMCIFIO().set_structure(self)
+            exp = bp.mmcifio.MMCIFIO()
+            exp.set_structure(self)
             exp.save(filepath)
             return filepath
         return None
@@ -144,17 +150,51 @@ class BiopythonOverlayClass:
         return filepath
 
     @classmethod
-    def recover(cls, *args,data_path=None,  **kwargs, ):
+    def recover(cls, *args, data_path:str=None, load_structure:bool=False,  **kwargs, ):
+        if not data_path.endswith(".data.json"):
+            data_path += ".data.json"
         try:
             self = cls()
         except:
             self = cls(*args, **kwargs)
         self.base_init()
+
+        if load_structure:
+            from .imports import loadPDB
+            struc_path = data_path.replace(".data.json", ".structure.cif")
+            struc = loadPDB(struc_path, "recovering")
+            child = struc
+            print(child.__class__)
+            print(self.__class__)
+            print(issubclass(self.__class__, child.__class__))
+            while not issubclass(self.__class__, child.__class__):
+                print(child.__class__.__mro__[0])
+                print(self.__class__)
+                print(issubclass(self.__class__, child.__class__))
+                try:
+                    child = child[0]
+                    print(child.__class__.__mro__[0])
+                    print(self.__class__)
+                    print(issubclass(self.__class__, child.__class__))
+                except:
+                    break
+            if issubclass(self.__class__, child.__class__):
+                print(child)
+                self = self.cast(child)
+            else:
+                raise Exception("Failed to load structure")
+
+        print(self)
         r = self._recover(data_path=data_path)
         if r is None:
             log("warning", f"Failed recovery for: {data_path}")
             return None
-        self.id = self.data["info"]["name"]
+        print(self.id)
+        self.parent = {"child_dict": {}}
+        #self.__setattr__("_id", self.name())
+        #self.__setattr__("id", self.name())
+
+        print(self)
         return self
 
 

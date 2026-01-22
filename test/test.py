@@ -36,15 +36,19 @@ for file in os.listdir(file_folder):
 
     crystal = structure.get_crystals()
 
-    crystal.set_params(
+    crystal.set_crystal_params(
         min_monomer_length=50,
-        oligomer_levels=[2],
         min_contacts=10,
         contact_threshold=15,
     )
 
     if crystal.process(force="force" in sys.argv) is None:
         continue
+    print(crystal.data["crystal"])
+
+    crystal.get_oligomers(
+        oligomer_levels=[2],
+    )
 
 
     from src.bioiain.symmetries import Oligomer
