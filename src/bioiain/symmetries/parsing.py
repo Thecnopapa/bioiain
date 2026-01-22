@@ -1,12 +1,13 @@
-import os
+import os, json
 
 import numpy as np
 from .space_groups import dictio_space_groups
+from ..biopython import read_mmcif
 from ..utilities.logging import log
 from ..utilities.strings import string_to_list, clean_string
 
 
-def parse_crystal_card(file_path) -> dict:
+def parse_crystal_card(file_path) -> dict|None:
     """
     Parse crystal card from .pdb/.cif files.
     :param file_path: File path of file
@@ -56,86 +57,78 @@ def parse_crystal_card(file_path) -> dict:
 
         return crystal
 
-
     elif "cif" in ext:
-        group_name = None
-        group_key = None
-        a = None
-        b = None
-        c = None
-        alpha = None
-        beta = None
-        gamma = None
+        mmcif = read_mmcif(file_path, subset=["_symmetry", "_cell", "_database_PDB_matrix", "_atom_sites"])
+        #print(json.dumps(mmcif.data, indent=4))
+        try:
+            crystal = dict(
 
-        origx1 = [None]*4
-        origx2 = [None]*4
-        origx3 = [None]*4
-        scale1 = [None]*4
-        scale2 = [None]*4
-        scale3 = [None]*4
+                a=float(mmcif("_cell", "length_a")),
+                b=float(mmcif("_cell", "length_b")),
+                c=float(mmcif("_cell", "length_c")),
+                alpha=float(mmcif("_cell", "angle_alpha")),
+                beta=float(mmcif("_cell", "angle_beta")),
+                gamma=float(mmcif("_cell", "angle_gamma")),
+                Z=float(mmcif("_cell","Z_PDB"))
+            )
+        except:
+            log("error", f"No unit cell found in file: {file_path}")
+            return None
+        try:
+            crystal.update(dict(
+                group_name=mmcif("_symmetry", "space_group_name_H-M"),
+                group_key=int(mmcif("_symmetry", "Int_Tables_number"))
+            ))
+        except:
+            log("warning", f"No symmetry found in file: {file_path}")
 
-        with open(file_path) as file:  # Open the file in question
-            for line in file:  # Check every line for the keywords
-                if "_symmetry.Int_Tables_number" in line: group_key = int(string_to_list(line)[-1])
-                elif "_symmetry.space_group_name_H-M" in line: group_name = clean_string(" ".join(string_to_list(line)[1:]), allow=" ")
-
-                elif "_cell.length_a" in line:
-                    print(string_to_list(line))
-                    a = float(string_to_list(line)[-1])
-                elif "_cell.length_b" in line: b = float(string_to_list(line)[-1])
-                elif "_cell.length_c" in line: c = float(string_to_list(line)[-1])
-
-                elif "_cell.angle_alpha" in line: alpha = float(string_to_list(line)[-1])
-                elif "_cell.angle_beta" in line: beta = float(string_to_list(line)[-1])
-                elif "_cell.angle_gamma" in line: gamma = float(string_to_list(line)[-1])
-
-                elif "_cell.Z_PDB" in line: Z = float(string_to_list(line)[-1])
-
-                elif "_database_PDB_matrix.origx[1][1]" in line: origx1[0] = string_to_list(line)[-1]
-                elif "_database_PDB_matrix.origx[1][2]" in line: origx1[1] = string_to_list(line)[-1]
-                elif "_database_PDB_matrix.origx[1][3]" in line: origx1[2] = string_to_list(line)[-1]
-                elif "_database_PDB_matrix.origx_vector[1]" in line: origx1[3] = string_to_list(line)[-1]
-
-                elif "_database_PDB_matrix.origx[2][1]" in line: origx2[0] = string_to_list(line)[-1]
-                elif "_database_PDB_matrix.origx[2][2]" in line: origx2[1] = string_to_list(line)[-1]
-                elif "_database_PDB_matrix.origx[2][3]" in line: origx2[2] = string_to_list(line)[-1]
-                elif "_database_PDB_matrix.origx_vector[2]" in line: origx2[3] = string_to_list(line)[-1]
-
-                elif "_database_PDB_matrix.origx[3][1]" in line: origx3[0] = string_to_list(line)[-1]
-                elif "_database_PDB_matrix.origx[3][2]" in line: origx3[1] = string_to_list(line)[-1]
-                elif "_database_PDB_matrix.origx[3][3]" in line: origx3[2] = string_to_list(line)[-1]
-                elif "_database_PDB_matrix.origx_vector[3]" in line: origx3[3] = string_to_list(line)[-1]
-
-                elif "_atom_sites.fract_transf_matrix[1][1]" in line: scale1[0] = string_to_list(line)[-1]
-                elif "_atom_sites.fract_transf_matrix[1][2]" in line: scale1[1] = string_to_list(line)[-1]
-                elif "_atom_sites.fract_transf_matrix[1][3]" in line: scale1[2] = string_to_list(line)[-1]
-                elif "_atom_sites.fract_transf_vector[1]" in line: scale1[3] = string_to_list(line)[-1]
-
-                elif "_atom_sites.fract_transf_matrix[2][1]" in line: scale2[0] = string_to_list(line)[-1]
-                elif "_atom_sites.fract_transf_matrix[2][2]" in line: scale2[1] = string_to_list(line)[-1]
-                elif "_atom_sites.fract_transf_matrix[2][3]" in line: scale2[2] = string_to_list(line)[-1]
-                elif "_atom_sites.fract_transf_vector[2]" in line: scale2[3] = string_to_list(line)[-1]
-
-                elif "_atom_sites.fract_transf_matrix[3][1]" in line: scale3[0] = string_to_list(line)[-1]
-                elif "_atom_sites.fract_transf_matrix[3][2]" in line: scale3[1] = string_to_list(line)[-1]
-                elif "_atom_sites.fract_transf_matrix[3][3]" in line: scale3[2] = string_to_list(line)[-1]
-                elif "_atom_sites.fract_transf_vector[3]" in line: scale3[3] = string_to_list(line)[-1]
-
-
-
-        crystal = dict(a=a,
-                       b=b,
-                       c=c,
-                       alpha=alpha,
-                       beta=beta,
-                       gamma=gamma,
-                       Z=Z,
-                       ori1=origx1, ori2=origx2, ori3=origx3,
-                       scale1=scale1, scale2=scale2, scale3=scale3,
-                       group_name=group_name,
-                       group_key=group_key,)
-
-
+        try:
+            crystal.update(dict(
+                ori1=(
+                    float(mmcif("_database_PDB_matrix", "origx[1][1]")),
+                    float(mmcif("_database_PDB_matrix", "origx[1][2]")),
+                    float(mmcif("_database_PDB_matrix", "origx[1][3]")),
+                    float(mmcif("_database_PDB_matrix", "origx_vector[1]"))
+                ),
+                ori2=(
+                    float(mmcif("_database_PDB_matrix", "origx[2][1]")),
+                    float(mmcif("_database_PDB_matrix", "origx[2][2]")),
+                    float(mmcif("_database_PDB_matrix", "origx[2][3]")),
+                    float(mmcif("_database_PDB_matrix", "origx_vector[2]"))
+                ),
+                ori3=(
+                    float(mmcif("_database_PDB_matrix", "origx[3][1]")),
+                    float(mmcif("_database_PDB_matrix", "origx[3][2]")),
+                    float(mmcif("_database_PDB_matrix", "origx[3][3]")),
+                    float(mmcif("_database_PDB_matrix", "origx_vector[3]"))
+                )
+            ))
+        except:
+            log("warning", "Error parsing crystal origin")
+        try:
+            crystal.update(dict(
+                scale1=(
+                    float(mmcif("_atom_sites", "fract_transf_matrix[1][1]")),
+                    float(mmcif("_atom_sites", "fract_transf_matrix[1][2]")),
+                    float(mmcif("_atom_sites", "fract_transf_matrix[1][3]")),
+                    float(mmcif("_atom_sites", "fract_transf_vector[1]"))
+                ),
+                scale2=(
+                    float(mmcif("_atom_sites", "fract_transf_matrix[2][1]")),
+                    float(mmcif("_atom_sites", "fract_transf_matrix[2][2]")),
+                    float(mmcif("_atom_sites", "fract_transf_matrix[2][3]")),
+                    float(mmcif("_atom_sites", "fract_transf_vector[2]"))
+                ),
+                scale3=(
+                    float(mmcif("_atom_sites", "fract_transf_matrix[3][1]")),
+                    float(mmcif("_atom_sites", "fract_transf_matrix[3][2]")),
+                    float(mmcif("_atom_sites", "fract_transf_matrix[3][3]")),
+                    float(mmcif("_atom_sites", "fract_transf_vector[3]"))
+                )
+            ))
+        except:
+            log("warning", "Error parsing crystal scale")
+        #print(json.dumps(crystal, indent=4))
         return crystal
 
 
@@ -183,6 +176,9 @@ def calculate_parameters(card:dict) -> dict:
     :param card: Crystal card
     :return: Parameters dictionary
     """
+    if card is None:
+        log("warning", "No card loaded")
+        return None
     cell_dim = get_cell_dim(card)
     parameters = {}
     parameters["A"] = A = float(cell_dim[0])

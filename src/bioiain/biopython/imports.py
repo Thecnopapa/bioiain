@@ -151,8 +151,9 @@ def recover(name, export_folder="./exports", download_dir="./data", download=Tru
 
 
 class MMCIF(object):
-    def __init__(self, data):
+    def __init__(self, data, cif_path=None):
         self.data = data
+        self.cif_path = cif_path
 
     def save(self, path):
         json.dump(self.data, open(path, "w"), indent=4)
@@ -160,24 +161,36 @@ class MMCIF(object):
     def __getitem__(self, key):
         index = None
         subkey = None
-        if type(key) in [list, tuple]:
-            if len(key) == 1:
-                key = key[0]
-            if len(key) == 2:
-                key, index = key
-            elif len(key) == 3:
-                key, index, subkey = key
+        key = key.split(".")
+        #print(key)
+
+        if len(key) == 1:
+            key = key[0]
+        if len(key) == 2:
+            key, subkey = key
+
+        elif len(key) == 3:
+            key, index, subkey = key
+        else:
+            log("warning", "Invalid key {}".format(key))
 
         if index is None:
             index = 0
 
+        try:
+            ret = self.data[key][index]
 
-        ret = self.data[key][index]
-
-        if subkey is not None:
-            ret = ret[subkey]
+            if subkey is not None:
+                ret = ret[subkey]
+        except KeyError as e:
+            log("warning", f"Key not found: {e} ({key}.{index}.{subkey}) in {self.cif_path}")
+            return None
 
         return ret
+
+    def __call__(self, *args):
+        entry = ".".join([*args])
+        return self[entry]
 
 
 
@@ -191,7 +204,8 @@ def read_mmcif(file_path, output_folder="headers", subset:list|str=None, exclude
     from ..utilities.strings import str_to_list_with_literals
     data = {}
     name = os.path.basename(file_path).split(".")[0]
-    os.makedirs(output_folder, exist_ok=True)
+    if output_folder is not None:
+        os.makedirs(output_folder, exist_ok=True)
     with open(file_path, "r") as f:
         n = -1
         in_loop = False
@@ -311,7 +325,7 @@ def read_mmcif(file_path, output_folder="headers", subset:list|str=None, exclude
                     #print("line_list",line_list)
                     #print(n)
                     if n != 1:
-                        log("warning", f"No key-value structure found in line {n}:", repr(line))
+                        log("debug", f"No key-value structure found in line {n}:", repr(line))
                     else:
                         print("Parsing:", line.replace("\n", "").strip())
                 if not multi_line:
@@ -378,9 +392,11 @@ def read_mmcif(file_path, output_folder="headers", subset:list|str=None, exclude
                         d = {k:v for k, v in zip(loop_keys, l)}
                         data[group_key].append(d)
                     #print(f"{group_key} ->", f"list of length: {len(loop_values)}")
-    save_path = os.path.join(output_folder, f"{name}.header.json")
-    log("debug","Headers saved to:", os.path.abspath(save_path))
-    mmcif = MMCIF(data)
+
+    if output_folder is not None:
+        save_path = os.path.join(output_folder, f"{name}.header.json")
+        log("debug","Headers saved to:", os.path.abspath(save_path))
+    mmcif = MMCIF(data, cif_path=file_path)
     mmcif.save(save_path)
     return mmcif
 
