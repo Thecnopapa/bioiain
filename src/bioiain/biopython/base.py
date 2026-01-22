@@ -143,13 +143,19 @@ class BiopythonOverlayClass:
 
         return filepath
 
-    def recover(self):
-        if os.path.exists(self.paths["export_folder"]):
-            data_path = os.path.join(self.paths["export_folder"], "{}.data.json".format(self.data["info"]["name"]))
-            if os.path.exists(data_path):
-                log("debug", "recovering data for: {}".format(self.data["info"]["name"]))
-                old_data = json.load(open(data_path))
-                self.data = self.data | old_data["data"]
-                self.paths = self.paths | old_data["paths"]
-            else:
-                log("debug", "no previous data found for: {}".format(self.data["info"]["name"]))
+    def recover(self, data_path=None):
+        if data_path is None:
+            if os.path.exists(self.paths["export_folder"]):
+                data_path = os.path.join(self.paths["export_folder"], "{}.data.json".format(self.data["info"]["name"]))
+        if data_path is None:
+            log("warning", "No data path provided for recover()")
+            return None
+        elif os.path.exists(data_path):
+            log("debug", "recovering data for: {}".format(self.data["info"]["name"]))
+            old_data = json.load(open(data_path))
+            self.data = self.data | old_data["data"]
+            self.paths = self.paths | old_data["paths"]
+            return self
+        else:
+            log("warning", "No previous data found for: {}".format(self.data["info"]["name"]))
+            return None

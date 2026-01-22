@@ -124,7 +124,7 @@ class CrystalElement(Chain):
                     position = tuple([int(p) for p in position])
                     displaced_element.data["symmetry"]["positions"].append(position)
 
-                    if any([p >= 10 for p in position]):
+                    if any([p >= 50 for p in position]):
                         print(atom.get_full_id())
                         print("Position:", position)
                         print("Original:", atom.coord)
