@@ -206,7 +206,7 @@ class Crystal(Model):
             sym_monomers.extend(monomer.generate_symmetries(self, monomers, ligands,
                                                             threshold=self.data["crystal"]["contact_threshold"],
                                                             min_contacts=self.data["crystal"]["min_contacts"],
-                                                            contacts=True))
+                                                            do_contacts=True))
         [script.load_entity(entity_to_orth(m.copy(), params)) for m in sym_monomers]
 
         log(2, "Ligands ({})".format(len(self.data["ligands"])))
@@ -214,7 +214,7 @@ class Crystal(Model):
             sym_ligands.extend(ligand.generate_symmetries(self, monomers, ligands,
                                                           threshold=self.data["crystal"]["contact_threshold"],
                                                           min_contacts=self.data["crystal"]["min_contacts"],
-                                                          contacts=False))
+                                                          do_contacts=False))
         [script.load_entity(entity_to_orth(l.copy(), params)) for l in sym_ligands]
 
         script.write_script()

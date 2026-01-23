@@ -98,8 +98,6 @@ class CrystalElement(Chain):
 
             displaced_element.data["info"]["name"] = "{}_op{}".format(self.data["info"]["name"], n)
             if do_contacts:
-                for m in monomers:
-                    if not(n == 1 and displaced_element.id == m.id):
 
                 contact = {m.id:MonomerContact(m, displaced_element,
                                                contact_method=contact_method,
@@ -143,7 +141,7 @@ class CrystalElement(Chain):
                     atom.coord = new_coord
                     atom.position = position
 
-                    if contacts and atom.id == "CA":
+                    if do_contacts and atom.id == "CA":
                         for m in monomers:
                             if n == 1 and displaced_element.id == m.id:
                                 continue
@@ -166,7 +164,7 @@ class CrystalElement(Chain):
                                 else:
                                     print("false", end="\r")
             exit()
-            if contacts:
+            if do_contacts:
 
                 for m in monomers:
                     if n == 1 and displaced_element.id == m.id:
@@ -215,6 +213,7 @@ class MonomerContact(object):
     def __init__(self, monomer1, monomer2, **kwargs):
         self.data = {
             "name":"Contact: ({}-{}): Unprocessed".format(monomer1.data["info"]["name"], monomer2.data["info"]["name"]),
+            "contact_id": f"{monomer1.name()}-{monomer2.name()}",
             "is_contact": None,
             "positions": [],
             "position": None,
@@ -276,7 +275,7 @@ class MonomerContact(object):
             return False
 
     def export(self, folder):
-        fname = f"{}.contact.json"
+        fname = f"{self.data['contact_id']}.contact.json"
         filepath = os.path.join(folder, fname)
         json.dump(self.data, open(filepath, "w"))
 
