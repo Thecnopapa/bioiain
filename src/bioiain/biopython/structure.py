@@ -21,8 +21,9 @@ class Structure(bp.Structure.Structure, BiopythonOverlayClass):
             self.data["params"] = calculate_parameters(self.data["crystal"])
         except MissingCrystalError:
             self.data["crystal"] = {}
-            self.data["crystals"] = []
+            self.data["crystals"] = None
             self.data["params"] = None
+            self.add_flag("MissingCrystalError")
             return None
         self.pass_down()
         self.export()

@@ -39,7 +39,7 @@ for n, file in enumerate(os.listdir(file_folder)):
         structure.init_all()
 
     bi.log("header", structure)
-    if structure is None:
+    if structure is None or structure.has_flag("MissingCrystalError"):
         continue
 
 
@@ -74,7 +74,7 @@ for n, file in enumerate(os.listdir(file_folder)):
 
 
 
-    exit()
+
     continue
 
     # crystal.get_oligomers(
