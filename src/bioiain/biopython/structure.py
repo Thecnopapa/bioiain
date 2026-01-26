@@ -40,12 +40,12 @@ class Structure(bp.Structure.Structure, BiopythonOverlayClass):
     def get_crystals(self, first_model_only=True):
         from ..symmetries import Crystal
         if first_model_only:
-            c = Crystal.cast(self.get_list()[0].copy())
+            c = Crystal.cast(self.get_list()[0].copy(), export=True)
             self.paths["crystal_folder"] = c.paths["export_folder"]
             self.data["crystals"] = [c.get_name()]
         else:
             models = self.get_list()
-            cs = [Crystal.cast(m.copy()) for m in models]
+            cs = [Crystal.cast(m.copy(), export=True) for m in models]
             self.paths["crystal_folder"] = cs[0].paths["export_folder"]
             self.data["crystals"] = [c.get_name() for c in cs]
         self.export()

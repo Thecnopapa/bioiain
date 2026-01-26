@@ -5,6 +5,7 @@ from typing_extensions import Self
 from copy import deepcopy
 
 from .operations import *
+from ..biopython.base import BioiainObject
 from ..utilities.logging import log
 from ..utilities.maths import *
 from ..biopython import Chain
@@ -249,7 +250,7 @@ class CrystalElement(Chain):
 
 
 
-class MonomerContact(object):
+class MonomerContact(BioiainObject):
     """
     Class to calculate and store element-element contact information.
     :param monomer1: First monomer (certain values, such as the parameter dict will be obtained from this entity).

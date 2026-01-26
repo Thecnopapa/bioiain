@@ -23,7 +23,7 @@ class Crystal(Model):
         :param kwargs:
         :return: Self.
         """
-        self.force = False
+
         super()._init(*args, **kwargs)
 
         if "crystal" not in self.data:
@@ -37,7 +37,8 @@ class Crystal(Model):
 
         self.data["monomers"] = None
         self.data["ligands"] = None
-        self.export()
+        if kwargs.get("export", False):
+            self.export()
         return self
 
     def set_crystal_params(self,
@@ -61,23 +62,25 @@ class Crystal(Model):
         Processes the crystal through the main pipeline. Requires set_params() to be run beforehand.
         :return: Self.
         """
-        self.force = force
-        log(1, "Processing crystal ({}), FORCE:{}".format(self.data["info"]["name"], self.force))
+
         try:
-            if self.force:
+            log(1, "Processing crystal ({}), FORCE:{}".format(self.data["info"]["name"], force))
+
+            if force or not self.has_flag("Processed"):
                 self.pass_down()
                 self.export()
                 self._identyfy_main_elements()
                 self.export()
                 self._regenerate_crystal()
                 self.export()
+                self.add_flag("Processed", True)
+                self.export()
 
             else:
                 self._recover()
-                print(self.data["crystal"])
-            self.export()
             return self
         except MissingCrystalError:
+            self.add_flag("MissingCrystalError", True)
             return None
 
 

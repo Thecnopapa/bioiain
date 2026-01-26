@@ -16,7 +16,7 @@ xmltodict >= 0.14.2
 ##############################
 
 #dev
-bioiain >= 0.0.6.6.001
+bioiain >= 0.0.6.6.1
 pdoc3
 twine
 build

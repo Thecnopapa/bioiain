@@ -30,28 +30,31 @@ for n, file in enumerate(os.listdir(file_folder)):
     bi.log("title", code)
 
 
-    if force:
+
+    try:
+        if force: raise Exception("FORCE")
+        structure = Structure.recover(code, data_path=f"exports/{code}/{code}", load_structure=True)
+    except:
         structure = bi.biopython.loadPDB(os.path.join(file_folder, f"{code}.cif"))
         structure.init_all()
-    else:
-        structure = Structure.recover(code, data_path=f"exports/{code}/{code}", load_structure=True)
 
     bi.log("header", structure)
     if structure is None:
         continue
 
-    if force:
+
+
+
+    crystals = structure.data.get("crystals", None)
+    if crystals is None or force:
         crystals = structure.init_crystal()
 
+    crystal = Crystal.recover("cryst", data_path=os.path.join(structure.paths["crystal_folder"], crystals[0]),
+                                  load_structure=True)
+
+    bi.log("header", crystal)
 
 
-    crystals = structure.data["crystals"]
-    if crystals is None:
-        continue
-    print(crystals, structure.paths["crystal_folder"])
-    crystal = Crystal.recover("cryst", data_path=os.path.join(structure.paths["crystal_folder"], crystals[0]), load_structure=True)
-    if crystal is None:
-        continue
     crystal.set_crystal_params(
         min_monomer_length=50,
         min_contacts=10,
@@ -59,11 +62,9 @@ for n, file in enumerate(os.listdir(file_folder)):
     )
 
 
-    if force:
-        if crystal.process(force=force) is None:
-
-            continue
-    monomers = crystal.data["monomers"]
+    if crystal.process(force=force) is None:
+        raise Exception("NO CRYSTAL")
+    monomers = crystal.data.get("monomers", None)
     print("monomers")
     print(monomers)
     from src.bioiain.symmetries.interactions import *
@@ -73,7 +74,7 @@ for n, file in enumerate(os.listdir(file_folder)):
 
 
 
-
+    exit()
     continue
 
     # crystal.get_oligomers(
