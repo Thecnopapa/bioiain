@@ -130,7 +130,7 @@ class Crystal(Model):
 
         monomers = []
         ligands = []
-        print(self.get_full_id(), self.data["info"]["name"])
+        #print(self.get_full_id(), self.data["info"]["name"])
         for chain in self.get_chains():
             c_len = len(chain)
             log(3, chain, c_len, chain.get_full_id(), chain.data["info"]["name"])
@@ -208,7 +208,7 @@ class Crystal(Model):
         monomers = [self._restore_monomer(m) for m in self.data["monomers"]]
         ligands = [self._restore_ligand(l) for l in self.data["ligands"]]
         for monomer in monomers:
-            log("debug", "Monomer: {}".format(monomer.data["info"]["name"]))
+            #log("debug", "Monomer: {}".format(monomer.data["info"]["name"]))
             sym_monomers.extend(monomer.generate_symmetries(self, monomers, ligands,
                                                             threshold=self.data["crystal"]["contact_threshold"],
                                                             min_contacts=self.data["crystal"]["min_contacts"],

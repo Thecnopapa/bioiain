@@ -92,7 +92,7 @@ class CrystalElement(Chain):
                     ops.append((0, monomer))
                 elif monomer.id == self.id:
                     self_found = True
-        print(ops)
+        #print(ops)
         for n, operation in ops:
 
             if n != 0:
