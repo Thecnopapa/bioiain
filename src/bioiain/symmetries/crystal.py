@@ -37,6 +37,7 @@ class Crystal(Model):
 
         self.data["monomers"] = None
         self.data["ligands"] = None
+        self.export()
         return self
 
     def set_crystal_params(self,
@@ -153,14 +154,14 @@ class Crystal(Model):
         for n, mon in enumerate(monomers):
             m = Monomer.cast(mon)
             m.export()
-            mon_ids.append(m.name())
+            mon_ids.append(m.get_name())
             if n == 0:
                 self.paths["monomer_folder"] = m.paths["export_folder"]
 
         for n, lig in enumerate(ligands):
             l = Ligand.cast(lig)
             l.export()
-            lig_ids.append(l.name())
+            lig_ids.append(l.get_name())
             if n == 0:
                 self.paths["ligand_folder"] = l.paths["export_folder"]
         log(2, f"Monomers: {mon_ids}")
@@ -187,6 +188,8 @@ class Crystal(Model):
                              folder=os.path.join(self.paths["export_folder"], "pymol"))
         script.load(self.paths["original"], "original")
 
+
+
         try:
             key = self.data["crystal"]["group_key"]
             operations = dictio_space_groups[key]["symops"]
@@ -206,7 +209,7 @@ class Crystal(Model):
             sym_monomers.extend(monomer.generate_symmetries(self, monomers, ligands,
                                                             threshold=self.data["crystal"]["contact_threshold"],
                                                             min_contacts=self.data["crystal"]["min_contacts"],
-                                                            do_contacts=True))
+                                                            save_contacts=True))
         [script.load_entity(entity_to_orth(m.copy(), params)) for m in sym_monomers]
 
         log(2, "Ligands ({})".format(len(self.data["ligands"])))
@@ -214,7 +217,7 @@ class Crystal(Model):
             sym_ligands.extend(ligand.generate_symmetries(self, monomers, ligands,
                                                           threshold=self.data["crystal"]["contact_threshold"],
                                                           min_contacts=self.data["crystal"]["min_contacts"],
-                                                          do_contacts=False))
+                                                          save_contacts=False))
         [script.load_entity(entity_to_orth(l.copy(), params)) for l in sym_ligands]
 
         script.write_script()

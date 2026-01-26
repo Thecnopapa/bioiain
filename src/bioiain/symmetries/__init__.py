@@ -1,4 +1,4 @@
-__all__ = ["operations", "parsing", "elements", "crystal", "oligomer"]
+__all__ = ["operations", "parsing", "elements", "crystal", "oligomer", "interactions"]
 
 from .operations import *
 from .parsing import *

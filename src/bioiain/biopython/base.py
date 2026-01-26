@@ -96,7 +96,7 @@ class BiopythonOverlayClass:
         c.paths = deepcopy(c.paths)
         return c
 
-    def name(self):
+    def get_name(self):
         return self.data["info"]["name"]
 
     def export(self, folder:str|None=None, filename:str|None=None, data:bool=True,
@@ -150,13 +150,17 @@ class BiopythonOverlayClass:
         return filepath
 
     @classmethod
-    def recover(cls, *args, data_path:str=None, load_structure:bool=False,  **kwargs, ):
+    def recover(cls, *args, data_path:str=None, load_structure:bool=True,  **kwargs, ):
         if not data_path.endswith(".data.json"):
             data_path += ".data.json"
         try:
             self = cls()
         except:
-            self = cls(*args, **kwargs)
+            try:
+                self = cls(*args, **kwargs)
+            except:
+                self = cls("recovering")
+
         self.base_init()
 
         if load_structure:
@@ -191,8 +195,8 @@ class BiopythonOverlayClass:
             return None
         #print(self.id)
         self.parent = {"child_dict": {}}
-        #self.__setattr__("_id", self.name())
-        #self.__setattr__("id", self.name())
+        #self.__setattr__("_id", self.get_name())
+        #self.__setattr__("id", self.get_name())
 
         #print(self)
         return self

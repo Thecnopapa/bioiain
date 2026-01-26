@@ -21,10 +21,14 @@ class Structure(bp.Structure.Structure, BiopythonOverlayClass):
             self.data["params"] = calculate_parameters(self.data["crystal"])
         except MissingCrystalError:
             self.data["crystal"] = {}
+            self.data["crystals"] = []
             self.data["params"] = None
             return None
         self.pass_down()
         self.export()
+        self.data["crystals"] = self.get_crystals()
+        self.export()
+        return self.data["crystals"]
 
 
 
@@ -36,7 +40,13 @@ class Structure(bp.Structure.Structure, BiopythonOverlayClass):
     def get_crystals(self, first_model_only=True):
         from ..symmetries import Crystal
         if first_model_only:
-            return Crystal.cast(self.get_list()[0].copy())
+            c = Crystal.cast(self.get_list()[0].copy())
+            self.paths["crystal_folder"] = c.paths["export_folder"]
+            self.data["crystals"] = [c.get_name()]
         else:
             models = self.get_list()
-            return [Crystal.cast(m.copy()) for m in models]
+            cs = [Crystal.cast(m.copy()) for m in models]
+            self.paths["crystal_folder"] = cs[0].paths["export_folder"]
+            self.data["crystals"] = [c.get_name() for c in cs]
+        self.export()
+        return self.data["crystals"]
