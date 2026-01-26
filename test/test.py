@@ -37,15 +37,21 @@ for n, file in enumerate(os.listdir(file_folder)):
         structure = Structure.recover(code, data_path=f"exports/{code}/{code}", load_structure=True)
 
     bi.log("header", structure)
+    if structure is None:
+        continue
 
     if force:
         crystals = structure.init_crystal()
 
 
+
     crystals = structure.data["crystals"]
+    if crystals is None:
+        continue
     print(crystals, structure.paths["crystal_folder"])
     crystal = Crystal.recover("cryst", data_path=os.path.join(structure.paths["crystal_folder"], crystals[0]), load_structure=True)
-
+    if crystal is None:
+        continue
     crystal.set_crystal_params(
         min_monomer_length=50,
         min_contacts=10,
@@ -56,7 +62,7 @@ for n, file in enumerate(os.listdir(file_folder)):
     if force:
         if crystal.process(force=force) is None:
 
-            exit()
+            continue
     monomers = crystal.data["monomers"]
     print("monomers")
     print(monomers)
@@ -67,7 +73,7 @@ for n, file in enumerate(os.listdir(file_folder)):
 
 
 
-    exit()
+
     continue
 
     # crystal.get_oligomers(
