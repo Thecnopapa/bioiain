@@ -80,7 +80,6 @@ class CrystalElement(Chain):
         if save_contacts:
             if self.data["contacts"]["relevant"] is None:
                 self.data["contacts"]["relevant"] = []
-            self.data["contacts"]["contact_folder"] = self.paths["export_folder"]+"/contacts"
             self.data["contacts"]["threshold"] = threshold
             self.data["contacts"]["min_contacts"] = min_contacts
 
@@ -185,8 +184,8 @@ class CrystalElement(Chain):
                                     print("true", end="\r")
                                     #print(a.get_full_id())
                                     contacts[m.id].add({
-                                        "atom1": {"chain":a.get_full_id()[-3], "resn": a.get_full_id()[-2][-2], "element": a.get_full_id()[-1][-2]},
-                                        "atom2": {"chain":atom.get_full_id()[-3], "resn": atom.get_full_id()[-2][-2], "element": atom.get_full_id()[-1][-2], "pos": atom.position},
+                                        "atom1": {"chain":a.get_full_id()[-3][-1], "resn": a.get_full_id()[-2][-2], "element": a.get_full_id()[-1][-2]},
+                                        "atom2": {"chain":atom.get_full_id()[-3][-1], "resn": atom.get_full_id()[-2][-2], "element": atom.get_full_id()[-1][-2], "pos": atom.position},
                                         "distance": float(np.sqrt(d)),
                                         "below_threshold": True,
                                         "threshold": threshold,
@@ -265,7 +264,7 @@ class MonomerContact(BioiainObject):
             "positions": [],
             "position": None,
             "kwargs": kwargs,
-            "export_folder": monomer1.paths["export_folder"]+"/contacts",
+            "export_folder": monomer1.paths["contact_folder"],
             "monomer1": {
                 "name": monomer1.data["info"]["name"],
                 "id": monomer1.id,
@@ -360,6 +359,8 @@ class MonomerContact(BioiainObject):
 class Monomer(CrystalElement):
     def _init(self, *args, **kwargs):
         self.paths["export_folder"] += "/monomers"
+        self.paths["contact_folder"] = self.paths["export_folder"] + "/contacts"
+
         self.data["info"]["name"] = self.get_name().replace("cryst", "mon")
         super()._init(*args, **kwargs)
 

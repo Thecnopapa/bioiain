@@ -86,6 +86,8 @@ class PymolScript(object):
         logging.log("debug", "$ " + " ".join(cmd))
         try:
             subprocess.run(cmd)
+        except KeyboardInterrupt:
+            logging.log("debug", "\nClosing Pymol...")
         except Exception as e:
             print(e)
 
@@ -189,6 +191,21 @@ class PymolScript(object):
         args = f"'{os.path.abspath(path)}'", f"'{name}'"
         return self.add(fun, *args, **kwargs)
 
+    def delete(self, sele="(all)", **kwargs) -> Command:
+
+        fun = "delete"
+        sele = self._to_str(sele)
+        return self.add(fun, sele, **kwargs)
+
+    def show(self, sele="(all)", representation="all", **kwargs):
+        fun = "show"
+        return self.add(fun, representation, sele, **kwargs)
+
+    def hide(self, sele="(all)", representation="all", **kwargs):
+        fun = "hide"
+        sele = self._to_str(sele)
+        return self.add(fun, self._to_str(representation), sele, **kwargs)
+
     def load_entity(self, entity:BiopythonOverlayClass, name:str|None=None, overwrite:bool=True) -> Command:
         """
         Adds command to load file from entity. Entity is exported to ./.temp as of the cwd.
@@ -259,6 +276,34 @@ class PymolScript(object):
         #kwargs["spectrum"] = spectrum
 
         return self.add(fun, *args, **kwargs)
+
+    def pseudoatom(self, name="tmp", coord=(0,0,0), **kwargs) -> Command:
+        fun = "pseudoatom"
+        name = self._to_str(name)
+        return self.add(fun, name, pos=coord, **kwargs)
+
+    def line(self, name="line", sele1=None, sele2=None, coord1=(0,0,0), coord2=(0,0,0), show_distance=False, **kwargs):
+        fun = "distance"
+        if sele1 is None:
+            sele2 = "tmp1"
+            self.pseudoatom(sele1, coord=coord1, **kwargs)
+        if sele2 is None:
+            sele2 = "tmp2"
+            self.pseudoatom(sele2, coord=coord2, **kwargs)
+        args = [self._to_str(name), self._to_str(sele1), self._to_str(sele2)]
+
+        r = self.add(fun, *args, **kwargs)
+        if sele1 == "tmp1":
+            self.delete(sele1)
+        if sele2 == "tmp2":
+            self.delete(sele2)
+        if not show_distance:
+            self.hide(name, "label")
+        return r
+
+
+
+
 
 
 

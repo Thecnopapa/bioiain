@@ -22,7 +22,7 @@ file_folder = downloadPDB("/home/iain/projects/vib-ai/internship/data", "recepto
 
 bi.log(1, "File folder:", file_folder)
 
-for n, file in enumerate(os.listdir(file_folder)):
+for n, file in enumerate(sorted(os.listdir(file_folder))):
     if not file.endswith(".cif"):
         continue
     code = file[:4]
@@ -58,7 +58,7 @@ for n, file in enumerate(os.listdir(file_folder)):
     crystal.set_crystal_params(
         min_monomer_length=50,
         min_contacts=10,
-        contact_threshold=15,
+        contact_threshold=6,
     )
 
 
@@ -69,7 +69,7 @@ for n, file in enumerate(os.listdir(file_folder)):
     print(monomers)
     from src.bioiain.symmetries.interactions import *
     for monomer in monomers:
-        interactions_per_monomer(monomer, crystal.paths["monomer_folder"])
+        interactions_per_monomer(crystal, monomer, crystal.paths["monomer_folder"])
 
 
 

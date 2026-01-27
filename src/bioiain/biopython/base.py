@@ -263,5 +263,5 @@ class Entity(bp.Entity.Entity, BiopythonOverlayClass):
         return "<bi.{} id={}>".format(self.__class__.__name__, self.id)
 
 
-class BioiainObject(Entity, object):
+class BioiainObject(object):
     pass
