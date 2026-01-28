@@ -6,6 +6,7 @@ import os, json
 from .elements import MonomerContact, Monomer
 from ..visualisation import pymol
 from .operations import *
+from ..machine.embeddings import MonomerInterfaceEmbeddings
 
 
 def interactions_per_monomer(crystal, monomer, folder=None):
@@ -23,6 +24,19 @@ def interactions_per_monomer(crystal, monomer, folder=None):
     script = pymol.PymolScript(folder=".", name="test", pymol_path="/home/iain/bin/miniconda/bin/pymol")
     script.load(monomer.paths["self"], "monomer")
     contact_folder= monomer.paths["contact_folder"]
+
+    
+    embeddings = MonomerInterfaceEmbeddings(monomer)
+    print(embeddings)
+    
+    residues = {}
+    for res in monomer.get_residues():
+        print(res)
+
+
+    exit()
+
+
     print()
     for n, interaction in enumerate(interactions):
         data = json.load(open(os.path.join(contact_folder, interaction+".data.json")))
@@ -44,6 +58,8 @@ def interactions_per_monomer(crystal, monomer, folder=None):
         print(f"Mon  1: {mon1} / Mon 2: {mon2}")
         imon = Monomer.recover(data_path=os.path.join(folder, mon2), load_structure=True)
         print(imon)
+
+       
         
         if operation is None:
             print("ASU", mon1, mon2, imon)
