@@ -109,6 +109,7 @@ class CrystalElement(Chain):
                     "contacts": {}
                 }
                 displaced_element.data.pop("contacts")
+                displaced_element.data["info"]["monomer_name"] = displaced_element.get_name()
                 displaced_element.data["info"]["name"] = "{}_op{}".format(self.data["info"]["name"], n)
 
             else:
@@ -179,6 +180,7 @@ class CrystalElement(Chain):
                                     continue
                                 d = get_fractional_distance(a.coord, atom.coord, self.data["params"])
                                 print(atom.parent.id[1], atom.parent.resname, "\t", a.parent.id[1], a.parent.resname, "\t", d, end="\t")
+                                #print(d, threshold**2)
 
                                 if d <= threshold**2:
                                     print("true", end="\r")
@@ -204,6 +206,7 @@ class CrystalElement(Chain):
                     if n != 0:
                         displaced_element.data["symmetry"]["contacts"][m.id] = contact.id()
                     if contact.check_min_contacts():
+                        
                         m.data["contacts"]["relevant"].append(contact.id())
 
                         if n == 0:
@@ -266,7 +269,8 @@ class MonomerContact(BioiainObject):
             "kwargs": kwargs,
             "export_folder": monomer1.paths["contact_folder"],
             "monomer1": {
-                "name": monomer1.data["info"]["name"],
+                "name": monomer1.get_name(),
+                "monomer": monomer1.data["info"]["monomer_name"],
                 "id": monomer1.id,
                 "operation": monomer1.data["symmetry"]["operation_n"],
                 "is_symmetry": monomer1.data["symmetry"]["is_symmetry"],
@@ -274,7 +278,8 @@ class MonomerContact(BioiainObject):
                 "CoM-frac": monomer1.data["symmetry"]["CoM-frac"],
             },
             "monomer2": {
-                "name": monomer2.data["info"]["name"],
+                "name": monomer2.get_name(),
+                "monomer": monomer2.data["info"]["monomer_name"],
                 "id": monomer2.id,
                 "operation": monomer2.data["symmetry"]["operation_n"],
                 "is_symmetry": monomer2.data["symmetry"]["is_symmetry"],
@@ -309,7 +314,10 @@ class MonomerContact(BioiainObject):
         """
         self.data["is_contact"] = False
         pos_dict = {}
+        print("checking min contacts")
+        print("ALL:", len(self.all))
         for a in self.all:
+            #print(a)
             if a["below_threshold"]:
                 if str(["position"]) in pos_dict:
                     pos_dict[str(["position"])] += 1
@@ -319,6 +327,7 @@ class MonomerContact(BioiainObject):
                     self.data["is_contact"] = True
                     self.data["positions"].append(a["atom2"]["pos"])
                     self.data["name"] = repr(self)
+        print(self.data["is_contact"])
         if self.data["is_contact"]:
             self.data["positions"] = list(set(self.data["positions"]))
             if export:
@@ -362,6 +371,7 @@ class Monomer(CrystalElement):
         self.paths["contact_folder"] = self.paths["export_folder"] + "/contacts"
 
         self.data["info"]["name"] = self.get_name().replace("cryst", "mon")
+        self.data["info"]["monomer_name"] = self.get_name()
         super()._init(*args, **kwargs)
 
     def __repr__(self):

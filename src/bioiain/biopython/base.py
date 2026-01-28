@@ -31,13 +31,19 @@ class BiopythonOverlayClass:
         :param entity: Bio.PDB object to convert.
         :return: bioiain object.
         """
-
+        
+        bio_id = None
         if isinstance(entity, BiopythonOverlayClass):
             entity.data = deepcopy(entity.data)
             entity.paths = deepcopy(entity.paths)
+        else:
+            bio_id = entity.get_id()
 
         entity.__class__ = cls
         entity.base_init()
+
+        if bio_id is not None:
+            entity.data["info"]["bio_id"] = bio_id
 
         if entity.child_class is not None:
             if "child_list" in entity.__dict__.keys():
@@ -71,6 +77,7 @@ class BiopythonOverlayClass:
                 "cls": "",
                 "id": 0,
                 "repr": "",
+                "bio_id": None,
             }}
         self.data["info"]["cls"] = self.__class__.__name__
         self.data["info"]["id"] = id(self)
@@ -212,7 +219,7 @@ class BiopythonOverlayClass:
             return None
         #print(self.id)
         self.parent = {"child_dict": {}}
-        self.__setattr__("_id", self.get_name())
+        #self.__setattr__("_id", str(self.get_name()))
         # for path in self.paths:
         #     path.replace(temp_id, self.get_name())
         #self.pass_down()

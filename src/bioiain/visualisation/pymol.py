@@ -75,13 +75,21 @@ class PymolScript(object):
         return self.path
 
 
-    def execute(self):
+    def execute(self, quiet=False):
         """
         Executes the script on the current thread. Not sure if it is blocking or not.
         """
         if self.path is None:
             self.write_script(".")
-        cmd = [self.pymol_path, self.path]
+        cmd = [self.pymol_path]
+        
+        cmd.extend(["-x", "-e"])
+
+        if quiet:
+            cmd.extend(["-q", "-p", "-s", "/dev/null"])
+
+        cmd.extend(["-l", self.path])
+        
 
         logging.log("debug", "$ " + " ".join(cmd))
         try:
@@ -160,7 +168,7 @@ class PymolScript(object):
         if sele.startswith("(") and sele.endswith(")") or force_str:
             sele = f"'{sele}'"
         else:
-            sele = f"{sele}"
+            sele = f"'{sele}'"
         return sele
 
     @staticmethod
@@ -197,11 +205,11 @@ class PymolScript(object):
         sele = self._to_str(sele)
         return self.add(fun, sele, **kwargs)
 
-    def show(self, sele="(all)", representation="all", **kwargs):
+    def show(self, sele="(all)", representation="cartoon", **kwargs):
         fun = "show"
         return self.add(fun, representation, sele, **kwargs)
 
-    def hide(self, sele="(all)", representation="all", **kwargs):
+    def hide(self, sele="(all)", representation="everything", **kwargs):
         fun = "hide"
         sele = self._to_str(sele)
         return self.add(fun, self._to_str(representation), sele, **kwargs)
@@ -231,7 +239,7 @@ class PymolScript(object):
         :param kwargs:
         :return: Generated Command object -> Unknown.
         """
-        sele = self._process_sele(sele, **kwargs)
+        sele = self._to_str(sele)
         fun = "disable"
         return self.add(fun, sele, **kwargs)
 

@@ -25,6 +25,8 @@ bi.log(1, "File folder:", file_folder)
 for n, file in enumerate(sorted(os.listdir(file_folder))):
     if not file.endswith(".cif"):
         continue
+    if "1M2Z" not in file:
+        continue
     code = file[:4]
     #structure = bi.biopython.recover(code)
     bi.log("title", code)
@@ -57,8 +59,8 @@ for n, file in enumerate(sorted(os.listdir(file_folder))):
 
     crystal.set_crystal_params(
         min_monomer_length=50,
-        min_contacts=10,
-        contact_threshold=6,
+        min_contacts=6,
+        contact_threshold=10,
     )
 
 
