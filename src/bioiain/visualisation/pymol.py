@@ -86,7 +86,7 @@ class PymolScript(object):
         cmd.extend(["-x", "-e"])
 
         if quiet:
-            cmd.extend(["-q", "-p", "-s", "/dev/null"])
+            cmd.extend(["-q"])
 
         cmd.extend(["-l", self.path])
         
