@@ -34,7 +34,7 @@ def interactions_per_monomer(crystal, monomer, folder=None):
         print(res)
 
 
-    exit()
+    
 
 
     print()

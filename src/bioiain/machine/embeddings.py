@@ -9,13 +9,28 @@ import os, json
 #BASE CLASSES
 
 class Embedding(object):
-    pass
+
+    def __init__(self, *args, name=None, folder=None, **kwargs):
+        if folder is None:
+            fodler = "./embeddings"
+        self.folder =folder
+        self.name=name
+        self.path = None
+
+    def from_file(path):
+        self.name = path.split(".")[0]
+        self.path = path
+        self.folder = os.path.dirname(path)
+
+
 
 
 
 class EmbeddingList(object):
-    def __init__(self,*args,  entity=None, **kwargs):
-        self.entity = entity
+    def __init__(self,*args,  name, folder=None, **kwargs):
+        self.name = name
+        self.folder = folder
+        
         self.embeddings = {}
 
     
@@ -26,12 +41,32 @@ class EmbeddingList(object):
 
         self.embeddings[key] = {
                 "key": key,
-                "embedding": embedding,
+                "embedding_path": embedding.path,
                 "label": label,
                 }
+        return self[key]
+
+    def __getitem__(self, key):
+        return self.embeddings[key]
 
     def add_label(self, key, label):
         self.embeddings[key]["label"] = label
+        return self[key]
+
+    def export(self, folder=None):
+        if folder is None:
+            assert self.folder is not None
+            folder = self.folder
+        data = {
+                "name": self.name,
+                "embeddint_class": self[0]["embedding"].__class__.__name__,
+                "list_class": self.__class__.__name__,
+                "embeddings" = self.embeddings,
+                }
+        fname = f"{self.name}.{data['list_class']}.embeddings.json"
+        path = os.path.join(fodler, fname)
+        json.dump(data, open(path, "w"))
+        return path
 
 
 
