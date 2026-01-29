@@ -169,7 +169,7 @@ class PerResidueEmbeddings(EmbeddingList):
         self._get_sequence()
 
     def _get_sequence(self):
-        self.sequence = self.entity.get_sequence(True)
+        self.sequence = self.entity.get_sequence()
         return self.sequence
 
 class MonomerEmbedding(Embedding):
@@ -219,11 +219,17 @@ class SaProtEmbeddings(PerResidueEmbeddings):
                 print(out_path, ":")
                 print(f.read())
                 return None
-            assert seq.strip() == self.sequence
+            try:
+                seq.strip() == self.sequence
+            except AssertionError:
+                print(self.name)
+                print("seq:", seq.strip())
+                print("self.sequence:", self.sequence)
+                raise
             self.fs_tokens = tokens.strip()
             return self.fs_tokens
 
-    def _get_foldseek(self, force=True):
+    def _get_foldseek(self, force=False):
         out_path = f"/tmp/bioiain/foldseek/{self.name}.foldseek.tsv"
         if not os.path.exists(out_path) or force:
             self._run_foldseek(out_path)
@@ -233,10 +239,15 @@ class SaProtEmbeddings(PerResidueEmbeddings):
 
 
 
-    def _get_saprot(self):
+    def _get_saprot(self, force=False):
         from transformers import AutoTokenizer, AutoModelForMaskedLM
         import torch
 
+        save_path = os.path.join(self.folder, f"{self.name}.embedding.pt")
+        embedding = Embedding(name=self.name)
+
+        if os.path.exists(save_path) and not force:
+            return embedding.from_file(save_path, has_multiple=True)
 
         if self.fs_tokens is None:
             tokenizer_name = "westlake-repl/SaProt_35M_AF2_seqOnly"
@@ -279,101 +290,13 @@ class SaProtEmbeddings(PerResidueEmbeddings):
 
         last_hidden = outputs.hidden_states[-1]
         #print(last_hidden.shape, len(self.sequence))
-        save_path = os.path.join(self.folder, f"{self.name}.embedding.pt")
+
         torch.save(last_hidden, save_path)
 
-        embedding = Embedding(name=self.name)
+
         embedding.from_file(save_path, has_multiple=True)
         self.add(embedding)
         return embedding
-
-
-
-
-
-
-        # def run_saprot(name, mode, foldseek_path, label_path, save_folder):
-    #     bi.log(3, "Running SaProt, mode:", mode)
-    #     label_dict = json.load(open(f"{label_path}/{name}.labels.json"))
-    #     # print(label_dict.keys())
-    #     fs_keys = label_dict.keys()
-    #     if mode == "full":
-    #         assert foldseek_path is not None
-    #         foldsek_dict = json.load(open(f"{foldseek_path}/{name}.foldseek.json"))
-    #         # print(foldsek_dict.keys())
-    #         assert label_dict.keys() == foldsek_dict.keys()
-    #         fs_keys = foldsek_dict.keys()
-    #
-    #     seqs = {}
-    #     # print(label_dict.keys(), foldsek_dict.keys())
-    #
-    #     for ch, fch in zip(label_dict.keys(), fs_keys):
-    #         bi.log(4, "Merging foldseek_dict:", ch, fch)
-    #         if mode == "full":
-    #             if foldsek_dict[ch] is None:
-    #                 bi.log("warning", f"chain {ch} has no foldseek data")
-    #                 continue
-    #             # print(foldsek_dict[ch])
-    #
-    #             if len(label_dict[ch]) != len(foldsek_dict[ch]):
-    #                 bi.log("warning", "label and foldseek_dict do not match:", ch, len(label_dict[ch]),
-    #                        len(foldsek_dict[ch]))
-    #                 continue
-    #             try:
-    #                 seqs[ch] = [f"{l['resn'].upper()}{f['fs'].lower()}" for l, f in
-    #                             zip(label_dict[ch].values(), foldsek_dict[ch].values())]
-    #             except:
-    #                 bi.log("warning", "unknown atom in chain:", ch)
-    #                 [bi.log("warning", f"{r['res']} -> {r['resn']} / {r['resn3']}") for r in label_dict[ch].values()
-    #                  if None in [r["res"], r["resn"], r["resn3"]]]
-    #         elif mode == "seq":
-    #             seqs[ch] = [f"{l['resn']}#" for l in label_dict[ch].values()]
-    #         else:
-    #             bi.log("error", "Unknown SaProt mode:", mode)
-    #     # print("FOLDSEEK", seqs.keys())
-    #
-    #     for ch in seqs.keys():
-    #         # Load model directly
-    #         bi.log(4, "Generating embeddings:", ch)
-    #         device = config["general"]["device"]
-    #         if mode == "full":
-    #             tokenizer = AutoTokenizer.from_pretrained("westlake-repl/SaProt_35M_AF2")
-    #             model = AutoModelForMaskedLM.from_pretrained("westlake-repl/SaProt_35M_AF2")
-    #         elif mode == "seq":
-    #             tokenizer = AutoTokenizer.from_pretrained("westlake-repl/SaProt_35M_AF2_seqOnly")
-    #             model = AutoModelForMaskedLM.from_pretrained("westlake-repl/SaProt_35M_AF2_seqOnly")
-    #         else:
-    #             bi.log("error", "Unknown SaProt mode:", mode)
-    #
-    #         model.eval()
-    #         model.to(device)
-    #
-    #         seq = "".join(seqs[ch])
-    #
-    #         inputs = tokenizer(seq, return_tensors="pt").to(device)
-    #         inputs = {k: v.to(device) for k, v in inputs.items()}
-    #         # print(inputs)
-    #
-    #         with torch.no_grad():
-    #             outputs = model(**inputs, output_hidden_states=True)
-    #         # print(outputs)
-    #
-    #         # outputs.hidden_states is a tuple of all layers, including embeddings
-    #         # Shape of each layer: [batch_size, sequence_length, hidden_dim]
-    #         all_hidden_states = outputs.hidden_states
-    #
-    #         # Last layer hidden states
-    #         last_hidden = all_hidden_states[-1]  # [1, seq_len, hidden_dim]
-    #         # print(last_hidden.shape)  # ['<cls>', 'M#', 'E#', 'V#', 'Q#', '<eos>']
-    #         # print(last_hidden)
-    #
-    #         os.makedirs(save_folder, exist_ok=True)
-    #         torch.save(last_hidden, f"{save_folder}/{name}_{ch}.pt")
-    #
-    #     return True
-        pass
-
-
 
 
 
