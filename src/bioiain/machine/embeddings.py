@@ -134,6 +134,10 @@ class SaProtEmbeddings(PerResidueEmbeddings):
         self._run_saprot()
 
 
+    def add_label_json(self, json_path, key=0):
+        self.embeddings[key]["label_path"] = json_path
+        return self.embeddings[key]["label_path"]
+
     def _get_foldseek(self, force=False):
         import subprocess
         out_path = f"/tmp/bioiain/foldseek/{self.name}.foldseek.tsv"

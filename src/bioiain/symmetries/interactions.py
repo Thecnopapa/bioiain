@@ -35,12 +35,8 @@ def interactions_per_monomer(crystal, monomer, folder=None):
     print(embeddings.embeddings)
     exit()
     residues = {}
-    for res in monomer.get_residues():
-        print(res)
 
-
-
-
+    labels = {}
 
     print()
     for n, interaction in enumerate(interactions):
@@ -77,7 +73,7 @@ def interactions_per_monomer(crystal, monomer, folder=None):
 
                 if reverse:
                     a1, a2 = a2, a1
-
+                labels[a1["n"]) = "contact"
                 script.line(f"int_{n}", sele1=f"monomer and c. {a1['chain']} and i. {a1['resn']} and n. CA", sele2=f"interacting_{n} and c. {a2['chain']} and i. {a2['resn']} and n. CA")
             script.disable(name)
 
@@ -107,11 +103,14 @@ def interactions_per_monomer(crystal, monomer, folder=None):
                 if reverse:
                     a1, a2 = a2, a1
                 pos = "_".join([str(p) for p in a2["pos"]])
-
+                labels[a1["n"]) = "contact"
                 script.line(f"int_{n}", sele1=f"monomer and c. {a1['chain']} and i. {a1['resn']} and n. CA", sele2=f"interacting_{n}_{pos} and c. {a2['chain']} and i. {a2['resn']} and n. CA")
 
 
             print()
+
+        for atom in monomer.get_atoms():
+            if atom["id"]
 
 
 

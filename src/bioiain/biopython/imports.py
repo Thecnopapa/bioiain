@@ -179,6 +179,8 @@ class MMCIF(object):
 
         try:
             d = self.data[key]
+            if len(d) == 1 and index is None:
+                index = 0
             #print(key, index, subkey)
             if index is None and subkey is None:
                 ret = {n:v for n, v in enumerate(d)}

@@ -140,7 +140,7 @@ class CrystalElement(Chain):
                 if not atoms.is_disordered() > 0:
                     atoms = [atoms]
 
-                for atom in atoms:
+                for dn, atom in enumerate(atoms):
                     if n != 0:
                         deltaX = ((atom.coord[0] - frac_element_com[0]) % 1) - 0.5
                         deltaY = ((atom.coord[1] - frac_element_com[1]) % 1) - 0.5
@@ -175,7 +175,7 @@ class CrystalElement(Chain):
                         for m in monomers:
                             if n <= 1 and displaced_element.id == m.id:
                                 continue
-                            for a in m.get_atoms():
+                            for mn, a in enumerate(m.get_atoms()):
                                 if not a.id == "CA":
                                     continue
                                 d = get_fractional_distance(a.coord, atom.coord, self.data["params"])
@@ -186,8 +186,8 @@ class CrystalElement(Chain):
                                     print("true", end="\r")
                                     #print(a.get_full_id())
                                     contacts[m.id].add({
-                                        "atom1": {"chain":a.get_full_id()[-3][-1], "resn": a.get_full_id()[-2][-2], "element": a.get_full_id()[-1][-2]},
-                                        "atom2": {"chain":atom.get_full_id()[-3][-1], "resn": atom.get_full_id()[-2][-2], "element": atom.get_full_id()[-1][-2], "pos": atom.position},
+                                        "atom1": {"chain":a.get_full_id()[-3][-1], "resn": a.get_full_id()[-2][-2], "element": a.get_full_id()[-1][-2], "n": mn},
+                                        "atom2": {"chain":atom.get_full_id()[-3][-1], "resn": atom.get_full_id()[-2][-2], "element": atom.get_full_id()[-1][-2], "pos": atom.position, "n": dn},
                                         "distance": float(np.sqrt(d)),
                                         "below_threshold": True,
                                         "threshold": threshold,
@@ -206,7 +206,7 @@ class CrystalElement(Chain):
                     if n != 0:
                         displaced_element.data["symmetry"]["contacts"][m.id] = contact.id()
                     if contact.check_min_contacts():
-                        
+
                         m.data["contacts"]["relevant"].append(contact.id())
 
                         if n == 0:

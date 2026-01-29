@@ -20,11 +20,20 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
         return "<bi.{} id={}>".format(self.__class__.__name__, self.id)
 
 
-    def get_sequence(self, force=False):
+    def get_atoms(sel, ca_only=True, force=False):
         from .imports import read_mmcif
 
         atoms = read_mmcif(self.paths["self"], subset=["_atom_site"])("_atom_site")
-        atoms = [a for a in atoms.values() if a["label_atom_id"] == "CA"]
+        if ca_only:
+            atoms = [a for a in atoms.values() if a["label_atom_id"] == "CA"]
+
+        return atoms
+
+
+
+    def get_sequence(self, force=False):
+
+        atoms = self.get_atoms()
 
         if self.data["sequence"] is not None and not force:
             return self.data["sequence"]
