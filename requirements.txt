@@ -1,6 +1,8 @@
-# Bioiain dependencies #######
+# Bioiain dependencies #################################################
 # Should match pyproject.toml
 
+
+# Essential ############################################################
 #python >= 3.13
 setuptools >= 77.0.3
 biopython >= 1.85
@@ -13,7 +15,15 @@ unidecode >= 1.4.0
 scikit-learn >= 1.7.2
 xmltodict >= 0.14.2
 
-##############################
+# ML ###################################################################
+
+torch
+torchvision
+transformers
+
+
+
+# Dev ##################################################################
 
 #dev
 bioiain >= 0.0.6.6.1

@@ -27,11 +27,14 @@ class Embedding(object):
 
 
 class EmbeddingList(object):
-    def __init__(self,*args,  name, folder, **kwargs):
+    def __init__(self,*args,  name, folder="./embeddings", **kwargs):
         self.name = name
         self.folder = folder
-
         self.embeddings = {}
+
+
+    def __repr__(self):
+        return f"<bi.{self.__class__.__name__}:{self.name} N={len(self.embeddings)}>"
 
     def generate_embeddings(self, *args, **kwargs):
         raise NotImplementedError("EmbeddingList: generate_embeddings() must be overridden by subclass")
@@ -78,8 +81,14 @@ class ResidueEmbedding(Embedding):
 
 
 class PerResidueEmbeddings(EmbeddingList):
-    pass
+    def __init__(self, *args, entity, **kwargs):
+        super().__init__(self, *args, name=entity.get_name(), **kwargs)
+        self.sequence = None
+        self.entity = entity
+        self._get_sequence()
 
+    def _get_sequence(self):
+        self.sequence = self.entity.get_sequence(True)
 
 class MonomerEmbedding(Embedding):
     pass
@@ -91,22 +100,18 @@ class MonomerEmbedding(Embedding):
 
 class SaProtEmbeddings(PerResidueEmbeddings):
 
-    def __init__(self, *args, entity, **kwargs):
-        super().__init__(*args, name=entity.get_name(), **kwargs)
-        self.sequence = None
+    def __init__(self, *args, **kwargs):
+        super().__init__(self, *args, **kwargs)
+        self.folder = os.path.join(self.folder, "SaProt")
         self.fs_tokens = None
 
 
     def generate_embeddings(self, *args, **kwargs):
-
-
-        self._get_sequence()
         self._get_foldseek()
         self._run_saprot(self.sequence, self.fs_tokens)
 
 
-    def _get_sequence(self):
-        pass
+
 
     def _run_saprot(self, sequence, fs_tokens):
         from transformers import AutoTokenizer, AutoModelForMaskedLM
@@ -244,17 +249,6 @@ class SaProtEmbeddings(PerResidueEmbeddings):
 
 
 
-
-
-class MonomerInterfaceEmbeddings(EmbeddingList):
-
-    def __init__(self, monomer):
-        super().__init__(self, monomer)
-
-
-    def saprot_ebeddings(self):
-        for residue in self.entity.get_residues():
-            print(residue)
 
 
 

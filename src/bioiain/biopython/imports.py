@@ -164,9 +164,11 @@ class MMCIF(object):
         key = key.split(".")
         #print(key)
 
-        if len(key) == 1:
+        if type(key) is str:
+            pass
+        elif len(key) == 1:
             key = key[0]
-        if len(key) == 2:
+        elif len(key) == 2:
             key, subkey = key
 
         elif len(key) == 3:
@@ -174,15 +176,21 @@ class MMCIF(object):
         else:
             log("warning", "Invalid key {}".format(key))
 
-        if index is None:
-            index = 0
 
         try:
-            ret = self.data[key][index]
-
-            if subkey is not None:
-                ret = ret[subkey]
+            d = self.data[key]
+            #print(key, index, subkey)
+            if index is None and subkey is None:
+                ret = {n:v for n, v in enumerate(d)}
+            elif index is None:
+                #print([v.keys() for n, v in enumerate(d)])
+                ret = {n:v[subkey] for n, v in enumerate(d)}
+            elif subkey is None:
+                ret = d[index]
+            else:
+                ret = d[index][subkey]
         except KeyError as e:
+            #print(ret)
             log("warning", f"Key not found: {e} ({key}.{index}.{subkey}) in {self.cif_path}")
             return None
 
@@ -200,7 +208,7 @@ class MMCIF(object):
 
 
 
-def read_mmcif(file_path, output_folder="headers", subset:list|str=None, exclude:list|str=None) -> MMCIF:
+def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list|str=None) -> MMCIF:
     from ..utilities.strings import str_to_list_with_literals
     data = {}
     name = os.path.basename(file_path).split(".")[0]
@@ -293,7 +301,7 @@ def read_mmcif(file_path, output_folder="headers", subset:list|str=None, exclude
                     line_list, open_lit = str_to_list_with_literals(line, check_open_literal=True)
                     if len(line_list) == 0:
                         continue
-                    group_key = line_list[0].split(".")[0]
+                    group_key = line_list[0].split(".")[0].replace("\n", "").strip()
                     try:
                         k = line_list[0].split(".")[1]
                     except IndexError:
@@ -327,7 +335,8 @@ def read_mmcif(file_path, output_folder="headers", subset:list|str=None, exclude
                     if n != 1:
                         log("debug", f"No key-value structure found in line {n}:", repr(line))
                     else:
-                        print("Parsing:", line.replace("\n", "").strip())
+                        log("debug", "Parsing:", line.replace("\n", "").strip())
+                        pass
                 if not multi_line:
                     if exclude is not None:
                         if group_key in exclude:
@@ -345,8 +354,8 @@ def read_mmcif(file_path, output_folder="headers", subset:list|str=None, exclude
                 #print("MULTI:", multi_line)
                 if not multi_line:
                     if line.startswith("_") and not looping:
-                        group_key.append(line.split(".")[0])
-                        loop_keys.append(line.split(" ")[0].split(".")[1])
+                        group_key.append(line.split(".")[0].replace("\n", "").strip())
+                        loop_keys.append(line.split(" ")[0].split(".")[1].replace("\n", "").strip())
                         continue
                     else:
                         looping = True
@@ -393,11 +402,11 @@ def read_mmcif(file_path, output_folder="headers", subset:list|str=None, exclude
                         data[group_key].append(d)
                     #print(f"{group_key} ->", f"list of length: {len(loop_values)}")
 
+    mmcif = MMCIF(data, cif_path=file_path)
     if output_folder is not None:
         save_path = os.path.join(output_folder, f"{name}.header.json")
         log("debug","Headers saved to:", os.path.abspath(save_path))
-    mmcif = MMCIF(data, cif_path=file_path)
-    mmcif.save(save_path)
+        mmcif.save(save_path)
     return mmcif
 
 

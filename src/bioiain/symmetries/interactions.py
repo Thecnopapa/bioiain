@@ -6,7 +6,7 @@ import os, json
 from .elements import MonomerContact, Monomer
 from ..visualisation import pymol
 from .operations import *
-from ..machine.embeddings import MonomerInterfaceEmbeddings
+from ..machine.embeddings import SaProtEmbeddings
 
 
 def interactions_per_monomer(crystal, monomer, folder=None):
@@ -25,16 +25,20 @@ def interactions_per_monomer(crystal, monomer, folder=None):
     script.load(monomer.paths["self"], "monomer")
     contact_folder= monomer.paths["contact_folder"]
 
-    
-    embeddings = MonomerInterfaceEmbeddings(monomer)
+
+    embeddings = SaProtEmbeddings(entity=monomer)
     print(embeddings)
-    
+    print(embeddings.entity)
+    print(embeddings.sequence)
+
+    embeddings.generate_embeddings()
+    exit()
     residues = {}
     for res in monomer.get_residues():
         print(res)
 
 
-    
+
 
 
     print()
@@ -42,7 +46,7 @@ def interactions_per_monomer(crystal, monomer, folder=None):
         data = json.load(open(os.path.join(contact_folder, interaction+".data.json")))
         mon1_data=data["monomer1"]
         mon2_data=data["monomer2"]
-        
+
         reverse = False
         if monomer.get_name() == mon2_data["name"]:
             mon1_data, mon2_data = mon2_data, mon1_data
@@ -59,8 +63,8 @@ def interactions_per_monomer(crystal, monomer, folder=None):
         imon = Monomer.recover(data_path=os.path.join(folder, mon2), load_structure=True)
         print(imon)
 
-       
-        
+
+
         if operation is None:
             print("ASU", mon1, mon2, imon)
             name = f"interacting_{n}"
@@ -69,7 +73,7 @@ def interactions_per_monomer(crystal, monomer, folder=None):
             for c in data["relevant_contacts"]:
                 a1 = c["atom1"]
                 a2 = c["atom2"]
-                
+
                 if reverse:
                     a1, a2 = a2, a1
 
@@ -83,14 +87,14 @@ def interactions_per_monomer(crystal, monomer, folder=None):
                 pos_str = "_".join([str(p) for p in pos])
                 name = f"interacting_{n}_{pos_str}"
                 if pos is not None:
-                    disp = coord_operation_entity(frac.copy(), 
+                    disp = coord_operation_entity(frac.copy(),
                                   key=imon.data["crystal"]["group_key"],
-                                  op_n=operation, 
+                                  op_n=operation,
                                   #params=imon.data["params"],
                                   distance=pos,
                                   )
                     disp = entity_to_orth(disp, imon.data["params"])
-                
+
                     print(disp, pos)
                     script.load_entity(disp, name)
                     script.disable(name)
@@ -98,7 +102,7 @@ def interactions_per_monomer(crystal, monomer, folder=None):
             for c in data["relevant_contacts"]:
                 a1 = c["atom1"]
                 a2 = c["atom2"]
-                
+
                 if reverse:
                     a1, a2 = a2, a1
                 pos = "_".join([str(p) for p in a2["pos"]])
@@ -108,7 +112,7 @@ def interactions_per_monomer(crystal, monomer, folder=None):
 
             print()
 
-    
+
 
 
 
