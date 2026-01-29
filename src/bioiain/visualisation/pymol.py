@@ -1,5 +1,4 @@
 import os, sys, subprocess
-from idlelib.undo import Command
 
 from ..utilities import *
 from ..biopython.base import BiopythonOverlayClass
@@ -42,7 +41,7 @@ class PymolScript(object):
     :param name: Name of the script. Will de set as a filename. Default is ".temp_pymol_script".
     :return: PymolScript Object.
     """
-    def __init__(self, name="temp_pymol_script", folder:str="./pml", tmp_folder="/tmp/bioiain/pymol", pymol_path = "pymol"):
+    def __init__(self, name="temp_pymol_script", folder:str="./pml", tmp_folder="/tmp/bioiain/pymol", pymol_path = "pymol", use_temp=True):
         self.pymol_path = pymol_path
         self._bioiain = "bioiain"
         self.name = name
@@ -50,73 +49,17 @@ class PymolScript(object):
         self.tmp_folder=tmp_folder
         os.makedirs(self.folder, exist_ok=True)
         os.makedirs(self.tmp_folder, exist_ok=True)
-        #self.subfolder = os.path.join(folder, self.name)
-        self.subfolder = self.folder
+        self.use_temp = use_temp
+        if use_temp:
+            self.subfolder = self.folder
+        else:
+            self.subfolder = os.path.join(folder, self.name)
+
         os.makedirs(self.subfolder, exist_ok=True)
         self.input = {}
         self.data = {}
         self.commands = []
         self.path = None
-
-
-    def write_script(self, filename:str=None) -> str:
-        """
-        Writes the stored commands to a file. The file can be executed from the terminal or run as a PyMol script.
-        :param filename: (optional) Path to the file to write to. Uses script name and current wd as default.
-        :return: Path to the file.
-        """
-        if filename is None:
-            filename = self.name
-        filepath = os.path.join(self.subfolder, filename+".pml")
-        with open(filepath, "w") as f:
-            f.write("pymol\n\n")
-            #f.write("import {} as bi\n\n\n".format(self._bioiain))
-            for cmd in self.commands:
-                f.write(repr(cmd)+"\n")
-        self.path = os.path.abspath(filepath)
-        os.chmod(self.path, 0o755)
-        return self.path
-
-
-    def execute(self, quiet=False):
-        """
-        Executes the script on the current thread. Not sure if it is blocking or not.
-        """
-        if self.path is None:
-            self.write_script(".")
-        cmd = [self.pymol_path]
-
-        cmd.extend(["-x", "-e"])
-
-        if quiet:
-            cmd.extend(["-q"])
-
-        cmd.extend(["-l", self.path])
-
-
-        logging.log("debug", "$ " + " ".join(cmd))
-        try:
-            subprocess.run(cmd)
-        except KeyboardInterrupt:
-            logging.log("debug", "\nClosing Pymol...")
-        except Exception as e:
-            print(e)
-
-
-    def add(self, fun, *args, **kwargs) -> Command:
-        """
-        Generates a command object and adds the command to the script. Can be used to insert custom functions. Beware when adding parameters as strings.
-        must be double-quoted ("'string'").
-        :param fun: Name(string) of function to execute. Use .import() to import such function if necessary.
-        :param args: Args to pass the function. "strings" -> variables, "'strings'" -> strings.
-        :param kwargs: Same as args but with keywords.
-        :return: Generated Command object.
-        """
-        c = self.Command(fun, *args, **kwargs)
-        self.commands.append(c)
-        return c
-
-
 
     class Command(object):
         """
@@ -159,6 +102,69 @@ class PymolScript(object):
                 c = "{} = {}".format(self.to, c)
             self.cmd = c
             return self.cmd
+
+    def write_script(self, filename:str=None) -> str:
+        """
+        Writes the stored commands to a file. The file can be executed from the terminal or run as a PyMol script.
+        :param filename: (optional) Path to the file to write to. Uses script name and current wd as default.
+        :return: Path to the file.
+        """
+        if filename is None:
+            filename = self.name
+        filepath = os.path.join(self.subfolder, filename+".pml")
+        with open(filepath, "w") as f:
+            f.write(f"#!{self.pymol_path}\n\n")
+            #f.write("import {} as bi\n\n\n".format(self._bioiain))
+            for cmd in self.commands:
+                f.write(repr(cmd)+"\n")
+        self.path = os.path.abspath(filepath)
+        os.chmod(self.path, 0o755)
+        return self.path
+
+
+    def execute(self, quiet=False, pymol_path=None):
+        """
+        Executes the script on the current thread. Not sure if it is blocking or not.
+        """
+        if self.path is None:
+            self.write_script(".")
+        if pymol_path is None:
+            pymol_path = self.pymol_path
+        cmd = [pymol_path]
+
+        cmd.extend(["-x", "-e"])
+
+        if quiet:
+            cmd.extend(["-q"])
+
+        cmd.extend(["-l", self.path])
+
+
+        logging.log("debug", "$ " + " ".join(cmd))
+        try:
+            subprocess.run(cmd)
+        except KeyboardInterrupt:
+            logging.log("debug", "\nClosing Pymol...")
+        except Exception as e:
+            print(e)
+
+
+    def add(self, fun, *args, **kwargs) -> Command:
+        """
+        Generates a command object and adds the command to the script. Can be used to insert custom functions. Beware when adding parameters as strings.
+        must be double-quoted ("'string'").
+        :param fun: Name(string) of function to execute. Use .import() to import such function if necessary.
+        :param args: Args to pass the function. "strings" -> variables, "'strings'" -> strings.
+        :param kwargs: Same as args but with keywords.
+        :return: Generated Command object.
+        """
+        c = self.Command(fun, *args, **kwargs)
+        self.commands.append(c)
+        return c
+
+
+
+
 
     @staticmethod
     def _process_sele(sele:str, force_str:bool=False) -> str:
@@ -231,7 +237,11 @@ class PymolScript(object):
             while name+".pdb" in os.listdir(self.tmp_folder):
                 name = "{}_{}".format(entity.data["info"]["name"], n)
                 n += 1
-        path = entity.export(self.tmp_folder, name, data=True)[0]
+        if self.use_temp:
+            folder = self.tmp_folder
+        else:
+            folder = self.subfolder
+        path = entity.export(folder, name, data=True)[0]
         return self.load(path, name)
 
 

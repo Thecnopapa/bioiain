@@ -4,7 +4,7 @@ import sys, os
 from ..utilities.logging import log
 
 import numpy as np
-import pandas as pd
+
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt

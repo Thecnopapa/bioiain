@@ -9,7 +9,7 @@ from .operations import *
 from ..machine.embeddings import SaProtEmbeddings
 
 
-def interactions_per_monomer(crystal, monomer, folder=None):
+def interactions_per_monomer(monomer, folder=None, script = None):
 
     print("\n>>", monomer)
     if folder is not None and type(monomer) is str:
@@ -21,7 +21,6 @@ def interactions_per_monomer(crystal, monomer, folder=None):
 
     interactions = monomer.data["contacts"]["relevant"]
 
-    script = pymol.PymolScript(pymol_path="/home/iain/bin/miniconda/bin/pymol")
     script.load(monomer.paths["self"], "monomer")
     contact_folder= monomer.paths["contact_folder"]
 
@@ -31,12 +30,10 @@ def interactions_per_monomer(crystal, monomer, folder=None):
     print(embeddings.entity)
     print(embeddings.sequence)
 
-    embeddings.generate_embeddings()
+    if embeddings.generate_embeddings() is None: return None
     print(embeddings.embeddings)
-    exit()
-    residues = {}
 
-    labels = {}
+    ints = []
 
     print()
     for n, interaction in enumerate(interactions):
@@ -73,7 +70,7 @@ def interactions_per_monomer(crystal, monomer, folder=None):
 
                 if reverse:
                     a1, a2 = a2, a1
-                labels[a1["n"]) = "contact"
+                ints.append([a1["resn"], "contact"])
                 script.line(f"int_{n}", sele1=f"monomer and c. {a1['chain']} and i. {a1['resn']} and n. CA", sele2=f"interacting_{n} and c. {a2['chain']} and i. {a2['resn']} and n. CA")
             script.disable(name)
 
@@ -103,34 +100,33 @@ def interactions_per_monomer(crystal, monomer, folder=None):
                 if reverse:
                     a1, a2 = a2, a1
                 pos = "_".join([str(p) for p in a2["pos"]])
-                labels[a1["n"]) = "contact"
+                ints.append([a1["resn"], "contact"])
                 script.line(f"int_{n}", sele1=f"monomer and c. {a1['chain']} and i. {a1['resn']} and n. CA", sele2=f"interacting_{n}_{pos} and c. {a2['chain']} and i. {a2['resn']} and n. CA")
 
 
             print()
+    atoms = monomer.atoms(ca_only=True)
+    labels = "N"*len(atoms)
+    for i in ints:
+        pos, atom = [(n, a) for n, a in enumerate(atoms) if a.resnum == i[0]][0]
+        if i[1] == "contact":
+            labels = labels[:pos]+"C"+labels[pos+1:]
+    print(labels)
 
-        for atom in monomer.get_atoms():
-            if atom["id"]
-
-
-
-
-
-
-
-
-
+    embeddings.add_label_from_string(labels)
+    return embeddings
 
 
-    script.load(crystal.paths["original"], "original", to="pdb")
-    script.cell()
-    script.symmetries()
-    script.group()
-    script.disable("sym")
-    script.disable("original")
 
-    script.write_script()
-    script.execute()
+
+
+
+
+
+
+
+
+
 
 
 

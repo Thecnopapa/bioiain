@@ -238,7 +238,7 @@ class CrystalElement(Chain):
                 log(5, "Positions:", displaced_element.data["symmetry"]["positions"])
 
         if save_contacts:
-            log(4, f"Elements in contact with {self.get_name()}: {len(self.data["contacts"]["relevant"])}")
+            log(4, f"Elements in contact with {self.get_name()}: {len(self.data['contacts']['relevant'])}")
             for c in self.data["contacts"]["relevant"]:
                 log(5, c)
 

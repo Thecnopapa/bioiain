@@ -183,10 +183,10 @@ class MMCIF(object):
                 index = 0
             #print(key, index, subkey)
             if index is None and subkey is None:
-                ret = {n:v for n, v in enumerate(d)}
+                ret = [v for v in d]
             elif index is None:
                 #print([v.keys() for n, v in enumerate(d)])
-                ret = {n:v[subkey] for n, v in enumerate(d)}
+                ret = [v[subkey] for v in d]
             elif subkey is None:
                 ret = d[index]
             else:

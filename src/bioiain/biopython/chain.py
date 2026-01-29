@@ -20,12 +20,17 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
         return "<bi.{} id={}>".format(self.__class__.__name__, self.id)
 
 
-    def get_atoms(sel, ca_only=True, force=False):
+    def atoms(self, ca_only=False, hetatm=False, force=False):
         from .imports import read_mmcif
+        from .atom import BIAtom
 
         atoms = read_mmcif(self.paths["self"], subset=["_atom_site"])("_atom_site")
+        atoms = [BIAtom(a) for a in atoms]
+
+        if not hetatm:
+            atoms = [a for a in atoms if a.type != "HETATM"]
         if ca_only:
-            atoms = [a for a in atoms.values() if a["label_atom_id"] == "CA"]
+            atoms = [a for a in atoms if a.name == "CA"]
 
         return atoms
 
@@ -33,7 +38,7 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
 
     def get_sequence(self, force=False):
 
-        atoms = self.get_atoms()
+        atoms = self.atoms(ca_only=True)
 
         if self.data["sequence"] is not None and not force:
             return self.data["sequence"]
@@ -41,7 +46,7 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
         for atom in atoms:
             try:
                 #print(atom["label_comp_id"])
-                r = d3to1[atom["label_comp_id"]]
+                r = d3to1[atom.resname]
                 #print(r)
                 self.data["sequence"] += r
             except KeyError as e:

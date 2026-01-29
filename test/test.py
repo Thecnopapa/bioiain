@@ -25,8 +25,8 @@ bi.log(1, "File folder:", file_folder)
 for n, file in enumerate(sorted(os.listdir(file_folder))):
     if not file.endswith(".cif"):
         continue
-    if "1M2Z" not in file:
-        continue
+    #if "1M2Z" not in file:
+    #    continue
     code = file[:4]
     #structure = bi.biopython.recover(code)
     bi.log("title", code)
@@ -70,9 +70,22 @@ for n, file in enumerate(sorted(os.listdir(file_folder))):
     print("monomers")
     print(monomers)
     from src.bioiain.symmetries.interactions import *
-    for monomer in monomers:
-        interactions_per_monomer(crystal, monomer, crystal.paths["monomer_folder"])
 
+    embeddings = []
+
+    for monomer in monomers:
+        script = pymol.PymolScript(name=monomer, pymol_path="$CONDA_PREFIX/bin/pymol")
+        script.load(crystal.paths["original"], "original", to="pdb")
+        script.cell()
+        script.symmetries()
+        script.group()
+        script.disable("sym")
+        script.disable("original")
+        embeddings.append(interactions_per_monomer(monomer, crystal.paths["monomer_folder"], script=script))
+
+        script.write_script()
+        #script.execute()
+    print(embeddings)
 
 
 

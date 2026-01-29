@@ -41,6 +41,7 @@ class EmbeddingList(object):
         os.makedirs(self.folder, exist_ok=True)
         self.embeddings = {}
         self.single_file = single_file
+        self.cache = None
 
 
     def __repr__(self):
@@ -72,9 +73,71 @@ class EmbeddingList(object):
     def __getitem__(self, key):
         return self.embeddings[key]
 
+    def get(self, key, embedding=True, label=True, cache=True):
+
+        import torch
+        embedding_path = None
+        label_path = None
+        if self.single_file:
+            for e in self.embeddings:
+                if e["range"] is None:
+                    pass
+                elif e["range"][0] != (None, None):
+                    if e["range"][0] is not None:
+                        if e["range"][0] > key: continue
+                    if e["range"][1] is not None:
+                        if e["range"][1] < key: continue
+                if embedding:
+                    embedding_path = e["embedding_path"]
+                if label:
+                    label_path = e["label_path"]
+                break
+            tensor = None
+            label_data = None
+
+            if self.cache is not None and cache:
+                if self.cache["label_path"] == label_path:
+                    label_data = self.cache["label"]
+
+                if self.cache["embedding_path"] == embedding_path:
+                    tensor = self.cache["tensor"]
+
+            if tensor is None:
+                if embedding_path is not None:
+                    tensor = torch.load(embedding_path)
+
+            if label_data is None:
+                if label_path is not None:
+                    if label_path.endswith(".json"):
+                        label_data = json.load(open(label_path))
+                    elif label_path.endswith(".txt") or label_path.endswith(".label") or "." not in label_path:
+                        with open(label_path, "r", encoding="utf-8") as f:
+                            label_data = f.read().strip()
+            if cache:
+                self.cache = {
+                    "label_data": label_data.copy(),
+                    "tensor": tensor.copy(),
+                    "label_path": label_path,
+                    "embedding_path": embedding_path,
+                }
+        if label and embedding: return embedding, label
+        elif label: return label
+        elif embedding: return embedding
+        else: return None
+
+
+
+
     def add_label(self, key, label):
         self.embeddings[key]["label"] = label
         return self[key]
+
+    def add_label_from_string(self, label):
+        fname = f"{self.name}.label.txt"
+        path = os.path.join(self.folder, "labels", fname)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            f.write(label)
 
     def export(self, folder=None):
         if folder is None:
@@ -130,33 +193,47 @@ class SaProtEmbeddings(PerResidueEmbeddings):
 
     def generate_embeddings(self, *args, with_foldseek=True, **kwargs):
         if with_foldseek:
-            self._get_foldseek()
-        self._run_saprot()
+            if self._get_foldseek() is None: return None
+        return self._get_saprot()
+
 
 
     def add_label_json(self, json_path, key=0):
         self.embeddings[key]["label_path"] = json_path
         return self.embeddings[key]["label_path"]
 
-    def _get_foldseek(self, force=False):
+    def _run_foldseek(self, out_path):
         import subprocess
-        out_path = f"/tmp/bioiain/foldseek/{self.name}.foldseek.tsv"
-        if not os.path.exists(out_path) or force:
-            os.makedirs(os.path.dirname(out_path), exist_ok=True)
-            cmd = [self.foldseek_cmd, "structureto3didescriptor", "-v", "0", "--threads", "4", "--chain-name-mode", "0", self.entity.paths["self"], out_path]
-            log("debug", " ".join(cmd))
-            subprocess.run(cmd)
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        cmd = [self.foldseek_cmd, "structureto3didescriptor", "-v", "0", "--threads", "4", "--chain-name-mode", "0",
+               self.entity.paths["self"], out_path]
+        log("debug", "$", " ".join(cmd))
+        subprocess.run(cmd)
 
+    def _read_foldseek(self, out_path):
         with open(out_path, "r", encoding="utf-8") as f:
             raw = f.read().split("\t")
-            fname, seq, tokens = raw[:3]
+            try:
+                fname, seq, tokens = raw[:3]
+            except:
+                print(out_path, ":")
+                print(f.read())
+                return None
             assert seq.strip() == self.sequence
             self.fs_tokens = tokens.strip()
             return self.fs_tokens
-        return None
+
+    def _get_foldseek(self, force=True):
+        out_path = f"/tmp/bioiain/foldseek/{self.name}.foldseek.tsv"
+        if not os.path.exists(out_path) or force:
+            self._run_foldseek(out_path)
+            return self._read_foldseek(out_path)
+        else:
+            return self._read_foldseek(out_path)
 
 
-    def _run_saprot(self):
+
+    def _get_saprot(self):
         from transformers import AutoTokenizer, AutoModelForMaskedLM
         import torch
 

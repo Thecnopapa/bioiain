@@ -31,7 +31,7 @@ class BiopythonOverlayClass:
         :param entity: Bio.PDB object to convert.
         :return: bioiain object.
         """
-        
+
         bio_id = None
         if isinstance(entity, BiopythonOverlayClass):
             entity.data = deepcopy(entity.data)
