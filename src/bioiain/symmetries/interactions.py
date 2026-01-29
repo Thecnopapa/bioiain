@@ -21,7 +21,7 @@ def interactions_per_monomer(crystal, monomer, folder=None):
 
     interactions = monomer.data["contacts"]["relevant"]
 
-    script = pymol.PymolScript(folder=".", name="test", pymol_path="/home/iain/bin/miniconda/bin/pymol")
+    script = pymol.PymolScript(pymol_path="/home/iain/bin/miniconda/bin/pymol")
     script.load(monomer.paths["self"], "monomer")
     contact_folder= monomer.paths["contact_folder"]
 
@@ -32,6 +32,7 @@ def interactions_per_monomer(crystal, monomer, folder=None):
     print(embeddings.sequence)
 
     embeddings.generate_embeddings()
+    print(embeddings.embeddings)
     exit()
     residues = {}
     for res in monomer.get_residues():

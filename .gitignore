@@ -212,5 +212,9 @@ test/data
 test/exports
 test/crystals
 test/test
-html
+test/embeddings
+test/pml
 test/headers
+html
+
+*.geany

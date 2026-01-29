@@ -1,9 +1,11 @@
 import os, json
 
 
+from ..utilities.logging import log
 
 
 
+device = "cpu"
 
 
 #BASE CLASSES
@@ -12,25 +14,33 @@ class Embedding(object):
 
     def __init__(self, *args, name=None, folder=None, **kwargs):
         if folder is None:
-            fodler = "./embeddings"
+            folder = "./embeddings"
         self.folder =folder
+        os.makedirs(self.folder, exist_ok=True)
         self.name=name
         self.path = None
+        self.has_multiple = None
+        self.range=None
 
-    def from_file(self, path):
+    def from_file(self, path, has_multiple=False, target_range=(None,None)):
         self.name = path.split(".")[0]
         self.path = path
         self.folder = os.path.dirname(path)
+        if has_multiple:
+            self.has_multiple = True
+            self.range = target_range
 
 
 
 
 
 class EmbeddingList(object):
-    def __init__(self,*args,  name, folder="./embeddings", **kwargs):
+    def __init__(self,*args,  name, folder="./embeddings", single_file=False, **kwargs):
         self.name = name
         self.folder = folder
+        os.makedirs(self.folder, exist_ok=True)
         self.embeddings = {}
+        self.single_file = single_file
 
 
     def __repr__(self):
@@ -44,11 +54,19 @@ class EmbeddingList(object):
         if key is None:
             key = str(len(self.embeddings))
 
-        self.embeddings[key] = {
+        if embedding.has_multiple:
+            self.embeddings[key] = {
+            "range": embedding.range,
+            "embedding_path": embedding.path,
+            "label_path": label,
+            }
+
+        else:
+            self.embeddings[key] = {
                 "key": key,
-                "embedding_path": embedding.path,
+                "embedding_path":embedding.path,
                 "label": label,
-                }
+            }
         return self[key]
 
     def __getitem__(self, key):
@@ -64,7 +82,7 @@ class EmbeddingList(object):
             folder = self.folder
         data = {
             "name": self.name,
-            "embeddint_class": self[0]["embedding"].__class__.__name__,
+            "embedding_class": self[0]["embedding"].__class__.__name__,
             "list_class": self.__class__.__name__,
             "embeddings": self.embeddings,
         }
@@ -89,6 +107,7 @@ class PerResidueEmbeddings(EmbeddingList):
 
     def _get_sequence(self):
         self.sequence = self.entity.get_sequence(True)
+        return self.sequence
 
 class MonomerEmbedding(Embedding):
     pass
@@ -100,24 +119,99 @@ class MonomerEmbedding(Embedding):
 
 class SaProtEmbeddings(PerResidueEmbeddings):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, foldseek_cmd="foldseek", **kwargs):
         super().__init__(self, *args, **kwargs)
         self.folder = os.path.join(self.folder, "SaProt")
+        os.makedirs(self.folder, exist_ok=True)
         self.fs_tokens = None
+        self.foldseek_cmd = foldseek_cmd
+        self.single_file = True
 
 
-    def generate_embeddings(self, *args, **kwargs):
-        self._get_foldseek()
-        self._run_saprot(self.sequence, self.fs_tokens)
+    def generate_embeddings(self, *args, with_foldseek=True, **kwargs):
+        if with_foldseek:
+            self._get_foldseek()
+        self._run_saprot()
 
 
+    def _get_foldseek(self, force=False):
+        import subprocess
+        out_path = f"/tmp/bioiain/foldseek/{self.name}.foldseek.tsv"
+        if not os.path.exists(out_path) or force:
+            os.makedirs(os.path.dirname(out_path), exist_ok=True)
+            cmd = [self.foldseek_cmd, "structureto3didescriptor", "-v", "0", "--threads", "4", "--chain-name-mode", "0", self.entity.paths["self"], out_path]
+            log("debug", " ".join(cmd))
+            subprocess.run(cmd)
+
+        with open(out_path, "r", encoding="utf-8") as f:
+            raw = f.read().split("\t")
+            fname, seq, tokens = raw[:3]
+            assert seq.strip() == self.sequence
+            self.fs_tokens = tokens.strip()
+            return self.fs_tokens
+        return None
 
 
-    def _run_saprot(self, sequence, fs_tokens):
+    def _run_saprot(self):
         from transformers import AutoTokenizer, AutoModelForMaskedLM
         import torch
 
-    # def run_saprot(name, mode, foldseek_path, label_path, save_folder):
+
+        if self.fs_tokens is None:
+            tokenizer_name = "westlake-repl/SaProt_35M_AF2_seqOnly"
+            model_name = "westlake-repl/SaProt_35M_AF2_seqOnly"
+            in_tokens = [f"{s}#" for s in self.sequence]
+        else:
+            tokenizer_name = "westlake-repl/SaProt_35M_AF2"
+            model_name = "westlake-repl/SaProt_35M_AF2"
+            in_tokens = [f"{s.upper()}{fs.lower()}" for s, fs in zip(self.sequence, self.fs_tokens)]
+
+        #print(in_tokens)
+        seq = "".join(in_tokens)
+        #print(seq)
+
+        tokenizer_path = f"/tmp/bioiain/models/tok_{tokenizer_name}"
+        if not os.path.exists(tokenizer_path):
+            tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+            os.makedirs(os.path.dirname(tokenizer_path), exist_ok=True)
+            tokenizer.save_pretrained(tokenizer_path)
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+
+        model_path = f"/tmp/bioiain/models/mod_{model_name}"
+        if not os.path.exists(model_path):
+            model = AutoModelForMaskedLM.from_pretrained(model_name)
+            os.makedirs(os.path.dirname(model_path))
+            model.save_pretrained(model_path, exist_ok=True)
+        model = AutoModelForMaskedLM.from_pretrained(model_path)
+
+
+        model.eval()
+        model.to(device)
+
+
+        inputs = tokenizer("".join(in_tokens), return_tensors="pt").to(device)
+        inputs = {k: v.to(device) for k, v in inputs.items()}
+        #print(inputs)
+
+        with torch.no_grad():
+            outputs = model(**inputs, output_hidden_states=True)
+
+        last_hidden = outputs.hidden_states[-1]
+        #print(last_hidden.shape, len(self.sequence))
+        save_path = os.path.join(self.folder, f"{self.name}.embedding.pt")
+        torch.save(last_hidden, save_path)
+
+        embedding = Embedding(name=self.name)
+        embedding.from_file(save_path, has_multiple=True)
+        self.add(embedding)
+        return embedding
+
+
+
+
+
+
+        # def run_saprot(name, mode, foldseek_path, label_path, save_folder):
     #     bi.log(3, "Running SaProt, mode:", mode)
     #     label_dict = json.load(open(f"{label_path}/{name}.labels.json"))
     #     # print(label_dict.keys())
@@ -198,54 +292,10 @@ class SaProtEmbeddings(PerResidueEmbeddings):
     #     return True
         pass
 
-    def _get_foldseek(self):
 
-    # def run_foldseek(filename, data_folder, raw_folder, label_folder):
-    #     os.makedirs(raw_folder, exist_ok=True)
-    #
-    #     if os.path.exists(f"{raw_folder}/{filename}.foldseek.json") and not config["general"]["force"]:
-    #         bi.log(3, "Foldseek already calculated")
-    #         return True
-    #     label_dict = json.load(open(f"{label_folder}/{filename}.labels.json"))
-    #     cmd = [config["general"]["foldseek"],
-    #            "structureto3didescriptor", "-v", "0", "--threads", "4",
-    #            "--chain-name-mode", "0", f"{data_folder}/{filename}.cif",
-    #            f"{raw_folder}/{filename}.foldseek.csv"
-    #            ]
-    #     bi.log(4, " ".join(cmd))
-    #     subprocess.run(cmd)
-    #     done_chains = []
-    #     foldseek_dict = {k: None for k in label_dict.keys()}
-    #     with open(f"{raw_folder}/{filename}.foldseek.csv", "r", encoding="utf-8") as f:
-    #
-    #         for line, ch in zip(f, foldseek_dict.keys()):
-    #
-    #             if ch in done_chains:
-    #                 continue
-    #             done_chains.append(ch)
-    #             # print(ch)
-    #
-    #             rns, tks = line.split("\t")[1:3]
-    #             resns = [r for r in rns]
-    #             toks = [t for t in tks]
-    #
-    #             bi.log(3, "foldseek out:", ch, len(resns), len(toks))
-    #
-    #             if not len(resns) == len(toks):
-    #                 print(resns)
-    #                 print(toks)
-    #                 print(len(resns), len(toks))
-    #                 foldseek_dict.pop(ch)
-    #                 bi.log("warning", "foldseek tokens and dssp_dict do not match:", ch)
-    #                 exit()
-    #             foldseek_dict[ch] = {}
-    #             for n, (r, t) in enumerate(zip(resns, toks)):
-    #                 if toks[n] == " ":
-    #                     toks = "-"
-    #                 foldseek_dict[ch][n] = {"fs": t, "resn": r}
-    #     json.dump(foldseek_dict, open(f"{raw_folder}/{filename}.foldseek.json", "w"), indent=4)
-    #     return True
-            pass
+
+
+
 
 
 

@@ -42,13 +42,16 @@ class PymolScript(object):
     :param name: Name of the script. Will de set as a filename. Default is ".temp_pymol_script".
     :return: PymolScript Object.
     """
-    def __init__(self, name="temp_pymol_script", folder:str=".temp", pymol_path = "pymol"):
+    def __init__(self, name="temp_pymol_script", folder:str="./pml", tmp_folder="/tmp/bioiain/pymol", pymol_path = "pymol"):
         self.pymol_path = pymol_path
         self._bioiain = "bioiain"
         self.name = name
         self.folder = folder
+        self.tmp_folder=tmp_folder
         os.makedirs(self.folder, exist_ok=True)
-        self.subfolder = os.path.join(folder, self.name)
+        os.makedirs(self.tmp_folder, exist_ok=True)
+        #self.subfolder = os.path.join(folder, self.name)
+        self.subfolder = self.folder
         os.makedirs(self.subfolder, exist_ok=True)
         self.input = {}
         self.data = {}
@@ -82,14 +85,14 @@ class PymolScript(object):
         if self.path is None:
             self.write_script(".")
         cmd = [self.pymol_path]
-        
+
         cmd.extend(["-x", "-e"])
 
         if quiet:
             cmd.extend(["-q"])
 
         cmd.extend(["-l", self.path])
-        
+
 
         logging.log("debug", "$ " + " ".join(cmd))
         try:
@@ -216,7 +219,7 @@ class PymolScript(object):
 
     def load_entity(self, entity:BiopythonOverlayClass, name:str|None=None, overwrite:bool=True) -> Command:
         """
-        Adds command to load file from entity. Entity is exported to ./.temp as of the cwd.
+        Adds command to load file from entity. Entity is exported to t/mp/bioiain/pymol as of the cwd.
         :param entity:
         :param name: (optional) Name of created PyMol object. Defaults to the entity id
         :return: Generated Command object -> Unknown.
@@ -225,10 +228,10 @@ class PymolScript(object):
             name = entity.data["info"]["name"]
         if not overwrite:
             n = 1
-            while name+".pdb" in os.listdir(self.subfolder):
+            while name+".pdb" in os.listdir(self.tmp_folder):
                 name = "{}_{}".format(entity.data["info"]["name"], n)
                 n += 1
-        path = entity.export(self.subfolder, name, data=True)[0]
+        path = entity.export(self.tmp_folder, name, data=True)[0]
         return self.load(path, name)
 
 
@@ -312,27 +315,6 @@ class PymolScript(object):
 
 
 
-
-
-
-
-
-    """def pymol_group(identifier="sym", name=None, quiet=False):
-        group = []
-        if name is None:
-            name = identifier
-        if not quiet:
-            print("(PyMol) Grouping:", identifier, "in", name)
-        for obj in pymol.cmd.get_names(type='objects'):
-            if type(identifier) is str:
-                if identifier in obj:
-                    group.append(obj)
-            if type(identifier) is list:
-                for i in identifier:
-                    if i in obj:
-                        group.append(obj)
-
-        pymol.cmd.group(name, " ".join(group))"""
 
 
 
