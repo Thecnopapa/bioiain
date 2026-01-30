@@ -4,4 +4,5 @@ from .operations import *
 from .parsing import *
 from .elements import Monomer, Ligand
 from .crystal import Crystal
+from .interactions import *
 #from .oligomer import Oligomer

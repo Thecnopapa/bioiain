@@ -2,22 +2,21 @@ import os, json
 
 
 
+from ..visualisation import pymol
+
 
 from .elements import MonomerContact, Monomer
-from ..visualisation import pymol
-from .operations import *
-from ..machine.embeddings import SaProtEmbeddings
+from .operations import coord_operation_entity, entity_to_frac, entity_to_orth
 
 
 
 
+def get_interaction_profile(monomer, folder):
 
 
-def get_interaction_profile(monomer_id, folder):
-        data_path = os.path.join(folder, monomer_id)
-        monomer = Monomer.recover(monomer_id, data_path=data_path, load_structure=True)
-        interactions = monomer.data["contacts"]["relevant"]
-        contact_folder= monomer.paths["contact_folder"]
+
+    interactions = monomer.data["contacts"]["relevant"]
+    contact_folder= monomer.paths["contact_folder"]
 
     for n, interaction in enumerate(interactions):
         data = json.load(open(os.path.join(contact_folder, interaction+".data.json")))
@@ -41,11 +40,10 @@ def get_interaction_profile(monomer_id, folder):
         print(imon)
 
 
-
+        ints= []
         if operation is None:
             print("ASU", mon1, mon2, imon)
             name = f"interacting_{n}"
-            script.load(imon.paths["self"], name)
 
             for c in data["relevant_contacts"]:
                 a1 = c["atom1"]
@@ -54,8 +52,6 @@ def get_interaction_profile(monomer_id, folder):
                 if reverse:
                     a1, a2 = a2, a1
                 ints.append([a1["resn"], "contact"])
-                script.line(f"int_{n}", sele1=f"monomer and c. {a1['chain']} and i. {a1['resn']} and n. CA", sele2=f"interacting_{n} and c. {a2['chain']} and i. {a2['resn']} and n. CA")
-            script.disable(name)
 
         else:
             print("SYM", mon1, mon2, imon)
@@ -73,8 +69,6 @@ def get_interaction_profile(monomer_id, folder):
                     disp = entity_to_orth(disp, imon.data["params"])
 
                     print(disp, pos)
-                    script.load_entity(disp, name)
-                    script.disable(name)
 
             for c in data["relevant_contacts"]:
                 a1 = c["atom1"]
@@ -84,8 +78,6 @@ def get_interaction_profile(monomer_id, folder):
                     a1, a2 = a2, a1
                 pos = "_".join([str(p) for p in a2["pos"]])
                 ints.append([a1["resn"], "contact"])
-                script.line(f"int_{n}", sele1=f"monomer and c. {a1['chain']} and i. {a1['resn']} and n. CA", sele2=f"interacting_{n}_{pos} and c. {a2['chain']} and i. {a2['resn']} and n. CA")
-
 
             print()
     atoms = monomer.atoms(ca_only=True)

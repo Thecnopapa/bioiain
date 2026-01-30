@@ -12,7 +12,8 @@ device = "cpu"
 
 class Embedding(object):
 
-    def __init__(self, *args, name, folder=None, subfolder=None **kwargs):
+    def __init__(self, *args, name=None, folder=None, subfolder=None, **kwargs):
+        assert name is not None
         self.name=name
         if folder is None:
             folder = "./embeddings"
@@ -21,10 +22,10 @@ class Embedding(object):
         if subfolder is None:
             subfolder = self.name
         self.path = None
-        self.length = 1
+        self.length = 0
 
     def __repr__(self):
-        return f"<bi.{self.__class__.__name__}:{self.name} N={len(self.embeddings
+        return f"<bi.{self.__class__.__name__}:{self.name} N={self.length} at: {self.path}"
 
 
     def from_file(self, path, has_multiple:bool=False, length:int=1):
@@ -43,12 +44,13 @@ class Embedding(object):
 
 
 class PerResidueEmbedding(Embedding):
-    def __init(self, *args, entity, **kwargs):
+    def __init__(self, *args, entity=None, **kwargs):
+        assert entity is not None
         super().__init__(self, *args, name=entity.get_name(), **kwargs)
         self.entity = entity
         self.sequence = self._get_sequence()
         self.subfolder = os.path.join(self.folder, self.name)
-        os.makedirs(self.subfolder)
+        os.makedirs(self.subfolder, exist_ok=True)
 
     def _get_sequence(self):
         self.sequence = self.entity.get_sequence()
@@ -57,7 +59,7 @@ class PerResidueEmbedding(Embedding):
 
 class SaProtEmbedding(PerResidueEmbedding):
 
-    def __init__(self, *args, foldseek_cmd="foldseek", **kwargs):
+    def __init__(self, *args, foldseek_cmd="foldseek", with_foldseek=True, force=False, **kwargs):
         super().__init__(self, *args, **kwargs)
         self.folder = os.path.join(self.folder, "SaProt")
         os.makedirs(self.folder, exist_ok=True)
@@ -65,6 +67,7 @@ class SaProtEmbedding(PerResidueEmbedding):
         self.foldseek_cmd = foldseek_cmd
         self.single_file = True
         self.length = len(self.sequence)+2
+        self.generate_embedding(with_foldseek=with_foldseek, force=force)
 
     def generate_embedding(self, *args, with_foldseek=True, force=False, **kwargs):
         if with_foldseek:
@@ -105,7 +108,6 @@ class SaProtEmbedding(PerResidueEmbedding):
             return self._read_foldseek(out_path)
         else:
             return self._read_foldseek(out_path)
-
 
     def _get_saprot(self, force=False):
         from transformers import AutoTokenizer, AutoModelForMaskedLM
@@ -161,8 +163,10 @@ class SaProtEmbedding(PerResidueEmbedding):
 
         torch.save(last_hidden, save_path)
         self.path = save_path
+        print("EMBEDDING SAVED AT:")
+        print(self.path)
 
-        return self.save_path
+        return self.path
 
 
 

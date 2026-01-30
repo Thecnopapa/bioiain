@@ -19,7 +19,7 @@ class EmbeddingDataset(Dataset):
 
 
     def __repr__(self):
-        return f"<bi.{self.__class__.__name__}:{self.name} N={len(self.embeddings)}>"
+        return f"<bi.{self.__class__.__name__}:{self.name} N={self.length}>"
 
 
     def __len__(self):
@@ -34,13 +34,15 @@ class EmbeddingDataset(Dataset):
     def add(self, embedding:Embedding, key:str|int|None=None, label_path=None):
         if key is None:
             key = len(self.embeddings)
-
+        print("ADDING:", embedding)
+        print(embedding.path)
         self.embeddings[key] = {
             "key": key,
-            "range": embedding.range,
-            "embedding_path":embedding.path,
-            "label_path": label,
-            "length" = embedding.length,
+            "start": self.length,
+            "end": self.length+embedding.length,
+            "embedding_path": embedding.path,
+            "label_path": label_path,
+            "length": embedding.length,
         }
         self.length += embedding.length
         return key
@@ -52,51 +54,55 @@ class EmbeddingDataset(Dataset):
         import torch
         embedding_path = None
         label_path = None
-        if self.single_file:
-            for e in self.embeddings:
-                if e["range"] is None:
-                    pass
-                elif e["range"][0] != (None, None):
-                    if e["range"][0] is not None:
-                        if key < e["range"][0]: continue
-                    if e["range"][1] is not None:
-                        if key >= e["range"][1]: continue
-                if embedding:
-                    embedding_path = e["embedding_path"]
-                if label:
-                    label_path = e["label_path"]
-                break
-            tensor = None
-            label_data = None
+        print("GET:", key)
+        for e in self.embeddings.values():
+            print(e)
+            print(key < e["start"], key >= e["end"])
+            if key < e["start"]: continue
+            if key >= e["end"]: continue
+            print("hi")
+            if embedding:
+                embedding_path = e["embedding_path"]
+            if label:
+                label_path = e["label_path"]
+            break
+        print("e_path", embedding_path)
+        print("l_path", label_path)
+        tensor = None
+        label_data = None
 
-            if self.cache is not None and cache:
-                if self.cache["label_path"] == label_path:
-                    label_data = self.cache["label"]
+        if self.cache is not None and cache:
+            if self.cache["label_path"] == label_path:
+                label_data = self.cache["label"]
 
-                if self.cache["embedding_path"] == embedding_path:
-                    tensor = self.cache["tensor"]
+            if self.cache["embedding_path"] == embedding_path:
+                tensor = self.cache["tensor"]
 
-            if tensor is None:
-                if embedding_path is not None:
-                    tensor = torch.load(embedding_path)
+        if tensor is None:
+            if embedding_path is not None:
+                tensor = torch.load(embedding_path)
 
-            if label_data is None:
-                if label_path is not None:
-                    if label_path.endswith(".json"):
-                        label_data = json.load(open(label_path))
-                    elif label_path.endswith(".txt") or label_path.endswith(".label") or "." not in label_path:
-                        with open(label_path, "r", encoding="utf-8") as f:
-                            label_data = f.read().strip()
-            if cache:
-                self.cache = {
-                    "label_data": label_data.copy(),
-                    "tensor": tensor.copy(),
-                    "label_path": label_path,
-                    "embedding_path": embedding_path,
-                }
+        if label_data is None:
+            if label_path is not None:
+                if label_path.endswith(".json"):
+                    label_data = json.load(open(label_path))
+                elif label_path.endswith(".txt") or label_path.endswith(".label") or "." not in label_path:
+                    with open(label_path, "r", encoding="utf-8") as f:
+                        label_data = f.read().strip()
+        print("tensor", tensor)
+        print("label", label_data)
+        if cache:
+            self.cache = {"label_data":None, "label_path":None, "tensor":None, "embedding_path":None}
+            if label_data is not None:
+                self.cache["label_data"] = label_data
+                self.cache["label_path"] = label_path
+            if tensor is not None:
+                self.cache["tensor"] = tensor.copy_
+                self.cache["embedding_path"] = embedding_path
+
         if label and embedding: return embedding, label
         elif label: return label
-        elif embedding: return embedding
+        elif embedding: return tensor
         else: return None
 
 

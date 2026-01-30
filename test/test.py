@@ -25,8 +25,8 @@ bi.log(1, "File folder:", file_folder)
 for n, file in enumerate(sorted(os.listdir(file_folder))):
     if not file.endswith(".cif"):
         continue
-    #if "1M2Z" not in file:
-    #    continue
+    if "1M2Z" not in file:
+        continue
     code = file[:4]
     #structure = bi.biopython.recover(code)
     bi.log("title", code)
@@ -64,20 +64,30 @@ for n, file in enumerate(sorted(os.listdir(file_folder))):
     )
 
 
-    if crystal.process(force=force) is None:
+    if crystal.process(force=force) is None:p
         raise Exception("NO CRYSTAL")
     monomers = crystal.data.get("monomers", None)
     print("monomers")
     print(monomers)
-    from src.bioiain.symmetries.interactions import *
+    from src.bioiain.symmetries.interactions import get_interaction_profile
 
-    from .embeddings import EmbeddingDataset, SaProtEmbedding
+    from src.bioiain.machine.embeddings import SaProtEmbedding
+    from src.bioiain.machine.datasets import EmbeddingDataset
+
+
     dataset = EmbeddingDataset(name="saprot_with_interactions")
     monomer_folder = crystal.paths["monomer_folder"]
+    from src.bioiain.symmetries.elements import MonomerContact, Monomer
     for monomer_id in monomers:
-        key = dataset.add(embedding=SaProtEmbedding(entity=monomer))
-        label = get_interaction_profile(monomer_id, monomer_folder)
+
+        monomer = Monomer.recover(monomer_id, data_path=os.path.join(monomer_folder, monomer_id), load_structure=True)
+
+        key = dataset.add(embedding=SaProtEmbedding(entity=monomer, force=True))
+        label = get_interaction_profile(monomer, monomer_folder)
+        print(key)
+        print(dataset.get(key, label=False))
         dataset.add_label_from_string(label, key=key)
+        print(dataset.get(key, label=True))
 
         #script = pymol.PymolScript(name=monomer, pymol_path="$CONDA_PREFIX/bin/pymol")
         #script.load(crystal.paths["original"], "original", to="pdb")
