@@ -3,184 +3,59 @@ import os, json
 
 from ..utilities.logging import log
 
-
+import torch
+from torch.utils.data import Dataset
 
 device = "cpu"
 
 
-#BASE CLASSES
 
 class Embedding(object):
 
-    def __init__(self, *args, name=None, folder=None, **kwargs):
+    def __init__(self, *args, name, folder=None, subfolder=None **kwargs):
+        self.name=name
         if folder is None:
             folder = "./embeddings"
         self.folder =folder
         os.makedirs(self.folder, exist_ok=True)
-        self.name=name
+        if subfolder is None:
+            subfolder = self.name
         self.path = None
-        self.has_multiple = None
-        self.range=None
+        self.length = 1
 
-    def from_file(self, path, has_multiple=False, target_range=(None,None)):
+    def __repr__(self):
+        return f"<bi.{self.__class__.__name__}:{self.name} N={len(self.embeddings
+
+
+    def from_file(self, path, has_multiple:bool=False, length:int=1):
         self.name = path.split(".")[0]
         self.path = path
         self.folder = os.path.dirname(path)
-        if has_multiple:
-            self.has_multiple = True
-            self.range = target_range
+        self.length = length
+
+    def get_tensor(self):
+        tensor = torch.load(self.path)
+        return tensor
+
+    def generate_embedding(self, *args, **kwargs):
+        raise NotImplementedError("Embedding: generate_embedding() must be overridden by subclass")
 
 
 
-
-
-class EmbeddingList(object):
-    def __init__(self,*args,  name, folder="./embeddings", single_file=False, **kwargs):
-        self.name = name
-        self.folder = folder
-        os.makedirs(self.folder, exist_ok=True)
-        self.embeddings = {}
-        self.single_file = single_file
-        self.cache = None
-
-
-    def __repr__(self):
-        return f"<bi.{self.__class__.__name__}:{self.name} N={len(self.embeddings)}>"
-
-    def generate_embeddings(self, *args, **kwargs):
-        raise NotImplementedError("EmbeddingList: generate_embeddings() must be overridden by subclass")
-
-
-    def add(self, embedding:Embedding, key:str|int|None=None, label=None):
-        if key is None:
-            key = str(len(self.embeddings))
-
-        if embedding.has_multiple:
-            self.embeddings[key] = {
-            "range": embedding.range,
-            "embedding_path": embedding.path,
-            "label_path": label,
-            }
-
-        else:
-            self.embeddings[key] = {
-                "key": key,
-                "embedding_path":embedding.path,
-                "label": label,
-            }
-        return self[key]
-
-    def __getitem__(self, key):
-        return self.embeddings[key]
-
-    def get(self, key, embedding=True, label=True, cache=True):
-
-        import torch
-        embedding_path = None
-        label_path = None
-        if self.single_file:
-            for e in self.embeddings:
-                if e["range"] is None:
-                    pass
-                elif e["range"][0] != (None, None):
-                    if e["range"][0] is not None:
-                        if e["range"][0] > key: continue
-                    if e["range"][1] is not None:
-                        if e["range"][1] < key: continue
-                if embedding:
-                    embedding_path = e["embedding_path"]
-                if label:
-                    label_path = e["label_path"]
-                break
-            tensor = None
-            label_data = None
-
-            if self.cache is not None and cache:
-                if self.cache["label_path"] == label_path:
-                    label_data = self.cache["label"]
-
-                if self.cache["embedding_path"] == embedding_path:
-                    tensor = self.cache["tensor"]
-
-            if tensor is None:
-                if embedding_path is not None:
-                    tensor = torch.load(embedding_path)
-
-            if label_data is None:
-                if label_path is not None:
-                    if label_path.endswith(".json"):
-                        label_data = json.load(open(label_path))
-                    elif label_path.endswith(".txt") or label_path.endswith(".label") or "." not in label_path:
-                        with open(label_path, "r", encoding="utf-8") as f:
-                            label_data = f.read().strip()
-            if cache:
-                self.cache = {
-                    "label_data": label_data.copy(),
-                    "tensor": tensor.copy(),
-                    "label_path": label_path,
-                    "embedding_path": embedding_path,
-                }
-        if label and embedding: return embedding, label
-        elif label: return label
-        elif embedding: return embedding
-        else: return None
-
-
-
-
-    def add_label(self, key, label):
-        self.embeddings[key]["label"] = label
-        return self[key]
-
-    def add_label_from_string(self, label):
-        fname = f"{self.name}.label.txt"
-        path = os.path.join(self.folder, "labels", fname)
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w") as f:
-            f.write(label)
-
-    def export(self, folder=None):
-        if folder is None:
-            assert self.folder is not None
-            folder = self.folder
-        data = {
-            "name": self.name,
-            "embedding_class": self[0]["embedding"].__class__.__name__,
-            "list_class": self.__class__.__name__,
-            "embeddings": self.embeddings,
-        }
-        fname = f"{self.name}.{data['list_class']}.embeddings.json"
-        path = os.path.join(folder, fname)
-        json.dump(data, open(path, "w"))
-        return path
-
-
-
-class ResidueEmbedding(Embedding):
-    pass
-
-
-
-class PerResidueEmbeddings(EmbeddingList):
-    def __init__(self, *args, entity, **kwargs):
+class PerResidueEmbedding(Embedding):
+    def __init(self, *args, entity, **kwargs):
         super().__init__(self, *args, name=entity.get_name(), **kwargs)
-        self.sequence = None
         self.entity = entity
-        self._get_sequence()
+        self.sequence = self._get_sequence()
+        self.subfolder = os.path.join(self.folder, self.name)
+        os.makedirs(self.subfolder)
 
     def _get_sequence(self):
         self.sequence = self.entity.get_sequence()
         return self.sequence
 
-class MonomerEmbedding(Embedding):
-    pass
 
-
-
-#CUSTOM CLASSES
-
-
-class SaProtEmbeddings(PerResidueEmbeddings):
+class SaProtEmbedding(PerResidueEmbedding):
 
     def __init__(self, *args, foldseek_cmd="foldseek", **kwargs):
         super().__init__(self, *args, **kwargs)
@@ -189,18 +64,12 @@ class SaProtEmbeddings(PerResidueEmbeddings):
         self.fs_tokens = None
         self.foldseek_cmd = foldseek_cmd
         self.single_file = True
+        self.length = len(self.sequence)+2
 
-
-    def generate_embeddings(self, *args, with_foldseek=True, **kwargs):
+    def generate_embedding(self, *args, with_foldseek=True, force=False, **kwargs):
         if with_foldseek:
-            if self._get_foldseek() is None: return None
-        return self._get_saprot()
-
-
-
-    def add_label_json(self, json_path, key=0):
-        self.embeddings[key]["label_path"] = json_path
-        return self.embeddings[key]["label_path"]
+            if self._get_foldseek(force=force) is None: return None
+        return self._get_saprot(force=force)
 
     def _run_foldseek(self, out_path):
         import subprocess
@@ -238,12 +107,11 @@ class SaProtEmbeddings(PerResidueEmbeddings):
             return self._read_foldseek(out_path)
 
 
-
     def _get_saprot(self, force=False):
         from transformers import AutoTokenizer, AutoModelForMaskedLM
         import torch
 
-        save_path = os.path.join(self.folder, f"{self.name}.embedding.pt")
+        save_path = os.path.join(self.subfolder, f"{self.name}.embedding.pt")
         embedding = Embedding(name=self.name)
 
         if os.path.exists(save_path) and not force:
@@ -289,14 +157,12 @@ class SaProtEmbeddings(PerResidueEmbeddings):
             outputs = model(**inputs, output_hidden_states=True)
 
         last_hidden = outputs.hidden_states[-1]
-        #print(last_hidden.shape, len(self.sequence))
+        assert last_hidden.shape[1] == self.length
 
         torch.save(last_hidden, save_path)
+        self.path = save_path
 
-
-        embedding.from_file(save_path, has_multiple=True)
-        self.add(embedding)
-        return embedding
+        return self.save_path
 
 
 

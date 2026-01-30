@@ -71,26 +71,39 @@ for n, file in enumerate(sorted(os.listdir(file_folder))):
     print(monomers)
     from src.bioiain.symmetries.interactions import *
 
-    embeddings = []
+    from .embeddings import EmbeddingDataset, SaProtEmbedding
+    dataset = EmbeddingDataset(name="saprot_with_interactions")
+    monomer_folder = crystal.paths["monomer_folder"]
+    for monomer_id in monomers:
+        key = dataset.add(embedding=SaProtEmbedding(entity=monomer))
+        label = get_interaction_profile(monomer_id, monomer_folder)
+        dataset.add_label_from_string(label, key=key)
 
-    for monomer in monomers:
-        script = pymol.PymolScript(name=monomer, pymol_path="$CONDA_PREFIX/bin/pymol")
-        script.load(crystal.paths["original"], "original", to="pdb")
-        script.cell()
-        script.symmetries()
-        script.group()
-        script.disable("sym")
-        script.disable("original")
-        embeddings.append(interactions_per_monomer(monomer, crystal.paths["monomer_folder"], script=script))
+        #script = pymol.PymolScript(name=monomer, pymol_path="$CONDA_PREFIX/bin/pymol")
+        #script.load(crystal.paths["original"], "original", to="pdb")
+        #script.cell()
+        #script.symmetries()
+        #script.group()
+        #script.disable("sym")
+        #script.disable("original")
 
-        script.write_script()
+
+        #embeddings.append(interactions_per_monomer(monomer, crystal.paths["monomer_folder"], script=script))
+
+        #script.write_script()
         #script.execute()
     print(embeddings)
 
 
-
-
     continue
+
+
+
+
+
+
+# Oligo  (to be reworked)
+
 
     # crystal.get_oligomers(
     #     oligomer_levels=[2],
