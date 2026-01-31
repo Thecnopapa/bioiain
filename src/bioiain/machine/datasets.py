@@ -31,7 +31,7 @@ class EmbeddingDataset(Dataset):
 
 
 
-    def add(self, embedding:Embedding, key:str|int|None=None, label_path=None):
+    def add(self, embedding, key:str|int|None=None, label_path=None):
         if key is None:
             key = len(self.embeddings)
         print("ADDING:", embedding)
