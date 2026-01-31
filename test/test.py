@@ -88,6 +88,17 @@ if not "-t" in sys.argv:
 
 else:
     print(dataset)
+    dataset.split()
+    dataset.train()
+    dataset.test()
+    dataset.normal()
+    import random, math
+    for n in range(10):
+        key = math.floor(random.random() * len(dataset))
+        print("KEY:", key)
+        print(dataset[key])
+        print()
+
 
 
 

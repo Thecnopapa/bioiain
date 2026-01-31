@@ -1,4 +1,7 @@
 import os, json
+from copy import deepcopy
+
+from . import embeddings
 from ..utilities.logging import log
 
 
@@ -15,25 +18,83 @@ class EmbeddingDataset(Dataset):
             name = name,
             folder = folder,
             length = 0,
+            test_length = 0,
             fname = fname,
             path = path,
         )
+        self.mode="normal"
         os.makedirs(self.data["folder"], exist_ok=True)
         self.cache = None
         self.embeddings = {}
+        self.splitted = {
+            "test": None,
+            "train": None,
+        }
 
     def __repr__(self):
         return f"<bi.{self.__class__.__name__}:{self.data["name"]} N={len(self)}>"
 
 
     def __len__(self):
-        return self.data["length"]
+        if self.mode == "normal": return self.data["length"]
+        elif self.mode == "test": return self.splitted["test_length"]
+        elif self.mode == "train": return self.splitted["train_length"]
+        else: raise Exception(f"Unknown mode: {self.mode}")
 
     def __getitem__(self, key):
         return self.get(key)
 
     def __contains__(self, item):
         return item in self.embeddings.keys()
+
+    def test(self):
+        self.mode="test"
+
+    def train(self):
+        self.mode="train"
+
+    def normal(self):
+        self.mode="normal"
+
+    def split(self, mode="embeddings", test_ratio=0.1, random_state=42):
+        import random, math, copy
+        if mode == "embeddings" or True:
+            data = list(self.embeddings.items())
+
+            n_keys = math.floor(len(data)*test_ratio)
+            random.shuffle(data)
+            test = data[0:n_keys]
+            train = data[n_keys:]
+
+            for name, dataset in zip(("test", "train"), (test, train)):
+                n = 0
+                self.splitted[name] = {}
+                for k, s in dataset:
+                    v = self.splitted[name][k] = deepcopy(s)
+                    v["start"] = n
+                    n += v["length"]
+                    v["end"] = n
+                self.splitted[name+"_length"] = n
+
+            print("SPLITTED:", len(self.splitted["test"]), "/", len(self.splitted["train"]))
+            return self
+        else:
+            raise Exception("Not implemented split method:", mode)
+
+
+
+
+        # elif mode == "indices":
+        #     indices = list(range(0, len(self)))
+        #     n_indices = math.floor(len(self.embeddings)*test_ratio)
+        #     random.shuffle(indices)
+        #     indoces = indices[0:n_indices]
+        #     self.test_info["indices"] = indices
+        #     self.test_info["length"] = len(self.test_info["indices"])
+        #     self.data["length"] -= self.test_info["length"]
+        #     return self.test_info["indices"]
+
+
 
 
     class Item(object):
@@ -81,9 +142,16 @@ class EmbeddingDataset(Dataset):
         import torch
         embedding_path = None
         label_path = None
-        print("GET:", key)
+        #print("GET:", key)
         iter_dim = 0
         rel_key = None
+
+        if self.mode == "normal": data = self.embeddings
+        elif self.mode == "test": data = self.splitted["test"]
+        elif self.mode == "train": data = self.splitted["train"]
+        else: raise Exception(f"Unknown mode: {self.mode}")
+
+
         for e in self.embeddings.values():
             #print(e)
             #print(key < e["start"], key >= e["end"])
@@ -174,10 +242,10 @@ class EmbeddingDataset(Dataset):
         self.embeddings[key]["label_path"] = path
         return key
 
-    def save(self, folder=None):
-        return self.export(folder=folder)
+    def save(self, *args, **kwargs):
+        return self.export(*args, **kwargs)
 
-    def export(self, folder=None):
+    def export(self, folder=None, save_split=False):
         if folder is None:
             assert self.data["folder"] is not None
             folder = self.data["folder"]
@@ -185,12 +253,14 @@ class EmbeddingDataset(Dataset):
             "data": self.data,
             "embeddings": self.embeddings,
         }
+        if save_split:
+            data["splitted"] = self.splitted
         os.makedirs(folder, exist_ok=True)
         path = os.path.join(folder, self.data["fname"])
-        json.dump(data, open(path, "w"))
+        json.dump(data, open(path, "w"), indent=4)
         return path
 
-    def load(self, folder=None, missing_ok=True):
+    def load(self, folder=None, missing_ok=True, load_split=False):
         if folder is None:
             assert self.data["folder"] is not None
             folder = self.data["folder"]
@@ -201,16 +271,22 @@ class EmbeddingDataset(Dataset):
         raw = json.load(open(path, "r"))
         self.data = raw["data"]
         self.embeddings = raw["embeddings"]
+        if load_split:
+            try: self.splitted = raw["splitted"]
+            except KeyError: log("warning", f"Dataset split info not found at: {path}")
         return self
 
     @classmethod
-    def from_file(cls, path):
+    def from_file(cls, path, load_split=False):
         raw = json.load(open(path, "r"))
         name = raw["data"]["name"]
         folder = raw["data"]["folder"]
         new = cls(name=name, folder=folder)
         new.data = raw["data"]
         new.embeddings = raw["embeddings"]
+        if load_split:
+            try:  new.splitted = raw["splitted"]
+            except KeyError: log("warning", f"Dataset split info not found at: {path}")
         return new
 
 
