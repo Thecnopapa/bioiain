@@ -26,6 +26,8 @@ CONDA_ENV="default" # =folder name
 RUN_COMMAND="default" # =folder name
 SHELL=bash
 ENV_FILE="environment.yml"
+CONDA_ENV_FILE="env_conda.txt"
+PIP_ENV_FILE="env_pip.txt"
 
 BLUE="\[\e[94m\]"
 YELLOW="\[\e[93m\]"
@@ -119,7 +121,7 @@ else
     echo "* $CONDA_ENV already exists";
   else
     echo "* Creating conda env: $CONDA_ENV";
-    conda create -n $CONDA_ENV || exit 1
+    conda create -n $CONDA_ENV --solver libmamba --file  $ENV_FILE || exit 1
   fi
 
   conda activate $CONDA_ENV && CONDA_ENV=$(echo "$CONDA_PREFIX" | rev | cut -d "/" -f1| rev)
@@ -129,8 +131,10 @@ fi
 
 if [[ $* == "update" ]]; then
   echo "* Updating requirements..."
-  echo "* Requirements from: $ENV_FILE"
-  conda env update --file $ENV_FILE && echo "* Requirements installed"
+  echo "* CONDA requirements from: ${CONDA_ENV_FILE}..."
+  conda env update --solver libmamba --file  $ENV_FILE && echo "* CONDA requirements installed"
+  echo "* PIP requirements from: ${PIP_ENV_FILE}..."
+  pip install -r  $ENV_FILE && echo "* PIP requirements installed"
 fi
 
 

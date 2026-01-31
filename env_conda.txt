@@ -1,0 +1,4 @@
+python == 3.12
+pip
+pymol-open-source == 2.5.0#
+foldseek==10.941cd33

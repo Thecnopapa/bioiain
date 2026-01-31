@@ -16,8 +16,8 @@ bi.log("start", "test.py")
 #file_folder = downloadPDB("./data", "test_list", ["5JJM", "6nwl"],
 #                          file_path="./pdb_list.txt", file_format="pdb",
 #                          overwrite=False)
-file_folder = downloadPDB("/home/iain/vib-ai/internship/data", "receptors",
-                          file_path="/home/iain/vib-ai/internship/data/receptors.txt", file_format="cif",
+file_folder = downloadPDB("/home/iain/projects/vib-ai/internship/data", "receptors",
+                          file_path="/home/iain/projects/vib-ai/internship/data/receptors.txt", file_format="cif",
                           overwrite=False)
 
 bi.log(1, "File folder:", file_folder)

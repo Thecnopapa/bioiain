@@ -1,4 +1,4 @@
-name: bioiain
+#name: bioiain
 channels:
   - defaults
   - conda-forge
@@ -6,17 +6,28 @@ channels:
 dependencies:
   - pip
   - python=3.12
+  #CONDA ONLY
   - foldseek
   - pymol-open-source
   - pip:
+    #CRITICAL
     - numpy==1.26.4
     - biopython==1.86
     - pandas==3.0.0
     - matplotlib==3.10.8
     - scikit-learn==1.8.0
     - scipy==1.17.0
+    # ESSENTIAL
     - setuptools>=80.10.1
     - typing-extensions>=4.15.0
     - requests>=2.32.5
     - unidecode>=1.4.0
     - xmltodict>=0.14.2
+    # ML
+    - torch >= 2.10.0
+    - torchvision >= 0.25.0
+    - transformers >= 5.0.0
+    # DEV
+    - pdoc3
+    - twine
+    - build
