@@ -21,7 +21,7 @@ file_folder = downloadPDB("/home/iain/projects/vib-ai/internship/data", "recepto
 log(1, "File folder:", file_folder)
 
 
-
+from src.bioiain.symmetries.elements import Monomer
 from src.bioiain.symmetries.crystal import get_monomers
 from src.bioiain.machine.datasets import EmbeddingDataset
 from src.bioiain.machine.embeddings import SaProtEmbedding
@@ -32,7 +32,8 @@ FORCE = "force" in sys.argv
 if force:
     pass
 
-dataset = EmbeddingDataset(name="saprot_with_interactions", tensor_iter_dim=1)
+dataset = EmbeddingDataset(name="saprot_with_interactions")
+dataset.load()
 
 
 
@@ -44,38 +45,45 @@ for n, file in enumerate(sorted(os.listdir(file_folder))):
     #    continue
 
 
-    monomers = get_monomers(file, file_folder, force=FORCE)
-    if monomers is None:
+    mon_data = get_monomers(file, file_folder, only_ids=True, force=FORCE)
+
+    print(mon_data)
+    if mon_data is None:
         log("Warning", f"{file} has no monomers")
         continue
 
-    for monomer in monomers:
+    monomers, monomer_folder = mon_data
+
+    for monomer_id in monomers:
         try:
-            print(">>>>", monomer)
+            print(">>>>", monomer_id)
+            if monomer_id in dataset and not force:
+                print(f"{monomer_id} already in dataset")
+                continue
+
+            monomer = Monomer.recover(data_path=os.path.join(monomer_folder, monomer_id))
+            if monomer is None:
+                log("Warning", f"{monomer_id} has no monomer")
+                continue
             embedding = SaProtEmbedding(entity=monomer, force=FORCE)
-            #print(embedding)
-            key = dataset.add(embedding=embedding)
+            key = dataset.add(embedding=embedding, key=monomer.get_name())
             label = get_interaction_profile(monomer, monomer.paths["export_folder"], threshold=10, force=FORCE)
-            #print(key)
-            #print(dataset.get(key, label=False))
             dataset.add_label_from_string(label, key=key)
-            #print(dataset.get(key, label=True))
             print(dataset)
         except Exception as e:
-            log("Error", f"Exception occurred processing: {monomer}:\n", e)
+            log("Error", f"Exception occurred processing: {monomer_id}:\n", e)
+            #raise e
             continue
 
+        dataset.save()
 
     log("start", "Dataset test")
-    print(dataset[0])
-    print(dataset[1])
     print(dataset[len(dataset)-1])
-    print(dataset)
-    print("end")
-
 
     continue
 
+datset_path = dataset.save()
+print(dataset, f"saved at: {datset_path}")
 
 
 

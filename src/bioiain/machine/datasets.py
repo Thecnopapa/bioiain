@@ -1,5 +1,5 @@
 import os, json
-
+from ..utilities.logging import log
 
 
 
@@ -8,25 +8,32 @@ from torch.utils.data import Dataset, DataLoader
 
 
 class EmbeddingDataset(Dataset):
-    def __init__(self,*args,  name, folder="./embeddings", **kwargs):
-        self.name = name
-        self.folder = folder
-        os.makedirs(self.folder, exist_ok=True)
-        self.embeddings = {}
+    def __init__(self,*args,  name, folder="./datasets", **kwargs):
+        fname = f"{name}.dataset.json"
+        path = os.path.join(folder, fname)
+        self.data = dict(
+            name = name,
+            folder = folder,
+            length = 0,
+            fname = fname,
+            path = path,
+        )
+        os.makedirs(self.data["folder"], exist_ok=True)
         self.cache = None
-        self.test_keys = []
-        self.length = 0
-
+        self.embeddings = {}
 
     def __repr__(self):
-        return f"<bi.{self.__class__.__name__}:{self.name} N={self.length}>"
+        return f"<bi.{self.__class__.__name__}:{self.data["name"]} N={len(self)}>"
 
 
     def __len__(self):
-        return self.length
+        return self.data["length"]
 
     def __getitem__(self, key):
         return self.get(key)
+
+    def __contains__(self, item):
+        return item in self.embeddings.keys()
 
 
     class Item(object):
@@ -57,14 +64,14 @@ class EmbeddingDataset(Dataset):
         #print(embedding.path)
         self.embeddings[key] = {
             "key": key,
-            "start": self.length,
-            "end": self.length+embedding.length,
+            "start": len(self),
+            "end": len(self)+embedding.length,
             "embedding_path": embedding.path,
             "label_path": label_path,
             "length": embedding.length,
             "iter_dim": embedding.iter_dim,
         }
-        self.length += embedding.length
+        self.data["length"] += embedding.length
         return key
 
 
@@ -76,6 +83,7 @@ class EmbeddingDataset(Dataset):
         label_path = None
         print("GET:", key)
         iter_dim = 0
+        rel_key = None
         for e in self.embeddings.values():
             #print(e)
             #print(key < e["start"], key >= e["end"])
@@ -90,7 +98,9 @@ class EmbeddingDataset(Dataset):
             rel_key = key - e["start"]
             break
 
-        print("REL_KEY:", rel_key)
+        assert rel_key is not None
+
+        #print("REL_KEY:", rel_key)
 
         #print("e_path", embedding_path)
         #print("l_path", label_path)
@@ -154,7 +164,7 @@ class EmbeddingDataset(Dataset):
         if key is None:
             key = len(self.embeddings) - 1
         folder = os.path.dirname(self.embeddings[key]["embedding_path"])
-        fname = f"{self.name}.label.txt"
+        fname = f"{self.data['name']}.label.txt"
 
         path = os.path.join(folder, fname)
 
@@ -164,20 +174,45 @@ class EmbeddingDataset(Dataset):
         self.embeddings[key]["label_path"] = path
         return key
 
+    def save(self, folder=None):
+        return self.export(folder=folder)
+
     def export(self, folder=None):
         if folder is None:
-            assert self.folder is not None
-            folder = self.folder
+            assert self.data["folder"] is not None
+            folder = self.data["folder"]
         data = {
-            "name": self.name,
-            "embedding_class": self[0]["embedding"].__class__.__name__,
-            "list_class": self.__class__.__name__,
+            "data": self.data,
             "embeddings": self.embeddings,
         }
-        fname = f"{self.name}.{data['list_class']}.embeddings.json"
-        path = os.path.join(folder, fname)
+        os.makedirs(folder, exist_ok=True)
+        path = os.path.join(folder, self.data["fname"])
         json.dump(data, open(path, "w"))
         return path
+
+    def load(self, folder=None, missing_ok=True):
+        if folder is None:
+            assert self.data["folder"] is not None
+            folder = self.data["folder"]
+        path = os.path.join(folder, self.data["fname"])
+        if not os.path.exists(path) and missing_ok:
+            log("warning", f"Dataset data not found at: {path}")
+            return self
+        raw = json.load(open(path, "r"))
+        self.data = raw["data"]
+        self.embeddings = raw["embeddings"]
+        return self
+
+    @classmethod
+    def from_file(cls, path):
+        raw = json.load(open(path, "r"))
+        name = raw["data"]["name"]
+        folder = raw["data"]["folder"]
+        new = cls(name=name, folder=folder)
+        new.data = raw["data"]
+        new.embeddings = raw["embeddings"]
+        return new
+
 
 
 
