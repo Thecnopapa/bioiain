@@ -36,55 +36,58 @@ dataset = EmbeddingDataset(name="saprot_with_interactions")
 dataset.load()
 
 
+if not "-t" in sys.argv:
+
+    for n, file in enumerate(sorted(os.listdir(file_folder))):
+        if not file.endswith(".cif"):
+            continue
+        #if "1M2Z" not in file:
+        #    continue
 
 
-for n, file in enumerate(sorted(os.listdir(file_folder))):
-    if not file.endswith(".cif"):
-        continue
-    #if "1M2Z" not in file:
-    #    continue
+        mon_data = get_monomers(file, file_folder, only_ids=True, force=FORCE)
 
-
-    mon_data = get_monomers(file, file_folder, only_ids=True, force=FORCE)
-
-    print(mon_data)
-    if mon_data is None:
-        log("Warning", f"{file} has no monomers")
-        continue
-
-    monomers, monomer_folder = mon_data
-
-    for monomer_id in monomers:
-        try:
-            print(">>>>", monomer_id)
-            if monomer_id in dataset and not force:
-                print(f"{monomer_id} already in dataset")
-                continue
-
-            monomer = Monomer.recover(data_path=os.path.join(monomer_folder, monomer_id))
-            if monomer is None:
-                log("Warning", f"{monomer_id} has no monomer")
-                continue
-            embedding = SaProtEmbedding(entity=monomer, force=FORCE)
-            key = dataset.add(embedding=embedding, key=monomer.get_name())
-            label = get_interaction_profile(monomer, monomer.paths["export_folder"], threshold=10, force=FORCE)
-            dataset.add_label_from_string(label, key=key)
-            print(dataset)
-        except Exception as e:
-            log("Error", f"Exception occurred processing: {monomer_id}:\n", e)
-            #raise e
+        print(mon_data)
+        if mon_data is None:
+            log("Warning", f"{file} has no monomers")
             continue
 
-        dataset.save()
+        monomers, monomer_folder = mon_data
 
-    log("start", "Dataset test")
-    print(dataset[len(dataset)-1])
+        for monomer_id in monomers:
+            try:
+                print(">>>>", monomer_id)
+                if monomer_id in dataset and not force:
+                    print(f"{monomer_id} already in dataset")
+                    continue
 
-    continue
+                monomer = Monomer.recover(data_path=os.path.join(monomer_folder, monomer_id))
+                if monomer is None:
+                    log("Warning", f"{monomer_id} has no monomer")
+                    continue
+                embedding = SaProtEmbedding(entity=monomer, force=FORCE)
+                key = dataset.add(embedding=embedding, key=monomer.get_name())
+                label = get_interaction_profile(monomer, monomer.paths["export_folder"], threshold=10, force=FORCE)
+                dataset.add_label_from_string(label, key=key)
+                print(dataset)
+            except Exception as e:
+                log("Error", f"Exception occurred processing: {monomer_id}:\n", e)
+                #raise e
+                continue
 
-datset_path = dataset.save()
-print(dataset, f"saved at: {datset_path}")
+            dataset.save()
 
+        log("start", "Dataset test")
+        print(dataset[len(dataset)-1])
+
+        continue
+
+    datset_path = dataset.save()
+    print(dataset, f"saved at: {datset_path}")
+
+
+else:
+    print(dataset)
 
 
 
