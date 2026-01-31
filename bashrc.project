@@ -18,6 +18,8 @@
 #       e.g. ./myProject/bashrc.project init
 
 
+# VERSION 1.0.0
+
 RCFILE=~/.bashrc
 SCRIPT_NAME="bashrc.project"
 CONDA_ENV="default" # =folder name
@@ -207,6 +209,12 @@ checkout(){
     echo "* git checkout $0"
     git git checkout $0
 }
+
+
+
+
+
+# PROJECT SPECIFIC AFTER THIS
 
 
 testing(){
