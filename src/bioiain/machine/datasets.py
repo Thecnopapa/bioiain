@@ -29,13 +29,32 @@ class EmbeddingDataset(Dataset):
         return self.get(key)
 
 
+    class Item(object):
+        def __init__(self, tensor, label, key=None, dataset=None):
+            self.tensor = tensor
+            self.label = label
+            self.t = self.tensor
+            self.l = self.label
+            self.key = key
+            self.dataset = dataset
+
+        def __getitem__(self, item):
+            if item in [0, "tensor", "t"]:
+                return self.tensor
+            elif item in [1, "label"]:
+                return self.label
+            else:
+                raise KeyError(item)
+
+        def __repr__(self):
+            return f"Item({self.key}) T:{self.tensor.shape}, L=\"{self.label}\", from: {self.dataset}"
 
 
     def add(self, embedding, key:str|int|None=None, label_path=None):
         if key is None:
             key = len(self.embeddings)
         print("ADDING:", embedding)
-        print(embedding.path)
+        #print(embedding.path)
         self.embeddings[key] = {
             "key": key,
             "start": self.length,
@@ -43,6 +62,7 @@ class EmbeddingDataset(Dataset):
             "embedding_path": embedding.path,
             "label_path": label_path,
             "length": embedding.length,
+            "iter_dim": embedding.iter_dim,
         }
         self.length += embedding.length
         return key
@@ -55,28 +75,36 @@ class EmbeddingDataset(Dataset):
         embedding_path = None
         label_path = None
         print("GET:", key)
+        iter_dim = 0
         for e in self.embeddings.values():
-            print(e)
-            print(key < e["start"], key >= e["end"])
+            #print(e)
+            #print(key < e["start"], key >= e["end"])
             if key < e["start"]: continue
             if key >= e["end"]: continue
-            print("hi")
+            iter_dim = e["iter_dim"]
+
             if embedding:
                 embedding_path = e["embedding_path"]
             if label:
                 label_path = e["label_path"]
+            rel_key = key - e["start"]
+
             break
-        print("e_path", embedding_path)
-        print("l_path", label_path)
+        print("REL_KEY:", rel_key)
+
+        #print("e_path", embedding_path)
+        #print("l_path", label_path)
         tensor = None
         label_data = None
 
         if self.cache is not None and cache:
-            if self.cache["label_path"] == label_path:
-                label_data = self.cache["label"]
+            if self.cache["label_path"] is not None:
+                if self.cache["label_path"] == label_path:
+                    label_data = self.cache["label_data"]
 
-            if self.cache["embedding_path"] == embedding_path:
-                tensor = self.cache["tensor"]
+            if self.cache["embedding_path"] is not None:
+                if self.cache["embedding_path"] == embedding_path:
+                    tensor = self.cache["tensor"]
 
         if tensor is None:
             if embedding_path is not None:
@@ -89,21 +117,31 @@ class EmbeddingDataset(Dataset):
                 elif label_path.endswith(".txt") or label_path.endswith(".label") or "." not in label_path:
                     with open(label_path, "r", encoding="utf-8") as f:
                         label_data = f.read().strip()
-        print("tensor", tensor)
-        print("label", label_data)
+
+
+        target_tensor=None
+        target_label=None
+        if embedding:
+            target_tensor = tensor
+            for i in range(iter_dim):
+                target_tensor = target_tensor[0]
+            target_tensor = target_tensor[rel_key]
+            #print("tensor", target_tensor.shape)
+
+        if label:
+            target_label = label_data[rel_key]
+            #print("label", target_label)
+
         if cache:
             self.cache = {"label_data":None, "label_path":None, "tensor":None, "embedding_path":None}
             if label_data is not None:
                 self.cache["label_data"] = label_data
                 self.cache["label_path"] = label_path
             if tensor is not None:
-                self.cache["tensor"] = tensor.copy_
+                self.cache["tensor"] = tensor
                 self.cache["embedding_path"] = embedding_path
 
-        if label and embedding: return embedding, label
-        elif label: return label
-        elif embedding: return tensor
-        else: return None
+        return self.Item(target_tensor, target_label, key=key, dataset=self)
 
 
 

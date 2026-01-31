@@ -7,7 +7,7 @@ import json
 
 
 from ..utilities.logging import log
-from typing_extensions import Self
+from typing_extensions import Self, LiteralString
 
 
 class BiopythonOverlayClass:
@@ -179,7 +179,7 @@ class BiopythonOverlayClass:
         return filepath
 
     @classmethod
-    def recover(cls, *args, data_path:str=None, load_structure:bool=True, temp_id="recovering", **kwargs):
+    def recover(cls, *args, data_path:str|LiteralString=None, load_structure:bool=True, temp_id="recovering", **kwargs):
         if not data_path.endswith(".data.json"):
             data_path += ".data.json"
         try:

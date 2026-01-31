@@ -1,4 +1,4 @@
-#name: bioiain
+name: bioiain
 channels:
   - defaults
   - conda-forge

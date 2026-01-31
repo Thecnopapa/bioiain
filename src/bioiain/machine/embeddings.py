@@ -12,27 +12,28 @@ device = "cpu"
 
 class Embedding(object):
 
-    def __init__(self, *args, name=None, folder=None, subfolder=None, **kwargs):
+    def __init__(self, *args, name=None, folder=None, **kwargs):
         assert name is not None
         self.name=name
         if folder is None:
             folder = "./embeddings"
         self.folder =folder
         os.makedirs(self.folder, exist_ok=True)
-        if subfolder is None:
-            subfolder = self.name
         self.path = None
         self.length = 0
+        self.iter_dim = 1
 
     def __repr__(self):
         return f"<bi.{self.__class__.__name__}:{self.name} N={self.length} at: {self.path}"
 
 
-    def from_file(self, path, has_multiple:bool=False, length:int=1):
+    def from_file(self, path, iter_dim=0):
+        tensor = torch.load(path)
         self.name = path.split(".")[0]
         self.path = path
         self.folder = os.path.dirname(path)
-        self.length = length
+        self.length = tensor.shape[length_dim]
+        self.iter_dim = iter_dim
 
     def get_tensor(self):
         tensor = torch.load(self.path)
@@ -61,20 +62,25 @@ class SaProtEmbedding(PerResidueEmbedding):
 
     def __init__(self, *args, foldseek_cmd="foldseek", with_foldseek=True, force=False, **kwargs):
         super().__init__(self, *args, **kwargs)
+        self.subfolder = os.path.join(self.folder, self.name)
         self.folder = os.path.join(self.folder, "SaProt")
         os.makedirs(self.folder, exist_ok=True)
+        os.makedirs(self.subfolder, exist_ok=True)
         self.fs_tokens = None
         self.foldseek_cmd = foldseek_cmd
         self.single_file = True
         self.length = len(self.sequence)+2
+        self.iter_dim = 1
         self.generate_embedding(with_foldseek=with_foldseek, force=force)
 
     def generate_embedding(self, *args, with_foldseek=True, force=False, **kwargs):
+        #print("GENERATING_EMBEDDING")
         if with_foldseek:
             if self._get_foldseek(force=force) is None: return None
         return self._get_saprot(force=force)
 
     def _run_foldseek(self, out_path):
+        #print("RUNNING FOLDSEEK")
         import subprocess
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
         cmd = [self.foldseek_cmd, "structureto3didescriptor", "-v", "0", "--threads", "4", "--chain-name-mode", "0",
@@ -83,6 +89,7 @@ class SaProtEmbedding(PerResidueEmbedding):
         subprocess.run(cmd)
 
     def _read_foldseek(self, out_path):
+        #print("READING FOLDSEEK")
         with open(out_path, "r", encoding="utf-8") as f:
             raw = f.read().split("\t")
             try:
@@ -99,11 +106,14 @@ class SaProtEmbedding(PerResidueEmbedding):
                 print("self.sequence:", self.sequence)
                 raise
             self.fs_tokens = tokens.strip()
+            #print(self.fs_tokens)
             return self.fs_tokens
 
     def _get_foldseek(self, force=False):
+        #print("GETTING_FOLDSEEK")
         out_path = f"/tmp/bioiain/foldseek/{self.name}.foldseek.tsv"
-        if not os.path.exists(out_path) or force:
+        #print(not os.path.exists(out_path), force)
+        if (not os.path.exists(out_path)) or force:
             self._run_foldseek(out_path)
             return self._read_foldseek(out_path)
         else:
@@ -112,12 +122,13 @@ class SaProtEmbedding(PerResidueEmbedding):
     def _get_saprot(self, force=False):
         from transformers import AutoTokenizer, AutoModelForMaskedLM
         import torch
-
+        #print("GETTING_SAPROT")
         save_path = os.path.join(self.subfolder, f"{self.name}.embedding.pt")
-        embedding = Embedding(name=self.name)
 
         if os.path.exists(save_path) and not force:
-            return embedding.from_file(save_path, has_multiple=True)
+            print("USING PRECALCULATED SAPROT at:",save_path)
+            self.path = save_path
+            return self
 
         if self.fs_tokens is None:
             tokenizer_name = "westlake-repl/SaProt_35M_AF2_seqOnly"
@@ -163,8 +174,8 @@ class SaProtEmbedding(PerResidueEmbedding):
 
         torch.save(last_hidden, save_path)
         self.path = save_path
-        print("EMBEDDING SAVED AT:")
-        print(self.path)
+        #print("EMBEDDING SAVED AT:")
+        #print(self.path)
 
         return self.path
 

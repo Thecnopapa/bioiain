@@ -3,15 +3,13 @@ sys.path.append('..')
 
 
 
-from src.bioiain.biopython import downloadPDB, Structure
-from src.bioiain.symmetries import Crystal
-import src.bioiain as bi
+from src.bioiain.biopython import downloadPDB
+from src.bioiain import log
 
-import numpy as np
 
 force = "force" in sys.argv
 
-bi.log("start", "test.py")
+log("start", "test.py")
 
 #file_folder = downloadPDB("./data", "test_list", ["5JJM", "6nwl"],
 #                          file_path="./pdb_list.txt", file_format="pdb",
@@ -20,94 +18,76 @@ file_folder = downloadPDB("/home/iain/projects/vib-ai/internship/data", "recepto
                           file_path="/home/iain/projects/vib-ai/internship/data/receptors.txt", file_format="cif",
                           overwrite=False)
 
-bi.log(1, "File folder:", file_folder)
+log(1, "File folder:", file_folder)
+
+
+
+from src.bioiain.symmetries.crystal import get_monomers
+from src.bioiain.machine.datasets import EmbeddingDataset
+from src.bioiain.machine.embeddings import SaProtEmbedding
+from src.bioiain.symmetries.interactions import get_interaction_profile
+dataset = EmbeddingDataset(name="saprot_with_interactions", tensor_iter_dim=1)
+
+
+FORCE = "force" in sys.argv
 
 for n, file in enumerate(sorted(os.listdir(file_folder))):
     if not file.endswith(".cif"):
         continue
     if "1M2Z" not in file:
         continue
-    code = file[:4]
-    #structure = bi.biopython.recover(code)
-    bi.log("title", code)
 
 
+    monomers = get_monomers(file, file_folder, force=FORCE)
 
-    try:
-        if force: raise Exception("FORCE")
-        structure = Structure.recover(code, data_path=f"exports/{code}/{code}", load_structure=True)
-    except:
-        structure = bi.biopython.loadPDB(os.path.join(file_folder, f"{code}.cif"))
-        structure.init_all()
-
-    bi.log("header", structure)
-    if structure is None or structure.has_flag("MissingCrystalError"):
-        continue
-
-
-
-
-    crystals = structure.data.get("crystals", None)
-    if crystals is None or force:
-        crystals = structure.init_crystal()
-
-    crystal = Crystal.recover("cryst", data_path=os.path.join(structure.paths["crystal_folder"], crystals[0]),
-                                  load_structure=True)
-
-    bi.log("header", crystal)
-
-
-    crystal.set_crystal_params(
-        min_monomer_length=50,
-        min_contacts=6,
-        contact_threshold=10,
-    )
-
-
-    if crystal.process(force=force) is None:
-        raise Exception("NO CRYSTAL")
-    monomers = crystal.data.get("monomers", None)
-    print("monomers")
-    print(monomers)
-    from src.bioiain.symmetries.interactions import get_interaction_profile
-
-    from src.bioiain.machine.embeddings import SaProtEmbedding
-    from src.bioiain.machine.datasets import EmbeddingDataset
-
-
-    dataset = EmbeddingDataset(name="saprot_with_interactions")
-    monomer_folder = crystal.paths["monomer_folder"]
-    from src.bioiain.symmetries.elements import MonomerContact, Monomer
-    for monomer_id in monomers:
-
-        monomer = Monomer.recover(monomer_id, data_path=os.path.join(monomer_folder, monomer_id), load_structure=True)
-
-        key = dataset.add(embedding=SaProtEmbedding(entity=monomer, force=True))
-        label = get_interaction_profile(monomer, monomer_folder)
-        print(key)
-        print(dataset.get(key, label=False))
+    for monomer in monomers:
+        print(">>>>", monomer)
+        embedding = SaProtEmbedding(entity=monomer, force=FORCE)
+        #print(embedding)
+        key = dataset.add(embedding=embedding)
+        label = get_interaction_profile(monomer, monomer.paths["export_folder"], threshold=10, force=FORCE)
+        #print(key)
+        #print(dataset.get(key, label=False))
         dataset.add_label_from_string(label, key=key)
-        print(dataset.get(key, label=True))
-
-        #script = pymol.PymolScript(name=monomer, pymol_path="$CONDA_PREFIX/bin/pymol")
-        #script.load(crystal.paths["original"], "original", to="pdb")
-        #script.cell()
-        #script.symmetries()
-        #script.group()
-        #script.disable("sym")
-        #script.disable("original")
+        #print(dataset.get(key, label=True))
 
 
-        #embeddings.append(interactions_per_monomer(monomer, crystal.paths["monomer_folder"], script=script))
+        print(dataset)
 
-        #script.write_script()
-        #script.execute()
-    print(embeddings)
+    log("start", "Dataset test")
+    print(dataset[0])
+    print(dataset[1])
+    print(dataset[420])
+    print(dataset)
+    print("end")
 
 
     continue
 
 
+
+
+
+
+
+
+#     script.line(f"int_{n}", sele1=f"monomer and c. {a1['chain']} and i. {a1['resn']} and n. CA",
+#                 sele2=f"interacting_{n} and c. {a2['chain']} and i. {a2['resn']} and n. CA")
+# script.disable(name)
+
+# script = pymol.PymolScript(name=monomer, pymol_path="$CONDA_PREFIX/bin/pymol")
+# script.load(crystal.paths["original"], "original", to="pdb")
+# script.cell()
+# script.symmetries()
+# script.group()
+# script.disable("sym")
+# script.disable("original")
+
+
+# embeddings.append(interactions_per_monomer(monomer, crystal.paths["monomer_folder"], script=script))
+
+# script.write_script()
+# script.execute()
 
 
 
@@ -144,7 +124,7 @@ for n, file in enumerate(sorted(os.listdir(file_folder))):
 
 
 
-bi.log("end", "DONE")
+log("end", "DONE")
 exit()
 
 

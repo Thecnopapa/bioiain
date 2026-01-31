@@ -1,7 +1,6 @@
 
 import os, time
 
-
 from typing_extensions import Self
 from copy import deepcopy
 
@@ -15,6 +14,11 @@ from .elements import Monomer, Ligand
 from ..visualisation import fig3D, pymol_colours, Arrow3D
 
 from .parsing import MissingCrystalError, SuspiciousCrystalError
+
+
+
+
+
 class Crystal(Model):
     def _init(self, *args, **kwargs) -> Self:
         """
@@ -233,4 +237,53 @@ class Crystal(Model):
         return self
 
 
+def get_monomers(file, file_folder, only_ids=False, min_monomer_length=50, min_contacts=6, contact_threshold=10, force=False):
+    from src.bioiain.biopython import Structure, loadPDB
+    code = file[:4]
+    #structure = bi.biopython.recover(code)
+    log("title", code)
+
+    try:
+        if force: raise Exception("FORCE")
+        structure = Structure.recover(code, data_path=f"exports/{code}/{code}", load_structure=True)
+    except:
+        structure = loadPDB(os.path.join(file_folder, f"{code}.cif"))
+        structure.init_all()
+
+    log("header", structure)
+    if structure is None or structure.has_flag("MissingCrystalError"):
+        return None
+
+    crystals = structure.data.get("crystals", None)
+    if crystals is None or force:
+        crystals = structure.init_crystal()
+
+    crystal = Crystal.recover("cryst", data_path=os.path.join(structure.paths["crystal_folder"], crystals[0]),
+                                  load_structure=True)
+
+    log("header", crystal)
+
+
+    crystal.set_crystal_params(
+        min_monomer_length=min_monomer_length,
+        min_contacts=min_contacts,
+        contact_threshold=contact_threshold,
+    )
+
+
+    if crystal.process(force=force) is None:
+        raise Exception(f"NO CRYSTAL for {file}")
+    monomers = crystal.data.get("monomers", None)
+    monomer_folder = crystal.paths["monomer_folder"]
+
+    if only_ids:
+        return monomers, monomer_folder
+
+    else:
+        return [
+            Monomer.recover(
+                monomer_id,
+                data_path=os.path.join(monomer_folder, monomer_id),
+                load_structure=True
+            ) for monomer_id in monomers]
 
