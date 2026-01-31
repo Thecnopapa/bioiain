@@ -88,16 +88,18 @@ class SaProtEmbedding(PerResidueEmbedding):
         log("debug", "$", " ".join(cmd))
         subprocess.run(cmd)
 
-    def _read_foldseek(self, out_path):
+    def _read_foldseek(self, out_path, try_again=False):
         #print("READING FOLDSEEK")
         with open(out_path, "r", encoding="utf-8") as f:
             raw = f.read().split("\t")
             try:
                 fname, seq, tokens = raw[:3]
             except:
+                if try_again:
+                    self._run_foldseek(out_path)
                 print(out_path, ":")
                 print(f.read())
-                return None
+                raise Exception("No Foldseek data")
             try:
                 seq.strip() == self.sequence
             except AssertionError:
@@ -117,7 +119,7 @@ class SaProtEmbedding(PerResidueEmbedding):
             self._run_foldseek(out_path)
             return self._read_foldseek(out_path)
         else:
-            return self._read_foldseek(out_path)
+            return self._read_foldseek(out_path, try_again=True)
 
     def _get_saprot(self, force=False):
         from transformers import AutoTokenizer, AutoModelForMaskedLM

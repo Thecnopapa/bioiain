@@ -30,7 +30,7 @@ def get_interaction_profile(monomer, folder, threshold=None, force=False):
 
     interactions = monomer.data["contacts"]["relevant"]
     contact_folder= monomer.paths["contact_folder"]
-
+    ints = []
     for n, interaction in enumerate(interactions):
         data = json.load(open(os.path.join(contact_folder, interaction+".data.json")))
         mon1_data=data["monomer1"]
@@ -53,7 +53,7 @@ def get_interaction_profile(monomer, folder, threshold=None, force=False):
         print(imon)
 
 
-        ints= []
+
         if operation is None:
             print("ASU", mon1, mon2, imon)
             name = f"interacting_{n}"

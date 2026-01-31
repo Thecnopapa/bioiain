@@ -88,8 +88,8 @@ class EmbeddingDataset(Dataset):
             if label:
                 label_path = e["label_path"]
             rel_key = key - e["start"]
-
             break
+
         print("REL_KEY:", rel_key)
 
         #print("e_path", embedding_path)

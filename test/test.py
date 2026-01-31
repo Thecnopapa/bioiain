@@ -26,38 +26,50 @@ from src.bioiain.symmetries.crystal import get_monomers
 from src.bioiain.machine.datasets import EmbeddingDataset
 from src.bioiain.machine.embeddings import SaProtEmbedding
 from src.bioiain.symmetries.interactions import get_interaction_profile
-dataset = EmbeddingDataset(name="saprot_with_interactions", tensor_iter_dim=1)
 
 
 FORCE = "force" in sys.argv
+if force:
+    pass
+
+dataset = EmbeddingDataset(name="saprot_with_interactions", tensor_iter_dim=1)
+
+
+
 
 for n, file in enumerate(sorted(os.listdir(file_folder))):
     if not file.endswith(".cif"):
         continue
-    if "1M2Z" not in file:
-        continue
+    #if "1M2Z" not in file:
+    #    continue
 
 
     monomers = get_monomers(file, file_folder, force=FORCE)
+    if monomers is None:
+        log("Warning", f"{file} has no monomers")
+        continue
 
     for monomer in monomers:
-        print(">>>>", monomer)
-        embedding = SaProtEmbedding(entity=monomer, force=FORCE)
-        #print(embedding)
-        key = dataset.add(embedding=embedding)
-        label = get_interaction_profile(monomer, monomer.paths["export_folder"], threshold=10, force=FORCE)
-        #print(key)
-        #print(dataset.get(key, label=False))
-        dataset.add_label_from_string(label, key=key)
-        #print(dataset.get(key, label=True))
+        try:
+            print(">>>>", monomer)
+            embedding = SaProtEmbedding(entity=monomer, force=FORCE)
+            #print(embedding)
+            key = dataset.add(embedding=embedding)
+            label = get_interaction_profile(monomer, monomer.paths["export_folder"], threshold=10, force=FORCE)
+            #print(key)
+            #print(dataset.get(key, label=False))
+            dataset.add_label_from_string(label, key=key)
+            #print(dataset.get(key, label=True))
+            print(dataset)
+        except Exception as e:
+            log("Error", f"Exception occurred processing: {monomer}:\n", e)
+            continue
 
-
-        print(dataset)
 
     log("start", "Dataset test")
     print(dataset[0])
     print(dataset[1])
-    print(dataset[420])
+    print(dataset[len(dataset)-1])
     print(dataset)
     print("end")
 
