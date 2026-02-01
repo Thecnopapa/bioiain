@@ -30,15 +30,16 @@ from src.bioiain.machine.embeddings import SaProtEmbedding, MissingProgram
 from src.bioiain.symmetries.interactions import get_interaction_profile
 
 
-FORCE = "force" in sys.argv
+FORCE = "force" in sys.argv or "-f" in sys.argv
 if force:
     pass
 
 dataset = EmbeddingDataset(name="saprot_with_interactions")
-dataset.load()
+if not force:
+    dataset.load()
 
 
-if "-l" in sys.argv:
+if "-l" in sys.argv or "-e" in sys.argv:
 
     for n, file in enumerate(sorted(os.listdir(file_folder))):
         if not file.endswith(".cif"):
@@ -82,8 +83,8 @@ if "-l" in sys.argv:
             dataset.save()
 
         if len(dataset) >= 1:
-
             log("start", "Dataset test")
+            print(len(dataset))
             print(dataset[len(dataset)-1])
 
         continue

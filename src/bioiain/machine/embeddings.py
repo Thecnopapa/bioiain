@@ -63,8 +63,8 @@ class SaProtEmbedding(PerResidueEmbedding):
 
     def __init__(self, *args, foldseek_cmd="foldseek", with_foldseek=True, force=False, **kwargs):
         super().__init__(self, *args, **kwargs)
-        self.subfolder = os.path.join(self.folder, self.name)
         self.folder = os.path.join(self.folder, "SaProt")
+        self.subfolder = os.path.join(self.folder, self.name)
         os.makedirs(self.folder, exist_ok=True)
         os.makedirs(self.subfolder, exist_ok=True)
         self.fs_tokens = None

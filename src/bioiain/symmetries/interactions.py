@@ -100,8 +100,9 @@ def get_interaction_profile(monomer, folder, threshold=None, force=False):
         pos, atom = [(n, a) for n, a in enumerate(atoms) if a.resnum == i[0]][0]
         if i[1] == "contact":
             labels = labels[:pos]+"C"+labels[pos+1:]
-    print(labels)
+
     labels = ">"+labels+"<"
+    print(labels)
     monomer.data["interactions"]["label"] = labels
     monomer.export()
     return labels
