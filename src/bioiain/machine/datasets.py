@@ -94,6 +94,31 @@ class EmbeddingDataset(Dataset):
         #     self.data["length"] -= self.test_info["length"]
         #     return self.test_info["indices"]
 
+    def __iter__(self):
+        self.i = 0
+        return self
+
+    def __next__(self):
+        if self.i >= len(self):
+            raise StopIteration
+        r = self.get(self.i)
+        self.i += 1
+        return r
+
+
+    def map(self):
+        self.data["label_to_index"] = {}
+        self.data["index_to_label"] = {}
+        for item in self:
+            label = item.label
+            if label in self.data["label_to_index"].keys():
+                continue
+            else:
+                i = len(self.data["label_to_index"])
+                self.data["label_to_index"][label] = i
+                self.data["index_to_label"][i] = label
+
+        return self.data["label_to_index"]
 
 
 
@@ -116,6 +141,18 @@ class EmbeddingDataset(Dataset):
 
         def __repr__(self):
             return f"Item({self.key}) T:{self.tensor.shape}, L=\"{self.label}\", from: {self.dataset}"
+
+        def __iter__(self):
+            self.i = 0
+            return self
+
+        def __next__(self):
+            if self.i >= 2:
+                raise StopIteration
+            return self[self.i]
+
+
+
 
 
     def add(self, embedding, key:str|int|None=None, label_path=None):
@@ -290,5 +327,11 @@ class EmbeddingDataset(Dataset):
         return new
 
 
+class EmbeddingDataloader(DataLoader):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, collate_fn=self.collate_fn, **kwargs)
 
+
+    def collate_fn(self, batch):
+        pass
 

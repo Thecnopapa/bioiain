@@ -20,6 +20,9 @@ class MLP(nn.Module):
             nn.Dropout(dropout),
             nn.Linear(hidden_dims[1], num_classes)
         )
+
+
+
     def forward(self, x):
         return self.model(x)
 
@@ -35,7 +38,9 @@ class MLP(nn.Module):
 
 
 
-def model_mapping = {
-    "internship_MLP": MLP
-}
+def model_mapping():
+    mapping = {
+        "internship_MLP": MLP
+    }
+    return mapping
 

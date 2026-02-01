@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, json
 sys.path.append('..')
 
 
@@ -14,8 +14,8 @@ log("start", "test.py")
 #file_folder = downloadPDB("./data", "test_list", ["5JJM", "6nwl"],
 #                          file_path="./pdb_list.txt", file_format="pdb",
 #                          overwrite=False)
-file_folder = downloadPDB("/home/iain/vib-ai/internship/data", "receptors",
-                          file_path="/home/iain/vib-ai/internship/data/receptors.txt", file_format="cif",
+file_folder = downloadPDB("/home/iain/projects/vib-ai/internship/data", "receptors",
+                          file_path="/home/iain/projects/vib-ai/internship/data/receptors.txt", file_format="cif",
                           overwrite=False)
 
 log(1, "File folder:", file_folder)
@@ -36,7 +36,7 @@ dataset = EmbeddingDataset(name="saprot_with_interactions")
 dataset.load()
 
 
-if not "-t" in sys.argv:
+if "-l" in sys.argv:
 
     for n, file in enumerate(sorted(os.listdir(file_folder))):
         if not file.endswith(".cif"):
@@ -90,18 +90,81 @@ if not "-t" in sys.argv:
     print(dataset, f"saved at: {datset_path}")
 
 
-else:
+elif "-t" in sys.argv:
     print(dataset)
     dataset.split()
+
+
+    label_to_index = dataset.map()
+    print(json.dumps(label_to_index, indent=4))
+
+
     dataset.train()
-    dataset.test()
-    dataset.normal()
     import random, math
     for n in range(10):
         key = math.floor(random.random() * len(dataset))
         print("KEY:", key)
         print(dataset[key])
         print()
+
+
+    from torch.utils.data import DataLoader
+    import torch.nn as nn
+    import torch.optim as optim
+
+    dataloader = dataset
+
+    from src.bioiain.machine.models import *
+    model = MLP(input_dim=480, num_classes=len(label_to_index))
+
+
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.model.parameters())
+
+    epochs = 10
+
+    log("start", "Training")
+    for epoch in range(epochs):
+        log("header", "EPOCH:", epoch)
+        dataset.train()
+        for n, item in enumerate(dataset):
+            #print("tensor:", item.t)
+            #print("label:", item.l)
+
+            truth = [0] * len(label_to_index)
+            truth[label_to_index[item.l]] = 1
+
+            out = model(item.t)
+            #print("out:", out)
+
+            optimizer.zero_grad()
+            loss = criterion(out, torch.Tensor(truth))
+
+            loss.backward()
+            optimizer.step()
+            print(f"{n:5d}/{len(dataset):5d}: LOSS=", loss.item(), end = "\r")
+
+        dataset.test()
+        with torch.no_grad():
+            correct=0
+            total=0
+            for item in dataset:
+                #truth = [0] * len(label_to_index)
+                #truth[label_to_index[item.l]] = 1
+                truth = label_to_index[item.l]
+
+                out = model(item.t)
+                pred = out.argmax(dim=0)
+                print(f"PRED: {pred.item()}, TRUTH: {truth}, CORRECT: {pred.item()==truth}", end = "\r")
+                total += 1
+                if pred==truth:
+                    correct += 1
+        print(f"epoch {epoch} correct={correct}, total={total}, accuracy={(correct/total)*100}%")
+
+
+
+
 
 
 
