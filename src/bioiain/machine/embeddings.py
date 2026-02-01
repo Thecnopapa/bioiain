@@ -52,7 +52,6 @@ class PerResidueEmbedding(Embedding):
         self.entity = entity
         self.sequence = self._get_sequence()
         self.subfolder = os.path.join(self.folder, self.name)
-        os.makedirs(self.subfolder, exist_ok=True)
 
     def _get_sequence(self):
         self.sequence = self.entity.get_sequence()
@@ -65,8 +64,6 @@ class SaProtEmbedding(PerResidueEmbedding):
         super().__init__(self, *args, **kwargs)
         self.folder = os.path.join(self.folder, "SaProt")
         self.subfolder = os.path.join(self.folder, self.name)
-        os.makedirs(self.folder, exist_ok=True)
-        os.makedirs(self.subfolder, exist_ok=True)
         self.fs_tokens = None
         self.foldseek_cmd = foldseek_cmd
         self.single_file = True
@@ -128,7 +125,9 @@ class SaProtEmbedding(PerResidueEmbedding):
         from transformers import AutoTokenizer, AutoModelForMaskedLM
         import torch
         #print("GETTING_SAPROT")
+        os.makedirs(self.subfolder, exist_ok=True)
         save_path = os.path.join(self.subfolder, f"{self.name}.embedding.pt")
+
 
         if os.path.exists(save_path) and not force:
             print("USING PRECALCULATED SAPROT at:",save_path)
@@ -176,11 +175,10 @@ class SaProtEmbedding(PerResidueEmbedding):
 
         last_hidden = outputs.hidden_states[-1]
         assert last_hidden.shape[1] == self.length
-
         torch.save(last_hidden, save_path)
         self.path = save_path
-        #print("EMBEDDING SAVED AT:")
-        #print(self.path)
+        print("EMBEDDING SAVED AT:")
+        print(self.path)
 
         return self.path
 

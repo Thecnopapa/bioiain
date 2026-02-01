@@ -31,11 +31,11 @@ from src.bioiain.symmetries.interactions import get_interaction_profile
 
 
 FORCE = "force" in sys.argv or "-f" in sys.argv
-if force:
+if FORCE:
     pass
 
 dataset = EmbeddingDataset(name="saprot_with_interactions")
-if not force:
+if not FORCE:
     dataset.load()
 
 

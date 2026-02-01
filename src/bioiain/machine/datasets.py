@@ -85,7 +85,7 @@ class EmbeddingDataset(Dataset):
                 for k, s in dataset:
                     v = self.splitted[name][k] = deepcopy(s)
                     v["start"] = n
-                    n += v["length"]-1
+                    n += v["length"]
                     v["end"] = n
                 self.splitted[name+"_length"] = n
 

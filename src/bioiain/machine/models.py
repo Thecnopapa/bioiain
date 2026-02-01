@@ -6,6 +6,7 @@ import torch
 import torch
 import torch.nn as nn
 
+import pandas as pd
 
 class ModelNotFound(Exception):
     pass
@@ -65,24 +66,23 @@ class CustomModel(nn.Module):
         print(f"Testing saved model at: {self.data['path']}")
         print("Dataset:", dataset)
         #print(json.dumps(dataset.splitted["test"], indent=4))
-        for e in dataset.splitted["test"].values():
-            print(e)
-            print()
-            label = ""
-            for n in range(e["length"]-1):
-                label += dataset[n][1]
-            print("\n"+label)
-            exit()
+        # for e in dataset.splitted["test"].values():
+        #     print(e)
+        #     print()
+        #     label = ""
+        #     for n in range(e["length"]):
+        #         label += dataset[n][1]
+        #     print("\n"+label)
+        #     exit()
 
         label_to_index = dataset.data["label_to_index"]
         index_to_label = dataset.data["index_to_label"]
         with torch.no_grad():
             correct = 0
             total = 0
-            pred_map = {k:{
-                "total": 0,
-                k:0
-            } for k in label_to_index.keys()}
+
+            confusion = {k: {l:0 for l in label_to_index.keys()} for k in label_to_index.keys()}
+
             for item in dataset:
                 # truth = [0] * len(label_to_index)
                 # truth[label_to_index[item.l]] = 1
@@ -94,18 +94,40 @@ class CustomModel(nn.Module):
                 out = self(item.t)
                 pred = out.argmax(dim=0)
                 p = index_to_label[pred.item()]
-                if p in pred_map[l]:
-                    pred_map[l][p] += 1
-                else:
-                    pred_map[l][p] = 1
-                pred_map[l]["total"] += 1
+                confusion[l][p] += 1
+
                 print(f"PRED: {pred.item()}, TRUTH: {truth}, CORRECT: {pred.item() == truth}", end="\r")
                 total += 1
                 if pred == truth:
                     correct += 1
 
         print(f"Model EPOCH:{self.data['epoch']} correct={correct}, total={total}, accuracy={(correct / total) * 100:2.3f}%")
-        print(json.dumps(pred_map, indent=4))
+        #print(json.dumps(confusion, indent=4))
+        df = pd.DataFrame.from_dict(confusion, orient='index')
+        cf=""" Confusion Matrix: {}
+            P  R  E  D  S
+        T    |  {:2s}|  {:2s}|  {:2s}|  {:2s}
+        R  {:2s}|{:4d}|{:4d}|{:4d}|{:4d}
+        U  {:2s}|{:4d}|{:4d}|{:4d}|{:4d}
+        T  {:2s}|{:4d}|{:4d}|{:4d}|{:4d}
+        H  {:2s}|{:4d}|{:4d}|{:4d}|{:4d}
+        S
+        """.format(
+            f"EPOCH:{self.data['epoch']} correct={correct}, total={total}, accuracy={(correct / total) * 100:2.3f}%",
+            *confusion.keys(),
+            list(confusion.keys())[0], *confusion[list(confusion.keys())[0]].values(),
+            list(confusion.keys())[1], *confusion[list(confusion.keys())[1]].values(),
+            list(confusion.keys())[2], *confusion[list(confusion.keys())[2]].values(),
+            list(confusion.keys())[3], *confusion[list(confusion.keys())[3]].values(),
+        )
+        print(cf)
+        #df.rename({0:"Truth\\Pred"}, inplace = True)
+        #print(df)
+        self.data["confusion_matrix"] = cf
+        self.save()
+
+
+
 
 
 
@@ -141,7 +163,7 @@ class MLP_MK1(CustomModel):
 
 def model_mapping():
     mapping = {
-        "internship_MLP": MLP
+        "internship_MLP": MLP_MK1
     }
     return mapping
 
