@@ -254,7 +254,8 @@ class EmbeddingDataset(Dataset):
             #print("tensor", target_tensor.shape)
 
         if label:
-            target_label = label_data[rel_key]
+            if label_data is not None:
+                target_label = label_data[rel_key]
             #print("label", target_label)
 
         if cache:

@@ -60,6 +60,10 @@ class CustomModel(nn.Module):
         self.load_state_dict(torch.load(self.data["path"], weights_only=weights_only))
         return self
 
+    def add_map(self, dataset):
+        self.data["label_to_index"] = dataset.data["label_to_index"]
+        self.data["index_to_label"] = dataset.data["index_to_label"]
+
     def test(self, dataset):
         self.load()
         dataset.test()

@@ -16,9 +16,17 @@ log("start", "test.py")
 #file_folder = downloadPDB("./data", "test_list", ["5JJM", "6nwl"],
 #                          file_path="./pdb_list.txt", file_format="pdb",
 #                          overwrite=False)
-file_folder = downloadPDB("/home/iain/projects/vib-ai/internship/data", "receptors",
-                          file_path="/home/iain/projects/vib-ai/internship/data/receptors.txt", file_format="cif",
-                          overwrite=False)
+if "cath" in sys.argv:
+    file_folder = downloadPDB("/home/iain/projects/vib-ai/internship/data", "cath-nonredundant-S20",
+                                           file_path="/home/iain/projects/vib-ai/internship/data/cath-dataset-nonredundant-S20.list",
+                                           file_format="cif",
+                                           overwrite=False)
+    pdb_list = "cath"
+else:
+    file_folder = downloadPDB("/home/iain/projects/vib-ai/internship/data", "receptors",
+                              file_path="/home/iain/projects/vib-ai/internship/data/receptors.txt", file_format="cif",
+                              overwrite=False)
+    pdb_list="rcps"
 
 log(1, "File folder:", file_folder)
 
@@ -34,7 +42,9 @@ FORCE = "force" in sys.argv or "-f" in sys.argv
 if FORCE:
     pass
 
-dataset = EmbeddingDataset(name="saprot_with_interactions")
+run_name = f"saprot_interactions_{pdb_list}"
+
+dataset = EmbeddingDataset(name=run_name)
 if not FORCE:
     dataset.load()
 
@@ -117,8 +127,8 @@ elif "-t" in sys.argv:
     dataloader = dataset
 
     from src.bioiain.machine.models import *
-    model = MLP_MK1(name="interactions", input_dim=480, num_classes=len(label_to_index))
-
+    model = MLP_MK1(name=run_name, input_dim=480, num_classes=len(label_to_index))
+    model.add_map(dataset)
 
 
     criterion = nn.CrossEntropyLoss()
@@ -166,12 +176,50 @@ elif "-t" in sys.argv:
             break
 
 
-
-
-
-
 elif "-p" in sys.argv:
-    pass
+
+    if "--file" in sys.argv:
+        chains = None
+        if "--chains" in sys.argv:
+            chains = sys.argv[sys.argv.index("--chains") + 1]
+        file = sys.argv[sys.argv.index("--file") + 1]
+        print(f"Predicting contacts in file: {file}")
+        assert os.path.exists(file)
+        from src.bioiain.biopython import loadPDB
+        structure = loadPDB(file, name="prediction",)
+        print(structure)
+
+        for chain in structure.get_chains():
+            if chains is None or chain.id in chains:
+                print(chain)
+                monomer = Monomer.cast(chain)
+                monomer.export()
+                print(monomer)
+                embedding = SaProtEmbedding(entity=monomer, force=FORCE)
+                from src.bioiain.machine.models import *
+                model = MLP_MK1(name="interactions", input_dim=480, num_classes=4)
+                model.load("/home/iain/projects/bioiain/test/models/MLP_MK1_interactions.data.json")
+
+                dataset = EmbeddingDataset(name="prediction")
+                dataset.add(embedding=embedding, key=monomer.get_name())
+                label_to_index = model.data["label_to_index"]
+                index_to_label = model.data["index_to_label"]
+                print(dataset)
+                full_pred=""
+                with torch.no_grad():
+                    for item in dataset:
+                        out = model(item.t)
+                        #print(out)
+                        pred = out.max(dim=0)[1]
+                        #print(pred)
+                        p = index_to_label[str(pred.item())]
+                        full_pred += p
+                print(full_pred)
+
+
+
+
+
 
 
 
