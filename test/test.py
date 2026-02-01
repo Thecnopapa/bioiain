@@ -1,4 +1,6 @@
 import os, sys, json
+from textwrap import indent
+
 sys.path.append('..')
 
 
@@ -94,18 +96,17 @@ elif "-t" in sys.argv:
     print(dataset)
     dataset.split()
 
-
     label_to_index = dataset.map()
     print(json.dumps(label_to_index, indent=4))
 
 
-    dataset.train()
-    import random, math
-    for n in range(10):
-        key = math.floor(random.random() * len(dataset))
-        print("KEY:", key)
-        print(dataset[key])
-        print()
+    # dataset.train()
+    # import random, math
+    # for n in range(10):
+    #     key = math.floor(random.random() * len(dataset))
+    #     print("KEY:", key)
+    #     print(dataset[key])
+    #     print()
 
 
     from torch.utils.data import DataLoader
@@ -115,7 +116,7 @@ elif "-t" in sys.argv:
     dataloader = dataset
 
     from src.bioiain.machine.models import *
-    model = MLP(input_dim=480, num_classes=len(label_to_index))
+    model = MLP_MK1(name="interactions", input_dim=480, num_classes=len(label_to_index))
 
 
 
@@ -124,45 +125,52 @@ elif "-t" in sys.argv:
 
     epochs = 10
 
+
+
+
+
+
+
     log("start", "Training")
     for epoch in range(epochs):
         log("header", "EPOCH:", epoch)
         dataset.train()
-        for n, item in enumerate(dataset):
-            #print("tensor:", item.t)
-            #print("label:", item.l)
+        try:
+            for n, item in enumerate(dataset):
+                #print("tensor:", item.t)
+                #print("label:", item.l)
 
-            truth = [0] * len(label_to_index)
-            truth[label_to_index[item.l]] = 1
-
-            out = model(item.t)
-            #print("out:", out)
-
-            optimizer.zero_grad()
-            loss = criterion(out, torch.Tensor(truth))
-
-            loss.backward()
-            optimizer.step()
-            print(f"{n:5d}/{len(dataset):5d}: LOSS=", loss.item(), end = "\r")
-
-        dataset.test()
-        with torch.no_grad():
-            correct=0
-            total=0
-            for item in dataset:
-                #truth = [0] * len(label_to_index)
-                #truth[label_to_index[item.l]] = 1
-                truth = label_to_index[item.l]
+                truth = [0] * len(label_to_index)
+                truth[label_to_index[item.l]] = 1
 
                 out = model(item.t)
-                pred = out.argmax(dim=0)
-                print(f"PRED: {pred.item()}, TRUTH: {truth}, CORRECT: {pred.item()==truth}", end = "\r")
-                total += 1
-                if pred==truth:
-                    correct += 1
-        print(f"epoch {epoch} correct={correct}, total={total}, accuracy={(correct/total)*100}%")
+                #print("out:", out)
+
+                optimizer.zero_grad()
+                loss = criterion(out, torch.Tensor(truth))
+
+                loss.backward()
+                optimizer.step()
+                print(f"{n:5d}/{len(dataset):5d}: LOSS={loss.item():.3f}", end = "\r")
+
+            model.add_epoch()
+            model.save()
+            model.test(dataset)
+        except KeyboardInterrupt:
+            print("\nStopping model...")
+            try:
+                model.test(dataset)
+            except ModelNotFound as e:
+                print(e)
+            break
 
 
+
+
+
+
+elif "-p" in sys.argv:
+    pass
 
 
 

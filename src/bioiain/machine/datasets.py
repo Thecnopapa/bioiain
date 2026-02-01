@@ -32,7 +32,7 @@ class EmbeddingDataset(Dataset):
         }
 
     def __repr__(self):
-        return f"<bi.{self.__class__.__name__}:{self.data["name"]} N={len(self)}>"
+        return f"<bi.{self.__class__.__name__}:{self.data["name"]} N={len(self)} mode={self.mode}>"
 
 
     def __len__(self):
@@ -47,10 +47,23 @@ class EmbeddingDataset(Dataset):
     def __contains__(self, item):
         return item in self.embeddings.keys()
 
+    def __iter__(self):
+        self.i = 0
+        return self
+
+    def __next__(self):
+        if self.i >= len(self):
+            raise StopIteration
+        r = self.get(self.i)
+        self.i += 1
+        return r
+
     def test(self):
+        assert self.splitted["test"] is not None
         self.mode="test"
 
     def train(self):
+        assert self.splitted["train"] is not None
         self.mode="train"
 
     def normal(self):
@@ -72,7 +85,7 @@ class EmbeddingDataset(Dataset):
                 for k, s in dataset:
                     v = self.splitted[name][k] = deepcopy(s)
                     v["start"] = n
-                    n += v["length"]
+                    n += v["length"]-1
                     v["end"] = n
                 self.splitted[name+"_length"] = n
 
@@ -94,16 +107,7 @@ class EmbeddingDataset(Dataset):
         #     self.data["length"] -= self.test_info["length"]
         #     return self.test_info["indices"]
 
-    def __iter__(self):
-        self.i = 0
-        return self
 
-    def __next__(self):
-        if self.i >= len(self):
-            raise StopIteration
-        r = self.get(self.i)
-        self.i += 1
-        return r
 
 
     def map(self):
@@ -188,8 +192,14 @@ class EmbeddingDataset(Dataset):
         elif self.mode == "train": data = self.splitted["train"]
         else: raise Exception(f"Unknown mode: {self.mode}")
 
+        if self.mode == "normal": emb_list = self.embeddings
+        elif self.mode == "test": emb_list = self.splitted["test"]
+        elif self.mode == "train": emb_list = self.splitted["train"]
+        else: raise Exception("Not implemented split method:", self.mode)
 
-        for e in self.embeddings.values():
+
+
+        for e in emb_list.values():
             #print(e)
             #print(key < e["start"], key >= e["end"])
             if key < e["start"]: continue
@@ -273,9 +283,10 @@ class EmbeddingDataset(Dataset):
 
         path = os.path.join(folder, fname)
 
+
         with open(path, "w") as f:
             f.write(label)
-
+        assert self.embeddings[key]["length"] == len(label)
         self.embeddings[key]["label_path"] = path
         return key
 

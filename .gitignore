@@ -215,6 +215,11 @@ test/test
 test/embeddings
 test/pml
 test/headers
+test/models
+test/datasets
+
+
+
 html
 
 *.geany
