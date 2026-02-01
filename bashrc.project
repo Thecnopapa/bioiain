@@ -128,13 +128,18 @@ else
   echo "* $CONDA_ENV environment activated"
 fi
 
+if [[ $* == "reset" ]]; then
+	echo "*Regenerating env from: ${ENV_FILE}..."
+	conda create -n $CONDA_ENV --solver libmamba --file $ENV_FILE
+fi
+
 
 if [[ $* == "update" ]]; then
   echo "* Updating requirements..."
   echo "* CONDA requirements from: ${CONDA_ENV_FILE}..."
-  conda env update --solver libmamba --file  $ENV_FILE && echo "* CONDA requirements installed"
+  conda install --solver libmamba --file  $CONDA_ENV_FILE && echo "* CONDA requirements installed"
   echo "* PIP requirements from: ${PIP_ENV_FILE}..."
-  pip install -r  $ENV_FILE && echo "* PIP requirements installed"
+  pip install -r  $PIP_ENV_FILE && echo "* PIP requirements installed"
 fi
 
 

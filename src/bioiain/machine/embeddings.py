@@ -8,7 +8,8 @@ from torch.utils.data import Dataset
 
 device = "cpu"
 
-
+class MissingProgram(Exception):
+    pass
 
 class Embedding(object):
 
@@ -87,6 +88,8 @@ class SaProtEmbedding(PerResidueEmbedding):
                self.entity.paths["self"], out_path]
         log("debug", "$", " ".join(cmd))
         subprocess.run(cmd)
+        if not os.path.exists(out_path):
+            raise MissingProgram("Foldseek not installed or not working")
 
     def _read_foldseek(self, out_path, try_again=False):
         #print("READING FOLDSEEK")

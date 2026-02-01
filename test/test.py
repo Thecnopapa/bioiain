@@ -14,8 +14,8 @@ log("start", "test.py")
 #file_folder = downloadPDB("./data", "test_list", ["5JJM", "6nwl"],
 #                          file_path="./pdb_list.txt", file_format="pdb",
 #                          overwrite=False)
-file_folder = downloadPDB("/home/iain/projects/vib-ai/internship/data", "receptors",
-                          file_path="/home/iain/projects/vib-ai/internship/data/receptors.txt", file_format="cif",
+file_folder = downloadPDB("/home/iain/vib-ai/internship/data", "receptors",
+                          file_path="/home/iain/vib-ai/internship/data/receptors.txt", file_format="cif",
                           overwrite=False)
 
 log(1, "File folder:", file_folder)
@@ -24,7 +24,7 @@ log(1, "File folder:", file_folder)
 from src.bioiain.symmetries.elements import Monomer
 from src.bioiain.symmetries.crystal import get_monomers
 from src.bioiain.machine.datasets import EmbeddingDataset
-from src.bioiain.machine.embeddings import SaProtEmbedding
+from src.bioiain.machine.embeddings import SaProtEmbedding, MissingProgram
 from src.bioiain.symmetries.interactions import get_interaction_profile
 
 
@@ -70,6 +70,8 @@ if not "-t" in sys.argv:
                 label = get_interaction_profile(monomer, monomer.paths["export_folder"], threshold=10, force=FORCE)
                 dataset.add_label_from_string(label, key=key)
                 print(dataset)
+            except MissingProgram as e:
+                raise e
             except Exception as e:
                 log("Error", f"Exception occurred processing: {monomer_id}:\n", e)
                 #raise e
@@ -77,8 +79,10 @@ if not "-t" in sys.argv:
 
             dataset.save()
 
-        log("start", "Dataset test")
-        print(dataset[len(dataset)-1])
+        if len(dataset) >= 1:
+
+            log("start", "Dataset test")
+            print(dataset[len(dataset)-1])
 
         continue
 
