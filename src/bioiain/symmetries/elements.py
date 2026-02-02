@@ -179,11 +179,11 @@ class CrystalElement(Chain):
                                 if not a.id == "CA":
                                     continue
                                 d = get_fractional_distance(a.coord, atom.coord, self.data["params"])
-                                print(atom.parent.id[1], atom.parent.resname, "\t", a.parent.id[1], a.parent.resname, "\t", d, end="\t")
+                                #print(atom.parent.id[1], atom.parent.resname, "\t", a.parent.id[1], a.parent.resname, "\t", d, end="\t")
                                 #print(d, threshold**2)
 
                                 if d <= threshold**2:
-                                    print("true", end="\r")
+                                    #print("true", end="\r")
                                     #print(a.get_full_id())
                                     contacts[m.id].add({
                                         "atom1": {"chain":a.get_full_id()[-3][-1], "resn": a.get_full_id()[-2][-2], "element": a.get_full_id()[-1][-2], "n": mn},
@@ -194,7 +194,8 @@ class CrystalElement(Chain):
                                         #"position": atom.position,
                                     })
                                 else:
-                                    print("false", end="\r")
+                                    #print("false", end="\r")
+                                    pass
             #print()
             if save_contacts:
 
