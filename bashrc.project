@@ -130,7 +130,7 @@ fi
 
 if [[ $* == "reset" ]]; then
 	echo "*Regenerating env from: ${ENV_FILE}..."
-	conda create -n $CONDA_ENV --solver libmamba --file $ENV_FILE
+	conda env create -n $CONDA_ENV --solver libmamba --file $ENV_FILE
 fi
 
 

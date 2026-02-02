@@ -17,14 +17,14 @@ log("start", "test.py")
 #                          file_path="./pdb_list.txt", file_format="pdb",
 #                          overwrite=False)
 if "cath" in sys.argv:
-    file_folder = downloadPDB("/home/iain/projects/vib-ai/internship/data", "cath-nonredundant-S20",
-                                           file_path="/home/iain/projects/vib-ai/internship/data/cath-dataset-nonredundant-S20.list",
+    file_folder = downloadPDB("../../vib-ai/internship/data", "cath-nonredundant-S20",
+                                           file_path="../../vib-ai/internship/data/cath-dataset-nonredundant-S20.list",
                                            file_format="cif",
                                            overwrite=False)
     pdb_list = "cath"
 else:
-    file_folder = downloadPDB("/home/iain/projects/vib-ai/internship/data", "receptors",
-                              file_path="/home/iain/projects/vib-ai/internship/data/receptors.txt", file_format="cif",
+    file_folder = downloadPDB("../../vib-ai/internship/data", "receptors",
+                              file_path="../..//vib-ai/internship/data/receptors.txt", file_format="cif",
                               overwrite=False)
     pdb_list="rcps"
 
@@ -198,7 +198,7 @@ elif "-p" in sys.argv:
                 embedding = SaProtEmbedding(entity=monomer, force=FORCE)
                 from src.bioiain.machine.models import *
                 model = MLP_MK1(name="interactions", input_dim=480, num_classes=4)
-                model.load("/home/iain/projects/bioiain/test/models/MLP_MK1_interactions.data.json")
+                model.load("./models/MLP_MK1_interactions.data.json")
 
                 dataset = EmbeddingDataset(name="prediction")
                 dataset.add(embedding=embedding, key=monomer.get_name())
