@@ -115,7 +115,7 @@ if "-l" in sys.argv or "-e" in sys.argv:
     print(dataset, f"saved at: {datset_path}")
 
 
-elif "-t" in sys.argv:
+if "-t" in sys.argv:
     log("start", "Training")
     from src.bioiain.machine.models import *
 
@@ -172,7 +172,7 @@ elif "-t" in sys.argv:
             break
 
 
-elif "-p" in sys.argv:
+if "-p" in sys.argv:
     from src.bioiain.symmetries import PredictedMonomerContacts
     from src.bioiain.visualisation import PymolScript
 

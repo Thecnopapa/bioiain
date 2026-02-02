@@ -240,10 +240,10 @@ class MLP_MK2(CustomModel):
 
         self.layers["default"] = {
             "l1": nn.Linear(input_dim, hidden_dims[0]),
-            "relu1": nn.ReLU(),
+            "relu1": nn.LeakyReLU(),
             #"drop1": nn.Dropout(dropout),
             "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
-            "relu2": nn.ReLU(),
+            "relu2": nn.LeakyReLU(),
             #"drop2": nn.Dropout(dropout),
             "l3": nn.Linear(hidden_dims[1], num_classes)
         }
