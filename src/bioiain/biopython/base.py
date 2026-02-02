@@ -90,6 +90,7 @@ class BiopythonOverlayClass:
             self.flags = {}
 
         self.flags["base_init"] = True
+        self._atoms = None
 
 
     def pass_down(self):

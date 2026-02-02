@@ -413,3 +413,27 @@ def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list
 
 
 
+def write_atoms(entity, file_path, include_unused=False, preserve_ids=False, mode="w", key="_atom_site"):
+    atoms = entity.atoms()
+
+    labels = atoms[0]._mmcif_dict(include_unused=include_unused).keys()
+
+    if not file_path.endswith(".cif"):
+        file_path += ".cif"
+
+    with open(file_path, mode) as f:
+        if mode == "w":
+            f.write(f"data_{entity.get_name()}\n")
+        f.write("#\n")
+        f.write("loop_\n")
+
+        for l in labels:
+            f.write(f"{key}.{l}\n")
+
+        for n, a in enumerate(atoms):
+            d = a._mmcif_dict(include_unused=include_unused)
+            if not preserve_ids:
+                d["id"] = f"{n:4d}"
+            f.write("  ".join(d.values()) + "\n")
+
+    return file_path

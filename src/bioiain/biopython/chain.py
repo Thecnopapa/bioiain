@@ -20,17 +20,29 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
         return "<bi.{} id={}>".format(self.__class__.__name__, self.id)
 
 
-    def atoms(self, ca_only=False, hetatm=False, force=False):
+    def atoms(self, ca_only=False, hetatm=False, force=False, group_by_residue=False):
         from .imports import read_mmcif
         from .atom import BIAtom
 
-        atoms = read_mmcif(self.paths["self"], subset=["_atom_site"])("_atom_site")
-        atoms = [BIAtom(a) for a in atoms]
+        if self._atoms is None or force:
+            print("Reading atoms from CIF")
+            atoms = read_mmcif(self.paths["self"], subset=["_atom_site"])("_atom_site")
+            atoms = [BIAtom(a) for a in atoms]
+            self._atoms = atoms
 
+        atoms = self._atoms
         if not hetatm:
             atoms = [a for a in atoms if a.type != "HETATM"]
         if ca_only:
             atoms = [a for a in atoms if a.name == "CA"]
+        if group_by_residue:
+            atoms_by_res = {}
+            for atom in atoms:
+                if atom.resnum in atoms_by_res:
+                    atoms_by_res[atom.resnum].append(atom)
+                else:
+                    atoms_by_res[atom.resnum] = [atom]
+            atoms = atoms_by_res
 
         return atoms
 

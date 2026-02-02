@@ -253,7 +253,7 @@ class CrystalElement(Chain):
 
 
 
-class MonomerContact(BioiainObject):
+class MonomerContact(object):
     """
     Class to calculate and store element-element contact information.
     :param monomer1: First monomer (certain values, such as the parameter dict will be obtained from this entity).

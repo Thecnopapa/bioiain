@@ -20,6 +20,29 @@ class BIAtom(BiopythonOverlayClass):
         for k, v in data.items():
             if v == ".":
                 data[k] = None
+
+        essential_labs = [
+            "group_PDB",
+            "id"
+            "type_symbol",
+            "label_atom_id",
+            "label_comp_id",
+            "label_seq_id",
+            "auth_asym_id",
+            "auth_seq_id",
+            "Cartn_x",
+            "Cartn_y",
+            "Cartn_z",
+            "occupancy",
+            "B_iso_or_equiv",
+        ]
+        self.unused = {}
+        for k, v in data.items():
+            if k not in essential_labs:
+                self.unused[k] = v
+
+        self._pdbx_PDB_ins_code = data["pdbx_PDB_ins_code"]
+        self._read_id = int(data["id"])
         self.type = data["group_PDB"]
         self.element = data["type_symbol"]
         self.atomnum = data["label_seq_id"]
@@ -40,10 +63,39 @@ class BIAtom(BiopythonOverlayClass):
         self.doppelgangers = []
 
     def __repr__(self):
-        return "<bi.{} id={}>".format(self.__class__.__name__, self.id)
+        return "<bi.{} id={}> b={}".format(self.__class__.__name__, self.id, self.b)
 
     def __str__(self):
-        return "<bi.{} id={}>".format(self.__class__.__name__, self.id)
+        return "<bi.{} id={} b={}>".format(self.__class__.__name__, self.id, self.b)
+
+    def set_bfactor(self, bfactor):
+        self.b = float(bfactor)
+        return self.b
+
+    def _mmcif_dict(self, include_unused=False):
+        data = {
+            "group_PDB": f"{self.type:6s}",
+            "id": f"{self._read_id:4d}",
+            "label_seq_id": f"{self.atomnum:4d}",
+            "type_symbol": f"{self.element:3s}",
+            "label_atom_id": f"{self.name:3s}",
+            "label_comp_id": f"{self.resname:4s}",
+            "auth_seq_id": f"{self.resnum:4d}",
+            "auth_asym_id": f"{self.chain:2s}",
+            "Cartn_x": f"{self.x:6.3f}",
+            "Cartn_y": f"{self.y:6.3f}",
+            "Cartn_z": f"{self.z:6.3f}",
+            "occupancy": f"{self.occupancy:6.3f}",
+            "B_iso_or_equiv": f"{self.b:4.2f}",
+
+        }
+        if include_unused:
+            for k, v in self.unused.items():
+                data[k] = f"{v}"
+
+        return data
+
+
 
 
 
