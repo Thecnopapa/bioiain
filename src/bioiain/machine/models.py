@@ -1,6 +1,5 @@
 import os, json
-from operator import truediv
-
+from ..utilities.logging import log
 import torch
 
 import torch
@@ -67,8 +66,8 @@ class CustomModel(nn.Module):
     def test(self, dataset):
         self.load()
         dataset.test()
-        print(f"Testing saved model at: {self.data['path']}")
-        print("Dataset:", dataset)
+        log(1, f"Testing: using model saved at: {self.data['path']}")
+        log(2, "Dataset:", dataset)
         #print(json.dumps(dataset.splitted["test"], indent=4))
         # for e in dataset.splitted["test"].values():
         #     print(e)
@@ -105,10 +104,10 @@ class CustomModel(nn.Module):
                 if pred == truth:
                     correct += 1
 
-        print(f"Model EPOCH:{self.data['epoch']} correct={correct}, total={total}, accuracy={(correct / total) * 100:2.3f}%")
+        log(1, f"Results: EPOCH:{self.data['epoch']} correct={correct}, total={total}, accuracy={(correct / total) * 100:2.3f}%")
         #print(json.dumps(confusion, indent=4))
         df = pd.DataFrame.from_dict(confusion, orient='index')
-        cf=""" Confusion Matrix: {}
+        cf=""" ** Confusion Matrix: {} **
             P  R  E  D  S
         T    |  {:2s}|  {:2s}|  {:2s}|  {:2s}
         R  {:2s}|{:4d}|{:4d}|{:4d}|{:4d}
@@ -116,7 +115,7 @@ class CustomModel(nn.Module):
         T  {:2s}|{:4d}|{:4d}|{:4d}|{:4d}
         H  {:2s}|{:4d}|{:4d}|{:4d}|{:4d}
         S
-        """.format(
+********""".format(
             f"EPOCH:{self.data['epoch']} correct={correct}, total={total}, accuracy={(correct / total) * 100:2.3f}%",
             *confusion.keys(),
             list(confusion.keys())[0], *confusion[list(confusion.keys())[0]].values(),
@@ -135,6 +134,22 @@ class CustomModel(nn.Module):
 
 
 
+class MLP_MK2(CustomModel):
+    def __init__(self, *args, input_dim, hidden_dims=[256 ,128], num_classes=8, dropout=0.2, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.model = nn.Sequential(
+            nn.Linear(input_dim, hidden_dims[0]),
+            nn.LeakyReLU(),
+            #nn.Dropout(dropout),
+            nn.Linear(hidden_dims[0], hidden_dims[1]),
+            nn.LeakyReLU(),
+            #nn.Dropout(dropout),
+            nn.Linear(hidden_dims[1], num_classes)
+        )
+
+    def forward(self, x):
+        return self.model(x)
+
 class MLP_MK1(CustomModel):
     def __init__(self, *args, input_dim, hidden_dims=[256 ,128], num_classes=8, dropout=0.2, **kwargs):
         super().__init__(*args, **kwargs)
@@ -147,8 +162,6 @@ class MLP_MK1(CustomModel):
             nn.Dropout(dropout),
             nn.Linear(hidden_dims[1], num_classes)
         )
-
-
 
     def forward(self, x):
         return self.model(x)

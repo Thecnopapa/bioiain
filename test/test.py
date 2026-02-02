@@ -46,12 +46,12 @@ ONLY = None
 if "--only" in sys.argv:
     ONLY = sys.argv[sys.argv.index("--only") + 1].split(",")
 
-run_name = f"saprot_interactions_{pdb_list}_T{THRESHOLD}"
+data_name = f"saprot_interactions_{pdb_list}_T{THRESHOLD}"
 
 if ONLY is not None:
-    run_name += "_ONLY_" + "_".join(ONLY)
+    data_name += "_ONLY_" + "_".join(ONLY)
 
-dataset = EmbeddingDataset(name=run_name)
+dataset = EmbeddingDataset(name=data_name)
 if not FORCE:
     dataset.load()
 
@@ -115,46 +115,34 @@ if "-l" in sys.argv or "-e" in sys.argv:
 
 
 elif "-t" in sys.argv:
+    import torch.nn as nn
+    import torch.optim as optim
+    from src.bioiain.machine.models import *
+
     print(dataset)
     dataset.split()
-
     label_to_index = dataset.map()
     print(json.dumps(label_to_index, indent=4))
 
-
-    # dataset.train()
-    # import random, math
-    # for n in range(10):
-    #     key = math.floor(random.random() * len(dataset))
-    #     print("KEY:", key)
-    #     print(dataset[key])
-    #     print()
-
-
-    from torch.utils.data import DataLoader
-    import torch.nn as nn
-    import torch.optim as optim
-
     dataloader = dataset
 
-    from src.bioiain.machine.models import *
+
+    run_name = f"{data_name}"
+
     model = MLP_MK1(name=run_name, input_dim=480, num_classes=len(label_to_index))
     model.add_map(dataset)
 
 
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.MSELoss()
     optimizer = optim.Adam(model.model.parameters())
 
     epochs = 10
 
 
-
-
-
-
-
     log("start", "Training")
+    model.add_epoch()
     for epoch in range(epochs):
+        epoch = epoch +1
         log("header", "EPOCH:", epoch)
         dataset.train()
         try:
