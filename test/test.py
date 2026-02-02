@@ -30,18 +30,31 @@ from src.bioiain.symmetries.elements import Monomer
 from src.bioiain.symmetries.crystal import get_monomers
 from src.bioiain.machine.datasets import EmbeddingDataset
 from src.bioiain.machine.embeddings import SaProtEmbedding, MissingProgram
-from src.bioiain.symmetries.interactions import get_interaction_profile
+from src.bioiain.symmetries.interactions import InteractionProfile
 
 
 FORCE = "force" in sys.argv or "-f" in sys.argv
+
+THRESHOLD=15
+if "--threshold" in sys.argv:
+    THRESHOLD = int(sys.argv[sys.argv.index("--threshold") + 1])
+
+REBUILD = "--rebuild" in sys.argv
 if FORCE:
     pass
+ONLY = None
+if "--only" in sys.argv:
+    ONLY = sys.argv[sys.argv.index("--only") + 1].split(",")
 
-run_name = f"saprot_interactions_{pdb_list}"
+run_name = f"saprot_interactions_{pdb_list}_T{THRESHOLD}"
+
+if ONLY is not None:
+    run_name += "_ONLY_" + "_".join(ONLY)
 
 dataset = EmbeddingDataset(name=run_name)
 if not FORCE:
     dataset.load()
+
 
 
 if "-l" in sys.argv or "-e" in sys.argv:
@@ -49,11 +62,13 @@ if "-l" in sys.argv or "-e" in sys.argv:
     for n, file in enumerate(sorted(os.listdir(file_folder))):
         if not file.endswith(".cif"):
             continue
-        #if "1M2Z" not in file:
-        #    continue
+
+        if ONLY is not None:
+            if file[:4] not in ONLY:
+                continue
 
 
-        mon_data = get_monomers(file, file_folder, only_ids=True, force=FORCE)
+        mon_data = get_monomers(file, file_folder, only_ids=True, force=FORCE, contact_threshold=15)
 
         print(mon_data)
         if mon_data is None:
@@ -65,7 +80,7 @@ if "-l" in sys.argv or "-e" in sys.argv:
         for monomer_id in monomers:
             try:
                 print(">>>>", monomer_id)
-                if monomer_id in dataset and not force:
+                if monomer_id in dataset and not FORCE and not REBUILD:
                     print(f"{monomer_id} already in dataset")
                     continue
 
@@ -75,7 +90,8 @@ if "-l" in sys.argv or "-e" in sys.argv:
                     continue
                 embedding = SaProtEmbedding(entity=monomer, force=FORCE)
                 key = dataset.add(embedding=embedding, key=monomer.get_name())
-                label = get_interaction_profile(monomer, monomer.paths["export_folder"], threshold=10, force=FORCE)
+                ints = InteractionProfile(monomer, threshold=THRESHOLD, force=FORCE)
+                label = ints.generate_labels()
                 dataset.add_label_from_string(label, key=key)
                 print(dataset)
             except MissingProgram as e:

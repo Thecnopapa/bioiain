@@ -219,6 +219,19 @@ class PymolScript(object):
         sele = self._to_str(sele)
         return self.add(fun, sele, **kwargs)
 
+
+    def orient(self, sele="(all)", **kwargs) -> Command:
+
+        fun = "orient"
+        sele = self._to_str(sele)
+        return self.add(fun, sele, **kwargs)
+
+    def center(self, sele="(all)", **kwargs) -> Command:
+
+        fun = "center"
+        sele = self._to_str(sele)
+        return self.add(fun, sele, **kwargs)
+
     def show(self, sele="(all)", representation="cartoon", **kwargs):
         fun = "show"
         return self.add(fun, representation, sele, **kwargs)
