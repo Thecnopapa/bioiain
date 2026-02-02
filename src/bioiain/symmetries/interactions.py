@@ -1,18 +1,16 @@
 import os, json
 
-
-
 from ..visualisation import pymol
 
 
-from .elements import MonomerContact, Monomer
+
 from .operations import coord_operation_entity, entity_to_frac, entity_to_orth
 
 
 
 
 def get_interaction_profile(monomer, folder, threshold=None, force=False):
-
+    from .elements import Monomer
     if threshold is None:
         threshold = monomer.data["crystal"]["contact_threshold"]
 
@@ -108,6 +106,36 @@ def get_interaction_profile(monomer, folder, threshold=None, force=False):
     return labels
 
 
+
+
+class PredictedMonomerContacts(object):
+    def __init__(self, monomer, labels, label_to_index):
+        self.monomer = monomer
+        self.labels = labels
+        self.label_to_index = label_to_index
+
+        self._set_bfactors()
+
+
+    def _set_bfactors(self):
+        atoms_by_res = self.monomer.atoms(group_by_residue=True, ca_only=False)
+        print(len(self.labels), len(atoms_by_res))
+        assert len(self.labels) == len(atoms_by_res)
+        for lab, (res, res_atoms) in zip(self.labels, atoms_by_res.items()):
+
+            b = self.label_to_index[lab]
+            print(res, b, len(res_atoms))
+            for atom in res_atoms:
+                atom.set_bfactor(b)
+                print(res, atom)
+
+    def save_structure(self, folder):
+        from ..biopython.imports import write_atoms
+        fname = f"predicted_monomer_contacts_{self.monomer.get_name()}"
+        path = os.path.join(folder, fname)
+        os.makedirs(folder, exist_ok=True)
+        path = write_atoms(self.monomer, path)
+        return path
 
 
 

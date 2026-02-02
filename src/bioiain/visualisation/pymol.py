@@ -185,7 +185,7 @@ class PymolScript(object):
         return f"'{string}'"
 
 
-    def print(self, *args, **kwargs) -> Command:
+    def print(self, *args, literal=True, **kwargs) -> Command:
         """
         Adds command to print with builtin print.
         :param args: Args to pass to print.
@@ -193,6 +193,11 @@ class PymolScript(object):
         :return: Generated Command object. -> Nothing
         """
         fun = "print"
+        if literal:
+            new_args = []
+            for arg in args:
+                new_args.append(self._to_str(repr(arg).replace("'", "\"")))
+            args = new_args
         return self.add(fun, *args, is_cmd=False, **kwargs)
 
 
