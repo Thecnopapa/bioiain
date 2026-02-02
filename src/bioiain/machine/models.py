@@ -1,11 +1,13 @@
 import os, json
 from ..utilities.logging import log
-import torch
 
 import torch
 import torch.nn as nn
 
 import pandas as pd
+
+from .datasets import Item, Dataset
+
 
 class ModelNotFound(Exception):
     pass
@@ -19,13 +21,52 @@ class CustomModel(nn.Module):
         self.data["epoch"] = None
         self.data["path"] = False
         self.data["model"] = self.__class__.__name__
-
+        self.mode = "default"
+        self.mounted = False
         os.makedirs(self.data["folder"], exist_ok=True)
-        self.get_fname()
+
+        self.criterions = {
+            "default": nn.MSELoss()
+        }
+        self.optimizers = {
+            "default": {
+                "class":torch.optim.Adam,
+                "kwargs":{"lr":0.001},
+            }
+        }
+
+        self.layers = {
+            "default": {
+            }
+        }
+        self.submodels = {
+        }
+        log("header", f"Model initialised: {self}")
+
+
+
+
+    def __repr__(self):
+        return f"<bi.{self.__class__.__name__}:{self.data['name']} mode={self.mode} epoch={self.data['epoch']}>"
+
+
+    def _mount_submodels(self):
+        log(1, "Mounting submodels...")
+        for k, layer_set in self.layers.items():
+            self.submodels[k] = nn.Sequential(*layer_set.values())
+            self.optimizers[k] = self.optimizers[k]["class"](self.submodels[k].parameters(), **self.optimizers[k]["kwargs"])
+        self.mounted = True
+        return self.submodels.keys()
+
+
+    def set_epoch(self, epoch):
+        self.data["epoch"] = epoch
+        return self.data["epoch"]
 
     def add_epoch(self):
-        if self.data["epoch"] is None: self.data["epoch"] = 0
+        if self.data["epoch"] is None: self.data["epoch"] = 1
         else: self.data["epoch"] += 1
+        return self.data["epoch"]
 
     def get_fname(self, add_epoch=False) -> str:
         if add_epoch and self.data["epoch"] is not None:
@@ -62,6 +103,8 @@ class CustomModel(nn.Module):
     def add_map(self, dataset):
         self.data["label_to_index"] = dataset.data["label_to_index"]
         self.data["index_to_label"] = dataset.data["index_to_label"]
+
+        return self.data["label_to_index"], dataset.data["index_to_label"]
 
     def test(self, dataset):
         self.load()
@@ -130,57 +173,98 @@ class CustomModel(nn.Module):
         self.save()
 
 
+    def loss(self,
+             output:torch.Tensor,
+             item:Item,
+             criterion_name:str="mode",
+             backwards:bool=True,
+             zero_optims:str|None="mode") -> torch.Tensor|float:
+
+        self.zero_grad(zero_optims)
+
+        if criterion_name == "mode": criterion_name = self.mode
+
+        if criterion_name == "all":
+            loss = torch.sum([self.criterions[criterion_name](output, item.lt) for criterion_name in self.criterions.keys()])
+        else:
+            loss = self.criterions[criterion_name](output, item.lt)
+        if backwards:
+            loss.backward()
+        return loss
+
+    def step(self, optimizer_name:str|None="mode") -> bool:
+        if optimizer_name is None: return False
+        if optimizer_name == "mode": optimizer_name = self.mode
+
+        if optimizer_name == "all":
+            for optimizer in self.optimizers.values():
+                optimizer.step()
+        else:
+            self.optimizers[optimizer_name].step()
+        return True
+
+    def zero_grad(self, optimizer_name:str|None="mode") -> bool:
+        if optimizer_name is None: return False
+        if optimizer_name == "mode": optimizer_name = self.mode
+
+        if optimizer_name == "all":
+            for optimizer in self.optimizers.values():
+                optimizer.zero_grad()
+        else:
+            self.optimizers[optimizer_name].zero_grad()
+        return True
+
+    def set_mode(self, mode:str):
+        self.mode = mode
+        return self.mode
+
+    def __call__(self, x, **kwargs):
+        return self.forward(x, **kwargs)
 
 
+    def forward(self, x, submodel_name="mode"):
+        if submodel_name is None: return None
+        if submodel_name == "mode": submodel_name = self.mode
+
+        if submodel_name == "all":
+            for submodel in self.submodels.values():
+                x = submodel(x)
+        else:
+            x = self.submodels[submodel_name](x)
+        return x
 
 
 class MLP_MK2(CustomModel):
     def __init__(self, *args, input_dim, hidden_dims=[256 ,128], num_classes=8, dropout=0.2, **kwargs):
         super().__init__(*args, **kwargs)
-        self.model = nn.Sequential(
-            nn.Linear(input_dim, hidden_dims[0]),
-            nn.LeakyReLU(),
-            #nn.Dropout(dropout),
-            nn.Linear(hidden_dims[0], hidden_dims[1]),
-            nn.LeakyReLU(),
-            #nn.Dropout(dropout),
-            nn.Linear(hidden_dims[1], num_classes)
-        )
 
-    def forward(self, x):
-        return self.model(x)
+        self.layers["default"] = {
+            "l1": nn.Linear(input_dim, hidden_dims[0]),
+            "relu1": nn.ReLU(),
+            #"drop1": nn.Dropout(dropout),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "relu2": nn.ReLU(),
+            #"drop2": nn.Dropout(dropout),
+            "l3": nn.Linear(hidden_dims[1], num_classes)
+        }
+
+        self._mount_submodels()
+
 
 class MLP_MK1(CustomModel):
     def __init__(self, *args, input_dim, hidden_dims=[256 ,128], num_classes=8, dropout=0.2, **kwargs):
         super().__init__(*args, **kwargs)
-        self.model = nn.Sequential(
-            nn.Linear(input_dim, hidden_dims[0]),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(hidden_dims[0], hidden_dims[1]),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(hidden_dims[1], num_classes)
-        )
 
-    def forward(self, x):
-        return self.model(x)
+        self.layers["default"] = {
+            "l1": nn.Linear(input_dim, hidden_dims[0]),
+            "relu1": nn.ReLU(),
+            "drop1": nn.Dropout(dropout),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "relu2": nn.ReLU(),
+            "drop2": nn.Dropout(dropout),
+            "l3": nn.Linear(hidden_dims[1], num_classes)
+        }
 
+        self._mount_submodels()
 
-
-
-
-
-
-
-
-
-
-
-
-def model_mapping():
-    mapping = {
-        "internship_MLP": MLP_MK1
-    }
-    return mapping
 

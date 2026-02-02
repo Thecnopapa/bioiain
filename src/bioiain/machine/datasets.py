@@ -1,13 +1,54 @@
 import os, json
 from copy import deepcopy
 
-from . import embeddings
+
 from ..utilities.logging import log
+from typing import Any
 
-
-
+from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 
+
+class Item(object):
+    def __init__(self, tensor:Tensor, label:Any, label_to_index:dict|None=None, key:str=None, dataset=None):
+        self.tensor = tensor
+        self.label = label
+        self.t = self.tensor
+        self.l = self.label
+        if label_to_index is not None:
+            self.label_index = label_to_index[self.label]
+            self.label_tensor = [0] * len(label_to_index)
+            self.label_tensor[label_to_index[self.label]] = 1
+            self.label_tensor = Tensor(self.label_tensor)
+            self.li = self.label_index
+            self.lt = self.label_tensor
+
+        self.key = key
+        self.dataset = dataset
+
+    def __getitem__(self, item):
+        if item in [0, "tensor", "t"]:
+            return self.tensor
+        elif item in [1, "label", "l"]:
+            return self.label
+        elif item in [2, "label_index", "li"]:
+            return self.label_index
+        elif item in [3, "label_tensor", "lt"]:
+            return self.label_index
+        else:
+            raise KeyError(item)
+
+    def __repr__(self):
+        return f"Item({self.key}) T:{self.tensor.shape}, L=\"{self.label}\", from: {self.dataset}"
+
+    def __iter__(self):
+        self.i = 0
+        return self
+
+    def __next__(self):
+        if self.i > 3:
+            raise StopIteration
+        return self[self.i]
 
 
 class EmbeddingDataset(Dataset):
@@ -21,6 +62,7 @@ class EmbeddingDataset(Dataset):
             test_length = 0,
             fname = fname,
             path = path,
+            mapped = False,
         )
         self.mode="normal"
         os.makedirs(self.data["folder"], exist_ok=True)
@@ -70,7 +112,8 @@ class EmbeddingDataset(Dataset):
         self.mode="normal"
 
     def split(self, mode="embeddings", test_ratio=0.1, random_state=42):
-        import random, math, copy
+        import random, math
+        log(1, f"Splitting dataset...")
         if mode == "embeddings" or True:
             data = list(self.embeddings.items())
 
@@ -89,7 +132,7 @@ class EmbeddingDataset(Dataset):
                     v["end"] = n
                 self.splitted[name+"_length"] = n
 
-            print("SPLITTED:", len(self.splitted["test"]), "/", len(self.splitted["train"]))
+            log(2, "(test) {} / {} (train)".format(len(self.splitted["test"]), len(self.splitted["train"])))
             return self
         else:
             raise Exception("Not implemented split method:", mode)
@@ -110,7 +153,8 @@ class EmbeddingDataset(Dataset):
 
 
 
-    def map(self):
+    def map(self) -> dict:
+        log(1, "Mapping dataset...")
         self.data["label_to_index"] = {}
         self.data["index_to_label"] = {}
         for item in self:
@@ -121,39 +165,9 @@ class EmbeddingDataset(Dataset):
                 i = len(self.data["label_to_index"])
                 self.data["label_to_index"][label] = i
                 self.data["index_to_label"][i] = label
-
+        self.data["mapped"] = True
         return self.data["label_to_index"]
 
-
-
-    class Item(object):
-        def __init__(self, tensor, label, key=None, dataset=None):
-            self.tensor = tensor
-            self.label = label
-            self.t = self.tensor
-            self.l = self.label
-            self.key = key
-            self.dataset = dataset
-
-        def __getitem__(self, item):
-            if item in [0, "tensor", "t"]:
-                return self.tensor
-            elif item in [1, "label"]:
-                return self.label
-            else:
-                raise KeyError(item)
-
-        def __repr__(self):
-            return f"Item({self.key}) T:{self.tensor.shape}, L=\"{self.label}\", from: {self.dataset}"
-
-        def __iter__(self):
-            self.i = 0
-            return self
-
-        def __next__(self):
-            if self.i >= 2:
-                raise StopIteration
-            return self[self.i]
 
 
 
@@ -178,9 +192,9 @@ class EmbeddingDataset(Dataset):
 
 
 
-    def get(self, key, embedding=True, label=True, cache=True):
+    def get(self, key, embedding=True, label=True, cache=True) -> Item:
 
-        import torch
+        from torch import load as torch_load
         embedding_path = None
         label_path = None
         #print("GET:", key)
@@ -233,7 +247,7 @@ class EmbeddingDataset(Dataset):
 
         if tensor is None:
             if embedding_path is not None:
-                tensor = torch.load(embedding_path)
+                tensor = torch_load(embedding_path)
 
         if label_data is None:
             if label_path is not None:
@@ -267,7 +281,12 @@ class EmbeddingDataset(Dataset):
                 self.cache["tensor"] = tensor
                 self.cache["embedding_path"] = embedding_path
 
-        return self.Item(target_tensor, target_label, key=key, dataset=self)
+        l_to_i = None
+        if "mapped" not in self.data:
+            self.data["mapped"] = False # DEBUG
+        if self.data["mapped"]:
+            l_to_i = self.data["label_to_index"]
+        return Item(target_tensor, target_label, label_to_index=l_to_i, key=key, dataset=self)
 
 
 

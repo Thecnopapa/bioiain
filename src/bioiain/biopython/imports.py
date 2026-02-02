@@ -57,7 +57,7 @@ def downloadPDB(data_dir:str, list_name:str, pdb_list:list=None, file_path:str =
     :param overwrite: True to download existing pdb files and overwrite
     :return: Path to folder containing downloaded files
     """
-    log("debug", "Downloading PDB files...")
+    log("header", "Downloading PDB files...")
     file_format = file_format.lower()
     assert file_format in ["pdb", "cif"]
     if pdb_list is None:
@@ -72,9 +72,9 @@ def downloadPDB(data_dir:str, list_name:str, pdb_list:list=None, file_path:str =
     pdb_list = sorted(list(set([p.upper() for p in pdb_list])))
 
     if len(pdb_list) <= 10:
-        log("debug", "Codes:", pdb_list)
+        log(1, "N codes:", pdb_list)
     else:
-        log("debug", "Codes:", len(pdb_list))
+        log(1, "N codes:", len(pdb_list))
 
     os.makedirs(data_dir, exist_ok=True)
     list_folder = os.path.join(data_dir, list_name)
@@ -86,7 +86,7 @@ def downloadPDB(data_dir:str, list_name:str, pdb_list:list=None, file_path:str =
                 f.write("https://files.rcsb.org/download/{}.pdb\n".format(pdb))
             elif file_format == "cif":
                 f.write("https://files.rcsb.org/download/{}.cif\n".format(pdb))
-    log("debug", "Generated links at: {}".format(os.path.join(data_dir, link_file) ))
+    # log("debug", "Generated links at: {}".format(os.path.join(data_dir, link_file) ))
 
     with open(os.path.join(data_dir, link_file)) as f:
         counter = 0
@@ -108,7 +108,7 @@ def downloadPDB(data_dir:str, list_name:str, pdb_list:list=None, file_path:str =
                 with open(os.path.join(list_folder, f_name), "w") as f:
                     f.write(response.text)
                 counter += 1
-    log("debug", "{} files downloaded, {} failed, {} skipped".format(counter, failed_counter, skipped_counter))
+    log(1, "{} files downloaded, {} failed, {} skipped".format(counter, failed_counter, skipped_counter))
     return list_folder
 
 

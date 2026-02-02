@@ -6,7 +6,7 @@ from src.bioiain import log
 
 force = "force" in sys.argv
 
-log("start", "test.py")
+log("start", "SET UP")
 
 #file_folder = downloadPDB("./data", "test_list", ["5JJM", "6nwl"],
 #                          file_path="./pdb_list.txt", file_format="pdb",
@@ -23,7 +23,7 @@ else:
                               overwrite=False)
     pdb_list="rcps"
 
-log(1, "File folder:", file_folder)
+log("header", "File folder:", file_folder)
 
 
 from src.bioiain.symmetries.elements import Monomer
@@ -47,6 +47,7 @@ if "--only" in sys.argv:
     ONLY = sys.argv[sys.argv.index("--only") + 1].split(",")
 
 data_name = f"saprot_interactions_{pdb_list}_T{THRESHOLD}"
+log("header", f"Data name: {data_name}")
 
 if ONLY is not None:
     data_name += "_ONLY_" + "_".join(ONLY)
@@ -115,31 +116,31 @@ if "-l" in sys.argv or "-e" in sys.argv:
 
 
 elif "-t" in sys.argv:
-    import torch.nn as nn
-    import torch.optim as optim
+    log("start", "Training")
     from src.bioiain.machine.models import *
 
-    print(dataset)
+    log("header", f"Dataset: {dataset}")
     dataset.split()
     label_to_index = dataset.map()
+    log(2, "Label map:")
     print(json.dumps(label_to_index, indent=4))
 
     dataloader = dataset
 
 
     run_name = f"{data_name}"
+    log(1, f"Run name: {run_name}")
 
-    model = MLP_MK1(name=run_name, input_dim=480, num_classes=len(label_to_index))
+    model = MLP_MK2(name=run_name, input_dim=480, num_classes=len(label_to_index))
     model.add_map(dataset)
 
-
-    criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.model.parameters())
-
     epochs = 10
+    if "--epochs" in sys.argv:
+        epochs = int(sys.argv[sys.argv.index("--epochs") + 1])
+
+    log("header", f"Epochs: {epochs}")
 
 
-    log("start", "Training")
     model.add_epoch()
     for epoch in range(epochs):
         epoch = epoch +1
@@ -150,17 +151,13 @@ elif "-t" in sys.argv:
                 #print("tensor:", item.t)
                 #print("label:", item.l)
 
-                truth = [0] * len(label_to_index)
-                truth[label_to_index[item.l]] = 1
-
                 out = model(item.t)
                 #print("out:", out)
 
-                optimizer.zero_grad()
-                loss = criterion(out, torch.Tensor(truth))
+                loss = model.loss(out, item)
+                model.step()
 
-                loss.backward()
-                optimizer.step()
+
                 print(f"{n:5d}/{len(dataset):5d}: LOSS={loss.item():.3f}", end = "\r")
 
             model.add_epoch()

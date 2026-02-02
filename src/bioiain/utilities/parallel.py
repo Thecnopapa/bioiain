@@ -2,13 +2,15 @@ import os, sys, json, asyncio, time, threading
 from ..utilities.logging import log
 
 #print("START")
-log("header", "imported parallel utils")
+log("header", "Importing parallel utils...")
 cpu_count = os.cpu_count()
 use_max = False
 if os.environ.get("SLURM_CPUS_PER_TASK", None) is not None:
+    log(1, "SLURM manager detected, maximizing CPUS...")
     cpu_count = int(os.environ["SLURM_CPUS_PER_TASK"])
     use_max = True
-log("header""Available CPUs:", cpu_count)
+log(1, f"Available CPUs: {cpu_count}, using max: {use_max}")
+
 
 
 
