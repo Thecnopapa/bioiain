@@ -124,14 +124,12 @@ class PredictedMonomerContacts(object):
         for lab, (res, res_atoms) in zip(self.labels, atoms_by_res.items()):
 
             b = self.label_to_index[lab]
-            print(res, b, len(res_atoms))
             for atom in res_atoms:
                 atom.set_bfactor(b)
-                print(res, atom)
 
     def save_structure(self, folder):
         from ..biopython.imports import write_atoms
-        fname = f"predicted_monomer_contacts_{self.monomer.get_name()}"
+        fname = f"{self.monomer.get_name()}_predicted_monomer_contacts"
         path = os.path.join(folder, fname)
         os.makedirs(folder, exist_ok=True)
         path = write_atoms(self.monomer, path)

@@ -185,21 +185,21 @@ elif "-p" in sys.argv:
         print(f"Predicting contacts in file: {file}")
         assert os.path.exists(file)
         from src.bioiain.biopython import loadPDB
-        structure = loadPDB(file, name="prediction")
+        structure = loadPDB(file, name=os.path.basename(file))
         print(structure)
 
         for chain in structure.get_chains():
             if chains is None or chain.id in chains:
                 print(chain)
                 monomer = Monomer.cast(chain)
-                monomer.export()
+                monomer.export(folder=prediction_folder)
                 print(monomer)
-                embedding = SaProtEmbedding(entity=monomer, force=FORCE)
+                embedding = SaProtEmbedding(entity=monomer, folder=prediction_folder, force=FORCE)
                 from src.bioiain.machine.models import *
                 model = MLP_MK1(name="interactions", input_dim=480, num_classes=4)
                 model.load("./models/MLP_MK1_interactions.data.json")
 
-                dataset = EmbeddingDataset(name=os.path.basename(file))
+                dataset = EmbeddingDataset(name=os.path.basename(file), folder=prediction_folder)
                 dataset.add(embedding=embedding, key=monomer.get_name())
                 label_to_index = model.data["label_to_index"]
                 index_to_label = model.data["index_to_label"]
@@ -216,7 +216,7 @@ elif "-p" in sys.argv:
                 print(full_pred)
                 interaction = PredictedMonomerContacts(monomer, full_pred[1:-1], label_to_index)
                 pred_path = interaction.save_structure(prediction_folder)
-                script = PymolScript(name=f"prediction_pml_session_{monomer.get_name()}", folder=prediction_folder)
+                script = PymolScript(name=f"{monomer.get_name()}_prediction_pml_session", folder=prediction_folder)
                 script.load(pred_path, monomer.get_name())
                 script.spectrum(monomer.get_name())
                 script.print(json.dumps(label_to_index, indent=4))
