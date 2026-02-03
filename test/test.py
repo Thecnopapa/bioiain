@@ -131,7 +131,7 @@ if "-t" in sys.argv:
     run_name = f"{data_name}"
     log(1, f"Run name: {run_name}")
 
-    model = MLP_MK2(name=run_name, input_dim=480, num_classes=len(label_to_index))
+    model = MLP_MK2(name=run_name, input_dim=1280, num_classes=len(label_to_index))
     model.add_map(dataset)
 
     epochs = 10
