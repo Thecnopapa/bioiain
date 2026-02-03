@@ -245,7 +245,8 @@ class MLP_MK2(CustomModel):
             "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
             "relu2": nn.LeakyReLU(),
             #"drop2": nn.Dropout(dropout),
-            "l3": nn.Linear(hidden_dims[1], num_classes)
+            "l3": nn.Linear(hidden_dims[1], num_classes),
+            "softmax": nn.Softmax(dim=0)
         }
 
         self._mount_submodels()
