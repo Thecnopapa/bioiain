@@ -198,7 +198,7 @@ if "-p" in sys.argv:
                 embedding = SaProtEmbedding(entity=monomer, folder=prediction_folder, force=FORCE)
                 from src.bioiain.machine.models import *
                 model = MLP_MK1(name="interactions", input_dim=480, num_classes=4)
-                model.load("./models/MLP_MK1_interactions.data.json")
+                model.load("./models/MLP_MK2_saprot_interactions_rcps_T10.data.json")
 
                 dataset = EmbeddingDataset(name=os.path.basename(file), folder=prediction_folder)
                 dataset.add(embedding=embedding, key=monomer.get_name())

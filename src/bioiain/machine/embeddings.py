@@ -135,17 +135,15 @@ class SaProtEmbedding(PerResidueEmbedding):
             return self
 
         if self.fs_tokens is None:
-            tokenizer_name = "westlake-repl/SaProt_35M_AF2_seqOnly"
-            model_name = "westlake-repl/SaProt_35M_AF2_seqOnly"
+            tokenizer_name = "westlake-repl/SaProt_650M_PDB"
+            model_name = "westlake-repl/SaProt_650M_PDB"
             in_tokens = [f"{s}#" for s in self.sequence]
         else:
-            tokenizer_name = "westlake-repl/SaProt_35M_AF2"
-            model_name = "westlake-repl/SaProt_35M_AF2"
+            tokenizer_name = "westlake-repl/SaProt_650M_PDB"
+            model_name = "westlake-repl/SaProt_650M_PDB"
             in_tokens = [f"{s.upper()}{fs.lower()}" for s, fs in zip(self.sequence, self.fs_tokens)]
 
-        #print(in_tokens)
-        seq = "".join(in_tokens)
-        #print(seq)
+
 
         tokenizer_path = f"/tmp/bioiain/models/tok_{tokenizer_name}"
         if not os.path.exists(tokenizer_path):
@@ -157,8 +155,8 @@ class SaProtEmbedding(PerResidueEmbedding):
         model_path = f"/tmp/bioiain/models/mod_{model_name}"
         if not os.path.exists(model_path):
             model = AutoModelForMaskedLM.from_pretrained(model_name)
-            os.makedirs(os.path.dirname(model_path))
-            model.save_pretrained(model_path, exist_ok=True)
+            os.makedirs(os.path.dirname(model_path), exist_ok=True)
+            model.save_pretrained(model_path)
         model = AutoModelForMaskedLM.from_pretrained(model_path)
 
 
