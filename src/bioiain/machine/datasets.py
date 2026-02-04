@@ -173,7 +173,7 @@ class EmbeddingDataset(Dataset):
 
 
 
-    def add(self, embedding, key:str|int|None=None, label_path=None):
+    def add(self, embedding, key:str|int|None=None, label_path=None, fasta=True):
         if key is None:
             key = len(self.embeddings)
         print("ADDING:", embedding)
@@ -188,7 +188,24 @@ class EmbeddingDataset(Dataset):
             "iter_dim": embedding.iter_dim,
         }
         self.data["length"] += embedding.length
+        if fasta and hasattr(embedding, "sequence"):
+            self._add_to_fasta(key, embedding.sequence)    
+
         return key
+
+    def _add_to_fasta(self, key, sequence):
+        if "fasta_path" in self.data:
+            fasta_path = self.data["fasta_path"]
+            mode = "a"
+        else:
+            fasta_path = os.path.join(self.data["folder"], self.data["name"]+".dataset.fasta")
+            self.data["fasta_path"] = fasta_path
+            mode = "w"
+        with open(fasta_path, mode) as f:
+            if mode == "w":
+                f.write(f"# FASTA for dataset: {self.data["name"]}\n\n")
+            f.write(f"> {key}\n")
+            f.write(f"{sequence}\n\n")
 
 
 
@@ -295,7 +312,7 @@ class EmbeddingDataset(Dataset):
         self.embeddings[key]["label"] = label
         return self[key]
 
-    def add_label_from_string(self, label, key=None):
+    def add_label_from_string(self, label, key=None, var_name="label_path"):
         if key is None:
             key = len(self.embeddings) - 1
         folder = os.path.dirname(self.embeddings[key]["embedding_path"])
@@ -307,7 +324,7 @@ class EmbeddingDataset(Dataset):
         with open(path, "w") as f:
             f.write(label)
         assert self.embeddings[key]["length"] == len(label)
-        self.embeddings[key]["label_path"] = path
+        self.embeddings[key][var_name] = path
         return key
 
     def save(self, *args, **kwargs):

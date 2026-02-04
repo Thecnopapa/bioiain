@@ -29,8 +29,8 @@ log("header", "File folder:", file_folder)
 from src.bioiain.symmetries.elements import Monomer
 from src.bioiain.symmetries.crystal import get_monomers
 from src.bioiain.machine.datasets import EmbeddingDataset
-from src.bioiain.machine.embeddings import SaProtEmbedding, MissingProgram
-from src.bioiain.symmetries.interactions import InteractionProfile
+from src.bioiain.machine.embeddings import SaProtEmbedding, MissingProgram, FoldseekError
+from src.bioiain.symmetries.interactions import RelativeInteractionProfile
 
 
 FORCE = "force" in sys.argv or "-f" in sys.argv
@@ -80,7 +80,7 @@ if "-l" in sys.argv or "-e" in sys.argv:
 
         for monomer_id in monomers:
             try:
-                print(">>>>", monomer_id)
+                print(">>1>>", monomer_id)
                 if monomer_id in dataset and not FORCE and not REBUILD:
                     print(f"{monomer_id} already in dataset")
                     continue
@@ -91,15 +91,18 @@ if "-l" in sys.argv or "-e" in sys.argv:
                     continue
                 embedding = SaProtEmbedding(entity=monomer, force=FORCE)
                 key = dataset.add(embedding=embedding, key=monomer.get_name())
-                ints = InteractionProfile(monomer, threshold=THRESHOLD, force=FORCE)
-                label = ints.generate_labels()
+                ints = RelativeInteractionProfile(monomer, dataset, threshold=THRESHOLD, force=FORCE)
+                label = ints.generate_labels(relative=False)
                 dataset.add_label_from_string(label, key=key)
-                print(dataset)
             except MissingProgram as e:
                 raise e
+
+            except FoldseekError as e:
+                log("warning", e)
+                continue
             except Exception as e:
                 log("Error", f"Exception occurred processing: {monomer_id}:\n", e)
-                #raise e
+                raise e
                 continue
 
             dataset.save()
@@ -113,6 +116,29 @@ if "-l" in sys.argv or "-e" in sys.argv:
 
     datset_path = dataset.save()
     print(dataset, f"saved at: {datset_path}")
+
+
+    for monomer_id in monomers:
+        print(">>2>>", monomer_id)
+        if monomer_id in dataset and not FORCE and not REBUILD:
+            print(f"{monomer_id} already in dataset")
+            continue
+        monomer = Monomer.recover(data_path=os.path.join(monomer_folder, monomer_id))
+        if monomer is None:
+            log("Warning", f"{monomer_id} has no monomer")
+            continue
+        ints = RelativeInteractionProfile(monomer, dataset, threshold=THRESHOLD, force=FORCE)
+        label = ints.generate_labels(relative=True)
+        dataset.add_label_from_string(label, key=key, varname="rel_label")
+        print(dataset)
+
+
+
+
+
+
+
+
 
 
 if "-t" in sys.argv:

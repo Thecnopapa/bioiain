@@ -3,11 +3,12 @@ import os, json, math
 from ..visualisation import pymol, PymolScript
 
 from .operations import coord_operation_entity, entity_to_frac, entity_to_orth
+from ..utilities.sequences import MSA
 
 
 
-class InteractionProfile:
-    def __init__(self, monomer, save_folder=None, threshold=None, export=True, force=False):
+class RelativeInteractionProfile:
+    def __init__(self, monomer, dataset, save_folder=None, threshold=None, export=True, force=False):
         self.monomer = monomer
         if save_folder is None:
             save_folder = "/tmp/bioiain/interactions"
@@ -17,14 +18,45 @@ class InteractionProfile:
         self.threshold = threshold
         self.labels = None
         self.name = f"{monomer.get_name()}_interactions_T{self.threshold}"
+        self.dataset = dataset
 
         self.generate_labels(export=export, force=force)
 
 
-    def generate_labels(self, export=True, force=False):
+
+
+
+    def  _generate_relative_label(self, export=True, force=False):
+
+        similar_ids = self._find_similar()
+        print(msa)
+        exit()
+
+
+
+    def _find_similar(self):
+        from ..utilities.sequences import MSA
+        msa = MSA(self.dataset.data["fasta_path"])
+
+
+
+
+
+
+
+
+
+
+    def generate_labels(self, relative=False, export=True, force=False):
+
+
+        if relative:
+            return self._generate_relative_label(export=True, force=force)
+
+
         from .elements import Monomer
         threshold = self.threshold
-        script = PymolScript(self.name, folder=self.save_folder)
+        #script = PymolScript(self.name, folder=self.save_folder)
 
         if "interactions" not in self.monomer.data:
             self.monomer.data["interactions"]={
@@ -49,7 +81,7 @@ class InteractionProfile:
         contact_folder = self.monomer.paths["contact_folder"]
         monomer_folder = self.monomer.paths["export_folder"]
         ints = []
-        script.load_entity(self.monomer, "monomer")
+        #script.load_entity(self.monomer, "monomer")
 
         for n, interaction in enumerate(interactions):
             data = json.load(open(os.path.join(contact_folder, interaction + ".data.json")))
@@ -74,7 +106,7 @@ class InteractionProfile:
             if operation is None:
                 print("ASU", mon1, mon2, imon)
                 name = f"interacting_{n}_{imon.id}"
-                script.load_entity(imon, name)
+                #script.load_entity(imon, name)
 
                 for c in data["relevant_contacts"]:
                     if c["distance"] > threshold:
@@ -85,24 +117,24 @@ class InteractionProfile:
                         a1, a2 = a2, a1
                     ints.append([a1["resn"], "contact"])
                     group = math.ceil(c["distance"])
-                    script.line(f"int_{group}", sele1=f"monomer and c. {a1['chain']} and i. {a1['resn']} and n. CA",
-                                sele2=f"interacting_{n} and c. {a2['chain']} and i. {a2['resn']} and n. CA")
+                    #script.line(f"int_{group}", sele1=f"monomer and c. {a1['chain']} and i. {a1['resn']} and n. CA",
+                    #            sele2=f"interacting_{n} and c. {a2['chain']} and i. {a2['resn']} and n. CA")
 
             else:
                 print("SYM", mon1, mon2, imon)
                 frac = entity_to_frac(imon.copy(), imon.data["params"])
-                for pos in data["positions"]:
-                    pos_str = "_".join([str(p) for p in pos])
-                    name = f"interacting_{n}_{frac.id}_{pos_str}"
-                    if pos is not None:
-                        disp = coord_operation_entity(frac.copy(),
-                                                      key=imon.data["crystal"]["group_key"],
-                                                      op_n=operation,
-                                                      # params=imon.data["params"],
-                                                      distance=pos,
-                                                      )
-                        disp = entity_to_orth(disp, imon.data["params"])
-                        script.load_entity(disp, name)
+                #for pos in data["positions"]:
+                    #pos_str = "_".join([str(p) for p in pos])
+                    #name = f"interacting_{n}_{frac.id}_{pos_str}"
+                    #if pos is not None:
+                        # disp = coord_operation_entity(frac.copy(),
+                        #                               key=imon.data["crystal"]["group_key"],
+                        #                               op_n=operation,
+                        #                               # params=imon.data["params"],
+                        #                               distance=pos,
+                        #                               )
+                        # disp = entity_to_orth(disp, imon.data["params"])
+                        # script.load_entity(disp, name)
 
                 for c in data["relevant_contacts"]:
                     if c["distance"] > threshold:
@@ -114,12 +146,12 @@ class InteractionProfile:
                         a1, a2 = a2, a1
                     pos = "_".join([str(p) for p in a2["pos"]])
                     ints.append([a1["resn"], "contact"])
-                    script.color(f"monomer and c. {a1['chain']} and i. {a1['resn']} and n. CA", "red")
+                    #script.color(f"monomer and c. {a1['chain']} and i. {a1['resn']} and n. CA", "red")
                     if mon1 == mon2:
                         f"monomer and c. {a2['chain']} and i. {a2['resn']} and n. CA"
                     group = math.ceil(c["distance"])
-                    script.line(f"int_{group}", sele1=f"monomer and c. {a1['chain']} and i. {a1['resn']} and n. CA",
-                                sele2=f"interacting_{n}_{frac.id}_{pos} and c. {a2['chain']} and i. {a2['resn']} and n. CA")
+                    #script.line(f"int_{group}", sele1=f"monomer and c. {a1['chain']} and i. {a1['resn']} and n. CA",
+                    #            sele2=f"interacting_{n}_{frac.id}_{pos} and c. {a2['chain']} and i. {a2['resn']} and n. CA")
 
                 print()
         atoms = self.monomer.atoms(ca_only=True)
@@ -134,9 +166,9 @@ class InteractionProfile:
         self.monomer.data["interactions"][str(threshold)]["label"] = labels
         if export:
             self.monomer.export()
-        script.orient("monomer")
-        script_path = script.write_script()
-        print("pymol script saved at:", script_path)
+        #script.orient("monomer")
+        #script_path = script.write_script()
+        #print("pymol script saved at:", script_path)
         self.labels = labels
         return self.labels
 

@@ -2,13 +2,18 @@ import os, json
 
 
 from ..utilities.logging import log
+from ..utilities.parallel import cpu_count
 
 import torch
 from torch.utils.data import Dataset
 
+
 device = "cpu"
 
 class MissingProgram(Exception):
+    pass
+
+class FoldseekError(Exception):
     pass
 
 class Embedding(object):
@@ -81,7 +86,7 @@ class SaProtEmbedding(PerResidueEmbedding):
         #print("RUNNING FOLDSEEK")
         import subprocess
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
-        cmd = [self.foldseek_cmd, "structureto3didescriptor", "-v", "0", "--threads", "4", "--chain-name-mode", "0",
+        cmd = [self.foldseek_cmd, "structureto3didescriptor", "-v", "0", "--threads", f"{cpu_count}", "--chain-name-mode", "0",
                self.entity.paths["self"], out_path]
         log("debug", "$", " ".join(cmd))
         subprocess.run(cmd)
@@ -99,7 +104,7 @@ class SaProtEmbedding(PerResidueEmbedding):
                     self._run_foldseek(out_path)
                 print(out_path, ":")
                 print(f.read())
-                raise Exception("No Foldseek data")
+                raise FoldseekError("No Foldseek data")
             try:
                 seq.strip() == self.sequence
             except AssertionError:
@@ -172,7 +177,13 @@ class SaProtEmbedding(PerResidueEmbedding):
             outputs = model(**inputs, output_hidden_states=True)
 
         last_hidden = outputs.hidden_states[-1]
-        assert last_hidden.shape[1] == self.length
+        try:
+            assert last_hidden.shape[1] == self.length
+        except Exception as e:
+            print(self)
+            print(last_hidden.shape[1], self.length)
+
+            raise e
         torch.save(last_hidden, save_path)
         self.path = save_path
         print("EMBEDDING SAVED AT:")
