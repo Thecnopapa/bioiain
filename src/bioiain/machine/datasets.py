@@ -204,7 +204,8 @@ class EmbeddingDataset(Dataset):
             mode = "w"
         with open(fasta_path, mode) as f:
             if mode == "w":
-                f.write(f"# FASTA for dataset: {self.data["name"]}\n\n")
+                #f.write(f"# FASTA for dataset: {self.data["name"]}\n\n")
+                pass
             f.write(f"> {key}\n")
             f.write(f"{sequence}\n\n")
 

@@ -1,7 +1,7 @@
-import os, sys, json
+import os, sys, json, subprocess
 
 
-
+from .logging import log
 
 
 d3to1 = {'CYS': 'C', 'ASP': 'D', 'SER': 'S', 'GLN': 'Q', 'LYS': 'K',
@@ -87,25 +87,112 @@ class FASTA(object):
 
 
 class MSA(object):
-    def __init__(self, fasta_path):
-        self.fatsa_path = fasta_path
+    def __init__(self, fasta_path, name=None):
+        self.fasta_path = fasta_path
         fasta = FASTA(fasta_path)
         self.fasta_dict = fasta.parse()
+        if name is None:
+            name = os.path.basename(fasta_path)
+        self.name = name
+        log("header", f"Initialising MSA: {self}")
+        self.msa_path = self._run_clustal_msa(name=self.name)
+        self.tree_path = self._build_tree(self.msa_path)
 
     def __repr__(self):
-        return f"<bi.{self.__class__.__name__}: {len(self)} sequences>"
+        return f"<bi.{self.__class__.__name__}:{self.name} ({len(self)} sequences)>"
 
     def __len__(self):
         return len(self.fasta_dict)
 
 
-    def get_similar(self, target, similarity=95):
-        print(f"Finding similar at {similarity}%")
-        print("Target:", target)
-        print(self.fasta_dict)
+
+    def _run_clustal_msa(self, fasta_path=None, name="temp", out_folder=None, clustal_cmd="clustalw", matrix="BLOSUM", out_format="fasta"):
+        
+        if fasta_path is None:
+            fasta_path = self.fasta_path
+        log(2, f"Calculating MSA of: {fasta_path}")
+        fname = f"{name}_{matrix}.ms.alignment.fasta"
+        if out_folder is None:
+            out_folder = "/tmp/bioiain/alignments"
+        os.makedirs(out_folder, exist_ok=True)
+        out_path = os.path.join(out_folder, fname)
+        cmd = [
+            "clustalw", "-align", "-type=protein",
+            f"-infile={fasta_path}",
+            f"-matrix={matrix}",
+            f"-outfile={out_path}",
+            f"-output={out_format}"
+        ]
+
+        #print("$", " ".join(cmd))
+        out_log = open("/dev/null", "w")
+        subprocess.run(cmd, stdout=out_log)
+        return out_path
+        
+
+    def _build_tree(self, align_path):
+        log(2, f"Building tree for: {align_path}")
+        cmd = [
+            "clustalw", "-tree", "-type=protein",
+            f"-infile={align_path}",
+            "-outputtree=nj",
+        ]
+
+        #print("$", " ".join(cmd))
+        out_path = align_path.replace(".fasta", ".nj")
+        comp_file = out_path + ".list"
+
+        f = open(comp_file, "w")
+        subprocess.run(cmd, stdout=f)
+        return out_path
 
 
-        return self.fasta_dict
+
+
+    def get_similar(self, target, name="temp", similarity=95):
+        threshold = (100-similarity) / 100
+        log(2, f"Finding similar at {similarity}% for {target}")
+
+        seq_num = self._get_seq_num(target)
+        neighbour_nums = self._get_neighbours(seq_num)
+        neighbour_names = [self._get_seq_name(n) for n in neighbour_nums]
+
+    
+        exit()
+        print(neighbour_names)
+        return neighbour_names
+
+
+    def _get_seq_num(seq_name):
+        log(2, f"Finding seq_num for {seq_name}")
+        comp_path = self.tree_path+".list"
+        seq_num = None
+
+        #TODO: Parse seq nums
+        return seq_num
+
+    def _get_seq_name(seq_num):
+        log(2, f"Finding seq_name for {seq_num}")
+        comp_path = self.tree_path+".list"
+        seq_name = None
+
+        #TODO: Parse seq names
+        return seq_name
+
+
+    def _get_neighbours(seq_num, threshold=0.05):
+        log(2, f"Finding neighbours (seq. {seq_num}), threshold={threshold}")
+        neighbours = []
+
+        #TODO: Parse neighbours
+        return neighbours
+        
+
+
+
+
+
+
 
 
              

@@ -79,11 +79,16 @@ class BIAtom(BiopythonOverlayClass):
             self.favourite = True
 
     def __repr__(self):
-        if self.dis_id is not None:
-            idd = f"{self.id}{self.dis_id}"
+        if self.disordered:
+            if self.favourite:
+                r = "\n<bi.{} id={}.{} b={} occupancy={} (disordred)>".format(self.__class__.__name__, self.id, self.dis_id, self.b, self.occupancy)
+                for datm in self.doppelgangers:
+                    r += "\n - <bi.{} id={}.{} b={} occupancy={} (disordered)>".format(self.__class__.__name__, self.id, self.dis_id, self.b, self.occupancy)
+                return r
+            else:
+                return "<bi.{} id={}.{} b={} occupancy={} (disordred/not-favourite)>".format(self.__class__.__name__, self.id, self.dis_id, self.b, self.occupancy)
         else:
-            idd = self.id
-        return "<bi.{} id={}> b={}".format(self.__class__.__name__, idd, self.b)
+            return "<bi.{} id={}> b={}".format(self.__class__.__name__, self.id, self.b)
 
     def __str__(self):
         return repr(self)
@@ -105,9 +110,17 @@ class BIAtom(BiopythonOverlayClass):
             else:
                 return self.doppelgangers[self.i + 1]
 
-    def set_bfactor(self, bfactor):
-        self.b = float(bfactor)
+    def set_bfactor(self, bfactor, doppelgangers=True):
+        if self.disordered and doppelgangers:
+            targets = [a for a in self]
+        else:
+            targets = [self]
+
+        for t in targets:
+            t.b = float(bfactor)
         return self.b
+
+        
 
     def _mmcif_dict(self, include_unused=False):
         data = {

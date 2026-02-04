@@ -413,8 +413,8 @@ def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list
 
 
 
-def write_atoms(entity, file_path, include_unused=False, preserve_ids=False, mode="w", key="_atom_site"):
-    atoms = entity.atoms()
+def write_atoms(entity, file_path, include_unused=False, preserve_ids=False, mode="w", key="_atom_site", disordered=True, hetatm=False):
+    atoms = entity.atoms(ca_only=False, hetatm=hetatm, disordered=disordered, group_by_residue=False)
 
     labels = atoms[0]._mmcif_dict(include_unused=include_unused).keys()
 

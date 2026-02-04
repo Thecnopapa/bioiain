@@ -20,7 +20,7 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
         return "<bi.{} id={}>".format(self.__class__.__name__, self.id)
 
 
-    def atoms(self, ca_only=False, hetatm=False, force=False, group_by_residue=False):
+    def atoms(self, ca_only=False, hetatm=False, force=False, group_by_residue=False, disordered=False):
         from .imports import read_mmcif
         from .atom import BIAtom
 
@@ -28,7 +28,8 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
             #print("Reading atoms from CIF")
             atoms = read_mmcif(self.paths["self"], subset=["_atom_site"])("_atom_site")
             atoms = [BIAtom(a) for a in atoms]
-            atoms = self._fix_disordered(atoms)
+            if not disordered:
+                atoms = self._fix_disordered(atoms)
             self._atoms = atoms
 
         atoms = self._atoms

@@ -117,7 +117,7 @@ if "-l" in sys.argv or "-e" in sys.argv:
 
     datset_path = dataset.save()
     log("header", "DATASET:", dataset)
-    msa = msa = MSA(dataset.data["fasta_path"])
+    msa = msa = MSA(dataset.data["fasta_path"], dataset.data["name"])
     log("header", "MSA:", msa)
 
     if not "relative_calcuated" in dataset.data or REBUILD:

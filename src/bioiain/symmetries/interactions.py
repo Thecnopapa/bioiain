@@ -34,7 +34,7 @@ class InteractionProfile:
 
     def _generate_relative_labels(self, export=True, force=False, dataset=None, msa=None, similarity=95):
         assert dataset is not None and msa is not None
-        similar_ids = msa.get_similar(self.monomer.get_sequence(), similarity=similarity)
+        similar_ids = msa.get_similar(self.monomer.get_name(), similarity=similarity)
         print(similar_ids)
         exit()
 
