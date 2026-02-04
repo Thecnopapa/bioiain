@@ -133,43 +133,49 @@ class CustomModel(nn.Module):
                 # truth = [0] * len(label_to_index)
                 # truth[label_to_index[item.l]] = 1
                 l = item.l
-                truth = label_to_index[l]
-
-
-
                 out = self(item.t)
-                pred = out.argmax(dim=0)
-                p = index_to_label[pred.item()]
-                confusion[l][p] += 1
-
-                print(f"PRED: {pred.item()}, TRUTH: {truth}, CORRECT: {pred.item() == truth}", end="\r")
                 total += 1
-                if pred == truth:
-                    correct += 1
+                if len(label_to_index) > 1:
+                    truth = label_to_index[l]
+
+
+                    pred = out.argmax(dim=0)
+                    p = index_to_label[pred.item()]
+                    confusion[l][p] += 1
+
+                    print(f"PRED: {pred.item()}, TRUTH: {truth}, CORRECT: {pred.item() == truth}", end="\r")
+                    if pred == truth:
+                        correct += 1
+                else:
+                    if abs(l-out.item()) <= 0.05:
+                        correct += 1
+
+
 
         log(1, f"Results: EPOCH:{self.data['epoch']} correct={correct}, total={total}, accuracy={(correct / total) * 100:2.3f}%")
         #print(json.dumps(confusion, indent=4))
-        df = pd.DataFrame.from_dict(confusion, orient='index')
-        cf=""" ** Confusion Matrix: {} **
-            P  R  E  D  S
-        T    |  {:2s}|  {:2s}|  {:2s}|  {:2s}
-        R  {:2s}|{:4d}|{:4d}|{:4d}|{:4d}
-        U  {:2s}|{:4d}|{:4d}|{:4d}|{:4d}
-        T  {:2s}|{:4d}|{:4d}|{:4d}|{:4d}
-        H  {:2s}|{:4d}|{:4d}|{:4d}|{:4d}
-        S
-********""".format(
-            f"EPOCH:{self.data['epoch']} correct={correct}, total={total}, accuracy={(correct / total) * 100:2.3f}%",
-            *confusion.keys(),
-            list(confusion.keys())[0], *confusion[list(confusion.keys())[0]].values(),
-            list(confusion.keys())[1], *confusion[list(confusion.keys())[1]].values(),
-            list(confusion.keys())[2], *confusion[list(confusion.keys())[2]].values(),
-            list(confusion.keys())[3], *confusion[list(confusion.keys())[3]].values(),
-        )
-        print(cf)
-        #df.rename({0:"Truth\\Pred"}, inplace = True)
-        #print(df)
-        self.data["confusion_matrix"] = cf
+        if len(label_to_index) == 4:
+            df = pd.DataFrame.from_dict(confusion, orient='index')
+            cf=""" ** Confusion Matrix: {} **
+                P  R  E  D  S
+            T    |  {:2s}|  {:2s}|  {:2s}|  {:2s}
+            R  {:2s}|{:4d}|{:4d}|{:4d}|{:4d}
+            U  {:2s}|{:4d}|{:4d}|{:4d}|{:4d}
+            T  {:2s}|{:4d}|{:4d}|{:4d}|{:4d}
+            H  {:2s}|{:4d}|{:4d}|{:4d}|{:4d}
+            S
+    ********""".format(
+                f"EPOCH:{self.data['epoch']} correct={correct}, total={total}, accuracy={(correct / total) * 100:2.3f}%",
+                *confusion.keys(),
+                list(confusion.keys())[0], *confusion[list(confusion.keys())[0]].values(),
+                list(confusion.keys())[1], *confusion[list(confusion.keys())[1]].values(),
+                list(confusion.keys())[2], *confusion[list(confusion.keys())[2]].values(),
+                list(confusion.keys())[3], *confusion[list(confusion.keys())[3]].values(),
+            )
+            print(cf)
+            #df.rename({0:"Truth\\Pred"}, inplace = True)
+            #print(df)
+            self.data["confusion_matrix"] = cf
         self.save()
 
 
