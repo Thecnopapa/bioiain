@@ -187,7 +187,10 @@ class CustomModel(nn.Module):
         if criterion_name == "all":
             loss = torch.sum([self.criterions[criterion_name](output, item.lt) for criterion_name in self.criterions.keys()])
         else:
-            loss = self.criterions[criterion_name](output, item.lt)
+            if hasattr(item, "lt"):
+                loss = self.criterions[criterion_name](output, item.lt)
+            else:
+                loss = self.criterions[criterion_name](output, torch.Tensor([item.l]))
         if backwards:
             loss.backward()
         return loss

@@ -15,7 +15,7 @@ class Item(object):
         self.label = label
         self.t = self.tensor
         self.l = self.label
-        if label_to_index is not None:
+        if label_to_index is not None and len(label_to_index) > 1:
             self.label_index = label_to_index[self.label]
             self.label_tensor = [0] * len(label_to_index)
             self.label_tensor[label_to_index[self.label]] = 1
@@ -64,6 +64,7 @@ class EmbeddingDataset(Dataset):
             fname = fname,
             path = path,
             mapped = False,
+            label_key = "label_path"
         )
         self.mode="normal"
         os.makedirs(self.data["folder"], exist_ok=True)
@@ -112,6 +113,9 @@ class EmbeddingDataset(Dataset):
     def normal(self):
         self.mode="normal"
 
+    def use_label(self, label_key):
+        self.data["label_key"] = label_key
+
     def split(self, mode="embeddings", test_ratio=0.1, random_state=42):
         import random, math
         log(1, f"Splitting dataset...")
@@ -154,8 +158,13 @@ class EmbeddingDataset(Dataset):
 
 
 
-    def map(self) -> dict:
+    def map(self, single_lab=False) -> dict:
         log(1, "Mapping dataset...")
+        if single_lab:
+            self.data["label_to_index"] = {0:0}
+            self.data["index_to_label"] = {0:0}
+            return self.data["label_to_index"]
+
         self.data["label_to_index"] = {}
         self.data["index_to_label"] = {}
         for item in self:
@@ -211,9 +220,11 @@ class EmbeddingDataset(Dataset):
 
 
 
-    def get(self, key, embedding=True, label=True, cache=True) -> Item:
-
+    def get(self, key, embedding=True, label=True, cache=True, label_key=None) -> Item:
         from torch import load as torch_load
+
+        if label_key is None:
+            label_key = self.data["label_key"]
         embedding_path = None
         label_path = None
         #print("GET:", key)
@@ -242,7 +253,7 @@ class EmbeddingDataset(Dataset):
             if embedding:
                 embedding_path = e["embedding_path"]
             if label:
-                label_path = e["label_path"]
+                label_path = e[label_key]
             rel_key = key - e["start"]
             break
 
@@ -274,7 +285,7 @@ class EmbeddingDataset(Dataset):
                     label_data = json.load(open(label_path))
                 elif label_path.endswith(".csv"):
                     with open(label_path, "r") as f:
-                        label_data = f.read().strip().split(",")
+                        label_data = [float(l) for l in f.read().strip().split(",")]
                 elif label_path.endswith(".txt") or label_path.endswith(".label") or "." not in label_path:
                     with open(label_path, "r", encoding="utf-8") as f:
                         label_data = f.read().strip()

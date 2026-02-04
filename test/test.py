@@ -163,12 +163,12 @@ if "-t" in sys.argv:
     from src.bioiain.machine.models import *
 
     log("header", f"Dataset: {dataset}")
+    dataset.use_label("rel_label")
     dataset.split()
-    label_to_index = dataset.map()
+    label_to_index = dataset.map(single_lab=True)
     log(2, "Label map:")
     print(json.dumps(label_to_index, indent=4))
 
-    dataloader = dataset
 
 
     run_name = f"{data_name}"
