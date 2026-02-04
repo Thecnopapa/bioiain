@@ -272,9 +272,13 @@ class EmbeddingDataset(Dataset):
             if label_path is not None:
                 if label_path.endswith(".json"):
                     label_data = json.load(open(label_path))
+                elif label_path.endswith(".csv"):
+                    with open(label_path, "r") as f:
+                        label_data = f.read().strip().split(",")
                 elif label_path.endswith(".txt") or label_path.endswith(".label") or "." not in label_path:
                     with open(label_path, "r", encoding="utf-8") as f:
                         label_data = f.read().strip()
+
 
 
         target_tensor=None
@@ -328,6 +332,22 @@ class EmbeddingDataset(Dataset):
         assert self.embeddings[key]["length"] == len(label)
         self.embeddings[key][var_name] = path
         return key
+
+    def add_label_from_list(self, label, key=None, var_name="label_path"):
+        if key is None:
+            key = len(self.embeddings) - 1
+        folder = os.path.dirname(self.embeddings[key]["embedding_path"])
+        fname = f"{self.data['name']}.label.csv"
+
+        path = os.path.join(folder, fname)
+
+
+        with open(path, "w") as f:
+            f.write(",".join([str(l) for l in label]))
+        assert self.embeddings[key]["length"] == len(label)
+        self.embeddings[key][var_name] = path
+        return key
+
 
     def save(self, *args, **kwargs):
         return self.export(*args, **kwargs)

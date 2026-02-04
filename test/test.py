@@ -59,6 +59,7 @@ if not FORCE:
 
 
 
+
 if "-l" in sys.argv or "-e" in sys.argv:
 
     if not "absolute_calcuated" in dataset.data or REBUILD:
@@ -79,6 +80,8 @@ if "-l" in sys.argv or "-e" in sys.argv:
 
             monomers, monomer_folder = mon_data
 
+            if dataset.data.get("export_folder", None) is None:
+                dataset.data["export_folder"] = "./exports"
             for monomer_id in monomers:
                 try:
                     log("header", f"Calculating absolute interactions for: {monomer_id}")
@@ -86,7 +89,8 @@ if "-l" in sys.argv or "-e" in sys.argv:
                         log(1, f"{monomer_id}: already in dataset")
                         continue
 
-                    monomer = Monomer.recover(data_path=os.path.join(monomer_folder, monomer_id))
+                    monomer = Monomer.recover(data_path=os.path.join(dataset.data["export_folder"], monomer_id.split("_")[0], "monomers", monomer_id))
+
                     if monomer is None:
                         log("Warning", f"{monomer_id} has no monomer")
                         continue
@@ -122,41 +126,26 @@ if "-l" in sys.argv or "-e" in sys.argv:
 
     if not "relative_calcuated" in dataset.data or REBUILD:
 
-        for n, file in enumerate(sorted(os.listdir(file_folder))):
-            if not file.endswith(".cif"):
+        for monomer_id in dataset.embeddings.keys():
+            log("header", f"Calculating relative interactions for: {monomer_id}")
+
+            if monomer_id in dataset:
+                if "rel_label" in dataset.embeddings[monomer_id]:
+                    if dataset.embeddings[monomer_id]["rel_label"] is not None and not (FORCE or REBUILD):
+                        log(1, f"{monomer_id}: relative interactions already calculated")
+                        continue
+            monomer = Monomer.recover(data_path=os.path.join(dataset.data["export_folder"], monomer_id.split("_")[0], "monomers", monomer_id))
+            if monomer is None:
+                log("Warning", f"{monomer_id} has no monomer")
                 continue
-
-            if ONLY is not None:
-                if file[:4] not in ONLY:
-                    continue
-
-
-            mon_data = get_monomers(file, file_folder, only_ids=True, force=FORCE, contact_threshold=15)
-            if mon_data is None:
-                log("Warning", f"{file} has no monomers")
-                continue
-
-            monomers, monomer_folder = mon_data
-            for monomer_id in monomers:
-                log("header", f"Calculating relative interactions for: {monomer_id}")
-
-                if monomer_id in dataset:
-                    if "rel_label" in dataset.embeddings[monomer_id]:
-                        if dataset.embeddings[monomer_id]["rel_label"] is not None and not (FORCE or REBUILD):
-                            log(1, f"{monomer_id}: relative interactions already calculated")
-                            continue
-                monomer = Monomer.recover(data_path=os.path.join(monomer_folder, monomer_id))
-                if monomer is None:
-                    log("Warning", f"{monomer_id} has no monomer")
-                    continue
-                log(1, "Generating relative labels...")
-                ints = InteractionProfile(monomer, threshold=THRESHOLD, force=FORCE)
-                rel_label = ints.generate_labels(relative=True, force=FORCE, dataset=dataset, msa=msa)
-                dataset.add_label_from_string(rel_label, key=key, varname="rel_label")
-                print(dataset)
+            log(1, "Generating relative labels...")
+            ints = InteractionProfile(monomer, threshold=THRESHOLD, force=FORCE)
+            rel_label = ints.generate_labels(relative=True, force=FORCE, dataset=dataset, msa=msa)
+            dataset.add_label_from_list(rel_label, key=monomer_id, var_name="rel_label")
+            print(dataset)
 
 
-                dataset.save()
+            dataset.save()
 
     dataset.data["relative_calcuated"] = True
     dataset.save()

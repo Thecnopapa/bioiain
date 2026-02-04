@@ -3,7 +3,7 @@ import os, json, math
 from ..visualisation import pymol, PymolScript
 
 from .operations import coord_operation_entity, entity_to_frac, entity_to_orth
-from ..utilities.sequences import MSA
+
 
 
 
@@ -66,16 +66,17 @@ class InteractionProfile:
                     label = label[1:]
             print("replaced", replaced, "\n\n")
             assert len(label) == 0
+            tok_fastas[k] = replaced
 
+        rel_label = []
+        for n, t in enumerate(tok_fastas[self.monomer.get_name()]):
+            if t == "-":
+                continue
+            prob = sum([int(v[n] == "C") for v in tok_fastas.values()]) / len(tok_fastas)
+            rel_label.append(prob)
+        print(rel_label)
 
-            # print(msa.fasta_dict)
-            # with open(tmp_fasta, "a") as f:
-            #     f.write(f">{simid}\n")
-            #     f.write(msa.fasta_dict[simid][0] + "\n")
-
-
-
-        exit()
+        return [0] + rel_label + [0]
 
 
 
