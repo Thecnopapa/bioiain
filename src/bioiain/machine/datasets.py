@@ -322,7 +322,7 @@ class EmbeddingDataset(Dataset):
         if key is None:
             key = len(self.embeddings) - 1
         folder = os.path.dirname(self.embeddings[key]["embedding_path"])
-        fname = f"{self.data['name']}.label.txt"
+        fname = f"{var_name}.label.txt"
 
         path = os.path.join(folder, fname)
 
@@ -337,7 +337,7 @@ class EmbeddingDataset(Dataset):
         if key is None:
             key = len(self.embeddings) - 1
         folder = os.path.dirname(self.embeddings[key]["embedding_path"])
-        fname = f"{self.data['name']}.label.csv"
+        fname = f"{var_name}.label.csv"
 
         path = os.path.join(folder, fname)
 
