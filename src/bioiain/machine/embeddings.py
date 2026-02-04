@@ -2,7 +2,7 @@ import os, json
 
 
 from ..utilities.logging import log
-from ..utilities.parallel import cpu_count
+from ..utilities.parallel import avail_cpus
 
 import torch
 from torch.utils.data import Dataset
@@ -86,9 +86,9 @@ class SaProtEmbedding(PerResidueEmbedding):
         #print("RUNNING FOLDSEEK")
         import subprocess
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
-        cmd = [self.foldseek_cmd, "structureto3didescriptor", "-v", "0", "--threads", f"{cpu_count}", "--chain-name-mode", "0",
+        cmd = [self.foldseek_cmd, "structureto3didescriptor", "-v", "0", "--threads", f"{avail_cpus}", "--chain-name-mode", "0",
                self.entity.paths["self"], out_path]
-        log("debug", "$", " ".join(cmd))
+        #log("debug", "$", " ".join(cmd))
         subprocess.run(cmd)
         if not os.path.exists(out_path):
             raise MissingProgram("Foldseek not installed or not working")
@@ -104,7 +104,7 @@ class SaProtEmbedding(PerResidueEmbedding):
                     self._run_foldseek(out_path)
                 print(out_path, ":")
                 print(f.read())
-                raise FoldseekError("No Foldseek data")
+                raise FoldseekError("No Foldseek data for:", self.entity)
             try:
                 seq.strip() == self.sequence
             except AssertionError:
@@ -135,7 +135,7 @@ class SaProtEmbedding(PerResidueEmbedding):
 
 
         if os.path.exists(save_path) and not force:
-            print("USING PRECALCULATED SAPROT at:",save_path)
+            #print("USING PRECALCULATED SAPROT at:",save_path)
             self.path = save_path
             return self
 
@@ -146,6 +146,13 @@ class SaProtEmbedding(PerResidueEmbedding):
         else:
             tokenizer_name = "westlake-repl/SaProt_650M_PDB"
             model_name = "westlake-repl/SaProt_650M_PDB"
+            try:
+                assert len(self.sequence) == len(self.fs_tokens)
+            except AssertionError as e:
+                print(self.sequence, len(self.sequence))
+                print(self.fs_tokens, len(self.fs_tokens))
+                raise e
+
             in_tokens = [f"{s.upper()}{fs.lower()}" for s, fs in zip(self.sequence, self.fs_tokens)]
 
 
@@ -181,13 +188,20 @@ class SaProtEmbedding(PerResidueEmbedding):
             assert last_hidden.shape[1] == self.length
         except Exception as e:
             print(self)
+            print(in_tokens)
+            print(len(in_tokens))
+            print(inputs)
+            print(len(inputs))
+            print(last_hidden)
+            print(last_hidden.shape)
+            print(self.sequence, self.length)
             print(last_hidden.shape[1], self.length)
 
             raise e
         torch.save(last_hidden, save_path)
         self.path = save_path
-        print("EMBEDDING SAVED AT:")
-        print(self.path)
+        #print("EMBEDDING SAVED AT:")
+        #print(self.path)
 
         return self.path
 

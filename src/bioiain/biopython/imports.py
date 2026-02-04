@@ -335,9 +335,9 @@ def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list
                     #print("line_list",line_list)
                     #print(n)
                     if n != 1:
-                        log("debug", f"No key-value structure found in line {n}:", repr(line))
+                        log("warning", f"No key-value structure found in line {n}:", repr(line))
                     else:
-                        log("debug", "Parsing:", line.replace("\n", "").strip())
+                        #log("debug", "Parsing:", line.replace("\n", "").strip())
                         pass
                 if not multi_line:
                     if exclude is not None:
@@ -420,20 +420,24 @@ def write_atoms(entity, file_path, include_unused=False, preserve_ids=False, mod
 
     if not file_path.endswith(".cif"):
         file_path += ".cif"
+    try:
+        with open(file_path, mode) as f:
+            if mode == "w":
+                f.write(f"data_{entity.get_name()}\n")
+            f.write("#\n")
+            f.write("loop_\n")
 
-    with open(file_path, mode) as f:
-        if mode == "w":
-            f.write(f"data_{entity.get_name()}\n")
-        f.write("#\n")
-        f.write("loop_\n")
+            for l in labels:
+                f.write(f"{key}.{l}\n")
 
-        for l in labels:
-            f.write(f"{key}.{l}\n")
+            for n, a in enumerate(atoms):
+                d = a._mmcif_dict(include_unused=include_unused)
+                if not preserve_ids:
+                    d["id"] = f"{n:4d}"
+                f.write("  ".join(d.values()) + "\n")
 
-        for n, a in enumerate(atoms):
-            d = a._mmcif_dict(include_unused=include_unused)
-            if not preserve_ids:
-                d["id"] = f"{n:4d}"
-            f.write("  ".join(d.values()) + "\n")
-
-    return file_path
+        return file_path
+    except Exception as e:
+        log("error", f"Atom write interrumped, deleting corruped file: {filepath}")
+        os.remove(filepath)
+        raise e

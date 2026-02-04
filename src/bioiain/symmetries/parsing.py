@@ -35,7 +35,7 @@ def parse_crystal_card(file_path) -> dict|None:
     scale1, scale2, scale3,
     group_name, group_key }
     """
-    log("debug", "Parsing Crystal Card from {}".format(file_path))
+    #log("debug", "Parsing Crystal Card from {}".format(file_path))
     assert os.path.isfile(file_path)
     ext = file_path.split(".")[-1]
     assert "pdb" in ext or "cif" in ext

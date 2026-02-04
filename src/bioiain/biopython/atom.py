@@ -11,6 +11,9 @@ class Atom(bp.Atom.Atom, BiopythonOverlayClass):
     def __str__(self):
         return "<bi.{} id={}>".format(self.__class__.__name__, self.id)
 
+class AtomDisorderException(Exception):
+    pass
+
 
 class BIAtom(BiopythonOverlayClass):
     child_class = None
@@ -25,6 +28,7 @@ class BIAtom(BiopythonOverlayClass):
             "group_PDB",
             "id"
             "type_symbol",
+            "label_alt_id"
             "label_atom_id",
             "label_comp_id",
             "label_seq_id",
@@ -59,14 +63,47 @@ class BIAtom(BiopythonOverlayClass):
         self.occupancy = float(data["occupancy"])
         self.b = float(data["B_iso_or_equiv"])
         self.coord = (self.x, self.y, self.z)
-        self.disordered = False
-        self.doppelgangers = []
+
+        if "label_alt_id" not in data:
+            data["label_alt_id"] = "."
+        self.alt_id = data["label_alt_id"]
+        if self.alt_id == ".":
+            self.dis_id = None
+            self.disordered = False
+            self.doppelgangers = None
+            self.favourite = None
+        else:
+            self.dis_id = self.alt_id
+            self.disordered = True
+            self.doppelgangers = []
+            self.favourite = True
 
     def __repr__(self):
-        return "<bi.{} id={}> b={}".format(self.__class__.__name__, self.id, self.b)
+        if self.dis_id is not None:
+            idd = f"{self.id}{self.dis_id}"
+        else:
+            idd = self.id
+        return "<bi.{} id={}> b={}".format(self.__class__.__name__, idd, self.b)
 
     def __str__(self):
-        return "<bi.{} id={} b={}>".format(self.__class__.__name__, self.id, self.b)
+        return repr(self)
+
+    def __iter__(self):
+        if not self.disordered:
+            self.i = None
+            raise AtomDisorderException("Trying to iterate over a non-disordered atom")
+        else:
+            self.i = 0
+
+    def __next__(self):
+        if self.i > len(self.doppelgangers):
+            self.i = None
+            raise StopIteration
+        else:
+            if self.i == 0:
+                return self
+            else:
+                return self.doppelgangers[self.i + 1]
 
     def set_bfactor(self, bfactor):
         self.b = float(bfactor)
@@ -76,6 +113,7 @@ class BIAtom(BiopythonOverlayClass):
         data = {
             "group_PDB": f"{self.type:6s}",
             "id": f"{self._read_id:4d}",
+            "label_alt_id": f"{self.alt_id:1s}",
             "label_seq_id": f"{self.atomnum:4d}",
             "type_symbol": f"{self.element:3s}",
             "label_atom_id": f"{self.name:3s}",

@@ -60,7 +60,7 @@ def log(level:int|str=1, *args, **kwargs):
                     else:
                         print1("...", space=2 * level, **kwargs)
                 else:
-                    print("Unknown log level: {}".format(level))
+                    print("Unknown log level: {}".format(repr(level)))
                     print(*args, **kwargs)
 
 start_time = None

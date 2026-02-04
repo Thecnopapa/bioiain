@@ -39,7 +39,7 @@ class Item(object):
             raise KeyError(item)
 
     def __repr__(self):
-        return f"Item({self.key}) T:{self.tensor.shape}, L=\"{self.label}\", from: {self.dataset}"
+        return f"<bi.{self.__class__.__name__}:{self.key} T:{self.tensor.shape}, L=\"{self.label}\", from: {self.dataset}>"
 
     def __iter__(self):
         self.i = 0
@@ -47,6 +47,7 @@ class Item(object):
 
     def __next__(self):
         if self.i > 3:
+            self.i = None
             raise StopIteration
         return self[self.i]
 
@@ -176,7 +177,7 @@ class EmbeddingDataset(Dataset):
     def add(self, embedding, key:str|int|None=None, label_path=None, fasta=True):
         if key is None:
             key = len(self.embeddings)
-        print("ADDING:", embedding)
+        #print("ADDING:", embedding)
         #print(embedding.path)
         self.embeddings[key] = {
             "key": key,

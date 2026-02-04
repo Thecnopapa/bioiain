@@ -241,7 +241,7 @@ class BiopythonOverlayClass:
             return None
 
         elif os.path.exists(data_path):
-            log("debug", f"recovering data for: {name}")
+            #log("debug", f"recovering data for: {name}")
             #print(data_path)
             old_data = json.load(open(data_path))
             #print(self.data)

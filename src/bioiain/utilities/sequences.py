@@ -18,7 +18,12 @@ d3to1 = {'CYS': 'C', 'ASP': 'D', 'SER': 'S', 'GLN': 'Q', 'LYS': 'K',
 
 class FASTA(object):
     def __init__(self, fasta_path):
-        self.fasta_path
+        self.fasta_path = fasta_path
+
+
+    def __repr__(self):
+        return f"<bi.{self.__class__.__name__}: {self.fasta_path}>"
+
 
 
     def _parse_fasta(self, names=True, sequences=True):
@@ -27,16 +32,18 @@ class FASTA(object):
         fasta_dict = {}
         with open(self.fasta_path) as f:
             next_seq = False
-            for line in f.read():
-                line = line.replace("\n", "").strip().replace(" ","")
+            last_key = None
+            for line in f.readlines():
+                line = line.replace("\n", "").strip()
                 if line.startswith("#"):
                     next_seq = True
                     continue
                 if line.startswith(">"):
                     name = line[1:]
-                    if name in fasta_dict:
+                    if name not in fasta_dict:
                         fasta_dict[name] = []
                     next_seq = True
+                    last_key = name
                     continue
                 if not sequences:
                     continue
@@ -44,16 +51,21 @@ class FASTA(object):
                     next_seq = True
                     continue
                 else:
+                    if last_key is None:
+                        continue
+
                     if next_seq:
-                        fasta_dict[fasta_dict.keys()[-1]].append(line)
+                        fasta_dict[last_key].append(line)
                         next_seq = False
                     else:
-                        fasta_dict[fasta_dict.keys()[-1]][-1] += line
+                        fasta_dict[last_key] += line
 
+
+        #print(names, sequences)
         if names and sequences:
             return fasta_dict
         elif names:
-            return fasta_dict.keys()
+            return list(fasta_dict.keys())
         elif sequences:
             seqs = []
             [seqs.extend(seq) for seq in fasta_dict.values()]
@@ -80,10 +92,20 @@ class MSA(object):
         fasta = FASTA(fasta_path)
         self.fasta_dict = fasta.parse()
 
+    def __repr__(self):
+        return f"<bi.{self.__class__.__name__}: {len(self)} sequences>"
+
+    def __len__(self):
+        return len(self.fasta_dict)
 
 
     def get_similar(self, target, similarity=95):
-        pass
+        print(f"Finding similar at {similarity}%")
+        print("Target:", target)
+        print(self.fasta_dict)
+
+
+        return self.fasta_dict
 
 
              

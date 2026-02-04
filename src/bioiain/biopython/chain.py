@@ -25,9 +25,10 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
         from .atom import BIAtom
 
         if self._atoms is None or force:
-            print("Reading atoms from CIF")
+            #print("Reading atoms from CIF")
             atoms = read_mmcif(self.paths["self"], subset=["_atom_site"])("_atom_site")
             atoms = [BIAtom(a) for a in atoms]
+            atoms = self._fix_disordered(atoms)
             self._atoms = atoms
 
         atoms = self._atoms
@@ -45,6 +46,25 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
             atoms = atoms_by_res
 
         return atoms
+
+
+    @staticmethod
+    def _fix_disordered(atoms):
+        fixed_atoms = []
+        for atom in atoms:
+            if atom.disordered:
+                for a in fixed_atoms:
+                    if a.id == atom.id:
+                        a.doppelgangers.append(atom)
+                        a.favourite = True
+                        atom.favourite = False
+                        atom.doppelgangers = None
+                        break
+                if atom.favourite:
+                    fixed_atoms.append(atom)
+            else:
+                fixed_atoms.append(atom)
+        return fixed_atoms
 
 
 

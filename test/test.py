@@ -30,7 +30,8 @@ from src.bioiain.symmetries.elements import Monomer
 from src.bioiain.symmetries.crystal import get_monomers
 from src.bioiain.machine.datasets import EmbeddingDataset
 from src.bioiain.machine.embeddings import SaProtEmbedding, MissingProgram, FoldseekError
-from src.bioiain.symmetries.interactions import RelativeInteractionProfile
+from src.bioiain.symmetries.interactions import InteractionProfile
+from src.bioiain.utilities.sequences import MSA
 
 
 FORCE = "force" in sys.argv or "-f" in sys.argv
@@ -60,82 +61,109 @@ if not FORCE:
 
 if "-l" in sys.argv or "-e" in sys.argv:
 
-    for n, file in enumerate(sorted(os.listdir(file_folder))):
-        if not file.endswith(".cif"):
-            continue
+    if not "absolute_calcuated" in dataset.data or REBUILD:
 
-        if ONLY is not None:
-            if file[:4] not in ONLY:
+        for n, file in enumerate(sorted(os.listdir(file_folder))):
+            if not file.endswith(".cif"):
                 continue
 
-
-        mon_data = get_monomers(file, file_folder, only_ids=True, force=FORCE, contact_threshold=15)
-
-        print(mon_data)
-        if mon_data is None:
-            log("Warning", f"{file} has no monomers")
-            continue
-
-        monomers, monomer_folder = mon_data
-
-        for monomer_id in monomers:
-            try:
-                print(">>1>>", monomer_id)
-                if monomer_id in dataset and not FORCE and not REBUILD:
-                    print(f"{monomer_id} already in dataset")
+            if ONLY is not None:
+                if file[:4] not in ONLY:
                     continue
 
+
+            mon_data = get_monomers(file, file_folder, only_ids=True, force=FORCE, contact_threshold=15)
+            if mon_data is None:
+                log("Warning", f"{file} has no monomers")
+                continue
+
+            monomers, monomer_folder = mon_data
+
+            for monomer_id in monomers:
+                try:
+                    log("header", f"Calculating absolute interactions for: {monomer_id}")
+                    if monomer_id in dataset and not FORCE and not REBUILD:
+                        log(1, f"{monomer_id}: already in dataset")
+                        continue
+
+                    monomer = Monomer.recover(data_path=os.path.join(monomer_folder, monomer_id))
+                    if monomer is None:
+                        log("Warning", f"{monomer_id} has no monomer")
+                        continue
+                    log(1, "Generating embeddings...")
+                    embedding = SaProtEmbedding(entity=monomer, force=FORCE)
+                    key = dataset.add(embedding=embedding, key=monomer.get_name())
+                    log(1, "Generating absolute labels...")
+                    ints = InteractionProfile(monomer, threshold=THRESHOLD, force=FORCE)
+                    label = ints.generate_labels(relative=False, force=FORCE)
+                    dataset.add_label_from_string(label, key=key)
+                except MissingProgram as e:
+                    raise e
+
+                except FoldseekError as e:
+                    log("warning", e)
+                    continue
+                except Exception as e:
+                    log("Error", f"Exception occurred processing: {monomer_id}:\n", e)
+                    raise e
+                    continue
+
+                dataset.save()
+
+       
+    dataset.data["absolute_calcuated"] = True
+    dataset.save()
+        
+
+    datset_path = dataset.save()
+    log("header", "DATASET:", dataset)
+    msa = msa = MSA(dataset.data["fasta_path"])
+    log("header", "MSA:", msa)
+
+    if not "relative_calcuated" in dataset.data or REBUILD:
+
+        for n, file in enumerate(sorted(os.listdir(file_folder))):
+            if not file.endswith(".cif"):
+                continue
+
+            if ONLY is not None:
+                if file[:4] not in ONLY:
+                    continue
+
+
+            mon_data = get_monomers(file, file_folder, only_ids=True, force=FORCE, contact_threshold=15)
+            if mon_data is None:
+                log("Warning", f"{file} has no monomers")
+                continue
+
+            monomers, monomer_folder = mon_data
+            for monomer_id in monomers:
+                log("header", f"Calculating relative interactions for: {monomer_id}")
+
+                if monomer_id in dataset:
+                    if "rel_label" in dataset.embeddings[monomer_id] and not FORCE or REBUILD:
+                        if dataset.embeddings[monomer_id]["rel_label"] is not None:
+                            log(1, f"{monomer_id}: relative interactions already calculated")
+                            continue
                 monomer = Monomer.recover(data_path=os.path.join(monomer_folder, monomer_id))
                 if monomer is None:
                     log("Warning", f"{monomer_id} has no monomer")
                     continue
-                embedding = SaProtEmbedding(entity=monomer, force=FORCE)
-                key = dataset.add(embedding=embedding, key=monomer.get_name())
-                ints = RelativeInteractionProfile(monomer, dataset, threshold=THRESHOLD, force=FORCE)
-                label = ints.generate_labels(relative=False)
-                dataset.add_label_from_string(label, key=key)
-            except MissingProgram as e:
-                raise e
-
-            except FoldseekError as e:
-                log("warning", e)
-                continue
-            except Exception as e:
-                log("Error", f"Exception occurred processing: {monomer_id}:\n", e)
-                raise e
-                continue
-
-            dataset.save()
-
-        if len(dataset) >= 1:
-            log("start", "Dataset test")
-            print(len(dataset))
-            print(dataset[len(dataset)-1])
-
-        continue
-
-    datset_path = dataset.save()
-    print(dataset, f"saved at: {datset_path}")
+                log(1, "Generating relative labels...")
+                ints = InteractionProfile(monomer, threshold=THRESHOLD, force=FORCE)
+                rel_label = ints.generate_labels(relative=True, force=FORCE, dataset=dataset, msa=msa)
+                dataset.add_label_from_string(rel_label, key=key, varname="rel_label")
+                print(dataset)
 
 
-    for monomer_id in monomers:
-        print(">>2>>", monomer_id)
-        if monomer_id in dataset and not FORCE and not REBUILD:
-            print(f"{monomer_id} already in dataset")
-            continue
-        monomer = Monomer.recover(data_path=os.path.join(monomer_folder, monomer_id))
-        if monomer is None:
-            log("Warning", f"{monomer_id} has no monomer")
-            continue
-        ints = RelativeInteractionProfile(monomer, dataset, threshold=THRESHOLD, force=FORCE)
-        label = ints.generate_labels(relative=True)
-        dataset.add_label_from_string(label, key=key, varname="rel_label")
-        print(dataset)
+                dataset.save()
 
-
-
-
-
+    dataset.data["relative_calcuated"] = True
+    dataset.save()
+    #if len(dataset) >= 1:
+    #    log("start", "Dataset test")
+    #    print(len(dataset))
+    #    print(dataset[len(dataset)-1])
 
 
 

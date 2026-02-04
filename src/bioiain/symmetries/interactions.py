@@ -7,8 +7,8 @@ from ..utilities.sequences import MSA
 
 
 
-class RelativeInteractionProfile:
-    def __init__(self, monomer, dataset, save_folder=None, threshold=None, export=True, force=False):
+class InteractionProfile:
+    def __init__(self, monomer, save_folder=None, threshold=None, export=True, force=False):
         self.monomer = monomer
         if save_folder is None:
             save_folder = "/tmp/bioiain/interactions"
@@ -18,42 +18,34 @@ class RelativeInteractionProfile:
         self.threshold = threshold
         self.labels = None
         self.name = f"{monomer.get_name()}_interactions_T{self.threshold}"
-        self.dataset = dataset
-
-        self.generate_labels(export=export, force=force)
 
 
 
 
+    def generate_labels(self, relative=False, export=True, force=False, dataset=None, msa=None):
 
-    def  _generate_relative_label(self, export=True, force=False):
+        if relative:
+            return self._generate_relative_labels(export=True, force=force, dataset=dataset, msa=msa)
+        else:
+            return self._generate_absolute_labels(export=True, force=force)
 
-        similar_ids = self._find_similar()
-        print(msa)
+
+
+
+    def _generate_relative_labels(self, export=True, force=False, dataset=None, msa=None, similarity=95):
+        assert dataset is not None and msa is not None
+        similar_ids = msa.get_similar(self.monomer.get_sequence(), similarity=similarity)
+        print(similar_ids)
         exit()
 
 
 
-    def _find_similar(self):
-        from ..utilities.sequences import MSA
-        msa = MSA(self.dataset.data["fasta_path"])
 
 
+            
+    
 
-
-
-
-
-
-
-
-    def generate_labels(self, relative=False, export=True, force=False):
-
-
-        if relative:
-            return self._generate_relative_label(export=True, force=force)
-
-
+    def _generate_absolute_labels(self, relative=False, export=True, force=False):
         from .elements import Monomer
         threshold = self.threshold
         #script = PymolScript(self.name, folder=self.save_folder)
@@ -72,10 +64,10 @@ class RelativeInteractionProfile:
                 "label": None
             }
         if self.monomer.data["interactions"][str(threshold)]["label"] is not None:
-            print("USING PRECALCULATED LABELS")
+            #print("USING PRECALCULATED LABELS")
             return self.monomer.data["interactions"][str(threshold)]["label"]
 
-        print(f"CALCULATING INTERACTIONS at T= {threshold}")
+        #print(f"CALCULATING INTERACTIONS at T= {threshold}")
 
         interactions = self.monomer.data["contacts"]["relevant"]
         contact_folder = self.monomer.paths["contact_folder"]
@@ -97,14 +89,14 @@ class RelativeInteractionProfile:
             mon2 = mon2_data["monomer"]
             operation = mon2_data["operation"]
             position = mon2_data["position"]
-            print("operation:", operation)
-            print(position)
+            #print("operation:", operation)
+            #print(position)
 
-            print(f"Mon  1: {mon1} / Mon 2: {mon2}")
+            #print(f"Mon  1: {mon1} / Mon 2: {mon2}")
             imon = Monomer.recover(data_path=os.path.join(monomer_folder, mon2), load_structure=True)
-            print(imon)
+            #print(imon)
             if operation is None:
-                print("ASU", mon1, mon2, imon)
+                #print("ASU", mon1, mon2, imon)
                 name = f"interacting_{n}_{imon.id}"
                 #script.load_entity(imon, name)
 
@@ -121,7 +113,7 @@ class RelativeInteractionProfile:
                     #            sele2=f"interacting_{n} and c. {a2['chain']} and i. {a2['resn']} and n. CA")
 
             else:
-                print("SYM", mon1, mon2, imon)
+                #print("SYM", mon1, mon2, imon)
                 frac = entity_to_frac(imon.copy(), imon.data["params"])
                 #for pos in data["positions"]:
                     #pos_str = "_".join([str(p) for p in pos])
@@ -153,7 +145,7 @@ class RelativeInteractionProfile:
                     #script.line(f"int_{group}", sele1=f"monomer and c. {a1['chain']} and i. {a1['resn']} and n. CA",
                     #            sele2=f"interacting_{n}_{frac.id}_{pos} and c. {a2['chain']} and i. {a2['resn']} and n. CA")
 
-                print()
+                #print()
         atoms = self.monomer.atoms(ca_only=True)
         labels = "N" * len(atoms)
         for i in ints:
@@ -162,7 +154,7 @@ class RelativeInteractionProfile:
                 labels = labels[:pos] + "C" + labels[pos + 1:]
 
         labels = ">" + labels + "<"
-        print(labels)
+        #print(labels)
         self.monomer.data["interactions"][str(threshold)]["label"] = labels
         if export:
             self.monomer.export()
