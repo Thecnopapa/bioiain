@@ -174,7 +174,7 @@ class EmbeddingDataset(Dataset):
 
 
 
-    def add(self, embedding, key:str|int|None=None, label_path=None, fasta=True):
+    def add(self, embedding, key:str|int|None=None, label_path=None, fasta=False):
         if key is None:
             key = len(self.embeddings)
         #print("ADDING:", embedding)
@@ -190,7 +190,7 @@ class EmbeddingDataset(Dataset):
         }
         self.data["length"] += embedding.length
         if fasta and hasattr(embedding, "sequence"):
-            self._add_to_fasta(key, embedding.sequence)    
+            self._add_to_fasta(key, embedding.sequence)
 
         return key
 

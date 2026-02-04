@@ -34,16 +34,55 @@ class InteractionProfile:
 
     def _generate_relative_labels(self, export=True, force=False, dataset=None, msa=None, similarity=95):
         assert dataset is not None and msa is not None
-        similar_ids = msa.get_similar(self.monomer.get_name(), similarity=similarity)
+        similar_ids = [self.monomer.get_name()]
+        similar_ids.extend(msa.get_similar(self.monomer.get_name(), similarity=similarity))
         print(similar_ids)
+        tmp_fasta = f"/tmp/bioiain/alignments/tmp_alignment.fasta"
+        open(tmp_fasta, "w").close()
+        os.makedirs(os.path.dirname(tmp_fasta), exist_ok=True)
+        simlabels = {}
+        for simid in similar_ids:
+            lab_path = dataset.embeddings[simid]["label_path"]
+            with open(lab_path, "r") as f:
+                simlabels[simid] = f.read().strip()
+        print(simlabels.keys())
+        sim_fasta = msa.msa_fasta
+        sim_seqs = sim_fasta.parse(key=simlabels.keys())
+        print(sim_seqs.keys())
+        tok_fastas = {}
+        for k, v in sim_seqs.items():
+            label = simlabels[k][1:-1]
+            print(k)
+            print("label:", label)
+            print(v)
+            print("alignment:", v[0])
+            replaced = v[0]
+            for n, s, in enumerate(v[0]):
+                if s == "-":
+                    continue
+                else:
+                    #print(label)
+                    replaced = replaced[:n] + label[0] + replaced[n+1:]
+                    label = label[1:]
+            print("replaced", replaced, "\n\n")
+            assert len(label) == 0
+
+
+            # print(msa.fasta_dict)
+            # with open(tmp_fasta, "a") as f:
+            #     f.write(f">{simid}\n")
+            #     f.write(msa.fasta_dict[simid][0] + "\n")
+
+
+
         exit()
 
 
 
 
 
-            
-    
+
+
 
     def _generate_absolute_labels(self, relative=False, export=True, force=False):
         from .elements import Monomer

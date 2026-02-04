@@ -92,7 +92,7 @@ if "-l" in sys.argv or "-e" in sys.argv:
                         continue
                     log(1, "Generating embeddings...")
                     embedding = SaProtEmbedding(entity=monomer, force=FORCE)
-                    key = dataset.add(embedding=embedding, key=monomer.get_name())
+                    key = dataset.add(embedding=embedding, key=monomer.get_name(), fasta=True)
                     log(1, "Generating absolute labels...")
                     ints = InteractionProfile(monomer, threshold=THRESHOLD, force=FORCE)
                     label = ints.generate_labels(relative=False, force=FORCE)
@@ -110,14 +110,14 @@ if "-l" in sys.argv or "-e" in sys.argv:
 
                 dataset.save()
 
-       
+
     dataset.data["absolute_calcuated"] = True
     dataset.save()
-        
+
 
     datset_path = dataset.save()
     log("header", "DATASET:", dataset)
-    msa = msa = MSA(dataset.data["fasta_path"], dataset.data["name"])
+    msa = MSA(dataset.data["fasta_path"], dataset.data["name"])
     log("header", "MSA:", msa)
 
     if not "relative_calcuated" in dataset.data or REBUILD:
@@ -141,8 +141,8 @@ if "-l" in sys.argv or "-e" in sys.argv:
                 log("header", f"Calculating relative interactions for: {monomer_id}")
 
                 if monomer_id in dataset:
-                    if "rel_label" in dataset.embeddings[monomer_id] and not FORCE or REBUILD:
-                        if dataset.embeddings[monomer_id]["rel_label"] is not None:
+                    if "rel_label" in dataset.embeddings[monomer_id]:
+                        if dataset.embeddings[monomer_id]["rel_label"] is not None and not (FORCE or REBUILD):
                             log(1, f"{monomer_id}: relative interactions already calculated")
                             continue
                 monomer = Monomer.recover(data_path=os.path.join(monomer_folder, monomer_id))
