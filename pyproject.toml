@@ -22,7 +22,7 @@ build-backend = "setuptools.build_meta"
 
 [project.optional-dependencies]
 conda = [
-    #"foldseek==10.941cd33", #bioconda::foldseek
+    #foldseek==10.941cd33", #bioconda::foldseek
     #"pymol-open-source == 2.5.0", #conda-forge::pymol-open-source
     #"clustalw" #bioconda::clustalw
 ]
