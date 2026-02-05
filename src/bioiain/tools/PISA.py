@@ -1,8 +1,7 @@
 import os, sys, json, xmltodict
 
-import bioiain as bi
 import subprocess
-
+from ..utilities.logging import log
 
 
 
@@ -165,7 +164,7 @@ class PISA(object):
         try:
             ccp4_path = os.environ["CCP4"]
         except KeyError:
-            bi.log("error", "CCP4 not enabled")
+            log("error", "CCP4 not enabled")
             ccp4_path = None
         if ccp4_path is None:
             return None

@@ -86,3 +86,9 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
                 log("debug", f"Residue {e} not recognised")
                 #input("press enter")
         return self.data["sequence"]
+
+
+    def claculate_sasa(self):
+        pass
+
+
