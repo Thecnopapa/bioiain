@@ -68,7 +68,7 @@ class BIAtom(BiopythonOverlayClass):
             data["label_alt_id"] = "."
         self.alt_id = data["label_alt_id"]
         if self.alt_id is None:
-            self.alt_id = data["label_alt_id"] #DEBUG
+            self.alt_id = "." #DEBUG
         if self.alt_id == ".":
             self.dis_id = None
             self.disordered = False
@@ -125,7 +125,7 @@ class BIAtom(BiopythonOverlayClass):
             t.b = float(bfactor)
         return self.b
 
-        
+
 
     def _mmcif_dict(self, include_unused=False):
         if self.alt_id is None:
