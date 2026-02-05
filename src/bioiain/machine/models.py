@@ -150,8 +150,7 @@ class CustomModel(nn.Module):
             confusion = {k: {l:0 for l in label_to_index.keys()} for k in label_to_index.keys()}
 
             for item in dataset:
-                # truth = [0] * len(label_to_index)
-                # truth[label_to_index[item.l]] = 1
+
                 l = item.l
                 out = self(item.t)
                 total += 1
@@ -283,8 +282,14 @@ class MLP_MK2(CustomModel):
             #"softmax": nn.Softmax(dim=0)
         }
 
+    
+        self.criterions["default"] = self.simpleloss
+
         self._mount_submodels()
 
+    @staticmethod
+    def simpleloss(o, t):
+            return abs(o-t)
 
 class MLP_MK1(CustomModel):
     def __init__(self, *args, input_dim, hidden_dims=[256 ,128], num_classes=8, dropout=0.2, **kwargs):

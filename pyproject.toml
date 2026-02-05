@@ -2,11 +2,10 @@
 requires = [
     "numpy == 1.26.4",
     "biopython == 1.86",
-    "pandas == 3.0.0",
+    "pandas == 2.3.3",
     "matplotlib == 3.10.8",
     "scikit-learn == 1.8.0",
     "scipy == 1.17.0",
-    #"pymol-open-source == 2.5.0", #conda-forge::pymol-open-source
 
     "setuptools >= 80.10.1",
     "typing-extensions >= 4.15.0",
@@ -14,29 +13,54 @@ requires = [
     "unidecode >= 1.4.0",
     "xmltodict >= 0.14.2",
 
-    "torch >= 2.10.0",
-    "torchvision >= 0.25.0",
-    "transformers >= 5.0.0",
-    #"foldseek==10.941cd33", #bioconda::foldseek
+
+
+    
 ]
 build-backend = "setuptools.build_meta"
 
 
+[project.optional-dependencies]
+conda = [
+    #"foldseek==10.941cd33", #bioconda::foldseek
+    #"pymol-open-source == 2.5.0", #conda-forge::pymol-open-source
+    #"clustalw" #bioconda::clustalw
+]
+ml = [
+    "torch >= 2.10.0",
+    "torchvision >= 0.25.0",
+    "transformers >= 5.0.0",
+    "tensorboard >= 2.20.0"
+]
+
+
 [project]
 name = "bioiain"
-version = "0.0.6.6.2"
+version = "0.0.6.7.0"
 authors = [
   { name="Iain Visa", email="iainvisa@gmail.com" },
 ]
 description = "Package for structural analysis of proteins"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
+    "Development Status :: 3 - Alpha",
 ]
 license = "MIT"
 license-files = ["LICEN[CS]E*"]
+keywords = [
+    "biopython", 
+    "bio", 
+    "structural", 
+    "biology", 
+    "machine learning",
+    "crystallography",
+    "protein",
+    "symmetry",
+    "ligand"
+]
 
 [project.urls]
 Homepage = "https://github.com/Thecnopapa/bioiain"

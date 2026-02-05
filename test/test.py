@@ -36,7 +36,7 @@ from src.bioiain.utilities.sequences import MSA
 
 FORCE = "force" in sys.argv or "-f" in sys.argv
 
-THRESHOLD=15
+THRESHOLD=10
 if "--threshold" in sys.argv:
     THRESHOLD = int(sys.argv[sys.argv.index("--threshold") + 1])
 
@@ -196,10 +196,10 @@ if "-t" in sys.argv:
 
                 out = model(item.t)
                 #print("out:", out)
-                #print(item)
+                #print(type(item.l), item.l)
 
                 loss = model.loss(out, item)
-                #print(loss)
+                #print(out.item(), item.l, loss)
                 #exit()
                 model.step()
 
