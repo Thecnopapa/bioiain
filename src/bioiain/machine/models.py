@@ -8,12 +8,15 @@ import pandas as pd
 
 from .datasets import Item, Dataset
 
+from torch.utils.tensorboard import SummaryWriter
+import datetime
+
 
 class ModelNotFound(Exception):
     pass
 
 class CustomModel(nn.Module):
-    def __init__(self, name, folder="./models"):
+    def __init__(self, name, in_shape, folder="./models"):
         super().__init__()
         self.data = {}
         self.data["name"] = name
@@ -22,13 +25,15 @@ class CustomModel(nn.Module):
         self.data["path"] = False
         self.data["model"] = self.__class__.__name__
         self.mode = "default"
+        self.writer = None
         self.mounted = False
+        self.in_shape = in_shape
         os.makedirs(self.data["folder"], exist_ok=True)
 
         self.criterions = {
             "default": nn.MSELoss()
         }
-        self.optimizers = {
+        self.optimisers = {
             "default": {
                 "class":torch.optim.Adam,
                 "kwargs":{"lr":0.001},
@@ -41,6 +46,7 @@ class CustomModel(nn.Module):
         }
         self.submodels = {
         }
+
         log("header", f"Model initialised: {self}")
 
 
@@ -54,8 +60,13 @@ class CustomModel(nn.Module):
         log(1, "Mounting submodels...")
         for k, layer_set in self.layers.items():
             self.submodels[k] = nn.Sequential(*layer_set.values())
-            self.optimizers[k] = self.optimizers[k]["class"](self.submodels[k].parameters(), **self.optimizers[k]["kwargs"])
+            self.optimisers[k] = self.optimisers[k]["class"](self.submodels[k].parameters(), **self.optimisers[k]["kwargs"])
         self.mounted = True
+
+        self.writer = SummaryWriter(log_dir=f"runs/{self.data['name']}/{self.optimisers["default"].__class__.__name__}-{self.criterions["default"].__class__.__name__}-{datetime.datetime.now()}")
+        #self.writer.add_graph(self, torch.rand(self.in_shape))
+
+
         return self.submodels.keys()
 
 
@@ -64,6 +75,15 @@ class CustomModel(nn.Module):
         return self.data["epoch"]
 
     def add_epoch(self):
+
+        if self.writer is not None:
+            for set_name, layers in self.layers.items():
+                for layer_name, layer in layers.items():
+                    if hasattr(layer, "weight"):
+                        self.writer.add_histogram(f"{set_name}/weight/{layer_name}", layer.weight, self.data["epoch"])
+                    if hasattr(layer, "bias"):
+                        self.writer.add_histogram(f"{set_name}/bias/{layer_name}", layer.bias,  self.data["epoch"])
+
         if self.data["epoch"] is None: self.data["epoch"] = 1
         else: self.data["epoch"] += 1
         return self.data["epoch"]
@@ -199,6 +219,11 @@ class CustomModel(nn.Module):
                 loss = self.criterions[criterion_name](output, torch.Tensor([item.l]))
         if backwards:
             loss.backward()
+
+        if self.writer is not None:
+            self.writer.add_scalar(f"loss/{criterion_name}", loss, self.data["epoch"])
+
+
         return loss
 
     def step(self, optimizer_name:str|None="mode") -> bool:
@@ -206,10 +231,10 @@ class CustomModel(nn.Module):
         if optimizer_name == "mode": optimizer_name = self.mode
 
         if optimizer_name == "all":
-            for optimizer in self.optimizers.values():
+            for optimizer in self.optimisers.values():
                 optimizer.step()
         else:
-            self.optimizers[optimizer_name].step()
+            self.optimisers[optimizer_name].step()
         return True
 
     def zero_grad(self, optimizer_name:str|None="mode") -> bool:
@@ -217,10 +242,10 @@ class CustomModel(nn.Module):
         if optimizer_name == "mode": optimizer_name = self.mode
 
         if optimizer_name == "all":
-            for optimizer in self.optimizers.values():
+            for optimizer in self.optimisers.values():
                 optimizer.zero_grad()
         else:
-            self.optimizers[optimizer_name].zero_grad()
+            self.optimisers[optimizer_name].zero_grad()
         return True
 
     def set_mode(self, mode:str):
@@ -244,18 +269,18 @@ class CustomModel(nn.Module):
 
 
 class MLP_MK2(CustomModel):
-    def __init__(self, *args, input_dim, hidden_dims=[256 ,128], num_classes=8, dropout=0.2, **kwargs):
+    def __init__(self, *args, hidden_dims=[256 ,128], num_classes=8, dropout=0.2, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.layers["default"] = {
-            "l1": nn.Linear(input_dim, hidden_dims[0]),
+            "l1": nn.Linear(self.in_shape[0], hidden_dims[0]),
             "relu1": nn.LeakyReLU(),
             #"drop1": nn.Dropout(dropout),
             "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
             "relu2": nn.LeakyReLU(),
             #"drop2": nn.Dropout(dropout),
             "l3": nn.Linear(hidden_dims[1], num_classes),
-            "softmax": nn.Softmax(dim=0)
+            #"softmax": nn.Softmax(dim=0)
         }
 
         self._mount_submodels()

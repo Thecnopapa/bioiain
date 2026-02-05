@@ -222,8 +222,10 @@ class PredictedMonomerContacts(object):
         print(len(self.labels), len(atoms_by_res))
         assert len(self.labels) == len(atoms_by_res)
         for lab, (res, res_atoms) in zip(self.labels, atoms_by_res.items()):
-
-            b = self.label_to_index[lab]
+            if len(self.label_to_index) > 1:
+                b = self.label_to_index[lab]
+            else:
+                b = lab
             for atom in res_atoms:
                 atom.set_bfactor(b)
 

@@ -27,6 +27,7 @@ class Item(object):
         self.dataset = dataset
 
     def __getitem__(self, item):
+
         if item in [0, "tensor", "t"]:
             return self.tensor
         elif item in [1, "label", "l"]:

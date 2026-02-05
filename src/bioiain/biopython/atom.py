@@ -67,6 +67,8 @@ class BIAtom(BiopythonOverlayClass):
         if "label_alt_id" not in data:
             data["label_alt_id"] = "."
         self.alt_id = data["label_alt_id"]
+        if self.alt_id is None:
+            self.alt_id = data["label_alt_id"] #DEBUG
         if self.alt_id == ".":
             self.dis_id = None
             self.disordered = False
@@ -99,6 +101,7 @@ class BIAtom(BiopythonOverlayClass):
             raise AtomDisorderException("Trying to iterate over a non-disordered atom")
         else:
             self.i = 0
+            return self
 
     def __next__(self):
         if self.i > len(self.doppelgangers):
@@ -106,12 +109,14 @@ class BIAtom(BiopythonOverlayClass):
             raise StopIteration
         else:
             if self.i == 0:
+                self.i += 1
                 return self
             else:
-                return self.doppelgangers[self.i + 1]
+                self.i += 1
+                return self.doppelgangers[self.i - 1]
 
     def set_bfactor(self, bfactor, doppelgangers=True):
-        if self.disordered and doppelgangers:
+        if self.disordered and self.doppelgangers is not None:
             targets = [a for a in self]
         else:
             targets = [self]
@@ -123,6 +128,8 @@ class BIAtom(BiopythonOverlayClass):
         
 
     def _mmcif_dict(self, include_unused=False):
+        if self.alt_id is None:
+            self.alt_id = "."
         data = {
             "group_PDB": f"{self.type:6s}",
             "id": f"{self._read_id:4d}",
