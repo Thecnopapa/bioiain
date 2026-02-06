@@ -209,9 +209,12 @@ class InteractionProfile:
 
 
 class PredictedMonomerContacts(object):
-    def __init__(self, monomer, labels, label_to_index):
+    def __init__(self, monomer, labels, label_to_index=None):
         self.monomer = monomer
         self.labels = labels
+        if label_to_index is not None: 
+            if len(label_to_index) <= 1: 
+                label_to_index = None
         self.label_to_index = label_to_index
 
         self._set_bfactors()
@@ -222,16 +225,17 @@ class PredictedMonomerContacts(object):
         print(len(self.labels), len(atoms_by_res))
         assert len(self.labels) == len(atoms_by_res)
         for lab, (res, res_atoms) in zip(self.labels, atoms_by_res.items()):
-            if len(self.label_to_index) > 1:
+
+            if self.label_to_index is not None:
                 b = self.label_to_index[lab]
             else:
                 b = lab
             for atom in res_atoms:
                 atom.set_bfactor(b)
 
-    def save_structure(self, folder):
+    def save_structure(self, folder, extra_name="_predicted_monomer_contacts"):
         from ..biopython.imports import write_atoms
-        fname = f"{self.monomer.get_name()}_predicted_monomer_contacts"
+        fname = f"{self.monomer.get_name()}{extra_name}"
         path = os.path.join(folder, fname)
         os.makedirs(folder, exist_ok=True)
         path = write_atoms(self.monomer, path)

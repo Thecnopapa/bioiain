@@ -26,9 +26,9 @@ class BIAtom(BiopythonOverlayClass):
 
         essential_labs = [
             "group_PDB",
-            "id"
+            "id",
             "type_symbol",
-            "label_alt_id"
+            "label_alt_id",
             "label_atom_id",
             "label_comp_id",
             "label_seq_id",
@@ -40,11 +40,13 @@ class BIAtom(BiopythonOverlayClass):
             "occupancy",
             "B_iso_or_equiv",
         ]
+
+
         self.unused = {}
         for k, v in data.items():
-            if k not in essential_labs:
+            if not (k  in essential_labs):
                 self.unused[k] = v
-
+        self.misc = {}
         self._pdbx_PDB_ins_code = data["pdbx_PDB_ins_code"]
         self._read_id = int(data["id"])
         self.type = data["group_PDB"]
@@ -67,15 +69,14 @@ class BIAtom(BiopythonOverlayClass):
         if "label_alt_id" not in data:
             data["label_alt_id"] = "."
         self.alt_id = data["label_alt_id"]
-        if self.alt_id is None:
-            self.alt_id = "." #DEBUG
+        if self.alt_id is None or self.alt_id == "None":
+            self.alt_id = "." 
+
         if self.alt_id == ".":
-            self.dis_id = None
             self.disordered = False
             self.doppelgangers = None
             self.favourite = None
         else:
-            self.dis_id = self.alt_id
             self.disordered = True
             self.doppelgangers = []
             self.favourite = True
@@ -83,12 +84,12 @@ class BIAtom(BiopythonOverlayClass):
     def __repr__(self):
         if self.disordered:
             if self.favourite:
-                r = "\n<bi.{} id={}.{} b={} occupancy={} (disordred)>".format(self.__class__.__name__, self.id, self.dis_id, self.b, self.occupancy)
+                r = "\n<bi.{} id={}.{} b={} occupancy={} (disordred)>".format(self.__class__.__name__, self.id, self.alt_id, self.b, self.occupancy)
                 for datm in self.doppelgangers:
-                    r += "\n - <bi.{} id={}.{} b={} occupancy={} (disordered)>".format(self.__class__.__name__, self.id, self.dis_id, self.b, self.occupancy)
+                    r += "\n - <bi.{} id={}.{} b={} occupancy={} (disordered)>".format(self.__class__.__name__, self.id, self.alt_id, self.b, self.occupancy)
                 return r
             else:
-                return "<bi.{} id={}.{} b={} occupancy={} (disordred/not-favourite)>".format(self.__class__.__name__, self.id, self.dis_id, self.b, self.occupancy)
+                return "<bi.{} id={}.{} b={} occupancy={} (disordred/not-favourite)>".format(self.__class__.__name__, self.id, self.alt_id, self.b, self.occupancy)
         else:
             return "<bi.{} id={}> b={}".format(self.__class__.__name__, self.id, self.b)
 
@@ -127,13 +128,28 @@ class BIAtom(BiopythonOverlayClass):
 
 
 
-    def _mmcif_dict(self, include_unused=False):
+    def set_misc(self, label, value):
+        if self.disordered and self.doppelgangers is not None:
+            targets = [a for a in self]
+        else:
+            targets = [self]
+
+        for t in targets:
+            if label in self.unused:
+                t.unused[label] = value
+            else:
+                t.misc[label] = value
+        return self.misc[label]
+
+
+    def _mmcif_dict(self, include_unused=True, include_misc=False):
         if self.alt_id is None:
             self.alt_id = "."
+
         data = {
             "group_PDB": f"{self.type:6s}",
             "id": f"{self._read_id:4d}",
-            "label_alt_id": f"{self.alt_id:1s}",
+            "label_alt_id": f"{self.alt_id}",
             "label_seq_id": f"{self.atomnum:4d}",
             "type_symbol": f"{self.element:3s}",
             "label_atom_id": f"{self.name:3s}",
@@ -147,9 +163,15 @@ class BIAtom(BiopythonOverlayClass):
             "B_iso_or_equiv": f"{self.b:4.2f}",
 
         }
-        if include_unused:
+        if include_unused or include_misc:
             for k, v in self.unused.items():
+                assert k not in data.keys()
                 data[k] = f"{v}"
+
+        if include_misc:
+            for k, v in self.misc.items():
+                data[k] = f"{v}"
+
 
         return data
 

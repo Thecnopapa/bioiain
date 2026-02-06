@@ -413,13 +413,14 @@ def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list
 
 
 
-def write_atoms(entity, file_path, include_unused=False, preserve_ids=False, mode="w", key="_atom_site", disordered=True, hetatm=False):
+def write_atoms(entity, file_path, include_unused=True, include_misc=False, preserve_ids=False, mode="w", key="_atom_site", disordered=True, hetatm=False):
     atoms = entity.atoms(ca_only=False, hetatm=hetatm, disordered=disordered, group_by_residue=False)
 
-    labels = atoms[0]._mmcif_dict(include_unused=include_unused).keys()
+    labels = atoms[0]._mmcif_dict(include_unused=include_unused,  include_misc=include_misc).keys()
 
     if not file_path.endswith(".cif"):
         file_path += ".cif"
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
     try:
         with open(file_path, mode) as f:
             if mode == "w":
@@ -431,7 +432,7 @@ def write_atoms(entity, file_path, include_unused=False, preserve_ids=False, mod
                 f.write(f"{key}.{l}\n")
 
             for n, a in enumerate(atoms):
-                d = a._mmcif_dict(include_unused=include_unused)
+                d = a._mmcif_dict(include_unused=include_unused, include_misc=include_misc)
                 if not preserve_ids:
                     d["id"] = f"{n:4d}"
                 f.write("  ".join(d.values()) + "\n")

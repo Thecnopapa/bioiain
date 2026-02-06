@@ -57,6 +57,9 @@ dataset = EmbeddingDataset(name=data_name)
 if not REBUILD:
     dataset.load()
 
+from src.bioiain.machine.models import *
+model_class = MLP_MK3
+
 
 #Comment
 
@@ -160,7 +163,6 @@ if "-l" in sys.argv or "-e" in sys.argv:
 
 if "-t" in sys.argv:
     log("start", "Training")
-    from src.bioiain.machine.models import *
 
     log("header", f"Dataset: {dataset}")
     dataset.use_label("rel_label")
@@ -174,7 +176,7 @@ if "-t" in sys.argv:
     run_name = f"{data_name}"
     log(1, f"Run name: {run_name}")
 
-    model = MLP_MK2(name=run_name, in_shape=(1280,), num_classes=len(label_to_index))
+    model = model_class(name=run_name, in_shape=(1280,), num_classes=len(label_to_index))
     model.add_map(dataset)
 
     epochs = 10
@@ -232,7 +234,7 @@ if "-p" in sys.argv:
         print(f"Predicting contacts in file: {file}")
         assert os.path.exists(file)
         from src.bioiain.biopython import loadPDB
-        structure = loadPDB(file, name=os.path.basename(file))
+        structure = loadPDB(file, name=os.path.basename(file).split(".")[0])
         print(structure)
 
         for chain in structure.get_chains():
@@ -243,7 +245,7 @@ if "-p" in sys.argv:
                 print(monomer)
                 embedding = SaProtEmbedding(entity=monomer, folder=prediction_folder, force=True)
                 from src.bioiain.machine.models import *
-                model = MLP_MK2(name="interactions", in_shape=(1280,), num_classes=1)
+                model = model_class(name="interactions", in_shape=(1280,), num_classes=1)
                 model.load("./models/MLP_MK2_saprot_interactions_rcps_T10.data.json")
 
                 dataset = EmbeddingDataset(name=os.path.basename(file), folder=prediction_folder)
@@ -272,13 +274,45 @@ if "-p" in sys.argv:
                 script = PymolScript(name=f"{monomer.get_name()}_prediction_pml_session", folder=prediction_folder)
                 script.load(pred_path, monomer.get_name())
                 script.spectrum(monomer.get_name())
-                script.print(json.dumps(label_to_index, indent=4))
+                if label_to_index is not None:
+                    script.print(json.dumps(label_to_index, indent=4))
                 session_path = script.write_script()
                 print("Session saved at:")
                 print(session_path)
                 #script.execute()
 
+if "-w" in sys.argv:
+    from src.bioiain.symmetries import PredictedMonomerContacts
+    from src.bioiain.visualisation import PymolScript
+    if "--monomer" in sys.argv:
+        target = sys.argv[sys.argv.index("--monomer") + 1]
+        assert target in dataset
+        log("start", "VISUALISATION")
+        log("header", f"Displaying monomer: {target}")
 
+        embedding = dataset.embeddings[target]
+        print(json.dumps(embedding, indent=4))
+
+        label_path = embedding["rel_label"]
+        with open(label_path, "r") as f:
+            label = f.read().split(",")
+
+        monomer = Monomer.recover(data_path=os.path.join(dataset.data["export_folder"], target.split("_")[0], "monomers", target))
+
+
+        log(1, f"label: {label}")
+        interaction = PredictedMonomerContacts(monomer, label[1:-1])
+        view_path = interaction.save_structure("/tmp/bioiain/visualisations", extra_name="_visualised_monomer_contacts")
+        log(1, interaction)
+
+        script = PymolScript(name=f"{monomer.get_name()}_visualisation_pml_session", folder="/tmp/bioiain/visualisations")
+        script.load(view_path, monomer.get_name())
+        script.spectrum(monomer.get_name())
+
+
+        session_path = script.write_script()
+        print("Session saved at:")
+        print(session_path)
 
 
 
