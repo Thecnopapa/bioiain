@@ -237,6 +237,7 @@ def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list
                 continue
             if next_line is None:
                 eof = True
+                next_line = "#"
             if line.startswith("#"):
                 in_loop = False
                 looping = False
@@ -413,7 +414,7 @@ def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list
 
 
 
-def write_atoms(entity, file_path, include_unused=True, include_misc=False, preserve_ids=False, mode="w", key="_atom_site", disordered=True, hetatm=False):
+def write_atoms(entity, file_path, include_unused=False, include_misc=False, preserve_ids=False, mode="w", key="_atom_site", disordered=True, hetatm=False):
     atoms = entity.atoms(ca_only=False, hetatm=hetatm, disordered=disordered, group_by_residue=False)
 
     labels = atoms[0]._mmcif_dict(include_unused=include_unused,  include_misc=include_misc).keys()
@@ -441,4 +442,5 @@ def write_atoms(entity, file_path, include_unused=True, include_misc=False, pres
     except Exception as e:
         log("error", f"Atom write interrumped, deleting corruped file: {filepath}")
         os.remove(filepath)
+        log("error", "File deleted succesfully!")
         raise e

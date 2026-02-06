@@ -128,7 +128,7 @@ class BiopythonOverlayClass:
             self.export()
 
     def export(self, folder:str|None=None, filename:str|None=None, data:bool=True,
-               structure:bool=True, structure_format:str="cif") -> list[str|None]|str:
+               structure:bool=True, structure_format:str="cif", include_unused=True,include_misc=False) -> list[str|None]|str:
 
         if filename is None:
             filename = self.data["info"]["name"]
@@ -141,7 +141,7 @@ class BiopythonOverlayClass:
         os.makedirs(folder, exist_ok=True)
 
         if structure:
-            paths.append(self._export_structure(folder, filename, structure_format))
+            paths.append(self._export_structure(folder, filename, structure_format, include_unused=include_unused, include_misc=include_misc))
         if data:
             paths.append(self._export_data(folder, filename))
 
@@ -151,7 +151,7 @@ class BiopythonOverlayClass:
             return paths[0]
         return paths
 
-    def _export_structure(self, folder, filename, extension="pdb") -> str|None:
+    def _export_structure(self, folder, filename, extension="cif", **kwargs) -> str|None:
         filename = "{}.structure.{}".format(filename, extension)
         filepath = os.path.join(folder, filename)
         self.paths["self"] = filepath

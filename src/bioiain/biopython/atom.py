@@ -141,6 +141,14 @@ class BIAtom(BiopythonOverlayClass):
                 t.misc[label] = value
         return self.misc[label]
 
+    def get_misc(self, label):
+        if label in self.misc:
+            return self.misc[label]
+        elif label in self.unused:
+            return self.unused[label]
+        else:
+            raise KeyError
+
 
     def _mmcif_dict(self, include_unused=True, include_misc=False):
         if self.alt_id is None:
@@ -156,11 +164,11 @@ class BIAtom(BiopythonOverlayClass):
             "label_comp_id": f"{self.resname:4s}",
             "auth_seq_id": f"{self.resnum:4d}",
             "auth_asym_id": f"{self.chain:2s}",
-            "Cartn_x": f"{self.x:6.3f}",
-            "Cartn_y": f"{self.y:6.3f}",
-            "Cartn_z": f"{self.z:6.3f}",
+            "Cartn_x": f"{self.x:7.3f}",
+            "Cartn_y": f"{self.y:7.3f}",
+            "Cartn_z": f"{self.z:7.3f}",
             "occupancy": f"{self.occupancy:6.3f}",
-            "B_iso_or_equiv": f"{self.b:4.2f}",
+            "B_iso_or_equiv": f"{self.b:6.2f}",
 
         }
         if include_unused or include_misc:

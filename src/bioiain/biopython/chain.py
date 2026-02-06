@@ -1,9 +1,9 @@
+import os, sys, json
 import Bio.PDB as bp
 from .base import BiopythonOverlayClass
 from .residue import Residue, DResidue
 from ..utilities.sequences import d3to1
 from ..utilities.logging import log
-from sklearn.neighbors import KDTree
 import numpy as np
 
 
@@ -22,6 +22,8 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
     def __str__(self):
         return "<bi.{} id={}>".format(self.__class__.__name__, self.id)
 
+    def residues():
+        pass
 
     def atoms(self, ca_only=False, hetatm=False, force=False, group_by_residue=False, disordered=False, **kwargs):
         from .imports import read_mmcif
@@ -91,79 +93,51 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
         return self.data["sequence"]
 
 
-    def _compute_KDTree(self, atoms=None, force=False, **kwargs):
+    def compute_sasa(self, **kwargs):
+        from .SASA import SASA
+        sasa = SASA(**kwargs)
+        return sasa.compute(self, **kwargs)
 
-        if self._kdtree is not None and not force:
-            return self._kdtree 
-        if atoms is None:
-            atoms = self.atoms(**kwargs)
-        atom_ids = [atom.id for atom in atoms]
-        coords = np.array([a.coord for a in atoms], dtype=np.float64)
-        tree = KDTree(coords, leaf_size=10, **kwargs)
-        self._kdtree = tree, coords, atom_ids, atoms
-        return self._kdtree
+    def get_surface_residues(self, threshold = 400, force=False):
 
-    def atom_kdt(self, **kwargs):
-        return AtomKDT(self, **kwargs) 
+        if "surface" in self.data and not force:
+            if str(threshold) in self.data["surface"]:
+                if self.data["surface"][str(threshold)]["reslist"] is not None:
+                    return self.data["surface"][str(threshold)]["reslist"]
 
+        atoms_by_res = self.atoms(group_by_residue=True)
+        if list(atoms_by_res.values())[0][0].get_misc("SASA") is None:
+            self.compute_sasa()
 
+        surface_res_ids = []
 
-
-
-class AtomKDT(object):
-    def __init__(self, entity, **kwargs):
-
-        self.tree, self.coords, self.atom_ids, self.atoms = entity._compute_KDTree(**kwargs)
-
-
-    def of(self, coords=None, atom_index=None, atom_id=None, radius=10, distances=False, unique=False):
-        #print("coords")
-        #print(coords)
-        if coords is None:
-            if atom_index is None:
-                atom_index = self.atom_ids.index(atom_id)
-            coords = [self.coords[atom_index]]
-        if np.isscalar(coords[0]):
-            coords = [coords]
-        coords = np.array(coords)
-        neigh_indexes = []
-        out = self(coords, radius=radius, distances=distances)
-        if distances:
-            neigh_distances = []
-            print("###")
-            [neigh_indexes.extend(n) for n in out[0]]
-            [neigh_indexes.extend(n) for n in out[1]]
-            return neigh_indexes, neigh_distances
+        for resn, atom_group in atoms_by_res.items():
+            res_asa = sum([float(a.get_misc("SASA")) for a in atom_group])
+            print(resn, res_asa)
+            if res_asa >= threshold:
+                surface_res_ids.append(resn)
+        if "surface" in self.data:
+            self.data["surface"][str(threshold)] = {"reslist": surface_res_ids}
         else:
-            if unique:
-                [neigh_indexes.extend(n) for n in out]
-                neigh_indexes = [int(i) for i in set(neigh_indexes)]
-                return neigh_indexes
+            self.data["surface"] = {str(threshold): {"reslist": surface_res_ids} }
 
-            else:
-                return out
-
-    def id_of(self, item):
-        return self.atom_ids[item]
-
-    def atom_of(self, item):
-        return self.atom_ids[item]
-
-    def coord_of(self, item):
-        return self.coords[item]
-
-    def __call__(self, item, radius, distances=False):
-        return self.tree.query_radius(item, r=radius, return_distance=distances)
-        
+        return self.data["surface"][str(threshold)]["reslist"]
 
 
 
-
-
-
-
-
-
+    def _export_structure(self, folder, filename, extension="cif", include_unused=True, include_misc=False) -> str|None:
+        filename = "{}.structure.{}".format(filename, extension)
+        filepath = os.path.join(folder, filename)
+        self.paths["self"] = filepath
+        if extension == "pdb":
+            exp = bp.PDBIO()
+            exp.set_structure(self)
+            exp.save(filepath)
+            return filepath
+        elif extension == "cif":
+            from .imports import write_atoms
+            return write_atoms(self, filepath, include_unused=include_unused, include_misc=include_misc)
+        return None
 
 
 
