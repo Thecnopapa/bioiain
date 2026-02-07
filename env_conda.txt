@@ -1,5 +1,5 @@
 python == 3.12
 pip
-conda-forge::pymol-open-source == 2.5.0#
+#conda-forge::pymol-open-source >= 2.5.0
 bioconda::foldseek == 10.941cd33
 bioconda::clustalw == 2.1
