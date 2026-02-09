@@ -8,6 +8,7 @@ from src.bioiain.utilities import log
 from src.bioiain.biopython.imports import *
 from src.bioiain.symmetries.crystal import *
 from src.bioiain.biopython.SASA import SASA
+from src.bioiain.visualisation.pymol import *
 
 
 
@@ -28,13 +29,6 @@ for  file in os.listdir(file_folder):
 
 
     for monomer in monomers:
-        log("start", "SASA")
-        print(monomer)
-        print()
-        
-        surfece_res_ids = monomer.get_surface_residues()
-        print(surfece_res_ids)
-        monomer.export(include_misc=True)
-        log("end", "SASA")
+        monomer.show_exposed_residues(force=True)
 
 

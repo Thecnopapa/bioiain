@@ -127,7 +127,7 @@ class PymolScript(object):
         Executes the script on the current thread. Not sure if it is blocking or not.
         """
         if self.path is None:
-            self.write_script(".")
+            self.write_script()
         if pymol_path is None:
             pymol_path = self.pymol_path
         cmd = [pymol_path]

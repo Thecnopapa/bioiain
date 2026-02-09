@@ -5,6 +5,7 @@ from .residue import Residue, DResidue
 from ..utilities.sequences import d3to1
 from ..utilities.logging import log
 import numpy as np
+import math
 
 
 class Chain(bp.Chain.Chain, BiopythonOverlayClass):
@@ -94,33 +95,47 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
 
 
     def compute_sasa(self, **kwargs):
+        print("computing SASA...")
         from .SASA import SASA
         sasa = SASA(**kwargs)
         return sasa.compute(self, **kwargs)
 
-    def get_surface_residues(self, threshold = 400, force=False):
+    def get_surface_residues(self, threshold = 50, ball_radius=1.40, force=False, reset_other=True):
 
         if "surface" in self.data and not force:
             if str(threshold) in self.data["surface"]:
                 if self.data["surface"][str(threshold)]["reslist"] is not None:
-                    return self.data["surface"][str(threshold)]["reslist"]
+                    if self.data["surface"][str(threshold)].get("ball_radius", None) == ball_radius:
+                        print("Using precalculated SASA")
+                        return self.data["surface"][str(threshold)]["reslist"]
+                    else:
+                        force = True
 
         atoms_by_res = self.atoms(group_by_residue=True)
         if list(atoms_by_res.values())[0][0].get_misc("SASA") is None:
-            self.compute_sasa()
+            self.compute_sasa(ball_radius=ball_radius, force=force)
 
         surface_res_ids = []
 
         for resn, atom_group in atoms_by_res.items():
-            res_asa = sum([float(a.get_misc("SASA")) for a in atom_group])
+            res_asa = sum([float(a.get_misc("SASA")) for a in atom_group]) / len(atom_group)
             print(resn, res_asa)
             if res_asa >= threshold:
                 surface_res_ids.append(resn)
-        if "surface" in self.data:
-            self.data["surface"][str(threshold)] = {"reslist": surface_res_ids}
-        else:
-            self.data["surface"] = {str(threshold): {"reslist": surface_res_ids} }
+        
 
+        if "surface" not in self.data or reset_other:
+            self.data["surface"] = {str(threshold): {
+            "reslist": surface_res_ids,
+            "ball_radius": ball_radius,
+            }}
+        else:
+            self.data["surface"][str(threshold)] = {
+            "reslist": surface_res_ids,
+            "ball_radius": ball_radius,
+            }
+
+        self.export()
         return self.data["surface"][str(threshold)]["reslist"]
 
 
@@ -140,4 +155,22 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
         return None
 
 
+    def show_exposed_residues(self, **kwargs):
+        log("start", "swowing exposed residues")
+        from src.bioiain.visualisation.pymol import PymolScript
 
+        surfece_res_ids = self.get_surface_residues(**kwargs)
+        print(surfece_res_ids)
+        
+        for atom in self.atoms():
+            atom.set_bfactor(atom.get_misc("SASA"))
+        path = self.export(folder="/tmp/bioiain/exports", structure=True, data=False, include_misc=True)
+
+        threshold = kwargs.get("threshold", 50)
+        script = PymolScript()
+        script.load(path, self.get_name())
+        script.color("all", "blue")
+        for resn in self.data["surface"][str(threshold)]["reslist"]:
+            script.color(f"i. {resn}", "orange")
+        script.execute()
+        log("end", "showing exposed residues")
