@@ -152,7 +152,8 @@ class BiopythonOverlayClass:
         return paths
 
     def _export_structure(self, folder, filename, extension="cif", **kwargs) -> str|None:
-        filename = "{}.structure.{}".format(filename, extension)
+        if not filename.endswith(".structure.cif"):
+            filename = "{}.structure.{}".format(filename, extension)
         filepath = os.path.join(folder, filename)
         self.paths["self"] = filepath
         if extension == "pdb":
@@ -211,6 +212,7 @@ class BiopythonOverlayClass:
 
                 self = self.cast(child)
             else:
+                print(struc)
                 raise Exception("Failed to load structure")
 
         #print(self)

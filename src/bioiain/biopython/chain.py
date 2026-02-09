@@ -150,8 +150,11 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
             exp.save(filepath)
             return filepath
         elif extension == "cif":
-            from .imports import write_atoms
-            return write_atoms(self, filepath, include_unused=include_unused, include_misc=include_misc)
+            try:
+                from .imports import write_atoms
+                return write_atoms(self, filepath, include_unused=include_unused, include_misc=include_misc)
+            except:
+                return super()._export_structure(folder, filename, extension=extension, include_unused=include_unused, include_misc=include_misc)
         return None
 
 
