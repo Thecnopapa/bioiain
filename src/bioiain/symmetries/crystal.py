@@ -61,7 +61,7 @@ class Crystal(Model):
         return self
 
 
-    def process(self, force=False) -> Self:
+    def process(self, monomers=True, ligands=False, force=False) -> Self:
         """
         Processes the crystal through the main pipeline. Requires set_params() to be run beforehand.
         :return: Self.
@@ -75,7 +75,7 @@ class Crystal(Model):
                 self.export()
                 self._identyfy_main_elements()
                 self.export()
-                self._regenerate_crystal()
+                self._regenerate_crystal(do_monomers=monomers, do_ligands=ligands)
                 self.export()
                 self.add_flag("Processed", True)
                 self.export()
@@ -183,7 +183,7 @@ class Crystal(Model):
         return Ligand.recover(name, data_path=os.path.join(self.paths["ligand_folder"], name),
                                   load_structure=True)
 
-    def _regenerate_crystal(self) -> Self:
+    def _regenerate_crystal(self, do_ligands=False, do_monomers=True) -> Self:
         """
         Regenerates the crystal from the given monomers and ligands, and optionally calculates contacts between
         monomers.
@@ -206,26 +206,31 @@ class Crystal(Model):
         except KeyError as e:
             raise MissingCrystalError(self)
 
-        sym_monomers = [] # Fractional
-        sym_ligands = [] # Fractional
-        log(2, "Monomers ({})".format(len(self.data["monomers"])))
-        monomers = [self._restore_monomer(m) for m in self.data["monomers"]]
-        ligands = [self._restore_ligand(l) for l in self.data["ligands"]]
-        for monomer in monomers:
-            #log("debug", "Monomer: {}".format(monomer.data["info"]["name"]))
-            sym_monomers.extend(monomer.generate_symmetries(self, monomers, ligands,
-                                                            threshold=self.data["crystal"]["contact_threshold"],
-                                                            min_contacts=self.data["crystal"]["min_contacts"],
-                                                            save_contacts=True))
-        [script.load_entity(entity_to_orth(m.copy(), params)) for m in sym_monomers]
+        
+        
+        
+        if do_monomers:
+            sym_monomers = [] # Fractional
+            log(2, "Monomers ({})".format(len(self.data["monomers"])))
+            monomers = [self._restore_monomer(m) for m in self.data["monomers"]]
+            for monomer in monomers:
+                #log("debug", "Monomer: {}".format(monomer.data["info"]["name"]))
+                sym_monomers.extend(monomer.generate_symmetries(self, monomers, ligands,
+                                                                threshold=self.data["crystal"]["contact_threshold"],
+                                                                min_contacts=self.data["crystal"]["min_contacts"],
+                                                                save_contacts=True))
+            [script.load_entity(entity_to_orth(m.copy(), params)) for m in sym_monomers]
 
-        log(2, "Ligands ({})".format(len(self.data["ligands"])))
-        for ligand in ligands:
-            sym_ligands.extend(ligand.generate_symmetries(self, monomers, ligands,
-                                                          threshold=self.data["crystal"]["contact_threshold"],
-                                                          min_contacts=self.data["crystal"]["min_contacts"],
-                                                          save_contacts=False))
-        [script.load_entity(entity_to_orth(l.copy(), params)) for l in sym_ligands]
+        if do_ligands:
+            sym_ligands = [] # Fractional
+            log(2, "Ligands ({})".format(len(self.data["ligands"])))
+            ligands = [self._restore_ligand(l) for l in self.data["ligands"]]
+            for ligand in ligands:
+                sym_ligands.extend(ligand.generate_symmetries(self, monomers, ligands,
+                                                              threshold=self.data["crystal"]["contact_threshold"],
+                                                              min_contacts=self.data["crystal"]["min_contacts"],
+                                                              save_contacts=False))
+            [script.load_entity(entity_to_orth(l.copy(), params)) for l in sym_ligands]
 
         script.write_script()
         return self
