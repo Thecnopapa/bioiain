@@ -286,7 +286,12 @@ class EmbeddingDataset(Dataset):
                     label_data = json.load(open(label_path))
                 elif label_path.endswith(".csv"):
                     with open(label_path, "r") as f:
-                        label_data = [float(l) for l in f.read().strip().split(",")]
+                        label_data = [l for l in f.read().strip().split(",")]
+                        for l in label_data:
+                            if ":" in l:
+                                l = [float(ll) for ll in l.split(":")]
+                            else:
+                                l = float(l)
                 elif label_path.endswith(".txt") or label_path.endswith(".label") or "." not in label_path:
                     with open(label_path, "r", encoding="utf-8") as f:
                         label_data = f.read().strip()
@@ -353,9 +358,15 @@ class EmbeddingDataset(Dataset):
 
         path = os.path.join(folder, fname)
 
+        labels = []
+        for l in label:
+            if type(l) in [list, tuple]:
+                labels.append(":".join([str(ll) for ll in l]))
+            else:
+                labels.append(str(l))
 
         with open(path, "w") as f:
-            f.write(",".join([str(l) for l in label]))
+            f.write(",".join(labels))
         assert self.embeddings[key]["length"] == len(label)
         self.embeddings[key][var_name] = path
         return key

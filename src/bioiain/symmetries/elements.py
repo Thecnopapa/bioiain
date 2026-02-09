@@ -60,6 +60,11 @@ class CrystalElement(Chain):
         :return: List of generated symmetry Elements
         """
 
+
+        #######################################
+        # TODO: Optimise with KDTREE ##########
+        #######################################
+
         try:
             log(3, f"Generating symmetries ({self.get_name()}) contacts={save_contacts}")
             log(4, self, "CoM:", [round(c) for c in find_com(self.get_atoms())])
@@ -315,8 +320,8 @@ class MonomerContact(object):
         """
         self.data["is_contact"] = False
         pos_dict = {}
-        print("checking min contacts")
-        print("ALL:", len(self.all))
+        #print("checking min contacts")
+        #print("ALL:", len(self.all))
         for a in self.all:
             #print(a)
             if a["below_threshold"]:
@@ -328,7 +333,7 @@ class MonomerContact(object):
                     self.data["is_contact"] = True
                     self.data["positions"].append(a["atom2"]["pos"])
                     self.data["name"] = repr(self)
-        print(self.data["is_contact"])
+        #print(self.data["is_contact"])
         if self.data["is_contact"]:
             self.data["positions"] = list(set(self.data["positions"]))
             if export:
