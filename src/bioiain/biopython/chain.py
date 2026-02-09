@@ -26,17 +26,35 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
     def residues():
         pass
 
-    def atoms(self, ca_only=False, hetatm=False, force=False, group_by_residue=False, disordered=False, **kwargs):
+    def atoms(self, ca_only=False, hetatm=False, force=True, group_by_residue=False, disordered=False, **kwargs):
         from .imports import read_mmcif
         from .atom import BIAtom
 
-        if self._atoms is None or force:
-            #print("Reading atoms from CIF")
+        _params = {ca_only:ca_only, hetatm:hetatm, group_by_residue:group_by_residue, disordered:disordered}
+
+        if not force:
+        #    if hasattr(self, "_atoms_params"):
+        #        for k, v in _params.items():
+        #            if self._atoms_params.get(k, None) != v:
+        #                force= True
+        #                break 
+        #    else:
+        #        force = True
+            pass
+
+        if force:
+            print("Reading atoms from CIF")
             atoms = read_mmcif(self.paths["self"], subset=["_atom_site"])("_atom_site")
             atoms = [BIAtom(a) for a in atoms]
             if not disordered:
                 atoms = self._fix_disordered(atoms)
             self._atoms = atoms
+            self._atoms_params = {
+                "ca_only": ca_only,
+                "hetatm": hetatm,
+                "group_by_residue": group_by_residue,
+                "disordered": disordered,
+            }
 
         atoms = self._atoms
         if not hetatm:

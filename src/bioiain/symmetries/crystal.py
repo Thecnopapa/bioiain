@@ -208,11 +208,12 @@ class Crystal(Model):
 
         
         
-        
+        monomers = [self._restore_monomer(m) for m in self.data["monomers"]]
+        ligands = [self._restore_ligand(l) for l in self.data["ligands"]]
+
         if do_monomers:
             sym_monomers = [] # Fractional
             log(2, "Monomers ({})".format(len(self.data["monomers"])))
-            monomers = [self._restore_monomer(m) for m in self.data["monomers"]]
             for monomer in monomers:
                 #log("debug", "Monomer: {}".format(monomer.data["info"]["name"]))
                 sym_monomers.extend(monomer.generate_symmetries(self, monomers, ligands,
@@ -224,7 +225,6 @@ class Crystal(Model):
         if do_ligands:
             sym_ligands = [] # Fractional
             log(2, "Ligands ({})".format(len(self.data["ligands"])))
-            ligands = [self._restore_ligand(l) for l in self.data["ligands"]]
             for ligand in ligands:
                 sym_ligands.extend(ligand.generate_symmetries(self, monomers, ligands,
                                                               threshold=self.data["crystal"]["contact_threshold"],
