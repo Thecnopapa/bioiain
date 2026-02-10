@@ -197,8 +197,12 @@ class EmbeddingDataset(Dataset):
             "label_path": label_path,
             "length": embedding.length,
             "iter_dim": embedding.iter_dim,
-            "padding": embedding.padding,
+
         }
+        if embedding.keep_padding:
+            self.embeddings[key]["padding"]= embedding.padding,
+        else:
+            self.embeddings[key]["padding"] = 0
         self.data["length"] += embedding.length
         if fasta and hasattr(embedding, "sequence"):
             self._add_to_fasta(key, embedding.sequence)
@@ -339,6 +343,9 @@ class EmbeddingDataset(Dataset):
     def add_label_from_string(self, label, key=None, var_name="label_path"):
         if key is None:
             key = len(self.embeddings) - 1
+
+        if self.embeddings[key]["padding"] > 0:
+            label = ">"*self.embeddings[key]["padding"] + label + "<"*self.embeddings[key]["padding"]
         folder = os.path.dirname(self.embeddings[key]["embedding_path"])
         fname = f"{var_name}.label.txt"
 
@@ -351,7 +358,7 @@ class EmbeddingDataset(Dataset):
         self.embeddings[key][var_name] = path
         return key
 
-    def add_label_from_list(self, label, key=None, var_name="label_path"):
+    def add_label_from_list(self, label, key=None, var_name="label_path", paddings=(None, None)):
         if key is None:
             key = len(self.embeddings) - 1
         folder = os.path.dirname(self.embeddings[key]["embedding_path"])
@@ -365,6 +372,11 @@ class EmbeddingDataset(Dataset):
                 labels.append(":".join([str(ll) for ll in l]))
             else:
                 labels.append(str(l))
+
+
+        if self.embeddings[key]["padding"] > 0:
+            label = paddings[0]*self.embeddings[key]["padding"] + label + paddings[1]*self.embeddings[key]["padding"]
+
 
         with open(path, "w") as f:
             f.write(",".join(labels))

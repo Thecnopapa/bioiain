@@ -74,12 +74,12 @@ class SaProtEmbedding(PerResidueEmbedding):
         self.single_file = True
         self.length = len(self.sequence)
         self.keep_padding = keep_padding
-        self.padding = 0
+        self.padding = padding
 
 
         if keep_padding:
             self.length += padding*2
-            self.padding = padding
+            
 
 
         self.iter_dim = 1
@@ -194,7 +194,10 @@ class SaProtEmbedding(PerResidueEmbedding):
 
         last_hidden = outputs.hidden_states[-1]
         if not self.keep_padding:
-            last_hidden = last_hidden[:,self.padding:-self.padding]
+            print(last_hidden.shape)
+            print(self.keep_padding, self.padding)
+            last_hidden = last_hidden[:,self.padding:-self.padding,:]
+            print(last_hidden.shape)
 
         try:
             assert last_hidden.shape[1] == self.length

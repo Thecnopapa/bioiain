@@ -52,8 +52,7 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
             print("Reading atoms from CIF")
             atoms = read_mmcif(self.paths["self"], subset=["_atom_site"])("_atom_site")
             atoms = [BIAtom(a) for a in atoms]
-            if not disordered:
-                atoms = self._fix_disordered(atoms)
+
             self._atoms = atoms
             self._atoms_params = {
                 "ca_only": ca_only,
@@ -63,6 +62,9 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
             }
 
         atoms = self._atoms
+        if not disordered:
+            atoms = self._fix_disordered(atoms)
+            
         if not hetatm:
             atoms = [a for a in atoms if a.type != "HETATM"]
         if ca_only:

@@ -103,7 +103,7 @@ if "-l" in sys.argv or "-e" in sys.argv:
                     log(1, "Generating absolute labels...")
                     ints = InteractionProfile(monomer, threshold=THRESHOLD, force=FORCE)
                     label = ints.generate_labels(relative=False, force=FORCE)
-                    dataset.add_label_from_string(label, key=key)
+                    dataset.add_label_from_string(label, key=key, var_name="abs_label")
                 except MissingProgram as e:
                     raise e
 
