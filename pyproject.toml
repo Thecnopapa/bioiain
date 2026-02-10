@@ -5,38 +5,25 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 
-[project.optional-dependencies]
-conda = [
-    #foldseek==10.941cd33", #bioconda::foldseek
-    #"pymol-open-source == 2.5.0", #conda-forge::pymol-open-source
-    #"clustalw" #bioconda::clustalw
-]
-ml = [
-    "torch >= 2.10.0",
-    "torchvision >= 0.25.0",
-    "transformers >= 5.0.0",
-    "tensorboard >= 2.20.0"
-]
-
 
 [project]
 
 dependencies = [
-    "numpy == 2.4.2",
-    "biopython == 1.86",
-    "pandas == 2.3.3",
-    "matplotlib == 3.10.8",
-    "scikit-learn == 1.8.0",
-    "scipy == 1.17.0",
+    "numpy >= 2.4.2",
+    "biopython >= 1.86",
+    "pandas >= 2.3.3",
+    "matplotlib >= 3.10.8",
+    "scikit-learn >= 1.8.0",
+    "scipy >= 1.17.0",
 
-    "typing-extensions == 4.15.0",
-    "requests == 2.32.5",
-    "unidecode == 1.4.0",
-    "xmltodict == 0.14.2",
+    "typing-extensions >= 4.15.0",
+    "requests >= 2.32.5",
+    "unidecode >= 1.4.0",
+    "xmltodict >= 0.14.2",
 ]
 
 name = "bioiain"
-version = "0.0.6.7.4"
+version = "0.0.6.7.6"
 authors = [
   { name="Iain Visa", email="iainvisa@gmail.com" },
 ]
@@ -53,10 +40,10 @@ classifiers = [
 license = "MIT"
 license-files = ["LICEN[CS]E*"]
 keywords = [
-    "biopython", 
-    "bio", 
-    "structural", 
-    "biology", 
+    "biopython",
+    "bio",
+    "structural",
+    "biology",
     "machine learning",
     "crystallography",
     "protein",
@@ -67,3 +54,18 @@ keywords = [
 [project.urls]
 Homepage = "https://github.com/Thecnopapa/bioiain"
 Issues = "https://github.com/Thecnopapa/bioiain/issues"
+
+[project.optional-dependencies]
+conda = [
+    "foldseek", #bioconda::foldseek
+    "pymol-open-source", #conda-forge::pymol-open-source
+    "clustalw" #bioconda::clustalw
+]
+ml = [
+    "torch >= 2.10.0",
+    "torchvision >= 0.25.0",
+    "transformers >= 5.0.0",
+    "tensorboard >= 2.20.0"
+]
+
+

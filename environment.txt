@@ -3,12 +3,12 @@
 
 
 # Critical ############################################################
-numpy == 2.4.2
-biopython == 1.86
-pandas == 2.3.3
-matplotlib == 3.10.8
-scikit-learn == 1.8.0
-scipy == 1.17.0
+numpy >= 2.4.2
+biopython >= 1.86
+pandas >= 2.3.3
+matplotlib >= 3.10.8
+scikit-learn >= 1.8.0
+scipy >= 1.17.0
 
 # Essential ###########################################################
 typing-extensions >= 4.15.0
@@ -17,15 +17,22 @@ unidecode >= 1.4.0
 xmltodict >= 0.14.2
 
 # ML ###################################################################
-torch >= 2.10.0
-torchvision >= 0.25.0
-transformers >= 5.0.0
-tensorboard >= 2.20.0
+#torch >= 2.10.0
+#torchvision >= 0.25.0
+#transformers >= 5.0.0
+#tensorboard >= 2.20.0
 
+# CONDA ################################################################
+
+# python >= 3.12
+# pip
+# conda-forge::pymol-open-source >= 2.5.0
+# bioconda::foldseek == 10.941cd33
+# bioconda::clustalw == 2.1
 
 
 # Dev ##################################################################
-setuptools >= 80.10.1
-pdoc3
-twine
-build
+#setuptools >= 80.10.1
+#pdoc3
+#twine
+#build

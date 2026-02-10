@@ -7,28 +7,32 @@ dependencies:
   - pip
   - python>=3.12
   #CONDA ONLY
-  - foldseek
-  #- pymol-open-source
-  - clustalw
+  - foldseek==10.941cd33
+  - pymol-open-source>=2.5.0
+  - clustalw>=2.1
   - pip:
-    #CRITICAL
-    - numpy==2.4.2
-    - biopython==1.86
-    - pandas==2.3.3
-    - matplotlib==3.10.8
-    - scikit-learn==1.8.0
-    - scipy==1.17.0
+    # CRITICAL
+    - numpy>=2.4.2
+    - biopython>=1.86
+    - pandas>=2.3.3
+    - matplotlib>=3.10.8
+    - scikit-learn>=1.8.0
+    - scipy>=1.17.0
+
     # ESSENTIAL
-    - setuptools>=80.10.1
     - typing-extensions>=4.15.0
     - requests>=2.32.5
     - unidecode>=1.4.0
     - xmltodict>=0.14.2
+
     # ML
     - torch >= 2.10.0
     - torchvision >= 0.25.0
     - transformers >= 5.0.0
-    # DEV
+    - tensorboard >= 2.20.0
+
+      # DEV
+    - setuptools>=80.10.1
     - pdoc3
     - twine
     - build
