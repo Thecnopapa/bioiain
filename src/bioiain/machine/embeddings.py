@@ -65,7 +65,7 @@ class PerResidueEmbedding(Embedding):
 
 class SaProtEmbedding(PerResidueEmbedding):
 
-    def __init__(self, *args, foldseek_cmd="foldseek", with_foldseek=True, force=False, padding=1, keep_padding=False, **kwargs):
+    def __init__(self, *args, foldseek_cmd="foldseek", with_foldseek=True, force=False, padding=1, keep_padding=False, save_to_tmp=False, **kwargs):
         super().__init__(self, *args, **kwargs)
         self.folder = os.path.join(self.folder, "SaProt")
         self.subfolder = os.path.join(self.folder, self.name)
@@ -75,11 +75,12 @@ class SaProtEmbedding(PerResidueEmbedding):
         self.length = len(self.sequence)
         self.keep_padding = keep_padding
         self.padding = padding
+        self.save_to_tmp = save_to_tmp
 
 
         if keep_padding:
             self.length += padding*2
-            
+
 
 
         self.iter_dim = 1
@@ -164,16 +165,19 @@ class SaProtEmbedding(PerResidueEmbedding):
 
             in_tokens = [f"{s.upper()}{fs.lower()}" for s, fs in zip(self.sequence, self.fs_tokens)]
 
+        if self.save_to_tmp:
+            model_folder = "/tmp/bioiain/models/"
+        else:
+            model_folder = ".models/"
 
-
-        tokenizer_path = f"/tmp/bioiain/models/tok_{tokenizer_name}"
+        tokenizer_path = os.path.join(model_folder, f"tok_{tokenizer_name}")
         if not os.path.exists(tokenizer_path):
             tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
             os.makedirs(os.path.dirname(tokenizer_path), exist_ok=True)
             tokenizer.save_pretrained(tokenizer_path)
         tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
 
-        model_path = f"/tmp/bioiain/models/mod_{model_name}"
+        model_path = os.path.join(model_folder, f"mod_{model_name}")
         if not os.path.exists(model_path):
             model = AutoModelForMaskedLM.from_pretrained(model_name)
             os.makedirs(os.path.dirname(model_path), exist_ok=True)
