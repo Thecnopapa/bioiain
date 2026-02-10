@@ -26,8 +26,9 @@ CONDA_ENV="default" # =folder name
 RUN_COMMAND="default" # =folder name
 SHELL=bash
 ENV_FILE="environment.yml"
-CONDA_ENV_FILE="env_conda.txt"
-PIP_ENV_FILE="env_pip.txt"
+CONDA_ENV_FILE="environment-conda-only.txt"
+PIP_ENV_FILE="environment.txt"
+CONDA_ENV_FOLDER="$(dirname $(dirname $CONDA_EXE) )/envs"
 
 BLUE="\[\e[94m\]"
 YELLOW="\[\e[93m\]"
@@ -117,7 +118,7 @@ fi
 if [[ $CONDA_PREFIX == *"$CONDA_ENV" ]]; then
   echo "* $CONDA_ENV environment already active"
 else
-  if [ -d "$CONDA_PREFIX/envs/$CONDA_ENV" ]; then
+  if [[ -d "$CONDA_ENV_FOLDER/$CONDA_ENV" ]]; then
     echo "* $CONDA_ENV already exists";
   else
     echo "* Creating conda env: $CONDA_ENV";
