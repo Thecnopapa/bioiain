@@ -46,19 +46,27 @@ if FORCE:
 ONLY = None
 if "--only" in sys.argv:
     ONLY = sys.argv[sys.argv.index("--only") + 1].split(",")
+DUAL = True
 
 data_name = f"saprot_interactions_{pdb_list}_T{THRESHOLD}"
-log("header", f"Data name: {data_name}")
+if DUAL:
+    data_name += "_DUAL"
 
 if ONLY is not None:
     data_name += "_ONLY_" + "_".join(ONLY)
+
+log("header", f"Data name: {data_name}")
 
 dataset = EmbeddingDataset(name=data_name)
 if not REBUILD:
     dataset.load()
 
 from src.bioiain.machine.models import *
-model_class = MLP_MK3
+
+if DUAL:
+    model_class = DUAL_MLP_MK1
+else:
+    model_class = MLP_MK3
 
 
 #Comment
@@ -145,7 +153,7 @@ if "-l" in sys.argv or "-e" in sys.argv:
                 continue
             log(1, "Generating relative labels...")
             ints = InteractionProfile(monomer, threshold=THRESHOLD, force=FORCE)
-            DUAL = True
+
             rel_label = ints.generate_labels(relative=True, force=FORCE, dataset=dataset, msa=msa, dual=DUAL, in_lab_var="abs_label")
             print("REL LAB:", len(rel_label), f"DUAL={DUAL}")
 
@@ -173,9 +181,9 @@ if "-t" in sys.argv:
     log("start", "Training")
 
     log("header", f"Dataset: {dataset}")
-    dataset.use_label("rel_label")
+    dataset.use_label("dual_label")
     dataset.split()
-    label_to_index = dataset.map(single_lab=True)
+    label_to_index = dataset.map(label_to_index={"contactability":0, "outer":1})
     log(2, "Label map:")
     print(json.dumps(label_to_index, indent=4))
 
@@ -254,7 +262,7 @@ if "-p" in sys.argv:
                 embedding = SaProtEmbedding(entity=monomer, folder=prediction_folder, force=True)
                 from src.bioiain.machine.models import *
                 model = model_class(name="interactions", in_shape=(1280,), num_classes=1)
-                model.load("./models/MLP_MK2_saprot_interactions_rcps_T10.data.json")
+                model.load(f"./models/{data_name}.data.json")
 
                 dataset = EmbeddingDataset(name=os.path.basename(file), folder=prediction_folder)
                 dataset.add(embedding=embedding, key=monomer.get_name())

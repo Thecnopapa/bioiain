@@ -1,4 +1,7 @@
 import os, json
+
+from sklearn.metrics import confusion_matrix
+
 from ..utilities.logging import log
 
 import torch
@@ -143,35 +146,64 @@ class CustomModel(nn.Module):
 
         label_to_index = dataset.data["label_to_index"]
         index_to_label = dataset.data["index_to_label"]
-        with torch.no_grad():
+        with (torch.no_grad()):
             correct = 0
             total = 0
 
             confusion = {k: {l:0 for l in label_to_index.keys()} for k in label_to_index.keys()}
 
-            for item in dataset:
-
+            for n, item in enumerate(dataset):
                 l = item.l
+
+                if n == 0:
+                    if type(l) in (list, tuple):
+                        confusion = {
+                            k: {"right": 0, "wrong": 0} for k in label_to_index.keys()
+                        }
+
                 out = self(item.t)
                 total += 1
                 if len(label_to_index) > 1:
-                    truth = label_to_index[l]
+                    if type(l) in (list, tuple):
+                        print(l)
+                        truth_contact, truth_outer = l
+                        truth_outer = truth_outer > 0.5
+                        out_contact, out_outer = out
+                        out_contact, out_outer = out_contact.item(), out_outer.item() > 0.5
+                        print("OUTER", truth_outer, out_outer, truth_outer == out_outer)
+                        if truth_outer == out_outer:
+                            confusion["outer"]["right"] +=1
+                            correct += 0.5
+                        else:
+                            confusion["outer"]["wrong"] += 1
 
 
-                    pred = out.argmax(dim=0)
-                    p = index_to_label[pred.item()]
-                    confusion[l][p] += 1
+                        print("CONTACTABILITY", truth_contact, out_contact, abs(truth_contact - out_contact) <= 0.05)
 
-                    print(f"PRED: {pred.item()}, TRUTH: {truth}, CORRECT: {pred.item() == truth}", end="\r")
-                    if pred == truth:
-                        correct += 1
+                        if abs(truth_contact - out_contact) <= 0.05:
+                            confusion["contactability"]["right"] += 1
+                            correct += 0.5
+                        else:
+                            confusion["contactability"]["wrong"] += 1
+                        print(confusion)
+
+
+                    else:
+                        truth = label_to_index[l]
+                        pred = out.argmax(dim=0)
+                        p = index_to_label[pred.item()]
+                        confusion[l][p] += 1
+
+                        print(f"PRED: {pred.item()}, TRUTH: {truth}, CORRECT: {pred.item() == truth}", end="\r")
+                        if pred == truth:
+                            correct += 1
                 else:
                     if abs(l-out.item()) <= 0.05:
                         correct += 1
 
 
 
-        log(1, f"Results: EPOCH:{self.data['epoch']} correct={correct}, total={total}, accuracy={(correct / total) * 100:2.3f}%")
+        log(1, f"Results: EPOCH:{self.data['epoch']-1} correct={correct}, total={total}, accuracy={(correct / total) * 100:2.3f}%")
         #print(json.dumps(confusion, indent=4))
         if len(label_to_index) == 4:
             df = pd.DataFrame.from_dict(confusion, orient='index')
@@ -212,9 +244,12 @@ class CustomModel(nn.Module):
         if criterion_name == "all":
             loss = torch.sum([self.criterions[criterion_name](output, item.lt) for criterion_name in self.criterions.keys()])
         else:
+            #print(item, item.lt)
             if hasattr(item, "lt"):
+                #print("LT", item.lt)
                 loss = self.criterions[criterion_name](output, item.lt)
             else:
+                #print("L", item.l)
                 loss = self.criterions[criterion_name](output, torch.Tensor([item.l]))
         if backwards:
             loss.backward()
@@ -267,6 +302,39 @@ class CustomModel(nn.Module):
         return x
 
 
+class DUAL_MLP_MK1(CustomModel):
+    def __init__(self, *args, hidden_dims=[128, 256], num_classes=2, dropout=0.2, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.layers["default"] = {
+            "l1": nn.Linear(self.in_shape[0], hidden_dims[0]),
+            "relu1": nn.LeakyReLU(),
+            #"drop1": nn.Dropout(dropout),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "relu2": nn.LeakyReLU(),
+            #"drop2": nn.Dropout(dropout),
+            "l3": nn.Linear(hidden_dims[1], num_classes),
+            # "softmax": nn.Softmax(dim=0)
+        }
+
+        self.criterions["default"] = self.dual_loss
+
+        self._mount_submodels()
+
+    @staticmethod
+    def dual_loss(o, t):
+        #print("CALCULATING DUAL LOSS")
+        #print("OUT",o)
+        #print("TRUTH",t)
+        true_contact, true_outer = t[0], t[1]
+        out_contact, out_outer = o[0], o[1]
+
+
+        outer_loss = abs(true_outer - out_outer)
+        contact_loss = abs(true_contact - out_contact)
+        #print("LOSSES")
+        #print(contact_loss, outer_loss)
+        return contact_loss + outer_loss
 
 
 class MLP_MK3(CustomModel):
@@ -284,7 +352,7 @@ class MLP_MK3(CustomModel):
             #"softmax": nn.Softmax(dim=0)
         }
 
-    
+
         self.criterions["default"] = self.simpleloss
 
         self._mount_submodels()
@@ -292,12 +360,6 @@ class MLP_MK3(CustomModel):
     @staticmethod
     def simpleloss(o, t):
             return abs(o-t)
-
-
-
-
-
-
 
 class MLP_MK2(CustomModel):
     def __init__(self, *args, hidden_dims=[256 ,128], num_classes=8, dropout=0.2, **kwargs):
@@ -314,7 +376,7 @@ class MLP_MK2(CustomModel):
             #"softmax": nn.Softmax(dim=0)
         }
 
-    
+
         self.criterions["default"] = self.simpleloss
 
         self._mount_submodels()

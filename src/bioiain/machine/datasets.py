@@ -16,12 +16,20 @@ class Item(object):
         self.t = self.tensor
         self.l = self.label
         if label_to_index is not None and len(label_to_index) > 1:
-            self.label_index = label_to_index[self.label]
-            self.label_tensor = [0] * len(label_to_index)
-            self.label_tensor[label_to_index[self.label]] = 1
-            self.label_tensor = Tensor(self.label_tensor)
-            self.li = self.label_index
-            self.lt = self.label_tensor
+            if type(self.label) in [int, float]:
+                #print("LABEL IS INT/FLOAT")
+                self.label_index = label_to_index[self.label]
+                self.label_tensor = [0] * len(label_to_index)
+                self.label_tensor[label_to_index[self.label]] = 1
+                self.label_tensor = Tensor(self.label_tensor)
+                self.li = self.label_index
+                self.lt = self.label_tensor
+            elif type(self.label) in (list, tuple):
+                #print("LABEL IS LIST/TUPLE")
+                self.label_tensor = Tensor(self.label)
+                self.lt = self.label_tensor
+        #print(f"LABEL IS {type(self.label)}", type(self.label) in (list, tuple), label_to_index is not None , len(label_to_index) > 1)
+
 
         self.key = key
         self.dataset = dataset
@@ -159,23 +167,35 @@ class EmbeddingDataset(Dataset):
 
 
 
-    def map(self, single_lab=False) -> dict:
+    def map(self, single_lab=False, label_to_index:dict|None=None) -> dict:
         log(1, "Mapping dataset...")
-        if single_lab:
+
+        if label_to_index is not None:
+            self.data["label_to_index"] = {}
+            self.data["index_to_label"] = {}
+            for k, v in label_to_index.items():
+                self.data["label_to_index"][str(k)] = int(v)
+                self.data["index_to_label"][int(v)] = str(k)
+
+        elif single_lab:
             self.data["label_to_index"] = {0:0}
             self.data["index_to_label"] = {0:0}
             return self.data["label_to_index"]
 
-        self.data["label_to_index"] = {}
-        self.data["index_to_label"] = {}
-        for item in self:
-            label = item.label
-            if label in self.data["label_to_index"].keys():
-                continue
-            else:
-                i = len(self.data["label_to_index"])
-                self.data["label_to_index"][label] = i
-                self.data["index_to_label"][i] = label
+
+        else:
+            self.data["label_to_index"] = {}
+            self.data["index_to_label"] = {}
+            for item in self:
+                label = item.label
+                if label in self.data["label_to_index"].keys():
+                    continue
+                else:
+                    i = len(self.data["label_to_index"])
+                    self.data["label_to_index"][label] = i
+                    self.data["index_to_label"][i] = label
+
+
         self.data["mapped"] = True
         return self.data["label_to_index"]
 
@@ -292,11 +312,12 @@ class EmbeddingDataset(Dataset):
                 elif label_path.endswith(".csv"):
                     with open(label_path, "r") as f:
                         label_data = [l for l in f.read().strip().split(",")]
-                        for l in label_data:
+                        for n, l in enumerate(label_data):
                             if ":" in l:
-                                l = [float(ll) for ll in l.split(":")]
+                                label_data[n] = [float(ll) for ll in l.split(":")]
                             else:
-                                l = float(l)
+                                label_data[n] = float(l)
+
                 elif label_path.endswith(".txt") or label_path.endswith(".label") or "." not in label_path:
                     with open(label_path, "r", encoding="utf-8") as f:
                         label_data = f.read().strip()
