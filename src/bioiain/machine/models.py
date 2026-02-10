@@ -271,7 +271,8 @@ class CustomModel(nn.Module):
             loss.backward()
 
         if self.writer is not None:
-            self.writer.add_scalar(f"loss/{criterion_name}", loss, self.data["epoch"])
+            #self.writer.add_scalar(f"loss/{criterion_name}", loss, self.data["epoch"])
+            pass
 
 
         return loss
@@ -349,8 +350,8 @@ class DUAL_MLP_MK1(CustomModel):
         contact_loss = abs(true_contact - out_contact)
         #print("LOSSES")
         #print(contact_loss, outer_loss)
-        self.writer.add_scalar(f"loss/dual/contact", contact_loss, self.data["epoch"])
-        self.writer.add_scalar(f"loss/dual/outer", outer_loss, self.data["epoch"])
+        #self.writer.add_scalar(f"loss/dual/contact", contact_loss, self.data["epoch"])
+        #self.writer.add_scalar(f"loss/dual/outer", outer_loss, self.data["epoch"])
         return contact_loss + outer_loss
 
 
