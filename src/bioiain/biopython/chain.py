@@ -37,7 +37,7 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
         #        for k, v in _params.items():
         #            if self._atoms_params.get(k, None) != v:
         #                force= True
-        #                break 
+        #                break
         #    else:
         #        force = True
             pass
@@ -64,18 +64,27 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
         atoms = self._atoms
         if not disordered:
             atoms = self._fix_disordered(atoms)
-            
+
         if not hetatm:
             atoms = [a for a in atoms if a.type != "HETATM"]
         if ca_only:
             atoms = [a for a in atoms if a.name == "CA"]
         if group_by_residue:
             atoms_by_res = {}
+            residues_with_ca = []
             for atom in atoms:
                 if atom.resnum in atoms_by_res:
                     atoms_by_res[atom.resnum].append(atom)
                 else:
                     atoms_by_res[atom.resnum] = [atom]
+                if atom.name == "CA":
+                    residues_with_ca.append(atom.resnum)
+            for key in list(atoms_by_res.keys()):
+                try:
+                    residues_with_ca.remove(key)
+                except:
+                    atoms_by_res.pop(key)
+
             atoms = atoms_by_res
 
         return atoms
@@ -151,7 +160,7 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
             #print(resn, res_asa)
             if res_asa >= threshold:
                 surface_res_ids.append(resn)
-        
+
         percetage_outer = len(atoms_by_res) / len(surface_res_ids)
 
         if "surface" not in self.data or reset_other:
@@ -192,7 +201,7 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
 
         surfece_res_ids = self.get_surface_residues(**kwargs)
         print(surfece_res_ids)
-        
+
         for atom in self.atoms():
             atom.set_bfactor(atom.get_misc("SASA"))
         path = self.export(folder="/tmp/bioiain/exports", structure=True, data=False, include_misc=True)

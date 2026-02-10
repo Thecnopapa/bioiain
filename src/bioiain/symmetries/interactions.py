@@ -53,18 +53,19 @@ class InteractionProfile:
                 #print(res, "outer")
 
 
-        print(new_labs)
+        #print(new_labs)
         try:
             assert len(resnums) == len(new_labs) == len(labs)
         except:
-            print(len(resnums) , len(new_labs) , len(labs))
+            #print(resnums, "\n", new_labs, "\n", labs)
+            #print(len(resnums) , len(new_labs) , len(labs))
             raise
 
         dual_labels = list(zip(labs, new_labs))
 
         return dual_labels
 
- 
+
 
 
 
@@ -260,8 +261,8 @@ class PredictedMonomerContacts(object):
     def __init__(self, monomer, labels, label_to_index=None):
         self.monomer = monomer
         self.labels = labels
-        if label_to_index is not None: 
-            if len(label_to_index) <= 1: 
+        if label_to_index is not None:
+            if len(label_to_index) <= 1:
                 label_to_index = None
         self.label_to_index = label_to_index
 
