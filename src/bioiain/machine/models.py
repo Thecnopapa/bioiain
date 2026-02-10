@@ -211,6 +211,14 @@ class CustomModel(nn.Module):
 
 
         print(json.dumps(confusion, indent=4))
+        try:
+            self.writer.add_scalar(f"accuracy/dual/total", (correct / total) * 100, self.data["epoch"])
+            self.writer.add_scalar(f"accuracy/dual/contactability", (confusion["contactability"]["right"] / total) * 100, self.data["epoch"])
+            self.writer.add_scalar(f"accuracy/dual/outer", (confusion["outer"]["right"] / total) * 100, self.data["epoch"])
+        except:
+            pass
+
+
         log(1, f"Results: EPOCH:{self.data['epoch']-1} correct={correct}, total={total}, accuracy={(correct / total) * 100:2.3f}%")
         #print(json.dumps(confusion, indent=4))
         if len(label_to_index) == 4:
