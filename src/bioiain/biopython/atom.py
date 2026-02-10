@@ -70,7 +70,7 @@ class BIAtom(BiopythonOverlayClass):
             data["label_alt_id"] = "."
         self.alt_id = data["label_alt_id"]
         if self.alt_id is None or self.alt_id == "None":
-            self.alt_id = "." 
+            self.alt_id = "."
 
         if self.alt_id == ".":
             self.disordered = False
@@ -98,13 +98,22 @@ class BIAtom(BiopythonOverlayClass):
 
     def __iter__(self):
         if not self.disordered:
-            self.i = None
-            raise AtomDisorderException("Trying to iterate over a non-disordered atom")
+            self.i = 0
+            #raise AtomDisorderException("Trying to iterate over a non-disordered atom")
+            return self
         else:
             self.i = 0
             return self
 
     def __next__(self):
+        if not self.disordered:
+            if self.i == 0:
+                self.i += 1
+                return self
+            else:
+                self.i = None
+                raise StopIteration
+
         if self.i > len(self.doppelgangers):
             self.i = None
             raise StopIteration
@@ -114,34 +123,27 @@ class BIAtom(BiopythonOverlayClass):
                 return self
             else:
                 self.i += 1
-                return self.doppelgangers[self.i - 1]
+                print(len(self.doppelgangers), self.i, self.i-2)
+                return self.doppelgangers[self.i - 2]
 
-    def set_bfactor(self, bfactor, doppelgangers=True):
-        if self.disordered and self.doppelgangers is not None:
-            targets = [a for a in self]
-        else:
-            targets = [self]
-
-        for t in targets:
+    def set_bfactor(self, bfactor):
+        for t in self:
             t.b = float(bfactor)
         return self.b
 
 
 
     def set_misc(self, label, value):
-        if self.disordered and self.doppelgangers is not None:
-            targets = [a for a in self]
-        else:
-            targets = [self]
 
-        for t in targets:
-            if label in self.unused:
+        if label in self.unused:
+            for t in self:
                 t.unused[label] = value
-                return self.unused[label]
+            return self.unused[label]
 
-            else:
+        else:
+            for t in self:
                 t.misc[label] = value
-                return self.misc[label]
+            return self.misc[label]
 
     def get_misc(self, label):
         if label in self.misc:
