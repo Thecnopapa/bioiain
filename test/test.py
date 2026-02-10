@@ -127,26 +127,27 @@ if "-l" in sys.argv or "-e" in sys.argv:
     msa = MSA(dataset.data["fasta_path"], dataset.data["name"])
     log("header", "MSA:", msa)
 
-    if not "relative_calcuated" in dataset.data or REBUILD:
+    if (not "relative_calcuated" in dataset.data) or REBUILD or "-rel" in sys.argv:
 
         for monomer_id in dataset.embeddings.keys():
             log("header", f"Calculating relative interactions for: {monomer_id}")
 
-            if monomer_id in dataset:
-                if "rel_label" in dataset.embeddings[monomer_id]:
-                    if dataset.embeddings[monomer_id]["rel_label"] is not None and not (FORCE or REBUILD):
-                        log(1, f"{monomer_id}: relative interactions already calculated")
-                        continue
+            if "rel_label" in dataset.embeddings[monomer_id] and not (FORCE or REBUILD or "-rel" in sys.argv):
+                if dataset.embeddings[monomer_id]["rel_label"] is not None :
+                    log(1, f"{monomer_id}: relative interactions already calculated")
+                    continue
+                    
             monomer = Monomer.recover(data_path=os.path.join(dataset.data["export_folder"], monomer_id.split("_")[0], "monomers", monomer_id))
             if monomer is None:
                 log("Warning", f"{monomer_id} has no monomer")
+                exit()
+
                 continue
             log(1, "Generating relative labels...")
             ints = InteractionProfile(monomer, threshold=THRESHOLD, force=FORCE)
             rel_label = ints.generate_labels(relative=True, force=FORCE, dataset=dataset, msa=msa)
 
             print(rel_label)
-            exit()
 
             dataset.add_label_from_list(rel_label, key=monomer_id, var_name="rel_label")
             print(dataset)
