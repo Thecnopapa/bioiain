@@ -235,5 +235,8 @@ upload(){
   cd $FOLDER_PATH | exit 0
   python3 -m build
   python3 -m twine upload --repository testpypi dist/*
-  pip install -i https://test.pypi.org/simple/ bioiain -U
+}
+
+update(){
+    pip install -i https://test.pypi.org/simple/ bioiain -U
 }
