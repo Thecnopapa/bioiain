@@ -137,9 +137,11 @@ class BIAtom(BiopythonOverlayClass):
         for t in targets:
             if label in self.unused:
                 t.unused[label] = value
+                return self.unused[label]
+
             else:
                 t.misc[label] = value
-        return self.misc[label]
+                return self.misc[label]
 
     def get_misc(self, label):
         if label in self.misc:

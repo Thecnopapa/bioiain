@@ -136,20 +136,23 @@ if "-l" in sys.argv or "-e" in sys.argv:
                 if dataset.embeddings[monomer_id]["rel_label"] is not None :
                     log(1, f"{monomer_id}: relative interactions already calculated")
                     continue
-                    
+
             monomer = Monomer.recover(data_path=os.path.join(dataset.data["export_folder"], monomer_id.split("_")[0], "monomers", monomer_id))
+
             if monomer is None:
                 log("Warning", f"{monomer_id} has no monomer")
                 exit()
-
                 continue
             log(1, "Generating relative labels...")
             ints = InteractionProfile(monomer, threshold=THRESHOLD, force=FORCE)
-            rel_label = ints.generate_labels(relative=True, force=FORCE, dataset=dataset, msa=msa)
+            DUAL = True
+            rel_label = ints.generate_labels(relative=True, force=FORCE, dataset=dataset, msa=msa, dual=DUAL)
+            print("REL LAB:", len(rel_label), f"DUAL={DUAL}")
 
-            print(rel_label)
-
-            dataset.add_label_from_list(rel_label, key=monomer_id, var_name="rel_label")
+            if DUAL:
+                dataset.add_label_from_list(rel_label, key=monomer_id, var_name="dual_label")
+            else:
+                dataset.add_label_from_list(rel_label, key=monomer_id, var_name="rel_label")
             print(dataset)
 
 

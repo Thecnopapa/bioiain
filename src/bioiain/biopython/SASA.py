@@ -143,7 +143,7 @@ class KDT(object):
     def __init__(self, coords_or_entity, leaf_size=10, **kwargs):
     	from .base import BiopythonOverlayClass
     	if isinstance(coords_or_entity, BiopythonOverlayClass):
-    		atoms = coords_or_entity.atoms(**kwargs)
+    		atoms = coords_or_entity.atoms()
     		coords = np.array([a.coord for a in atoms], dtype=np.float64)
     	else:
     		atoms = None

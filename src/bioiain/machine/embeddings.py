@@ -65,14 +65,23 @@ class PerResidueEmbedding(Embedding):
 
 class SaProtEmbedding(PerResidueEmbedding):
 
-    def __init__(self, *args, foldseek_cmd="foldseek", with_foldseek=True, force=False, **kwargs):
+    def __init__(self, *args, foldseek_cmd="foldseek", with_foldseek=True, force=False, padding=1, keep_padding=False, **kwargs):
         super().__init__(self, *args, **kwargs)
         self.folder = os.path.join(self.folder, "SaProt")
         self.subfolder = os.path.join(self.folder, self.name)
         self.fs_tokens = None
         self.foldseek_cmd = foldseek_cmd
         self.single_file = True
-        self.length = len(self.sequence)+2
+        self.length = len(self.sequence)
+        self.keep_padding = keep_padding
+        self.padding = 0
+
+
+        if keep_padding:
+            self.length += padding*2
+            self.padding = padding
+
+
         self.iter_dim = 1
         self.generate_embedding(with_foldseek=with_foldseek, force=force)
 
@@ -184,6 +193,9 @@ class SaProtEmbedding(PerResidueEmbedding):
             outputs = model(**inputs, output_hidden_states=True)
 
         last_hidden = outputs.hidden_states[-1]
+        if not self.keep_padding:
+            last_hidden = last_hidden[:,self.padding:-self.padding]
+
         try:
             assert last_hidden.shape[1] == self.length
         except Exception as e:

@@ -51,7 +51,7 @@ class FASTA(object):
                     if key is not None:
                         if len(key) == 0:
                             break
-                        print(name, key, name in key)
+                        #print(name, key, name in key)
                         if name in key:
                             key.remove(name)
                         else:
@@ -79,7 +79,7 @@ class FASTA(object):
                         fasta_dict[last_key][-1] += line
 
         if key is not None:
-            print(key)
+            #print(key)
             assert len(key) == 0
 
 

@@ -22,12 +22,50 @@ class InteractionProfile:
 
 
 
-    def generate_labels(self, relative=False, export=True, force=False, dataset=None, msa=None):
+
+    def generate_labels(self, relative=False, export=True, force=False, dataset=None, msa=None, dual=False):
 
         if relative:
-            return self._generate_relative_labels(export=True, force=force, dataset=dataset, msa=msa)
+            labs = self._generate_relative_labels(export=export, force=force, dataset=dataset, msa=msa)
         else:
-            return self._generate_absolute_labels(export=True, force=force)
+            labs = self._generate_absolute_labels(export=export, force=force)
+
+        if dual:
+            labs = self._generate_dual_labels(labs, export=export, force=force)
+
+        return labs
+
+
+
+
+
+    def _generate_dual_labels(self, labs, export=True, force=False):
+
+        surface_res = self.monomer.get_surface_residues(force=force)
+        new_labs = []
+        resnums = self.monomer.atoms(group_by_residue=True).keys()
+        for res in resnums:
+            if int(res) in surface_res:
+                new_labs.append(0)
+                print(res, "inner")
+            else:
+                new_labs.append(1)
+                print(res, "outer")
+
+
+        print(new_labs)
+        try:
+            assert len(resnums)+2 == len(new_labs) == len(labs)
+        except:
+            print(len(resnums)+2 , len(new_labs) , len(labs))
+            raise
+
+        dual_labels = zip(labs, new_labs)
+        print(dual_labels)
+
+        exit()
+
+ 
 
 
 
@@ -36,7 +74,7 @@ class InteractionProfile:
         assert dataset is not None and msa is not None
         similar_ids = [self.monomer.get_name()]
         similar_ids.extend(msa.get_similar(self.monomer.get_name(), similarity=similarity))
-        print(similar_ids)
+        #print(similar_ids)
         tmp_fasta = f"/tmp/bioiain/alignments/tmp_alignment.fasta"
         open(tmp_fasta, "w").close()
         os.makedirs(os.path.dirname(tmp_fasta), exist_ok=True)
@@ -45,17 +83,17 @@ class InteractionProfile:
             lab_path = dataset.embeddings[simid]["label_path"]
             with open(lab_path, "r") as f:
                 simlabels[simid] = f.read().strip()
-        print(simlabels.keys())
+        #print(simlabels.keys())
         sim_fasta = msa.msa_fasta
         sim_seqs = sim_fasta.parse(key=simlabels.keys())
-        print(sim_seqs.keys())
+        #print(sim_seqs.keys())
         tok_fastas = {}
         for k, v in sim_seqs.items():
             label = simlabels[k][1:-1]
-            print(k)
-            print("label:", label)
-            print(v)
-            print("alignment:", v[0])
+            #print(k)
+            #print("label:", label)
+            #print(v)
+            #print("alignment:", v[0])
             replaced = v[0]
             for n, s, in enumerate(v[0]):
                 if s == "-":
@@ -64,7 +102,7 @@ class InteractionProfile:
                     #print(label)
                     replaced = replaced[:n] + label[0] + replaced[n+1:]
                     label = label[1:]
-            print("replaced", replaced, "\n\n")
+            #print("replaced", replaced, "\n\n")
             assert len(label) == 0
             tok_fastas[k] = replaced
 
@@ -74,7 +112,9 @@ class InteractionProfile:
                 continue
             prob = sum([int(v[n] == "C") for v in tok_fastas.values()]) / len(tok_fastas)
             rel_label.append(prob)
-        print(rel_label)
+        #print(rel_label)
+        if export:
+            self.monomer.export()
 
         return [0] + rel_label + [0]
 
@@ -193,7 +233,7 @@ class InteractionProfile:
             if i[1] == "contact":
                 labels = labels[:pos] + "C" + labels[pos + 1:]
 
-        labels = ">" + labels + "<"
+        #labels = ">" + labels + "<"
         #print(labels)
         self.monomer.data["interactions"][str(threshold)]["label"] = labels
         if export:

@@ -197,6 +197,7 @@ class EmbeddingDataset(Dataset):
             "label_path": label_path,
             "length": embedding.length,
             "iter_dim": embedding.iter_dim,
+            "padding": embedding.padding,
         }
         self.data["length"] += embedding.length
         if fasta and hasattr(embedding, "sequence"):

@@ -26,7 +26,7 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
     def residues():
         pass
 
-    def atoms(self, ca_only=False, hetatm=False, force=True, group_by_residue=False, disordered=False, **kwargs):
+    def atoms(self, ca_only=False, hetatm=False, force=False, group_by_residue=False, disordered=False, **kwargs):
         from .imports import read_mmcif
         from .atom import BIAtom
 
@@ -41,6 +41,12 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
         #    else:
         #        force = True
             pass
+
+        if not hasattr(self, "_atoms"):
+            force = True
+        elif self._atoms is None:
+            force = True
+
 
         if force:
             print("Reading atoms from CIF")
@@ -130,30 +136,32 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
                         force = True
 
         atoms_by_res = self.atoms(group_by_residue=True)
-        if list(atoms_by_res.values())[0][0].get_misc("SASA") is None:
+        try:
+            if list(atoms_by_res.values())[0][0].get_misc("SASA") is not None:
+                raise KeyError
+        except:
             self.compute_sasa(ball_radius=ball_radius, force=force)
 
         surface_res_ids = []
 
         for resn, atom_group in atoms_by_res.items():
             res_asa = sum([float(a.get_misc("SASA")) for a in atom_group]) / len(atom_group)
-            print(resn, res_asa)
+            #print(resn, res_asa)
             if res_asa >= threshold:
                 surface_res_ids.append(resn)
         
+        percetage_outer = len(atoms_by_res) / len(surface_res_ids)
 
         if "surface" not in self.data or reset_other:
-            self.data["surface"] = {str(threshold): {
-            "reslist": surface_res_ids,
-            "ball_radius": ball_radius,
-            }}
-        else:
-            self.data["surface"][str(threshold)] = {
-            "reslist": surface_res_ids,
-            "ball_radius": ball_radius,
-            }
+            self.data["surface"] = {str(threshold): {}}
 
-        self.export()
+        self.data["surface"][str(threshold)] = {
+        "reslist": surface_res_ids,
+        "ball_radius": ball_radius,
+        "percetage_outer": percetage_outer,
+        }
+
+        self.export(include_misc=True)
         return self.data["surface"][str(threshold)]["reslist"]
 
 
