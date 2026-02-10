@@ -165,12 +165,20 @@ class CustomModel(nn.Module):
                 total += 1
                 if len(label_to_index) > 1:
                     if type(l) in (list, tuple):
-                        print(l)
+                        #print(l)
                         truth_contact, truth_outer = l
                         truth_outer = truth_outer > 0.5
                         out_contact, out_outer = out
                         out_contact, out_outer = out_contact.item(), out_outer.item() > 0.5
-                        print("OUTER", truth_outer, out_outer, truth_outer == out_outer)
+                        #print("OUTER", truth_outer, out_outer, truth_outer == out_outer)
+                        if n == 0:
+                            confusion["outer"]["pred_inner"] = 0
+                            confusion["outer"]["pred_outer"] = 0
+                        if out_outer:
+                            confusion["outer"]["pred_outer"] += 1
+                        else:
+                            confusion["outer"]["pred_inner"] += 1
+
                         if truth_outer == out_outer:
                             confusion["outer"]["right"] +=1
                             correct += 0.5
@@ -178,14 +186,14 @@ class CustomModel(nn.Module):
                             confusion["outer"]["wrong"] += 1
 
 
-                        print("CONTACTABILITY", truth_contact, out_contact, abs(truth_contact - out_contact) <= 0.05)
+                        #print("CONTACTABILITY", truth_contact, out_contact, abs(truth_contact - out_contact) <= 0.1)
 
-                        if abs(truth_contact - out_contact) <= 0.05:
+                        if abs(truth_contact - out_contact) <= 0.1:
                             confusion["contactability"]["right"] += 1
                             correct += 0.5
                         else:
                             confusion["contactability"]["wrong"] += 1
-                        print(confusion)
+                        #print(confusion)
 
 
                     else:
@@ -202,7 +210,7 @@ class CustomModel(nn.Module):
                         correct += 1
 
 
-
+        print(json.dumps(confusion, indent=4))
         log(1, f"Results: EPOCH:{self.data['epoch']-1} correct={correct}, total={total}, accuracy={(correct / total) * 100:2.3f}%")
         #print(json.dumps(confusion, indent=4))
         if len(label_to_index) == 4:
@@ -321,8 +329,7 @@ class DUAL_MLP_MK1(CustomModel):
 
         self._mount_submodels()
 
-    @staticmethod
-    def dual_loss(o, t):
+    def dual_loss(self, o, t):
         #print("CALCULATING DUAL LOSS")
         #print("OUT",o)
         #print("TRUTH",t)
@@ -334,6 +341,8 @@ class DUAL_MLP_MK1(CustomModel):
         contact_loss = abs(true_contact - out_contact)
         #print("LOSSES")
         #print(contact_loss, outer_loss)
+        self.writer.add_scalar(f"loss/dual/contact", contact_loss, self.data["epoch"])
+        self.writer.add_scalar(f"loss/dual/outer", outer_loss, self.data["epoch"])
         return contact_loss + outer_loss
 
 
