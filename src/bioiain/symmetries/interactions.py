@@ -23,10 +23,10 @@ class InteractionProfile:
 
 
 
-    def generate_labels(self, relative=False, export=True, force=False, dataset=None, msa=None, dual=False):
+    def generate_labels(self, relative=False, export=True, force=False, dataset=None, msa=None, dual=False, in_lab_var="label_path"):
 
         if relative:
-            labs = self._generate_relative_labels(export=export, force=force, dataset=dataset, msa=msa)
+            labs = self._generate_relative_labels(export=export, force=force, dataset=dataset, msa=msa, in_lab_var=in_lab_var)
         else:
             labs = self._generate_absolute_labels(export=export, force=force)
 
@@ -47,30 +47,29 @@ class InteractionProfile:
         for res in resnums:
             if int(res) in surface_res:
                 new_labs.append(0)
-                print(res, "inner")
+                #print(res, "inner")
             else:
                 new_labs.append(1)
-                print(res, "outer")
+                #print(res, "outer")
 
 
         print(new_labs)
         try:
-            assert len(resnums)+2 == len(new_labs) == len(labs)
+            assert len(resnums) == len(new_labs) == len(labs)
         except:
-            print(len(resnums)+2 , len(new_labs) , len(labs))
+            print(len(resnums) , len(new_labs) , len(labs))
             raise
 
-        dual_labels = zip(labs, new_labs)
-        print(dual_labels)
+        dual_labels = list(zip(labs, new_labs))
 
-        exit()
+        return dual_labels
 
  
 
 
 
 
-    def _generate_relative_labels(self, export=True, force=False, dataset=None, msa=None, similarity=95):
+    def _generate_relative_labels(self, export=True, force=False, dataset=None, msa=None, similarity=95, in_lab_var="label_path"):
         assert dataset is not None and msa is not None
         similar_ids = [self.monomer.get_name()]
         similar_ids.extend(msa.get_similar(self.monomer.get_name(), similarity=similarity))
@@ -80,16 +79,21 @@ class InteractionProfile:
         os.makedirs(os.path.dirname(tmp_fasta), exist_ok=True)
         simlabels = {}
         for simid in similar_ids:
-            lab_path = dataset.embeddings[simid]["label_path"]
+            lab_path = dataset.embeddings[simid][in_lab_var]
             with open(lab_path, "r") as f:
                 simlabels[simid] = f.read().strip()
+
+        padding = dataset.embeddings[simid]["padding"]
         #print(simlabels.keys())
         sim_fasta = msa.msa_fasta
         sim_seqs = sim_fasta.parse(key=simlabels.keys())
         #print(sim_seqs.keys())
         tok_fastas = {}
         for k, v in sim_seqs.items():
-            label = simlabels[k][1:-1]
+            if padding > 0:
+                label = simlabels[k][padding:-padding]
+            else:
+                label = simlabels[k]
             #print(k)
             #print("label:", label)
             #print(v)
@@ -113,10 +117,14 @@ class InteractionProfile:
             prob = sum([int(v[n] == "C") for v in tok_fastas.values()]) / len(tok_fastas)
             rel_label.append(prob)
         #print(rel_label)
+        #print(len(rel_label))
         if export:
             self.monomer.export()
 
-        return [0] + rel_label + [0]
+        if padding > 0:
+            return [0]*padding + rel_label + [0]*padding
+        else:
+            return rel_label
 
 
 

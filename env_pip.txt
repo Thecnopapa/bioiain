@@ -11,7 +11,6 @@ scikit-learn == 1.8.0
 scipy == 1.17.0
 
 # Essential ###########################################################
-setuptools >= 80.10.1
 typing-extensions >= 4.15.0
 requests >= 2.32.5
 unidecode >= 1.4.0
@@ -26,6 +25,7 @@ tensorboard >= 2.20.0
 
 
 # Dev ##################################################################
+setuptools >= 80.10.1
 pdoc3
 twine
 build

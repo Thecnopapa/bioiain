@@ -146,7 +146,7 @@ if "-l" in sys.argv or "-e" in sys.argv:
             log(1, "Generating relative labels...")
             ints = InteractionProfile(monomer, threshold=THRESHOLD, force=FORCE)
             DUAL = True
-            rel_label = ints.generate_labels(relative=True, force=FORCE, dataset=dataset, msa=msa, dual=DUAL)
+            rel_label = ints.generate_labels(relative=True, force=FORCE, dataset=dataset, msa=msa, dual=DUAL, in_lab_var="abs_label")
             print("REL LAB:", len(rel_label), f"DUAL={DUAL}")
 
             if DUAL:
