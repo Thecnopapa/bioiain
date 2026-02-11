@@ -16,7 +16,9 @@ if os.environ.get("SLURM_JOB_ID", None) is not None:
     gpu_count = int(os.environ["SLURM_GPUS_ON_NODE"])
     use_max = True
     is_cluster = True
-if use_max or avail_cpus <= 1:
+
+
+if use_max or cpu_count <= 1:
     avail_cpus = cpu_count
 else:
     avail_cpus = cpu_count -1

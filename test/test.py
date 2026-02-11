@@ -199,7 +199,7 @@ if "-t" in sys.argv:
     run_name = f"{data_name}"
     log(1, f"Run name: {run_name}")
 
-    model = model_class(name=run_name, in_shape=(1280,), num_classes=len(label_to_index))
+    model = model_class(name=run_name, in_shape=(1280,), num_classes=len(label_to_index)).to(DEVICE)
     model.add_map(dataset)
 
     epochs = 10
@@ -208,7 +208,6 @@ if "-t" in sys.argv:
 
     log("header", f"Epochs: {epochs}")
 
-    model.to(DEVICE)
     model.add_epoch()
     for epoch in range(epochs):
         epoch = epoch +1
