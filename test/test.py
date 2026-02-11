@@ -38,6 +38,8 @@ if torch.cuda.is_available():
 elif torch.xpu.is_available():
     DEVICE = "xpu"
 
+log(1, "DEVICE:", DEVICE)
+
 
 FORCE = "force" in sys.argv or "-f" in sys.argv
 
