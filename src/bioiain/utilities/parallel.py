@@ -8,9 +8,9 @@ is_cluster=False
 use_max = False
 if os.environ.get("SLURM_JOB_ID", None) is not None:
     log(1, "SLURM manager detected, maximizing CPUS...")
-    for k in os.environ.keys():
+    for k, v  in os.environ.items():
         if k.startswith("SLURM"):
-            print(k)
+            print(k, v)
     cpu_count = int(os.environ["SLURM_CPUS_PER_TASK"])
     use_max = True
     is_cluster = True
