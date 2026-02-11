@@ -1,5 +1,5 @@
 
-import os, shutil
+import os, sys, shutil
 import warnings
 import time, datetime
 import math
@@ -122,4 +122,30 @@ def print_children(d):
 
 
 
+try:
+    if original_std_out is None:
+        raise Exception("")
+except:
+    original_std_out = sys.stdout
+    std_out = sys.stdout
+
+def change_std_out(target_file, mode="w"):
+    global std_out
+    sys.std_out = open(target, mode)
+    std_out = sys.stdout
+
+
+def restore_std_out():
+    global std_out
+    sys.stdout = original_std_out
+    std_out = sys.stdout
+
+
+def stop_logging():
+    sys.std_out = open(os.devnull, "w")
+    
+
+def resume_logging():
+    global std_out
+    sys.stdout = std_out
 

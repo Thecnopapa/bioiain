@@ -77,6 +77,7 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
                     atoms_by_res[atom.resnum].append(atom)
                 else:
                     atoms_by_res[atom.resnum] = [atom]
+                    
                 if atom.name == "CA":
                     residues_with_ca.append(atom.resnum)
             for key in list(atoms_by_res.keys()):

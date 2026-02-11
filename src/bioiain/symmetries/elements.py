@@ -190,6 +190,7 @@ class CrystalElement(Chain):
                                 if d <= threshold**2:
                                     #print("true", end="\r")
                                     #print(a.get_full_id())
+                                    #print("a.get_full_id():",a.get_full_id())
                                     contacts[m.id].add({
                                         "atom1": {"chain":a.get_full_id()[-3][-1], "resn": a.get_full_id()[-2][-2], "element": a.get_full_id()[-1][-2], "n": mn},
                                         "atom2": {"chain":atom.get_full_id()[-3][-1], "resn": atom.get_full_id()[-2][-2], "element": atom.get_full_id()[-1][-2], "pos": atom.position, "n": dn},

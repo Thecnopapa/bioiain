@@ -1,7 +1,7 @@
 import os, json
 
 
-from ..utilities.logging import log
+from ..utilities.logging import log, stop_logging, resume_logging
 from ..utilities.parallel import avail_cpus
 
 import torch
@@ -170,6 +170,7 @@ class SaProtEmbedding(PerResidueEmbedding):
         else:
             model_folder = ".models/"
 
+        stop_logging()
         tokenizer_path = os.path.join(model_folder, f"tok_{tokenizer_name}")
         if not os.path.exists(tokenizer_path):
             tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
@@ -187,6 +188,7 @@ class SaProtEmbedding(PerResidueEmbedding):
 
         model.eval()
         model.to(device)
+        resume_logging()
 
 
         inputs = tokenizer("".join(in_tokens), return_tensors="pt").to(device)

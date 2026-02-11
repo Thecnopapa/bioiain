@@ -239,5 +239,15 @@ upload(){
 }
 
 update(){
+    echo '$ pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ bioiain -U'
     pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ bioiain -U
+}
+
+update-all(){
+    pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ bioiain -U
+    pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ bioiain[ml] -U
+    pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ bioiain[conda] -U
+}
+board(){
+  tensorboard --logdir=runs &
 }

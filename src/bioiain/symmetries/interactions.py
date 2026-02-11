@@ -238,7 +238,15 @@ class InteractionProfile:
         atoms = self.monomer.atoms(ca_only=True)
         labels = "N" * len(atoms)
         for i in ints:
-            pos, atom = [(n, a) for n, a in enumerate(atoms) if a.resnum == i[0]][0]
+            try:
+                pos, atom = [(n, a) for n, a in enumerate(atoms) if a.resnum == i[0]][0]
+            except:
+                print(atoms)
+                print(i, i[0])
+                [print(n, a, a.resnum, i ) for n, a in enumerate(atoms)][0:20]
+                print("...")
+                raise
+
             if i[1] == "contact":
                 labels = labels[:pos] + "C" + labels[pos + 1:]
 
