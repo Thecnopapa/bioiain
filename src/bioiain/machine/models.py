@@ -77,7 +77,7 @@ class CustomModel(nn.Module):
 
     def reset_loss(self):
         self.running_loss["total"] = 0
-        for c in self.criterions.keys():
+        for c in self.running_loss.keys():
             self.running_loss[c] = 0
 
     def write_loss(self):
