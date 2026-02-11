@@ -2,7 +2,7 @@ import os, sys, json
 sys.path.append('..')
 from src.bioiain.biopython import downloadPDB
 from src.bioiain import log
-
+from src.bioiain.utilities.parallel import *
 
 force = "force" in sys.argv
 
@@ -221,8 +221,8 @@ if "-t" in sys.argv:
                 #exit()
                 model.step()
 
-
-                print(f"{n:5d}/{len(dataset):5d}: LOSS={loss.item():.3f}", end = "\r")
+                if not is_cluster:
+                    print(f"{n:6d}/{len(dataset):6d}: LOSS={model.running_loss['default']/model.running_loss['total']:6.4f}", end = "\r")
 
             model.add_epoch()
             model.save()

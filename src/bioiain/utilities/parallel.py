@@ -4,12 +4,13 @@ from ..utilities.logging import log
 #print("START")
 log("header", "Importing parallel utils...")
 cpu_count = os.cpu_count()
-
+is_cluster=False
 use_max = False
 if os.environ.get("SLURM_CPUS_PER_TASK", None) is not None:
     log(1, "SLURM manager detected, maximizing CPUS...")
     cpu_count = int(os.environ["SLURM_CPUS_PER_TASK"])
     use_max = True
+    is_cluster = True
 if use_max:
     avail_cpus = cpu_count
 else:

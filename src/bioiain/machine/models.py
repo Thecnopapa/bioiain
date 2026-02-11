@@ -49,6 +49,7 @@ class CustomModel(nn.Module):
         }
         self.submodels = {
         }
+        self.running_loss = {"total":0, "default":0}
 
         log("header", f"Model initialised: {self}")
 
@@ -66,12 +67,18 @@ class CustomModel(nn.Module):
             self.optimisers[k] = self.optimisers[k]["class"](self.submodels[k].parameters(), **self.optimisers[k]["kwargs"])
         self.mounted = True
 
+        self.reset_loss()
+
         self.writer = SummaryWriter(log_dir=f"runs/{self.data['name']}/{self.optimisers["default"].__class__.__name__}-{self.criterions["default"].__class__.__name__}-{datetime.datetime.now()}")
         #self.writer.add_graph(self, torch.rand(self.in_shape))
 
 
         return self.submodels.keys()
 
+    def reset_loss(self):
+        self.running_loss["total"] = 0
+        for c in self.criterions.keys():
+            self.running_loss[c] = 0
 
     def set_epoch(self, epoch):
         self.data["epoch"] = epoch
@@ -86,7 +93,13 @@ class CustomModel(nn.Module):
                         self.writer.add_histogram(f"{set_name}/weight/{layer_name}", layer.weight, self.data["epoch"])
                     if hasattr(layer, "bias"):
                         self.writer.add_histogram(f"{set_name}/bias/{layer_name}", layer.bias,  self.data["epoch"])
+            for c, rl in self.running_loss.items():
+                total = self.running_loss["total"]
+                if total == 0: av_loss = rl
+                else: av_loss = rl / total
+                self.writer.add_scalar(f"loss/{c}", av_loss, self.data["epoch"])
 
+        self.reset_loss()
         if self.data["epoch"] is None: self.data["epoch"] = 1
         else: self.data["epoch"] += 1
         return self.data["epoch"]
@@ -255,24 +268,36 @@ class CustomModel(nn.Module):
 
         self.zero_grad(zero_optims)
 
-        if criterion_name == "mode": criterion_name = self.mode
+        if criterion_name == "mode": criterions = [self.mode]
 
-        if criterion_name == "all":
-            loss = torch.sum([self.criterions[criterion_name](output, item.lt) for criterion_name in self.criterions.keys()])
+        elif criterion_name == "all":
+            criterions = [n for n in self.criterions.keys()]
         else:
-            #print(item, item.lt)
+            criterions = [criterion_name]
+
+
+        losses = []
+
+        for criterion in criterions:
             if hasattr(item, "lt"):
                 #print("LT", item.lt)
-                loss = self.criterions[criterion_name](output, item.lt)
+                losses.append(self.criterions[criterion](output, item.lt))
             else:
                 #print("L", item.l)
-                loss = self.criterions[criterion_name](output, torch.Tensor([item.l]))
-        if backwards:
-            loss.backward()
+                losses.append(self.criterions[criterion](output, torch.Tensor([item.l])))
 
-        if self.writer is not None:
-            #self.writer.add_scalar(f"loss/{criterion_name}", loss, self.data["epoch"])
-            pass
+        if len(losses) > 1:
+            loss = torch.sum(losses)
+        else:
+            loss = losses[0]
+
+
+        if backwards:
+            self.running_loss["total"] += 1
+            for l,c in zip(losses, criterions):
+                self.running_loss[c] += l
+
+            loss.backward()
 
 
         return loss
@@ -334,25 +359,31 @@ class DUAL_MLP_MK1(CustomModel):
             # "softmax": nn.Softmax(dim=0)
         }
 
-        self.criterions["default"] = self.dual_loss
+        self.criterions["default"] = self.DualLoss(self)
 
         self._mount_submodels()
 
-    def dual_loss(self, o, t):
-        #print("CALCULATING DUAL LOSS")
-        #print("OUT",o)
-        #print("TRUTH",t)
-        true_contact, true_outer = t[0], t[1]
-        out_contact, out_outer = o[0], o[1]
 
+    class DualLoss(object):
+        def __init__(self, model):
+            self.writer = model.writer
+            self.model = model
 
-        outer_loss = abs(true_outer - out_outer)
-        contact_loss = abs(true_contact - out_contact)
-        #print("LOSSES")
-        #print(contact_loss, outer_loss)
-        #self.writer.add_scalar(f"loss/dual/contact", contact_loss, self.data["epoch"])
-        #self.writer.add_scalar(f"loss/dual/outer", outer_loss, self.data["epoch"])
-        return contact_loss + outer_loss
+        def __name__(self):
+            return "DualLoss"
+
+        def __call__(self, o, t):
+            true_contact, true_outer = t[0], t[1]
+            out_contact, out_outer = o[0], o[1]
+
+            outer_loss = abs(true_outer - out_outer)
+            contact_loss = abs(true_contact - out_contact)
+            if "outer" not in self.model.running_loss: self.model.running_loss["outer"] = 0
+            if "contactability" not in self.model.running_loss: self.model.running_loss["contactability"] = 0
+            self.model.running_loss["outer"] += outer_loss
+            self.model.running_loss["contactability"] += contact_loss
+ 
+            return contact_loss + outer_loss
 
 
 class MLP_MK3(CustomModel):
