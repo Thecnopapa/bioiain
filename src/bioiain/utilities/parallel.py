@@ -6,7 +6,7 @@ log("header", "Importing parallel utils...")
 cpu_count = os.cpu_count()
 is_cluster=False
 use_max = False
-if os.environ.get("SLURM_CONF", None) is not None:
+if os.environ.get("SLURM_JOB_ID ", None) is not None:
     log(1, "SLURM manager detected, maximizing CPUS...")
     cpu_count = int(os.environ["SLURM_CPUS_PER_TASK"])
     use_max = True
