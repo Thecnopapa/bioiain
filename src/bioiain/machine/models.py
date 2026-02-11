@@ -85,12 +85,12 @@ class CustomModel(nn.Module):
             total = self.running_loss["total"]
             if isinstance(rl, torch.Tensor):
                 rl = rl.item()
-            print(total, c, rl)
+            #print(total, c, rl)
 
             if total == 0: av_loss = rl
             else: av_loss = rl / total
             if self.writer is not None:
-                print("writing", av_loss)
+                #print("writing", av_loss)
                 self.writer.add_scalar(f"loss/{c}", float(av_loss), self.data["epoch"])
 
 
