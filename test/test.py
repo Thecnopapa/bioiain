@@ -4,8 +4,6 @@ from src.bioiain.biopython import downloadPDB
 from src.bioiain import log
 from src.bioiain.utilities.parallel import *
 
-force = "force" in sys.argv
-
 log("start", "SET UP")
 
 #file_folder = downloadPDB("./data", "test_list", ["5JJM", "6nwl"],
@@ -32,6 +30,13 @@ from src.bioiain.machine.datasets import EmbeddingDataset
 from src.bioiain.machine.embeddings import SaProtEmbedding, MissingProgram, FoldseekError
 from src.bioiain.symmetries.interactions import InteractionProfile
 from src.bioiain.utilities.sequences import MSA
+
+import torch
+DEVICE = "cpu"
+if torch.cuda.is_available():
+    DEVICE = "cuda"
+elif torch.xpu.is_available():
+    DEVICE = "xpu"
 
 
 FORCE = "force" in sys.argv or "-f" in sys.argv
@@ -201,11 +206,12 @@ if "-t" in sys.argv:
 
     log("header", f"Epochs: {epochs}")
 
-
+    model.to(DEVICE)
     model.add_epoch()
     for epoch in range(epochs):
         epoch = epoch +1
         log("header", "EPOCH:", epoch)
+        dataset.split()
         dataset.train()
         try:
             for n, item in enumerate(dataset):
