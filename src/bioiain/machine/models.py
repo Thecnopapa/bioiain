@@ -80,6 +80,20 @@ class CustomModel(nn.Module):
         for c in self.criterions.keys():
             self.running_loss[c] = 0
 
+    def write_loss(self):
+        for c, rl in self.running_loss.items():
+            total = self.running_loss["total"]
+            if isinstance(rl, torch.Tensor):
+                rl = rl.item()
+            print(total, c, rl)
+
+            if total == 0: av_loss = rl
+            else: av_loss = rl / total
+            if self.writer is not None:
+                print("writing", av_loss)
+                self.writer.add_scalar(f"loss/{c}", float(av_loss), self.data["epoch"])
+
+
     def set_epoch(self, epoch):
         self.data["epoch"] = epoch
         return self.data["epoch"]
@@ -93,12 +107,8 @@ class CustomModel(nn.Module):
                         self.writer.add_histogram(f"{set_name}/weight/{layer_name}", layer.weight, self.data["epoch"])
                     if hasattr(layer, "bias"):
                         self.writer.add_histogram(f"{set_name}/bias/{layer_name}", layer.bias,  self.data["epoch"])
-            for c, rl in self.running_loss.items():
-                total = self.running_loss["total"]
-                if total == 0: av_loss = rl
-                else: av_loss = rl / total
-                self.writer.add_scalar(f"loss/{c}", av_loss, self.data["epoch"])
 
+        self.write_loss()
         self.reset_loss()
         if self.data["epoch"] is None: self.data["epoch"] = 1
         else: self.data["epoch"] += 1
