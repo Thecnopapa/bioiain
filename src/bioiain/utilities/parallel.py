@@ -13,7 +13,9 @@ if os.environ.get("SLURM_JOB_ID", None) is not None:
     #    if k.startswith("SLURM"):
     #        print(k, v)
     cpu_count = int(os.environ["SLURM_CPUS_ON_NODE"])
-    gpu_count = int(os.environ["SLURM_GPUS_ON_NODE"])
+    try:
+        gpu_count = int(os.environ["SLURM_GPUS_ON_NODE"])
+    except: pass
     use_max = True
     is_cluster = True
 
