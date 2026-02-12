@@ -354,6 +354,52 @@ class CustomModel(nn.Module):
         return x
 
 
+
+
+
+
+class DUAL_MLP_MK2(CustomModel):
+    def __init__(self, *args, hidden_dims=[128, 256], num_classes=2, dropout=0.2, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.layers["default"] = {
+            "l1": nn.Linear(self.in_shape[0], hidden_dims[0]),
+            "relu1": nn.ReLU(),
+            "drop1": nn.Dropout(dropout),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "relu2": nn.ReLU(),
+            "drop2": nn.Dropout(dropout),
+            "l3": nn.Linear(hidden_dims[1], num_classes),
+            # "softmax": nn.Softmax(dim=0)
+        }
+
+        self.criterions["default"] = self.DualLoss(self)
+
+        self._mount_submodels()
+
+
+    class DualLoss(object):
+        def __init__(self, model):
+            self.writer = model.writer
+            self.model = model
+
+        def __name__(self):
+            return "DualLoss"
+
+        def __call__(self, o, t):
+            true_contact, true_outer = t[0], t[1]
+            out_contact, out_outer = o[0], o[1]
+
+            outer_loss = abs(true_outer - out_outer)
+            contact_loss = abs(true_contact - out_contact)
+            if "outer" not in self.model.running_loss: self.model.running_loss["outer"] = 0
+            if "contactability" not in self.model.running_loss: self.model.running_loss["contactability"] = 0
+            self.model.running_loss["outer"] += outer_loss
+            self.model.running_loss["contactability"] += contact_loss
+ 
+            return contact_loss + outer_loss
+
+
 class DUAL_MLP_MK1(CustomModel):
     def __init__(self, *args, hidden_dims=[128, 256], num_classes=2, dropout=0.2, **kwargs):
         super().__init__(*args, **kwargs)

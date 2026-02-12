@@ -71,7 +71,7 @@ if not REBUILD:
 from src.bioiain.machine.models import *
 
 if DUAL:
-    model_class = DUAL_MLP_MK1
+    model_class = DUAL_MLP_MK2
 else:
     model_class = MLP_MK3
 
@@ -249,6 +249,10 @@ if "-p" in sys.argv:
 
     prediction_folder = "./predictions"
 
+    model_path = ".models/vsc/DUAL_MLP_MK1_saprot_interactions_rcps_T10_DUAL.data.json"
+    if "--model" in sys.argv:
+        model_path = sys.argv[sys.argv.index("--model") + 1]
+
     if "--file" in sys.argv:
         chains = None
         if "--chains" in sys.argv:
@@ -268,31 +272,39 @@ if "-p" in sys.argv:
                 print(monomer)
                 embedding = SaProtEmbedding(entity=monomer, folder=prediction_folder, force=True)
                 from src.bioiain.machine.models import *
-                model = model_class(name="interactions", in_shape=(1280,), num_classes=1)
-                model.load(f"./models/{data_name}.data.json")
+                model = model_class(name="interactions", in_shape=(1280,), num_classes= 2)
+                model.load(model_path)
+                print(json.dumps(model.data, indent=4))
 
                 dataset = EmbeddingDataset(name=os.path.basename(file), folder=prediction_folder)
                 dataset.add(embedding=embedding, key=monomer.get_name())
                 label_to_index = model.data["label_to_index"]
                 index_to_label = model.data["index_to_label"]
                 print(dataset)
+
                 full_pred=[]
                 with torch.no_grad():
                     for item in dataset:
                         out = model(item.t)
-                        #print(out)
-                        if out.shape[0]>1:
+                        print(out)
+                        print(out.shape)
+                        if out.shape[0]>2:
                             pred = out.max(dim=0)[1]
                         else:
                             pred = out
                         #print(pred)
-                        if len(label_to_index) > 1:
+                        if len(label_to_index) > 2:
                             p = index_to_label[str(pred.item())]
                             full_pred.append(p)
+                        elif len(label_to_index) == 2:
+                            cp = round(pred[0].item()*100)
+                            op = int(pred[1].item() > 0.5)
+                            full_pred.append(pred[1].item())
                         else:
                             full_pred.append(pred.item())
                 #print(full_pred)
-                interaction = PredictedMonomerContacts(monomer, full_pred[1:-1], label_to_index)
+
+                interaction = PredictedMonomerContacts(monomer, full_pred, label_to_index)
                 pred_path = interaction.save_structure(prediction_folder)
                 script = PymolScript(name=f"{monomer.get_name()}_prediction_pml_session", folder=prediction_folder)
                 script.load(pred_path, monomer.get_name())

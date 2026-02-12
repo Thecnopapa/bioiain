@@ -270,7 +270,7 @@ class PredictedMonomerContacts(object):
         self.monomer = monomer
         self.labels = labels
         if label_to_index is not None:
-            if len(label_to_index) <= 1:
+            if len(label_to_index) <= 2:
                 label_to_index = None
         self.label_to_index = label_to_index
 
