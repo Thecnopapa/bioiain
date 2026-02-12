@@ -188,6 +188,7 @@ class EmbeddingDataset(Dataset):
             self.data["index_to_label"] = {}
             for item in self:
                 label = item.label
+                print(label, item)
                 if label in self.data["label_to_index"].keys():
                     continue
                 else:

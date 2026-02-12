@@ -54,10 +54,14 @@ ONLY = None
 if "--only" in sys.argv:
     ONLY = sys.argv[sys.argv.index("--only") + 1].split(",")
 DUAL = True
+DUAL_CLASSES = True
 
 data_name = f"saprot_interactions_{pdb_list}_T{THRESHOLD}"
 if DUAL:
     data_name += "_DUAL"
+    if DUAL_CLASSES:
+        data_name += "_CLASSES"
+
 
 if ONLY is not None:
     data_name += "_ONLY_" + "_".join(ONLY)
@@ -71,7 +75,7 @@ if not REBUILD:
 from src.bioiain.machine.models import *
 
 if DUAL:
-    model_class = DUAL_MLP_MK2
+    model_class = DUAL_MLP_MK3
 else:
     model_class = MLP_MK3
 
@@ -135,6 +139,9 @@ if "-l" in sys.argv or "-e" in sys.argv:
 
     dataset.data["absolute_calcuated"] = True
     dataset.save()
+    if DUAL_CLASSES:
+        dataset.use_label("abs_label")
+        dataset.map()
 
 
     datset_path = dataset.save()
@@ -165,7 +172,10 @@ if "-l" in sys.argv or "-e" in sys.argv:
             print("REL LAB:", len(rel_label), f"DUAL={DUAL}")
 
             if DUAL:
-                dataset.add_label_from_list(rel_label, key=monomer_id, var_name="dual_label")
+                if DUAL_CLASSES:
+                    dataset.add_label_from_list(rel_label, key=monomer_id, var_name="dual_class_label")
+                else:
+                    dataset.add_label_from_list(rel_label, key=monomer_id, var_name="dual_label")
             else:
                 dataset.add_label_from_list(rel_label, key=monomer_id, var_name="rel_label")
             print(dataset)
@@ -173,6 +183,8 @@ if "-l" in sys.argv or "-e" in sys.argv:
 
             dataset.save()
 
+    dataset.use_label("abs_label")
+    dataset.map()
     dataset.data["relative_calcuated"] = True
     dataset.save()
     #if len(dataset) >= 1:
@@ -249,7 +261,7 @@ if "-p" in sys.argv:
 
     prediction_folder = "./predictions"
 
-    model_path = ".models/vsc/DUAL_MLP_MK1_saprot_interactions_rcps_T10_DUAL.data.json"
+    model_path = ".models/vsc/DUAL_MLP_MK2_saprot_interactions_rcps_T10_DUAL.data.json"
     if "--model" in sys.argv:
         model_path = sys.argv[sys.argv.index("--model") + 1]
 

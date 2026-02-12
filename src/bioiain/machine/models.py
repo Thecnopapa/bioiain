@@ -355,6 +355,30 @@ class CustomModel(nn.Module):
 
 
 
+class DUAL_MLP_MK3(CustomModel):
+    def __init__(self, *args, hidden_dims=[2560, 1280, 128], num_classes=4, dropout=0.2, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.layers["default"] = {
+            "l1": nn.Linear(self.in_shape[0], hidden_dims[0]),
+            "drop1": nn.Dropout(dropout),
+            "relu1": nn.ReLU(),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "drop2": nn.Dropout(dropout),
+            "relu2": nn.ReLU(),
+            "l3": nn.Linear(hidden_dims[1], hidden_dims[2]),
+            "drop3": nn.Dropout(dropout),
+            "relu3": nn.ReLU(),
+            "l4": nn.Linear(hidden_dims[2], num_classes),
+            "softmax": nn.Softmax(dim=0)
+        }
+
+        #self.criterions["default"] = self.DualLoss(self)
+
+        self._mount_submodels()
+
+
+
 
 
 
@@ -373,7 +397,7 @@ class DUAL_MLP_MK2(CustomModel):
             "drop3": nn.Dropout(dropout),
             "relu3": nn.ReLU(),
             "l4": nn.Linear(hidden_dims[2], num_classes),
-            # "softmax": nn.Softmax(dim=0)
+            "hardtahn": nn.Hardtanh(min_val=0.)
         }
 
         self.criterions["default"] = self.DualLoss(self)

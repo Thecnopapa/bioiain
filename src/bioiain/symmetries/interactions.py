@@ -31,7 +31,7 @@ class InteractionProfile:
             labs = self._generate_absolute_labels(export=export, force=force)
 
         if dual:
-            labs = self._generate_dual_labels(labs, export=export, force=force)
+            labs = self._generate_dual_labels(labs, export=export, dataset=dataset, force=force)
 
         return labs
 
@@ -39,11 +39,24 @@ class InteractionProfile:
 
 
 
-    def _generate_dual_labels(self, labs, export=True, force=False):
+    def _generate_dual_labels(self, labs, dataset=None, export=True, force=False, use_classes=True, n_classes=5):
+
+        if use_classes:
+            assert dataset is not None
+            print(dataset)
+            print(dataset.data["label_to_index"])
+            new_labs = []
+            for old_class in dataset.data["label_to_index"]:
+                for i in range(n_classes):
+                    new_labs.append(f"{old_class}-{i}")
+            print(new_labs)
+            exit()
 
         surface_res = self.monomer.get_surface_residues(force=force)
-        new_labs = []
+
         resnums = self.monomer.atoms(group_by_residue=True).keys()
+
+
         for res in resnums:
             if int(res) in surface_res:
                 new_labs.append(0)
