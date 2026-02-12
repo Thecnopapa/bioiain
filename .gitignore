@@ -208,7 +208,7 @@ __marimo__/
 
 
 .idea
-test/data
+test/data/*/
 test/exports
 test/crystals
 test/test

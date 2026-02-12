@@ -11,13 +11,13 @@ log("start", "SET UP")
 #                          overwrite=False)
 if "cath" in sys.argv:
     file_folder = downloadPDB("./data", "cath-nonredundant-S20",
-                                           file_path="../../vib-ai/internship/data/cath-dataset-nonredundant-S20.list",
+                                           file_path=".data/cath-dataset-nonredundant-S20.list",
                                            file_format="cif",
                                            overwrite=False)
     pdb_list = "cath"
 else:
     file_folder = downloadPDB("./data", "receptors",
-                              file_path="../..//vib-ai/internship/data/receptors.txt", file_format="cif",
+                              file_path="./data/receptors.txt", file_format="cif",
                               overwrite=False)
     pdb_list="rcps"
 
