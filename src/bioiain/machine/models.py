@@ -69,7 +69,7 @@ class CustomModel(nn.Module):
 
         self.reset_loss()
 
-        self.writer = SummaryWriter(log_dir=f"runs/{self.data['name']}/{self.optimisers["default"].__class__.__name__}-{self.criterions["default"].__class__.__name__}-{datetime.datetime.now()}")
+        self.writer = SummaryWriter(log_dir=f"runs/{self.data['name']}/{self.__class__.__name__}/{self.optimisers["default"].__class__.__name__}-{self.criterions["default"].__class__.__name__}-{datetime.datetime.now()}")
         #self.writer.add_graph(self, torch.rand(self.in_shape))
 
 
@@ -359,17 +359,20 @@ class CustomModel(nn.Module):
 
 
 class DUAL_MLP_MK2(CustomModel):
-    def __init__(self, *args, hidden_dims=[128, 256], num_classes=2, dropout=0.2, **kwargs):
+    def __init__(self, *args, hidden_dims=[2560, 1280, 128], num_classes=2, dropout=0.2, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.layers["default"] = {
             "l1": nn.Linear(self.in_shape[0], hidden_dims[0]),
-            "relu1": nn.ReLU(),
             "drop1": nn.Dropout(dropout),
+            "relu1": nn.ReLU(),
             "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
-            "relu2": nn.ReLU(),
             "drop2": nn.Dropout(dropout),
-            "l3": nn.Linear(hidden_dims[1], num_classes),
+            "relu2": nn.ReLU(),
+            "l3": nn.Linear(hidden_dims[1], hidden_dims[2]),
+            "drop3": nn.Dropout(dropout),
+            "relu3": nn.ReLU(),
+            "l4": nn.Linear(hidden_dims[2], num_classes),
             # "softmax": nn.Softmax(dim=0)
         }
 
@@ -397,7 +400,7 @@ class DUAL_MLP_MK2(CustomModel):
             self.model.running_loss["outer"] += outer_loss
             self.model.running_loss["contactability"] += contact_loss
  
-            return contact_loss + outer_loss
+            return contact_loss * outer_loss
 
 
 class DUAL_MLP_MK1(CustomModel):
