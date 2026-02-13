@@ -35,7 +35,7 @@ from src.bioiain.utilities.sequences import MSA
 import torch
 
 
-mlog = mem_log()
+#mlog = mem_log()
 
 DEVICE = "cpu"
 if torch.cuda.is_available():
@@ -448,6 +448,6 @@ if "-w" in sys.argv:
 
 
 log("end", "DONE")
-exit()
 
-
+end_pools()
+sys.exit()
