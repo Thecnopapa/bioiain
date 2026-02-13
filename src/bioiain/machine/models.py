@@ -152,8 +152,9 @@ class CustomModel(nn.Module):
 
         return self.data["label_to_index"], dataset.data["index_to_label"]
 
-    def test(self, dataset):
-        self.load()
+    def test(self, dataset, re_load=True):
+        if re_load:
+            self.load()
         dataset.test()
         log(1, f"Testing: using model saved at: {self.data['path']}")
         log(2, "Dataset:", dataset)
@@ -172,6 +173,8 @@ class CustomModel(nn.Module):
         with (torch.no_grad()):
             correct = 0
             total = 0
+            truths = []
+            preds = []
 
             confusion = {k: {l:0 for l in label_to_index.keys()} for k in label_to_index.keys()}
 
@@ -224,8 +227,11 @@ class CustomModel(nn.Module):
                         pred = out.argmax(dim=0)
                         p = index_to_label[pred.item()]
                         confusion[l][p] += 1
+                        preds.append(p)
+                        truths.append(l)
 
-                        print(f"PRED: {pred.item()}, TRUTH: {truth}, CORRECT: {pred.item() == truth}", end="\r")
+
+                        print(f"{n:4d}/{len(dataset):4d} PRED: {pred.item()}, TRUTH: {truth}, CORRECT: {pred.item() == truth}", end="\r")
                         if pred == truth:
                             correct += 1
                 else:
@@ -266,6 +272,9 @@ class CustomModel(nn.Module):
             #df.rename({0:"Truth\\Pred"}, inplace = True)
             #print(df)
             self.data["confusion_matrix"] = cf
+        if len(preds) > 0 and len(truths) > 0:
+            from ..visualisation.plots import plot_confusion
+            plot_confusion(preds, truths, title=f"{self}")
         self.save()
 
 
@@ -294,7 +303,13 @@ class CustomModel(nn.Module):
                 losses.append(self.criterions[criterion](output, item.lt))
             else:
                 #print("L", item.l)
-                losses.append(self.criterions[criterion](output, torch.Tensor([item.l])))
+                try:
+                    losses.append(self.criterions[criterion](output, torch.Tensor([item.l])))
+                except:
+                    print(item)
+                    print(item.l)
+                    print(item.__dict__)
+                    raise
 
         if len(losses) > 1:
             loss = torch.sum(losses)

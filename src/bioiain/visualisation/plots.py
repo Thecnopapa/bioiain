@@ -88,3 +88,28 @@ class Arrow3D(FancyArrowPatch):
 
 
 
+from sklearn.decomposition import PCA
+from sklearn.metrics import confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sb
+import bioiain as bi
+
+
+# Confusion matrices
+def plot_confusion(preds, labels, title, score=None, classes=None):
+    try:
+        bi.log(1, "Plotting confusion...")
+        cm = confusion_matrix(labels, preds)
+        if classes is None:
+            classes = list(set(labels))
+        plt.figure(figsize=(1*len(classes) ,1*len(classes)))
+        sb.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=classes, yticklabels=classes)
+        plt.xlabel("Predicted")
+        plt.ylabel("True")
+        if score is not None:
+            title = f"{title}_S={score:.2f}"
+        plt.title(title)
+        os.makedirs("figs", exist_ok=True)
+        plt.savefig(f"figs/{title}.confusion.png")
+    except Exception as e:
+        print(e)

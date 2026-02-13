@@ -41,29 +41,33 @@ class InteractionProfile:
 
     def _generate_dual_labels(self, labs, dataset=None, export=True, force=False, use_classes=True, n_classes=5):
 
-        if use_classes:
-            assert dataset is not None
-            print(dataset)
-            print(dataset.data["label_to_index"])
-            new_labs = []
-            for old_class in dataset.data["label_to_index"]:
-                for i in range(n_classes):
-                    new_labs.append(f"{old_class}-{i}")
-            print(new_labs)
-            exit()
+
+        new_labs = []
+
 
         surface_res = self.monomer.get_surface_residues(force=force)
 
         resnums = self.monomer.atoms(group_by_residue=True).keys()
 
+        #print(type(labs))
+        if use_classes:
+            discrete_labs = []
+            for n, (cont, res) in enumerate(zip(labs, resnums)):
+                #print(n, cont, res)
+                discrete = int(cont//(1/n_classes))
+                #print(discrete)
+                discrete_labs.append(discrete)
 
+        #print(labs)
         for res in resnums:
             if int(res) in surface_res:
-                new_labs.append(0)
-                #print(res, "inner")
-            else:
-                new_labs.append(1)
+                if use_classes: new_labs.append("O")
+                else: new_labs.append(0)
                 #print(res, "outer")
+            else:
+                if use_classes: new_labs.append("I")
+                else:new_labs.append(1)
+                #print(res, "inner")
 
 
         #print(new_labs)
@@ -74,8 +78,13 @@ class InteractionProfile:
             #print(len(resnums) , len(new_labs) , len(labs))
             raise
 
-        dual_labels = list(zip(labs, new_labs))
-
+        if use_classes:
+            assert len(new_labs) == len(discrete_labs)
+            dual_labels = [f"{nl}-{dl}" for nl, dl in zip(new_labs, discrete_labs)]
+            print(json.dumps({k: sum([1 for v in dual_labels if k == v]) for k in sorted(set(dual_labels))}, indent=4))
+        else:
+            dual_labels = list(zip(labs, new_labs))
+        #print(dual_labels)
         return dual_labels
 
 

@@ -16,8 +16,8 @@ class Item(object):
         self.t = self.tensor
         self.l = self.label
         if label_to_index is not None and len(label_to_index) > 1:
-            if type(self.label) in [int, float]:
-                #print("LABEL IS INT/FLOAT")
+            if type(self.label) in [int, str]:
+                #print("LABEL IS INT/STR")
                 self.label_index = label_to_index[self.label]
                 self.label_tensor = [0] * len(label_to_index)
                 self.label_tensor[label_to_index[self.label]] = 1
@@ -170,6 +170,8 @@ class EmbeddingDataset(Dataset):
     def map(self, single_lab=False, label_to_index:dict|None=None) -> dict:
         log(1, "Mapping dataset...")
 
+        self.data["mapped"] = False
+
         if label_to_index is not None:
             self.data["label_to_index"] = {}
             self.data["index_to_label"] = {}
@@ -188,14 +190,13 @@ class EmbeddingDataset(Dataset):
             self.data["index_to_label"] = {}
             for item in self:
                 label = item.label
-                print(label, item)
+                #print(label, item)
                 if label in self.data["label_to_index"].keys():
                     continue
                 else:
                     i = len(self.data["label_to_index"])
                     self.data["label_to_index"][label] = i
                     self.data["index_to_label"][i] = label
-
 
         self.data["mapped"] = True
         return self.data["label_to_index"]
@@ -317,7 +318,10 @@ class EmbeddingDataset(Dataset):
                             if ":" in l:
                                 label_data[n] = [float(ll) for ll in l.split(":")]
                             else:
-                                label_data[n] = float(l)
+                                try:
+                                    label_data[n] = float(l)
+                                except ValueError:
+                                    label_data[n] = l.strip()
 
                 elif label_path.endswith(".txt") or label_path.endswith(".label") or "." not in label_path:
                     with open(label_path, "r", encoding="utf-8") as f:
@@ -353,6 +357,7 @@ class EmbeddingDataset(Dataset):
             self.data["mapped"] = False # DEBUG
         if self.data["mapped"]:
             l_to_i = self.data["label_to_index"]
+        #print(l_to_i)
         return Item(target_tensor, target_label, label_to_index=l_to_i, key=key, dataset=self)
 
 

@@ -183,7 +183,14 @@ if "-l" in sys.argv or "-e" in sys.argv:
 
             dataset.save()
 
-    dataset.use_label("abs_label")
+
+    if DUAL_CLASSES:
+        dataset.use_label("dual_class_label")
+    elif DUAL:
+        dataset.use_label("dual_label")
+    else:
+        dataset.use_label("rel_label")
+
     dataset.map()
     dataset.data["relative_calcuated"] = True
     dataset.save()
@@ -200,9 +207,17 @@ if "-t" in sys.argv:
     log("start", "Training")
 
     log("header", f"Dataset: {dataset}")
-    dataset.use_label("dual_label")
+    if DUAL_CLASSES:
+        dataset.use_label("dual_class_label")
+    elif DUAL:
+        dataset.use_label("dual_label")
+    else:
+        dataset.use_label("rel_label")
     dataset.split()
-    label_to_index = dataset.map(label_to_index={"contactability":0, "outer":1})
+    if DUAL and not DUAL_CLASSES:
+        label_to_index = dataset.map(label_to_index={"contactability":0, "outer":1})
+    else:
+        label_to_index = dataset.map()
     log(2, "Label map:")
     print(json.dumps(label_to_index, indent=4))
 
@@ -249,7 +264,7 @@ if "-t" in sys.argv:
         except KeyboardInterrupt:
             print("\nStopping model...")
             try:
-                model.test(dataset)
+                model.test(dataset, re_load=False)
             except ModelNotFound as e:
                 print(e)
             break
@@ -261,7 +276,7 @@ if "-p" in sys.argv:
 
     prediction_folder = "./predictions"
 
-    model_path = ".models/vsc/DUAL_MLP_MK2_saprot_interactions_rcps_T10_DUAL.data.json"
+    model_path = ".models/vsc/DUAL_MLP_MK3_saprot_interactions_rcps_T10_DUAL_CLASSES.data.json"
     if "--model" in sys.argv:
         model_path = sys.argv[sys.argv.index("--model") + 1]
 
