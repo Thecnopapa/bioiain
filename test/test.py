@@ -281,7 +281,7 @@ if "-p" in sys.argv:
 
     prediction_folder = "./predictions"
 
-    model_path = ".models/vsc/DUAL_MLP_MK3_saprot_interactions_rcps_T10_DUAL_CLASSES.data.json"
+    model_path = "./models/DUAL_MLP_MK3_saprot_interactions_rcps_T10_DUAL_CLASSES.temp.data.json"
     if "--model" in sys.argv:
         model_path = sys.argv[sys.argv.index("--model") + 1]
 
@@ -304,8 +304,11 @@ if "-p" in sys.argv:
                 print(monomer)
                 embedding = SaProtEmbedding(entity=monomer, folder=prediction_folder, force=True)
                 from src.bioiain.machine.models import *
-                model = model_class(name="interactions", in_shape=(1280,), num_classes= 2)
+                data = json.load(open(model_path))
+                model = model_class(name="interactions", in_shape=data["in_shape"], num_classes=data["num_classes"])
+                del data
                 model.load(model_path)
+                print(model)
                 print(json.dumps(model.data, indent=4))
 
                 dataset = EmbeddingDataset(name=os.path.basename(file), folder=prediction_folder)
@@ -318,8 +321,8 @@ if "-p" in sys.argv:
                 with torch.no_grad():
                     for item in dataset:
                         out = model(item.t)
-                        print(out)
-                        print(out.shape)
+                        #print(out)
+                        #print(out.shape)
                         if out.shape[0]>2:
                             pred = out.max(dim=0)[1]
                         else:

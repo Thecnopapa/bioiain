@@ -171,32 +171,28 @@ class EmbeddingDataset(Dataset):
         log(1, "Mapping dataset...")
 
         self.data["mapped"] = False
+        self.data["label_to_index"] = {}
+        self.data["index_to_label"] = {}
+
 
         if label_to_index is not None:
-            self.data["label_to_index"] = {}
-            self.data["index_to_label"] = {}
-            for k, v in label_to_index.items():
-                self.data["label_to_index"][str(k)] = int(v)
-                self.data["index_to_label"][int(v)] = str(k)
+            labels = label_to_index.keys()
 
         elif single_lab:
-            self.data["label_to_index"] = {0:0}
-            self.data["index_to_label"] = {0:0}
-            return self.data["label_to_index"]
+            labels = [0]
 
 
         else:
-            self.data["label_to_index"] = {}
-            self.data["index_to_label"] = {}
+            labels = []
             for item in self:
                 label = item.label
                 #print(label, item)
-                if label in self.data["label_to_index"].keys():
-                    continue
-                else:
-                    i = len(self.data["label_to_index"])
-                    self.data["label_to_index"][label] = i
-                    self.data["index_to_label"][i] = label
+                if label not in labels:
+                    labels.append(label)
+
+        for n, k in enumerate(sorted(labels)):
+                self.data["label_to_index"][str(k)] = int(n)
+                self.data["index_to_label"][int(n)] = str(k)
 
         self.data["mapped"] = True
         return self.data["label_to_index"]

@@ -32,7 +32,7 @@ class CustomModel(nn.Module):
         self.mode = "default"
         self.writer = None
         self.mounted = False
-        self.in_shape = in_shape
+        self.data["in_shape"] = in_shape
         os.makedirs(self.data["folder"], exist_ok=True)
 
         self.criterions = {
@@ -72,7 +72,7 @@ class CustomModel(nn.Module):
         self.reset_loss()
 
         self.writer = SummaryWriter(log_dir=f"runs/{self.data['name']}/{self.__class__.__name__}/{self.optimisers["default"].__class__.__name__}-{self.criterions["default"].__class__.__name__}-{datetime.datetime.now()}")
-        #self.writer.add_graph(self, torch.rand(self.in_shape))
+        #self.writer.add_graph(self, torch.rand(self.data["in_shape"]))
 
 
         return self.submodels.keys()
@@ -132,12 +132,17 @@ class CustomModel(nn.Module):
             model_path = model_path.replace(".model.pt", ".temp.model.pt")
         self.data["path"] = model_path
         torch.save(self.state_dict(), model_path)
-        return self.export(path=path, add_epoch=add_epoch)
+        return self.export(path=model_path, add_epoch=add_epoch)
 
     def export(self, path=None, add_epoch=False):
         if path is None:
             path = os.path.join(self.data["folder"], self.get_fname(add_epoch=add_epoch))
-        data_path = path + ".data.json"
+        if path.endswith(".model.pt"):
+            data_path = path.replace(".model.pt", ".data.json")
+        elif not path.endswith(".data.json"):
+            data_path = path + ".data.json"
+        else:
+            data_path = path
         json.dump(self.data, open(data_path, "w"), indent=4)
         return data_path
 
@@ -375,11 +380,15 @@ class CustomModel(nn.Module):
 
 
 class DUAL_MLP_MK3(CustomModel):
-    def __init__(self, *args, hidden_dims=[2560, 1280, 128], num_classes=4, dropout=0.2, **kwargs):
+    def __init__(self, *args, hidden_dims=[640, 1280, 128], num_classes=4, dropout=0.2, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.data["num_classes"] = num_classes
+        self.data["hidden_dims"] = hidden_dims
+        self.data["dropout"] = dropout
+
         self.layers["default"] = {
-            "l1": nn.Linear(self.in_shape[0], hidden_dims[0]),
+            "l1": nn.Linear(self.data["in_shape"][0], hidden_dims[0]),
             "drop1": nn.Dropout(dropout),
             "relu1": nn.ReLU(),
             "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
@@ -404,6 +413,8 @@ class DUAL_MLP_MK3(CustomModel):
 class DUAL_MLP_MK2(CustomModel):
     def __init__(self, *args, hidden_dims=[2560, 1280, 128], num_classes=2, dropout=0.2, **kwargs):
         super().__init__(*args, **kwargs)
+
+
 
         self.layers["default"] = {
             "l1": nn.Linear(self.in_shape[0], hidden_dims[0]),
