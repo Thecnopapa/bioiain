@@ -3,6 +3,7 @@ import os, json
 from sklearn.metrics import confusion_matrix
 
 from ..utilities.logging import log
+from ..utilities.parallel import *
 
 import torch
 import torch.nn as nn
@@ -230,8 +231,8 @@ class CustomModel(nn.Module):
                         preds.append(p)
                         truths.append(l)
 
-
-                        print(f"{n:4d}/{len(dataset):4d} PRED: {pred.item()}, TRUTH: {truth}, CORRECT: {pred.item() == truth}", end="\r")
+                        if not is_cluster:
+                            print(f"{n:4d}/{len(dataset):4d} PRED: {pred.item()}, TRUTH: {truth}, CORRECT: {pred.item() == truth}", end="\r")
                         if pred == truth:
                             correct += 1
                 else:
