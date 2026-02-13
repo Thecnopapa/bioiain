@@ -14,6 +14,7 @@ from .datasets import Item, Dataset
 
 from torch.utils.tensorboard import SummaryWriter
 import datetime
+import psutil
 
 
 class ModelNotFound(Exception):
@@ -122,10 +123,13 @@ class CustomModel(nn.Module):
             fname = f"{self.data['model']}_{self.data['name']}"
         return fname
 
-    def save(self, path=None, add_epoch=False):
+    def save(self, path=None, add_epoch=False, temp=False):
         if path is None:
             path = os.path.join(self.data["folder"], self.get_fname(add_epoch=add_epoch))
-        model_path = path + ".model.pt"
+        if not path.endswith(".model.pt"):
+            model_path = path + ".model.pt"
+        if temp:
+            model_path = model_path.replace(".model.pt", ".temp.model.pt")
         self.data["path"] = model_path
         torch.save(self.state_dict(), model_path)
         return self.export(path=path, add_epoch=add_epoch)
@@ -276,7 +280,7 @@ class CustomModel(nn.Module):
         if len(preds) > 0 and len(truths) > 0:
             from ..visualisation.plots import plot_confusion
             plot_confusion(preds, truths, title=f"{self}")
-        self.save()
+        self.save(temp=not re_load)
 
 
     def loss(self,
@@ -285,7 +289,6 @@ class CustomModel(nn.Module):
              criterion_name:str="mode",
              backwards:bool=True,
              zero_optims:str|None="mode") -> torch.Tensor|float:
-
         self.zero_grad(zero_optims)
 
         if criterion_name == "mode": criterions = [self.mode]

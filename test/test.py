@@ -3,6 +3,7 @@ sys.path.append('..')
 from src.bioiain.biopython import downloadPDB
 from src.bioiain import log
 from src.bioiain.utilities.parallel import *
+import asyncio
 
 log("start", "SET UP")
 
@@ -32,6 +33,10 @@ from src.bioiain.symmetries.interactions import InteractionProfile
 from src.bioiain.utilities.sequences import MSA
 
 import torch
+
+
+mlog = mem_log()
+
 DEVICE = "cpu"
 if torch.cuda.is_available():
     DEVICE = "cuda"

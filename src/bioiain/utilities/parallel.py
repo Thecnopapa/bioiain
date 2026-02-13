@@ -1,5 +1,6 @@
-import os, sys, json, asyncio, time, threading
+import os, sys, json, asyncio, time, threading, psutil
 from ..utilities.logging import log
+
 
 #print("START")
 log("header", "Importing parallel utils...")
@@ -25,6 +26,35 @@ if use_max or cpu_count <= 1:
 else:
     avail_cpus = cpu_count -1
 log(1, f"Available CPUs: {avail_cpus}/{cpu_count}, using max: {use_max}")
+
+
+def mem_usage(as_dict=False):
+    if as_dict:
+        return psutil.virtual_memory()._asdict()
+    else:
+        return psutil.virtual_memory().available * 100 / psutil.virtual_memory().total
+
+
+
+
+def _indefinite_mem_log():
+    print("MEMORY LOGGING STARTED")
+    
+    open("./mem_log.txt", "w")
+    while True:
+        with open("./mem_log.txt", "a") as f:
+            d = mem_usage(as_dict=True)
+            f.write(f"{d['percent']:2.2f}% ({d['active']/1000000000:2.2f} GB)\n")
+        time.sleep(1)
+
+
+
+def mem_log():
+    pool = ThreadPool()
+    pool.add(_indefinite_mem_log)
+    print(pool)
+    pool.start(wait=False)
+
 
 
 
