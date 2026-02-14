@@ -5,6 +5,82 @@ import time, datetime
 import math
 
 
+
+
+
+class Log(object):
+    def __init__(self):
+        self.stdout = None
+        self.stderr = None
+        self.folder = "./logs"
+        self.files = {"default": "bioiain/default.log",
+                      "debug": "bioiain/debug.log"}
+        self.logging = True
+        self.terminal = True
+
+    def __repr__(self):
+        return f"<bi.Log: default: {self.files['default']}>"
+    
+    def list(self):
+        return [l for l in self.files.values()]
+
+    def dict():
+        return self.files
+
+    def __add__(self, s):
+        pass
+
+    def __call__(self):
+        pass
+
+    def log(self):
+        pass
+
+    def error(self):
+        pass
+
+    def warning(self):
+        pass
+
+    def title(self):
+        pass
+
+    def start(self):
+        pass
+    
+    def end(self):
+        pass
+
+    def pause(self):
+        pass
+
+    def resume(self):
+        pass
+
+    def set_stdout(self, filepath):
+        pass
+
+    def set_stderr(self, filepath):
+        pass
+
+    def set_log_file(self, filepath, log_name="default"):
+        pass
+
+    def add_timestamp(self, log_name=None):
+        pass
+
+    def disable(self):
+        self.terminal = False
+        self.logging = False
+
+
+
+
+
+
+
+
+
 def log(level:int|str=1, *args, **kwargs):
     """
     Log a message and display it according to the given level if higher than environment variable "BI_VERBOSE".
