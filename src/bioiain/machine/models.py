@@ -66,7 +66,7 @@ class CustomModel(nn.Module):
 
 
     def __repr__(self):
-        return f"<bi.{self.__class__.__name__}:{self.data['name']} mode={self.mode} epoch={self.data['epoch']}>"
+        return f"<bi.{self.__class__.__name__}:{self.data['name']} loss={self.criterions['default'].__class__.__name__} mode={self.mode} epoch={self.data['epoch']}>"
 
 
     def _mount_submodels(self):
@@ -439,6 +439,9 @@ class DUAL_MLP_MK4(CustomModel):
             log(2, w)
             self.CEL = nn.MSELoss()
             self.weight = w
+
+        def __name__(self):
+            return f"bi.CustomCrossEntropyHalfHalf({self.CEL.__class__.__name__})"
 
         def __call__(self, o, item):
             true_index = item.li
