@@ -433,17 +433,30 @@ class DUAL_MLP_MK4(CustomModel):
             log(1, "Using label weights:")
 
             w = np.array(list(weights))
-            w = 1/w
+            w = w
             w = w / w.sum()
             w = torch.Tensor(w)
             log(2, w)
-            self.CEL = nn.CrossEntropyLoss(weight=w)
+            self.CEL = nn.CrossEntropyLoss()
+            self.weight = w
 
         def __call__(self, o, item):
             true_index = item.li
-            loss = self.CEL(o, item.lt)
-            if true_index < 4 == torch.max(o, dim=0)[1] < 4:
-                loss /= 2
+            true_tensor = item.lt
+            pred = torch.max(o, dim=0)[1]
+            if item.li < 5:
+                true_tensor[:5] = 0.5 
+            else:
+                true_tensor[5:] = 0.5 
+            true_tensor[item.li:item.li+1] = 1.
+
+            #print(true_tensor)
+            weighted_out = o# * self.weight
+            #print("Weighted out:", weighted_out)
+            loss = self.CEL(o, true_tensor)
+            #if true_index < 5 == torch.max(o, dim=0)[1] < 5:
+            #    loss *= 0.5
+            loss *= self.weight[pred]
             return loss
 
 

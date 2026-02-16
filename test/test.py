@@ -264,7 +264,7 @@ if "-t" in sys.argv:
                 model.step()
 
                 if not is_cluster:
-                    print(f"{n:6d}/{len(dataset):6d}: LOSS={model.running_loss['default']/model.running_loss['total']:6.4f}", end = "\r")
+                    print(f"{n:6d}/{len(dataset):6d}: LOSS={model.running_loss['default']/model.running_loss['total']:6.4f} ({loss:6.4f}) <-- o:{torch.max(out, dim=0)[1].item()} t:{item.li}", end = "\r")
 
             model.add_epoch()
             model.save()
