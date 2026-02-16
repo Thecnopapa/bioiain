@@ -21,6 +21,12 @@ import psutil
 class ModelNotFound(Exception):
     pass
 
+
+
+
+class CustomLoss(object):
+    pass
+
 class CustomModel(nn.Module):
     def __init__(self, name, in_shape, folder="./models"):
         super().__init__()
@@ -308,7 +314,10 @@ class CustomModel(nn.Module):
         losses = []
 
         for criterion in criterions:
-            if hasattr(item, "lt"):
+            if isinstance(self.criterions[criterion], CustomLoss):
+                losses.append(self.criterions[criterion](output, item))
+
+            elif hasattr(item, "lt"):
                 #print("LT", item.lt)
                 losses.append(self.criterions[criterion](output, item.lt))
             else:
@@ -402,17 +411,41 @@ class DUAL_MLP_MK4(CustomModel):
             "softmax": nn.Softmax(dim=0)
         }
 
-        #self.criterions["default"] = self.DualLoss(self)
-        log(1, "Using label weights:")
+
+
+
+
+
+        self.criterions["default"] = self.CustomCrossEntropyHalfHalf(weights)
+        #log(1, "Using label weights:")
         
-        w = np.array(list(weights))
-        w = 1-(w - w.min()) / (w - w.min()).sum()
-        w = torch.Tensor(w)
-        log(2, w)
-        self.criterions["default"] = nn.CrossEntropyLoss(weight=w)
+        #w = np.array(list(weights))
+        #w = 1-(w - w.min()) / (w - w.min()).sum()
+        #w = torch.Tensor(w)
+        #log(2, w)
+        #self.criterions["default"] = nn.CrossEntropyLoss(weight=w)
 
 
         self._mount_submodels()
+
+    class CustomCrossEntropyHalfHalf(CustomLoss):
+        def __init__(self, weights=None):
+            log(1, "Using label weights:")
+
+            w = np.array(list(weights))
+            w = 1/w
+            w = w / w.sum()
+            w = torch.Tensor(w)
+            log(2, w)
+            self.CEL = nn.CrossEntropyLoss(weight=w)
+
+        def __call__(self, o, item):
+            true_index = item.li
+            loss = self.CEL(o, item.lt)
+            if true_index < 4 == torch.max(o, dim=0)[1] < 4:
+                loss /= 2
+            return loss
+
 
 
 
