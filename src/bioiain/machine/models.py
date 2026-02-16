@@ -437,7 +437,7 @@ class DUAL_MLP_MK4(CustomModel):
             w = w / w.sum()
             w = torch.Tensor(w)
             log(2, w)
-            self.CEL = nn.CrossEntropyLoss()
+            self.CEL = nn.MSELoss()
             self.weight = w
 
         def __call__(self, o, item):
