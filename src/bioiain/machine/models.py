@@ -406,7 +406,7 @@ class DUAL_MLP_MK4(CustomModel):
         log(1, "Using label weights:")
         
         w = np.array(list(weights))
-        w = (w - w.min()) / (w - w.min()).sum()
+        w = 1-(w - w.min()) / (w - w.min()).sum()
         w = torch.Tensor(w)
         log(2, w)
         self.criterions["default"] = nn.CrossEntropyLoss(weight=w)
