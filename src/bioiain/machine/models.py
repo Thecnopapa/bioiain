@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 
 import pandas as pd
+import numpy as np
 
 from .datasets import Item, Dataset
 
@@ -376,6 +377,43 @@ class CustomModel(nn.Module):
         else:
             x = self.submodels[submodel_name](x)
         return x
+
+
+
+
+
+
+class DUAL_MLP_MK4(CustomModel):
+    def __init__(self, *args, hidden_dims=[2560, 128], num_classes=4, dropout=0.2, weights=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.data["num_classes"] = num_classes
+        self.data["hidden_dims"] = hidden_dims
+        self.data["dropout"] = dropout
+
+        self.layers["default"] = {
+            "l1": nn.Linear(self.data["in_shape"][0], hidden_dims[0]),
+            "drop1": nn.Dropout(dropout),
+            "relu1": nn.LeakyReLU(),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "drop2": nn.Dropout(dropout),
+            "relu2": nn.LeakyReLU(),
+            "l3": nn.Linear(hidden_dims[1], num_classes),
+            "softmax": nn.Softmax(dim=0)
+        }
+
+        #self.criterions["default"] = self.DualLoss(self)
+        log(1, "Using label weights:")
+        
+        w = np.array(list(weights))
+        w = (w - w.min()) / (w - w.min()).sum()
+        w = torch.Tensor(w)
+        log(2, w)
+        self.criterions["default"] = nn.CrossEntropyLoss(weight=w)
+
+
+        self._mount_submodels()
+
 
 
 

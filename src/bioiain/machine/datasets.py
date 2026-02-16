@@ -173,6 +173,9 @@ class EmbeddingDataset(Dataset):
         self.data["mapped"] = False
         self.data["label_to_index"] = {}
         self.data["index_to_label"] = {}
+        self.data["lab_count"] = {}
+
+        lab_count = {}
 
 
         if label_to_index is not None:
@@ -181,7 +184,6 @@ class EmbeddingDataset(Dataset):
         elif single_lab:
             labels = [0]
 
-
         else:
             labels = []
             for item in self:
@@ -189,10 +191,15 @@ class EmbeddingDataset(Dataset):
                 #print(label, item)
                 if label not in labels:
                     labels.append(label)
+                    lab_count[label] = 0
+                lab_count[label] += 1
 
         for n, k in enumerate(sorted(labels)):
                 self.data["label_to_index"][str(k)] = int(n)
                 self.data["index_to_label"][int(n)] = str(k)
+                if len(lab_count) > 0:
+                    self.data["lab_count"][str(k)] = int(lab_count[k])
+
 
         self.data["mapped"] = True
         return self.data["label_to_index"]

@@ -80,7 +80,7 @@ if not REBUILD:
 from src.bioiain.machine.models import *
 
 if DUAL:
-    model_class = DUAL_MLP_MK3
+    model_class = DUAL_MLP_MK4
 else:
     model_class = MLP_MK3
 
@@ -225,13 +225,16 @@ if "-t" in sys.argv:
         label_to_index = dataset.map()
     log(2, "Label map:")
     print(json.dumps(label_to_index, indent=4))
+    label_count = dataset.data["lab_count"]
+    log(2, "Label count:")
+    print(json.dumps(label_count, indent=4))
 
 
 
     run_name = f"{data_name}"
     log(1, f"Run name: {run_name}")
 
-    model = model_class(name=run_name, in_shape=(1280,), num_classes=len(label_to_index)).to(DEVICE)
+    model = model_class(name=run_name, in_shape=(1280,), num_classes=len(label_to_index), weights=label_count.values()  ).to(DEVICE)
     model.add_map(dataset)
 
     epochs = 10
