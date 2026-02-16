@@ -284,7 +284,7 @@ class CustomModel(nn.Module):
             self.data["confusion_matrix"] = cf
         if len(preds) > 0 and len(truths) > 0:
             from ..visualisation.plots import plot_confusion
-            plot_confusion(preds, truths, title=f"{self}")
+            plot_confusion(preds, truths, title=f"{self}", classes = label_to_index.keys())
         self.save(temp=not re_load)
 
 
@@ -402,6 +402,7 @@ class DUAL_MLP_MK3(CustomModel):
         }
 
         #self.criterions["default"] = self.DualLoss(self)
+        self.criterions["default"] = nn.CrossEntropyLoss()
 
         self._mount_submodels()
 

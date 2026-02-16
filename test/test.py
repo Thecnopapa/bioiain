@@ -348,7 +348,7 @@ if "-p" in sys.argv:
                     script.print(json.dumps(label_to_index, indent=4))
                 session_path = script.write_script()
                 print("Session saved at:")
-                print(session_path)
+                print("pymol", session_path)
                 #script.execute()
 
 if "-w" in sys.argv:
