@@ -259,7 +259,7 @@ class CustomModel(nn.Module):
                     if abs(l-out.item()) <= 0.05:
                         correct += 1
 
-
+        print()
         print(json.dumps(confusion, indent=4))
         try:
             self.writer.add_scalar(f"accuracy/dual/total", (correct / total) * 100, self.data["epoch"])

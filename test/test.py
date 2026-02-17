@@ -93,6 +93,14 @@ else:
     else:
         model_class = MLP_MK3
 
+log(1, f"Model class: {model_class}")
+
+LR = 0.001
+if "--lr" in sys.argv:
+    LR = float(sys.argv[sys.argv.index("--lr") + 1])
+
+log(1, f"Learning rate: {LR}")
+
 
 #Comment
 
@@ -244,7 +252,7 @@ if "-t" in sys.argv:
     run_name = f"{data_name}"
     log(1, f"Run name: {run_name}")
 
-    model = model_class(name=run_name, in_shape=(1280,), num_classes=len(label_to_index), weights=label_count  ).to(DEVICE)
+    model = model_class(name=run_name, in_shape=(1280,), num_classes=len(label_to_index), lr=LR, weights=label_count  ).to(DEVICE)
     model.add_map(dataset)
 
     epochs = 10
