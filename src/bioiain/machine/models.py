@@ -28,7 +28,7 @@ class CustomLoss(object):
     pass
 
 class CustomModel(nn.Module):
-    def __init__(self, name, in_shape, folder="./models"):
+    def __init__(self, name, in_shape, lr=0.001, folder="./models"):
         super().__init__()
         self.data = {}
         self.data["name"] = name
@@ -48,7 +48,7 @@ class CustomModel(nn.Module):
         self.optimisers = {
             "default": {
                 "class":torch.optim.Adam,
-                "kwargs":{"lr":0.001},
+                "kwargs":{"lr":lr},
             }
         }
 
@@ -399,7 +399,7 @@ class CustomModel(nn.Module):
 
 
 class DUAL_MLP_MK5(CustomModel):
-    def __init__(self, *args, hidden_dims=[1280, 128], num_classes=4, dropout=0.2, weights=None, **kwargs):
+    def __init__(self, *args, hidden_dims=[2560, 1280, 128], num_classes=4, dropout=0.2, weights=None, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.data["num_classes"] = num_classes
@@ -412,13 +412,15 @@ class DUAL_MLP_MK5(CustomModel):
             "relu1": nn.LeakyReLU(),
             "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
             "relu2": nn.LeakyReLU(),
-            "l3": nn.Linear(hidden_dims[1], hidden_dims[1]),
+            "l3": nn.Linear(hidden_dims[1], hidden_dims[0]),
             "relu3": nn.LeakyReLU(),
-            "l4": nn.Linear(hidden_dims[1], hidden_dims[1]),
+            "l4": nn.Linear(hidden_dims[0], hidden_dims[1]),
             "relu4": nn.LeakyReLU(),
-            "l5": nn.Linear(hidden_dims[1], hidden_dims[1]),
+            "l5": nn.Linear(hidden_dims[1], hidden_dims[0]),
+            "relu5": nn.LeakyReLU(),
+            "l6": nn.Linear(hidden_dims[0], hidden_dims[-1]),
             "drop2": nn.Dropout(dropout),
-            "l6": nn.Linear(hidden_dims[1], num_classes),
+            "last": nn.Linear(hidden_dims[-1], num_classes),
             "softmax": nn.Softmax(dim=0)
         }
 
