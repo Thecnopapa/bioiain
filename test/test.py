@@ -85,11 +85,11 @@ if not REBUILD:
 
 from src.bioiain.machine.models import *
 
-if "mk4" in sys.argv:
-    model_class = DUAL_MLP_MK4
+if "mk5" in sys.argv:
+    model_class = DUAL_MLP_MK5
 else:
     if DUAL:
-        model_class = DUAL_MLP_MK5
+        model_class = DUAL_MLP_MK4
     else:
         model_class = MLP_MK3
 
