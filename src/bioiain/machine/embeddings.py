@@ -58,8 +58,8 @@ class PerResidueEmbedding(Embedding):
         self.sequence = self._get_sequence()
         self.subfolder = os.path.join(self.folder, self.name)
 
-    def _get_sequence(self):
-        self.sequence = self.entity.get_sequence()
+    def _get_sequence(self, force=False):
+        self.sequence = self.entity.get_sequence(force=force)
         return self.sequence
 
 
@@ -161,7 +161,7 @@ class SaProtEmbedding(PerResidueEmbedding):
             except AssertionError as e:
                 print(self.sequence, len(self.sequence))
                 print(self.fs_tokens, len(self.fs_tokens))
-                raise e
+                raise FoldseekError("Foldseek length does not match sequence length")
 
             in_tokens = [f"{s.upper()}{fs.lower()}" for s, fs in zip(self.sequence, self.fs_tokens)]
 
