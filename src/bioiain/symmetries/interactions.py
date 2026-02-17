@@ -263,12 +263,9 @@ class InteractionProfile:
             try:
                 pos, atom = [(n, a) for n, a in enumerate(atoms) if a.resnum == i[0]][0]
             except:
-                print(atoms)
-                print(i, i[0])
-                [print(n, a, a.resnum, i ) for n, a in enumerate(atoms)][0:20]
-                print("...")
-                raise
-
+                log("warning", f"Atom at res: {i[0]} has issues")
+                continue
+ 
             if i[1] == "contact":
                 labels = labels[:pos] + "C" + labels[pos + 1:]
 

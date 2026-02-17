@@ -5,24 +5,30 @@ from src.bioiain import log
 from src.bioiain.utilities.parallel import *
 import asyncio
 
+
+log("title", "test.py")
 log("start", "SET UP")
 
 #file_folder = downloadPDB("./data", "test_list", ["5JJM", "6nwl"],
 #                          file_path="./pdb_list.txt", file_format="pdb",
 #                          overwrite=False)
-if "cath" in sys.argv:
-    file_folder = downloadPDB("./data", "cath-nonredundant-S20",
-                                           file_path="./data/cath-dataset-nonredundant-S20.list",
-                                           file_format="cif",
-                                           overwrite=False)
+if "no-download" in sys.argv:
+    file_folder = "./data/cath-nonredundant-S20"
     pdb_list = "cath"
 else:
-    file_folder = downloadPDB("./data", "receptors",
-                              file_path="./data/receptors.txt", file_format="cif",
-                              overwrite=False)
-    pdb_list="rcps"
+    if "cath" in sys.argv:
+        file_folder = downloadPDB("./data", "cath-nonredundant-S20",
+                                               file_path="./data/cath-dataset-nonredundant-S20.list",
+                                               file_format="cif",
+                                               overwrite=False)
+        pdb_list = "cath"
+    else:
+        file_folder = downloadPDB("./data", "receptors",
+                                  file_path="./data/receptors.txt", file_format="cif",
+                                  overwrite=False)
+        pdb_list="rcps"
 
-log("header", "File folder:", file_folder)
+    log("header", "File folder:", file_folder)
 
 
 from src.bioiain.symmetries.elements import Monomer
@@ -79,10 +85,13 @@ if not REBUILD:
 
 from src.bioiain.machine.models import *
 
-if DUAL:
+if "mk4" in sys.argv:
     model_class = DUAL_MLP_MK4
 else:
-    model_class = MLP_MK3
+    if DUAL:
+        model_class = DUAL_MLP_MK5
+    else:
+        model_class = MLP_MK3
 
 
 #Comment
@@ -209,6 +218,7 @@ if "-l" in sys.argv or "-e" in sys.argv:
 
 
 if "-t" in sys.argv:
+    log("title", "TRAINING")
     log("start", "Training")
 
     log("header", f"Dataset: {dataset}")
@@ -246,11 +256,13 @@ if "-t" in sys.argv:
     model.add_epoch()
     for epoch in range(epochs):
         epoch = epoch +1
+
         log("header", "EPOCH:", epoch)
         dataset.split()
         dataset.train()
         try:
             for n, item in enumerate(dataset):
+                print(f"\033]0;TRAIN {epoch}/{epochs} {(n/len(dataset))*100:3.0f}%\a", end="\r")
                 #print("tensor:", item.t)
                 #print("label:", item.l)
 
@@ -281,7 +293,7 @@ if "-t" in sys.argv:
 if "-p" in sys.argv:
     from src.bioiain.symmetries import PredictedMonomerContacts
     from src.bioiain.visualisation import PymolScript
-
+    log("title", "PREDICTING...")
     prediction_folder = "./predictions"
 
     model_path = "./models/DUAL_MLP_MK3_saprot_interactions_rcps_T10_DUAL_CLASSES.temp.data.json"
@@ -361,6 +373,7 @@ if "-w" in sys.argv:
     if "--monomer" in sys.argv:
         target = sys.argv[sys.argv.index("--monomer") + 1]
         assert target in dataset
+        log("title", "VISUALISATION")
         log("start", "VISUALISATION")
         log("header", f"Displaying monomer: {target}")
 
@@ -455,6 +468,7 @@ if "-w" in sys.argv:
 
 
 log("end", "DONE")
+log("title", "DONE")
 
 end_pools()
 sys.exit()

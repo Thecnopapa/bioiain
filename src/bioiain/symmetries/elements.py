@@ -140,12 +140,12 @@ class CrystalElement(Chain):
 
 
 
-            for atoms in displaced_element.get_atoms():
+            for dn, atoms in enumerate(displaced_element.get_atoms()):
 
                 if not atoms.is_disordered() > 0:
                     atoms = [atoms]
 
-                for dn, atom in enumerate(atoms):
+                for atom in atoms:
                     if n != 0:
                         deltaX = ((atom.coord[0] - frac_element_com[0]) % 1) - 0.5
                         deltaY = ((atom.coord[1] - frac_element_com[1]) % 1) - 0.5

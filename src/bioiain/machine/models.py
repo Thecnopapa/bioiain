@@ -198,6 +198,8 @@ class CustomModel(nn.Module):
             confusion = {k: {l:0 for l in label_to_index.keys()} for k in label_to_index.keys()}
 
             for n, item in enumerate(dataset):
+                if not is_cluster:
+                    print(f"\033]0;Testing {(total/len(dataset))*100:3.0f}%\a", end="\r")
                 l = item.l
 
                 if n == 0:
@@ -388,6 +390,83 @@ class CustomModel(nn.Module):
         else:
             x = self.submodels[submodel_name](x)
         return x
+
+
+
+
+
+
+
+
+class DUAL_MLP_MK5(CustomModel):
+    def __init__(self, *args, hidden_dims=[1280, 128], num_classes=4, dropout=0.2, weights=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.data["num_classes"] = num_classes
+        self.data["hidden_dims"] = hidden_dims
+        self.data["dropout"] = dropout
+
+        self.layers["default"] = {
+            "l1": nn.Linear(self.data["in_shape"][0], hidden_dims[0]),
+            "drop1": nn.Dropout(dropout),
+            "relu1": nn.LeakyReLU(),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "relu2": nn.LeakyReLU(),
+            "l3": nn.Linear(hidden_dims[1], hidden_dims[1]),
+            "relu3": nn.LeakyReLU(),
+            "l4": nn.Linear(hidden_dims[1], hidden_dims[1]),
+            "relu4": nn.LeakyReLU(),
+            "l5": nn.Linear(hidden_dims[1], hidden_dims[1]),
+            "drop2": nn.Dropout(dropout),
+            "l6": nn.Linear(hidden_dims[1], num_classes),
+            "softmax": nn.Softmax(dim=0)
+        }
+
+
+
+        self.criterions["default"] = self.CustomHalfHalf(weights)
+        self.data["weights"] = list([w.item() for w in self.criterions["default"].weight])
+
+        self._mount_submodels()
+
+
+
+    class CustomHalfHalf(CustomLoss):
+        def __init__(self, weights=None):
+            log(1, "Using label weights:")
+
+            if type(weights) is dict:
+                weights = weights.values()
+            w = np.array(list(weights))
+            w = w
+            w = w / w.sum()
+            w = torch.Tensor(w)
+            log(2, w)
+            self.CEL = nn.MSELoss()
+            self.weight = w
+
+        def __call__(self, o, item):
+            true_index = item.li
+            true_tensor = item.lt
+            pred = torch.max(o, dim=0)[1]
+            if item.li < 5:
+                true_tensor[:5] = 0.5 
+            else:
+                true_tensor[5:] = 0.5 
+            true_tensor[item.li:item.li+1] = 1.
+
+            #print(true_tensor)
+            weighted_out = o# * self.weight
+            #print("Weighted out:", weighted_out)
+            loss = self.CEL(o, true_tensor)
+            #if true_index < 5 == torch.max(o, dim=0)[1] < 5:
+            #    loss *= 0.5
+            loss *= self.weight[pred]
+            return loss
+
+
+
+
 
 
 
