@@ -12,7 +12,7 @@ log("start", "SET UP")
 #                          overwrite=False)
 if "cath" in sys.argv:
     file_folder = downloadPDB("./data", "cath-nonredundant-S20",
-                                           file_path=".data/cath-dataset-nonredundant-S20.list",
+                                           file_path="./data/cath-dataset-nonredundant-S20.list",
                                            file_format="cif",
                                            overwrite=False)
     pdb_list = "cath"
