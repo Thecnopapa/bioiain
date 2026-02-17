@@ -262,7 +262,8 @@ if "-t" in sys.argv:
         dataset.train()
         try:
             for n, item in enumerate(dataset):
-                print(f"\033]0;TRAIN {epoch}/{epochs} {(n/len(dataset))*100:3.0f}%\a", end="\r")
+                if not is_cluster:
+                    print(f"\033]0;TRAIN {epoch}/{epochs} {(n/len(dataset))*100:3.0f}%\a", end="\r")
                 #print("tensor:", item.t)
                 #print("label:", item.l)
 
