@@ -111,5 +111,6 @@ def plot_confusion(preds, labels, title, score=None, classes=None):
         plt.title(title)
         os.makedirs("figs", exist_ok=True)
         plt.savefig(f"figs/{title}.confusion.png")
+        plt.close()
     except Exception as e:
         print(e)

@@ -166,6 +166,8 @@ class CustomModel(nn.Module):
     def add_map(self, dataset):
         self.data["label_to_index"] = dataset.data["label_to_index"]
         self.data["index_to_label"] = dataset.data["index_to_label"]
+        if dataset.data.get("lab_count", False):
+            self.data["lab_count"] = dataset.data["lab_count"]
 
         return self.data["label_to_index"], dataset.data["index_to_label"]
 
@@ -416,22 +418,19 @@ class DUAL_MLP_MK4(CustomModel):
 
 
 
-        self.criterions["default"] = self.CustomCrossEntropyHalfHalf(weights)
-        #log(1, "Using label weights:")
-        
-        #w = np.array(list(weights))
-        #w = 1-(w - w.min()) / (w - w.min()).sum()
-        #w = torch.Tensor(w)
-        #log(2, w)
-        #self.criterions["default"] = nn.CrossEntropyLoss(weight=w)
-
+        self.criterions["default"] = self.CustomHalfHalf(weights)
+        self.data["weights"] = list([w.item() for w in self.criterions["default"].weight])
 
         self._mount_submodels()
 
-    class CustomCrossEntropyHalfHalf(CustomLoss):
+
+
+    class CustomHalfHalf(CustomLoss):
         def __init__(self, weights=None):
             log(1, "Using label weights:")
 
+            if type(weights) is dict:
+                weights = weights.values()
             w = np.array(list(weights))
             w = w
             w = w / w.sum()
@@ -439,9 +438,6 @@ class DUAL_MLP_MK4(CustomModel):
             log(2, w)
             self.CEL = nn.MSELoss()
             self.weight = w
-
-        def __name__(self):
-            return f"bi.CustomCrossEntropyHalfHalf({self.CEL.__class__.__name__})"
 
         def __call__(self, o, item):
             true_index = item.li

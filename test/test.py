@@ -234,7 +234,7 @@ if "-t" in sys.argv:
     run_name = f"{data_name}"
     log(1, f"Run name: {run_name}")
 
-    model = model_class(name=run_name, in_shape=(1280,), num_classes=len(label_to_index), weights=label_count.values()  ).to(DEVICE)
+    model = model_class(name=run_name, in_shape=(1280,), num_classes=len(label_to_index), weights=label_count  ).to(DEVICE)
     model.add_map(dataset)
 
     epochs = 10
@@ -308,7 +308,8 @@ if "-p" in sys.argv:
                 embedding = SaProtEmbedding(entity=monomer, folder=prediction_folder, force=True)
                 from src.bioiain.machine.models import *
                 data = json.load(open(model_path))
-                model = model_class(name="interactions", in_shape=data["in_shape"], num_classes=data["num_classes"])
+                weights = data.get("weights", [])
+                model = model_class(name="interactions", in_shape=data["in_shape"], num_classes=data["num_classes"], weights=weights)
                 del data
                 model.load(model_path)
                 print(model)
@@ -344,7 +345,7 @@ if "-p" in sys.argv:
 
                 interaction = PredictedMonomerContacts(monomer, full_pred, label_to_index)
                 pred_path = interaction.save_structure(prediction_folder)
-                script = PymolScript(name=f"{monomer.get_name()}_prediction_pml_session", folder=prediction_folder)
+                script = PymolScript(name=f"{monomer.get_name()}_{chain.id}_prediction_pml_session", folder=prediction_folder)
                 script.load(pred_path, monomer.get_name())
                 script.spectrum(monomer.get_name())
                 if label_to_index is not None:
