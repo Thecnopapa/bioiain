@@ -3,6 +3,7 @@ import os, json, math
 from ..visualisation import pymol, PymolScript
 
 from .operations import coord_operation_entity, entity_to_frac, entity_to_orth
+from ..utilities.logging import log
 
 
 
