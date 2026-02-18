@@ -287,9 +287,10 @@ if "-t" in sys.argv:
                 if not is_cluster:
                     print(f"{n:6d}/{len(dataset):6d}: LOSS={model.running_loss['default']/model.running_loss['total']:6.4f} ({loss:6.4f}) <-- o:{torch.max(out, dim=0)[1].item()} t:{item.li}", end = "\r")
 
-            model.add_epoch()
             model.save()
             model.test(dataset)
+            model.add_epoch()
+
         except KeyboardInterrupt:
             print("\nStopping model...")
             try:
@@ -379,9 +380,22 @@ if "-p" in sys.argv:
 if "-w" in sys.argv:
     from src.bioiain.symmetries import PredictedMonomerContacts
     from src.bioiain.visualisation import PymolScript
+
+    LABNAME = "dual_class_label"
+    if "--label" in sys.argv:
+        LABNAME = sys.argv[sys.argv.index("--label") + 1]
+    
+    dataset.use_label(LABNAME)
+    dataset.map()
+
+
     if "--monomer" in sys.argv:
         target = sys.argv[sys.argv.index("--monomer") + 1]
-        assert target in dataset
+        try:
+            assert target in dataset
+        except:
+            [print(t) for t in dataset.embeddings.keys()]
+            raise
         log("title", "VISUALISATION")
         log("start", "VISUALISATION")
         log("header", f"Displaying monomer: {target}")
@@ -389,7 +403,7 @@ if "-w" in sys.argv:
         embedding = dataset.embeddings[target]
         print(json.dumps(embedding, indent=4))
 
-        label_path = embedding["rel_label"]
+        label_path = embedding[LABNAME]
         with open(label_path, "r") as f:
             label = f.read().split(",")
 
@@ -397,7 +411,10 @@ if "-w" in sys.argv:
 
 
         log(1, f"label: {label}")
-        interaction = PredictedMonomerContacts(monomer, label[1:-1])
+        print(dataset.data["label_to_index"])
+        if len(label) == 1:
+            label = label[0]
+        interaction = PredictedMonomerContacts(monomer, label, label_to_index=dataset.data["label_to_index"])
         view_path = interaction.save_structure("/tmp/bioiain/visualisations", extra_name="_visualised_monomer_contacts")
         log(1, interaction)
 
@@ -408,7 +425,7 @@ if "-w" in sys.argv:
 
         session_path = script.write_script()
         print("Session saved at:")
-        print(session_path)
+        print("pymol", session_path)
 
 
 
