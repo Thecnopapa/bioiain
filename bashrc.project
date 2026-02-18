@@ -43,7 +43,7 @@ EC="\[\e[0m\]"
 if [[ "$(basename -- "$0")" == "$SCRIPT_NAME" ]]; then
         echo "* Executing script"
         FOLDER_PATH=$(dirname $( realpath $0 ))
-        echo "* Panson folder at $FOLDER_PATH"
+        echo "* Project folder at $FOLDER_PATH"
 else
         echo "* Sourcing script"
         echo "* Project folder at $FOLDER_PATH"
