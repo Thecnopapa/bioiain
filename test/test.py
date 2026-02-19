@@ -117,8 +117,13 @@ if "-l" in sys.argv or "-e" in sys.argv:
                 if file[:4] not in ONLY:
                     continue
 
+            try:
+                mon_data = get_monomers(file, file_folder, only_ids=True, force=FORCE, contact_threshold=15)
+            except StructureRecoverException:
+                print("retrying")
+                mon_data = get_monomers(file, file_folder, only_ids=True, force=True, contact_threshold=15)
+                monomer = Monomer.recover(data_path=os.path.join(dataset.data["export_folder"], monomer_id.split("_")[0], "monomers", monomer_id))
 
-            mon_data = get_monomers(file, file_folder, only_ids=True, force=FORCE, contact_threshold=15)
             if mon_data is None:
                 log("Warning", f"{file} has no monomers")
                 continue

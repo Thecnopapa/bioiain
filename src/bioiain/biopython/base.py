@@ -7,6 +7,7 @@ import json
 
 
 from ..utilities.logging import log
+from ..utilities.exceptions import *
 from typing_extensions import Self, LiteralString
 
 
@@ -213,7 +214,8 @@ class BiopythonOverlayClass:
                 self = self.cast(child)
             else:
                 print(struc)
-                raise Exception("Failed to load structure")
+                print(struc_path)
+                raise StructureRecoverException("Failed to load structure")
 
         #print(self)
         r = self._recover(data_path=data_path)

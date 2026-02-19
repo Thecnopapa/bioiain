@@ -14,3 +14,10 @@ class MisslabellingException(SequenceMissmatchException):
 
 class DeletedIndex(Exception):
 	pass
+
+
+class StructureLoadException(Exception):
+	pass
+
+class StructureRecoverException(StructureLoadException):
+	pass
