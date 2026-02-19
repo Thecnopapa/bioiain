@@ -97,7 +97,8 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
         for atom in atoms:
             if atom.disordered:
                 for a in fixed_atoms:
-                    if a.id == atom.id:
+                    if a.resseq == atom.resseq and a.name == atom.name:
+                        assert a.disordered
                         a.doppelgangers.append(atom)
                         a.favourite = True
                         atom.favourite = False

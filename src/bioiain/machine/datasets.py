@@ -3,6 +3,7 @@ from copy import deepcopy
 
 
 from ..utilities.logging import log
+from ..utilities.exceptions import *
 from typing import Any
 
 from torch import Tensor
@@ -73,7 +74,8 @@ class EmbeddingDataset(Dataset):
             fname = fname,
             path = path,
             mapped = False,
-            label_key = "label_path"
+            label_key = "label_path",
+            deleted_indexes = 0,
         )
         self.mode="normal"
         os.makedirs(self.data["folder"], exist_ok=True)
@@ -85,11 +87,15 @@ class EmbeddingDataset(Dataset):
         }
 
     def __repr__(self):
-        return f"<bi.{self.__class__.__name__}:{self.data["name"]} N={len(self)} mode={self.mode}>"
+        if self.data["deleted_indexes"] > 0:
+            return f"<bi.{self.__class__.__name__}:{self.data["name"]} N={len(self)} mode={self.mode} deleted={self.data['deleted']}>"
+        else:
+            return f"<bi.{self.__class__.__name__}:{self.data["name"]} N={len(self)} mode={self.mode}>"
 
 
     def __len__(self):
-        if self.mode == "normal": return self.data["length"]
+        if self.mode == "normal": 
+            return self.data["length"] - self.data["deleted_indexes"]
         elif self.mode == "test": return self.splitted["test_length"]
         elif self.mode == "train": return self.splitted["train_length"]
         else: raise Exception(f"Unknown mode: {self.mode}")
@@ -107,7 +113,10 @@ class EmbeddingDataset(Dataset):
     def __next__(self):
         if self.i >= len(self):
             raise StopIteration
-        r = self.get(self.i)
+        try:
+            r = self.get(self.i)
+        except DeletedIndex:
+            r = self.__next__()
         self.i += 1
         return r
 
@@ -129,7 +138,7 @@ class EmbeddingDataset(Dataset):
         import random, math
         log(1, f"Splitting dataset...")
         if mode == "embeddings" or True:
-            data = list(self.embeddings.items())
+            data = [e for e in self.embeddings.items() if not e.get("deleted", False)]
 
             n_keys = math.floor(len(data)*test_ratio)
             random.shuffle(data)
@@ -234,6 +243,14 @@ class EmbeddingDataset(Dataset):
 
         return key
 
+
+    def remove(self, key):
+        self.data["deleted_indexes"] += self.embeddings[key]["end"] - self.embeddings[key]["start"]
+        self.embeddings[key]["deleted"] = True
+
+
+
+
     def _add_to_fasta(self, key, sequence):
         if "fasta_path" in self.data:
             fasta_path = self.data["fasta_path"]
@@ -248,6 +265,7 @@ class EmbeddingDataset(Dataset):
                 pass
             f.write(f"> {key}\n")
             f.write(f"{sequence}\n\n")
+
 
 
 
@@ -273,12 +291,15 @@ class EmbeddingDataset(Dataset):
         else: raise Exception("Not implemented split method:", self.mode)
 
 
-
         for e in emb_list.values():
             #print(e)
             #print(key < e["start"], key >= e["end"])
             if key < e["start"]: continue
             if key >= e["end"]: continue
+
+            if e.get("deleted", False):
+                raise DeletedIndex()
+
             iter_dim = e["iter_dim"]
 
             if embedding:

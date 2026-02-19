@@ -4,7 +4,7 @@ from ..visualisation import pymol, PymolScript
 
 from .operations import coord_operation_entity, entity_to_frac, entity_to_orth
 from ..utilities.logging import log
-
+from ..utilities.exceptions import SequenceMissmatchException
 
 
 
@@ -76,8 +76,8 @@ class InteractionProfile:
             assert len(resnums) == len(new_labs) == len(labs)
         except:
             #print(resnums, "\n", new_labs, "\n", labs)
-            #print(len(resnums) , len(new_labs) , len(labs))
-            raise
+            print(len(resnums) , len(new_labs) , len(labs))
+            raise SequenceMissmatchException()
 
         if use_classes:
             assert len(new_labs) == len(discrete_labs)

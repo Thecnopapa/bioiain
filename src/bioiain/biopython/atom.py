@@ -48,15 +48,15 @@ class BIAtom(BiopythonOverlayClass):
                 self.unused[k] = v
         self.misc = {}
         self._pdbx_PDB_ins_code = data["pdbx_PDB_ins_code"]
-        self._read_id = int(data["id"])
+        self.atomnum = int(data["id"])
         self.type = data["group_PDB"]
         self.element = data["type_symbol"]
-        self.atomnum = data["label_seq_id"]
-        if self.atomnum is not None: self.atomnum = int(self.atomnum)
+        self.resseq = data["label_seq_id"] # Auto
+        if self.resseq is not None: self.resseq = int(self.resseq)
         self.name = data["label_atom_id"]
         self.resname = data["label_comp_id"]
         self.chain = data["auth_asym_id"]
-        self.resnum = data["auth_seq_id"]
+        self.resnum = data["auth_seq_id"] # Given
         if self.resnum is not None: self.resnum = int(self.resnum)
         self.id = (self.name,  self.resnum, self.chain)
         self.x = float(data["Cartn_x"])
@@ -160,9 +160,9 @@ class BIAtom(BiopythonOverlayClass):
 
         data = {
             "group_PDB": f"{self.type:6s}",
-            "id": f"{self._read_id:4d}",
+            "id": f"{self.atomnum:4d}",
             "label_alt_id": f"{self.alt_id}",
-            "label_seq_id": f"{self.atomnum:4d}",
+            "label_seq_id": f"{self.resseq:4d}",
             "type_symbol": f"{self.element:3s}",
             "label_atom_id": f"{self.name:3s}",
             "label_comp_id": f"{self.resname:4s}",
