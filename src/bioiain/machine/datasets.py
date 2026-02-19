@@ -138,7 +138,7 @@ class EmbeddingDataset(Dataset):
         import random, math
         log(1, f"Splitting dataset...")
         if mode == "embeddings" or True:
-            data = [e for e in self.embeddings.items() if not e.get("deleted", False)]
+            data = [e for e in self.embeddings.items() if not e[1].get("deleted", False)]
 
             n_keys = math.floor(len(data)*test_ratio)
             random.shuffle(data)
