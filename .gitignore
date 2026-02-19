@@ -220,6 +220,9 @@ test/datasets
 test/predictions
 test/runs
 test/models
+test/.models
+
+test/figs
 
 
 
