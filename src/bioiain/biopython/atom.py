@@ -22,8 +22,8 @@ class BIAtom(BiopythonOverlayClass):
             data = data[0]
         for k, v in data.items():
             if v == "." or v == "?":
-                print(k, "is empty for:", data["id"])
-                print(data)
+                #print(k, "is empty for:", data["id"])
+                #print(data)
                 data[k] = None
 
         essential_labs = [
