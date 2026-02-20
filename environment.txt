@@ -34,7 +34,7 @@ tensorboard >= 2.20.0
 
 
 # Dev ##################################################################
-setuptools >= 80 <= 81
+setuptools >= 80,<= 81
 pdoc3
 twine
 build
