@@ -186,10 +186,12 @@ class BIAtom(BiopythonOverlayClass):
         if include_unused or include_misc:
             for k, v in self.unused.items():
                 assert k not in data.keys()
+                if v is None: v = "."
                 data[k] = f"{v}"
 
         if include_misc:
             for k, v in self.misc.items():
+                if v is None: v = "."
                 data[k] = f"{v}"
 
 

@@ -112,9 +112,9 @@ class SaProtEmbedding(PerResidueEmbedding):
             except:
                 if try_again:
                     self._run_foldseek(out_path)
-                print(out_path, ":")
+                print("foldseek path: open", out_path)
                 print(f.read())
-                raise FoldseekError("No Foldseek data for:", self.entity)
+                raise FoldseekError(f"No Foldseek data for: {self.entity}")
             try:
                 seq.strip() == self.sequence
             except AssertionError:
