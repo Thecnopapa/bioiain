@@ -156,6 +156,8 @@ if "-l" in sys.argv or "-e" in sys.argv:
 
                 except FoldseekError as e:
                     log("warning", e)
+                    mon_data = get_monomers(file, file_folder, only_ids=True, force=True, contact_threshold=15)
+
                     continue
                 except Exception as e:
                     log("Error", f"Exception occurred processing: {monomer_id}:\n", e)
@@ -397,7 +399,7 @@ if "-w" in sys.argv:
     LABNAME = "dual_class_label"
     if "--label" in sys.argv:
         LABNAME = sys.argv[sys.argv.index("--label") + 1]
-    
+
     dataset.use_label(LABNAME)
     dataset.map()
 
