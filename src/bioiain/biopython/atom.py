@@ -21,7 +21,9 @@ class BIAtom(BiopythonOverlayClass):
         if len(data) == 1:
             data = data[0]
         for k, v in data.items():
-            if v == ".":
+            if v == "." or v == "?":
+                print(k, "is empty for:", data["id"])
+                print(data)
                 data[k] = None
 
         essential_labs = [
@@ -47,17 +49,22 @@ class BIAtom(BiopythonOverlayClass):
             if not (k  in essential_labs):
                 self.unused[k] = v
         self.misc = {}
-        self._pdbx_PDB_ins_code = data["pdbx_PDB_ins_code"]
+
+        #ATOM
         self.atomnum = int(data["id"])
         self.type = data["group_PDB"]
         self.element = data["type_symbol"]
+        self.name = data["label_atom_id"]
+        #RES
+        self.resname = data["label_comp_id"]
         self.resseq = data["label_seq_id"] # Auto
         if self.resseq is not None: self.resseq = int(self.resseq)
-        self.name = data["label_atom_id"]
-        self.resname = data["label_comp_id"]
-        self.chain = data["auth_asym_id"]
         self.resnum = data["auth_seq_id"] # Given
         if self.resnum is not None: self.resnum = int(self.resnum)
+        #CHAIN
+        self.chain = data["auth_asym_id"]
+
+        #PROPERTIES
         self.id = (self.name,  self.resnum, self.chain)
         self.x = float(data["Cartn_x"])
         self.y = float(data["Cartn_y"])
@@ -66,6 +73,7 @@ class BIAtom(BiopythonOverlayClass):
         self.b = float(data["B_iso_or_equiv"])
         self.coord = (self.x, self.y, self.z)
 
+        #DISORDER
         if "label_alt_id" not in data:
             data["label_alt_id"] = "."
         self.alt_id = data["label_alt_id"]

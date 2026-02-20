@@ -49,7 +49,7 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
 
 
         if force:
-            print("Reading atoms from CIF")
+            print("Reading atoms from CIF:",self.paths["self"])
             atoms = read_mmcif(self.paths["self"], subset=["_atom_site"])("_atom_site")
             atoms = [BIAtom(a) for a in atoms]
 
@@ -98,7 +98,17 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
             if atom.disordered:
                 for a in fixed_atoms:
                     if a.resseq == atom.resseq and a.name == atom.name:
-                        assert a.disordered
+                        if a.resseq is None and not (a.resnum == atom.resnum):
+                            continue
+                        try:
+                            assert a.disordered
+                        except:
+                            print(">>>")
+                            print(a, a.resseq, a.resnum)
+                            print("###")
+                            print(atom, atom.resseq, atom.resnum)
+                            print("<<<")
+                            raise
                         a.doppelgangers.append(atom)
                         a.favourite = True
                         atom.favourite = False
