@@ -315,7 +315,7 @@ class CustomModel(nn.Module):
         if len(preds) > 0 and len(truths) > 0:
             try:
                 from ..visualisation.plots import plot_confusion
-                cm, confusion_path = plot_confusion(preds, truths, title=f"{self}", classes = label_to_index.keys())
+                _, confusion_path = plot_confusion(preds, truths, title=f"{self}", classes = label_to_index.keys())
 
                 print(type(cm))
                 im = PIL.Image.open(confusion_path)
