@@ -1,8 +1,8 @@
-import os, json
+import os, json, platform
 
 from sklearn.metrics import confusion_matrix
 
-from ..utilities.logging import log
+from ..utilities.logging import *
 from ..utilities.parallel import *
 
 import torch
@@ -88,6 +88,15 @@ class CustomModel(nn.Module):
         self.running_loss["total"] = 0
         for c in self.running_loss.keys():
             self.running_loss[c] = 0
+
+    def send_run(self, *args, **kwargs):
+        if self.writer is not None:
+            folder = platform.node()
+            run = writer.name
+            file = writer.path
+            return send_tensorboard_run(*args, folder=folder, run=run, file=file, **kwargs)
+
+
 
     def write_loss(self):
         for c, rl in self.running_loss.items():

@@ -3,6 +3,7 @@ import os, sys, shutil
 import warnings
 import time, datetime
 import math
+import requests
 
 
 
@@ -228,14 +229,21 @@ def resume_logging():
 
 
 
-def send_tensorborad_run(host, folder, run, file):
-    curl - X
-    PUT
-    https: // iainvisa.com / runs / -H
-    "folder:garnet" - H
-    "run:test_run" - H
-    "fname:test.event" - -data - binary
-    "@/home/iain/desktop/ava/events.out.tfevents.Adam-CustomHalfHalf-2026-02-20" - H
-    "key:iamthesafestkey66"
+def send_tensorboard_run(host, folder, run, file, key, protocol="https"):
 
-    pass
+    url = f"{protocol}://{host}/runs/"
+    fname = os.path.basename(file)
+    
+    with open(file, "rb") as f:
+
+        resp = requests.put(
+                url,
+                headers={
+                    "key":key,
+                    "folder":folder,
+                    "run":run,
+                    "fname":fname
+                },
+                data=f.read()
+                )
+    return resp
