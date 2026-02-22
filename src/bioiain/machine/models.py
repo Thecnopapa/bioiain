@@ -100,6 +100,7 @@ class CustomModel(nn.Module):
                 return send_tensorboard_run(*args, folder=folder, run=run, file=file, **kwargs)
             except Exception as e:
                 log("warning", "Error uploading run:", e)
+                raise
 
 
 
