@@ -40,6 +40,8 @@ from src.bioiain.symmetries.interactions import InteractionProfile
 from src.bioiain.utilities.sequences import MSA
 
 import torch
+torch.set_num_threads(cpu_count)
+
 
 
 #mlog = mem_log()

@@ -1,13 +1,17 @@
-import os, sys, json, asyncio, time, threading, psutil, ctypes, contextvars
+import os, sys, json, asyncio, time, threading, ctypes, psutil
 from ..utilities.logging import log
 
 
 #print("START")
 log("header", "Importing parallel utils...")
-cpu_count = os.cpu_count()
+cpu_count = psutil.cpu_count(logical=False)
+logical_cpu = psutil.cpu_count(logical=True)
 gpu_count = 0
 is_cluster=False
 use_max = False
+use_logical = False
+if use_logical:
+    cpu_count = logical_cpu
 if os.environ.get("SLURM_JOB_ID", None) is not None:
     log(1, "SLURM manager detected, maximizing CPUS...")
     #for k, v  in os.environ.items():
@@ -25,7 +29,7 @@ if use_max or cpu_count <= 1:
     avail_cpus = cpu_count
 else:
     avail_cpus = cpu_count -1
-log(1, f"Available CPUs: {avail_cpus}/{cpu_count}, using max: {use_max}")
+log(1, f"Available CPUs: {avail_cpus}/{cpu_count}, using max: {use_max}, using_logical: {use_logical}")
 
 
 pools = []
@@ -41,7 +45,7 @@ def mem_usage(as_dict=False):
 
 def _indefinite_mem_log():
     print("MEMORY LOGGING STARTED")
-    
+
     open("./mem_log.txt", "w")
     while True:
         with open("./mem_log.txt", "a") as f:
@@ -327,14 +331,14 @@ class ThreadPool(object):
         errors = 0
         for k, t in running_threads.items():
             t["thread"].join()
-            
+
             self.returns[t["name"]] = t["ret"]
             if t["thread"].error:
                 t["status"] = "error"
                 errors += 1
             else:
                 t["status"] = "done"
-                of += 1
+                ok += 1
         log("header", f"Threadpool: Finished {ok + errors} tasks ({errors} errors), returning:")
         [log(1, f"{k}:", r) for k, r in self.returns.items()]
         pools.remove(self)
