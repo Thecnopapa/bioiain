@@ -317,7 +317,6 @@ class CustomModel(nn.Module):
                 from ..visualisation.plots import plot_confusion
                 _, confusion_path = plot_confusion(preds, truths, title=f"{self}", classes = label_to_index.keys())
 
-                print(type(cm))
                 im = PIL.Image.open(confusion_path)
                 im = torchvision.transforms.v2.functional.pil_to_tensor(im)
                 self.writer.add_image(f"confusion", im, self.data["epoch"])
