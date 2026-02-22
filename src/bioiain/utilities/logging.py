@@ -229,10 +229,11 @@ def resume_logging():
 
 
 
-def send_tensorboard_run(host, folder, run, file, key, protocol="https"):
+def send_tensorboard_run(host, folder, run, file, key, epoch=0, protocol="https"):
 
     url = f"{protocol}://{host}/runs/"
     fname = os.path.basename(file)
+    fname = fname.replace(".0", f".{epoch}")
     log("header", "Uploading run to:", url)
 
     with open(file, "rb") as f:

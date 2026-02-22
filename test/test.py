@@ -304,7 +304,7 @@ if "-t" in sys.argv:
 
             model.save()
             model.test(dataset)
-            model.send_run(host="iainvisa.com", key=os.environ.get("IAINVISA_FILE_KEY"))
+            model.send_run(host="iainvisa.com", key=os.environ.get("IAINVISA_FILE_KEY"), epoch=epoch)
             model.add_epoch()
 
         except KeyboardInterrupt:
