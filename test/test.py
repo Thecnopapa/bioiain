@@ -304,11 +304,16 @@ if "-t" in sys.argv:
 
             model.save()
             model.test(dataset)
+            model.send_run(host="iainvisa.com", key=os.environ.get("IAINVISA_FILE_KEY"))
             model.add_epoch()
 
         except KeyboardInterrupt:
             print("\nStopping model...")
             try:
+                #print(os.environ)
+                #print("KEY:", os.getenv("IAINVISA_FILE_KEY"))
+                #model.send_run(host="iainvisa.com", key=os.environ.get("IAINVISA_FILE_KEY"))
+                #print(model.send_run(host="127.0.0.1:5000", key=os.getenv("IAINVISA_FILE_KEY"), protocol="http").__dict__)
                 model.test(dataset, re_load=False)
             except ModelNotFound as e:
                 print(e)

@@ -233,12 +233,14 @@ def send_tensorboard_run(host, folder, run, file, key, protocol="https"):
 
     url = f"{protocol}://{host}/runs/"
     fname = os.path.basename(file)
-    
+    log("header", "Uploading run to:", url)
+
     with open(file, "rb") as f:
 
         resp = requests.put(
                 url,
                 headers={
+                    "Content-Type": "application/x-www-form-urlencoded",
                     "key":key,
                     "folder":folder,
                     "run":run,
@@ -246,4 +248,5 @@ def send_tensorboard_run(host, folder, run, file, key, protocol="https"):
                 },
                 data=f.read()
                 )
+        print(resp.text)
     return resp

@@ -91,10 +91,16 @@ class CustomModel(nn.Module):
 
     def send_run(self, *args, **kwargs):
         if self.writer is not None:
-            folder = platform.node()
-            run = writer.name
-            file = writer.path
-            return send_tensorboard_run(*args, folder=folder, run=run, file=file, **kwargs)
+            try:
+                folder = platform.node()
+                #print(self.writer.__dict__)
+                run = self.writer.log_dir
+                print(run)
+                file = os.path.join(run, os.listdir(run)[-1])
+                return send_tensorboard_run(*args, folder=folder, run=run, file=file, **kwargs)
+            except Exception as e:
+                log("warning", "Error uploading run:", e)
+
 
 
 
@@ -461,9 +467,9 @@ class DUAL_MLP_MK5(CustomModel):
             true_tensor = item.lt
             pred = torch.max(o, dim=0)[1]
             if item.li < 5:
-                true_tensor[:5] = 0.5 
+                true_tensor[:5] = 0.5
             else:
-                true_tensor[5:] = 0.5 
+                true_tensor[5:] = 0.5
             true_tensor[item.li:item.li+1] = 1.
 
             #print(true_tensor)
@@ -534,9 +540,9 @@ class DUAL_MLP_MK4(CustomModel):
             true_tensor = item.lt
             pred = torch.max(o, dim=0)[1]
             if item.li < 5:
-                true_tensor[:5] = 0.5 
+                true_tensor[:5] = 0.5
             else:
-                true_tensor[5:] = 0.5 
+                true_tensor[5:] = 0.5
             true_tensor[item.li:item.li+1] = 1.
 
             #print(true_tensor)
@@ -627,7 +633,7 @@ class DUAL_MLP_MK2(CustomModel):
             if "contactability" not in self.model.running_loss: self.model.running_loss["contactability"] = 0
             self.model.running_loss["outer"] += outer_loss
             self.model.running_loss["contactability"] += contact_loss
- 
+
             return contact_loss * outer_loss
 
 
@@ -669,7 +675,7 @@ class DUAL_MLP_MK1(CustomModel):
             if "contactability" not in self.model.running_loss: self.model.running_loss["contactability"] = 0
             self.model.running_loss["outer"] += outer_loss
             self.model.running_loss["contactability"] += contact_loss
- 
+
             return contact_loss + outer_loss
 
 
