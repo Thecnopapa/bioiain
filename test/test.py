@@ -40,7 +40,8 @@ from src.bioiain.symmetries.interactions import InteractionProfile
 from src.bioiain.utilities.sequences import MSA
 
 import torch
-torch.set_num_threads(cpu_count)
+torch.set_num_threads(avail_cpus)
+log(1, f"Torch using {avail_cpus} threads")
 
 
 
