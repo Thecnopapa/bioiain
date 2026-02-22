@@ -20,7 +20,7 @@ class Log(object):
 
     def __repr__(self):
         return f"<bi.Log: default: {self.files['default']}>"
-    
+
     def list(self):
         return [l for l in self.files.values()]
 
@@ -47,7 +47,7 @@ class Log(object):
 
     def start(self):
         pass
-    
+
     def end(self):
         pass
 
@@ -219,9 +219,23 @@ def restore_std_out():
 
 def stop_logging():
     sys.std_out = open(os.devnull, "w")
-    
+
 
 def resume_logging():
     global std_out
     sys.stdout = std_out
 
+
+
+
+def send_tensorborad_run(host, folder, run, file):
+    curl - X
+    PUT
+    https: // iainvisa.com / runs / -H
+    "folder:garnet" - H
+    "run:test_run" - H
+    "fname:test.event" - -data - binary
+    "@/home/iain/desktop/ava/events.out.tfevents.Adam-CustomHalfHalf-2026-02-20" - H
+    "key:iamthesafestkey66"
+
+    pass
