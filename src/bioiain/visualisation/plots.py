@@ -110,7 +110,9 @@ def plot_confusion(preds, labels, title, score=None, classes=None):
             title = f"{title}_S={score:.2f}"
         plt.title(title)
         os.makedirs("figs", exist_ok=True)
-        plt.savefig(f"figs/{title}.confusion.png")
+        path = f"figs/{title}.confusion.png"
+        plt.savefig(path)
         plt.close()
+        return cm, path
     except Exception as e:
         print(e)

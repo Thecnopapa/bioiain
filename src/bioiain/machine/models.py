@@ -1,6 +1,8 @@
 import os, json, platform
 
+import torchvision.transforms.v2.functional
 from sklearn.metrics import confusion_matrix
+import PIL
 
 from ..utilities.logging import *
 from ..utilities.parallel import *
@@ -311,9 +313,20 @@ class CustomModel(nn.Module):
             #print(df)
             self.data["confusion_matrix"] = cf
         if len(preds) > 0 and len(truths) > 0:
-            from ..visualisation.plots import plot_confusion
-            plot_confusion(preds, truths, title=f"{self}", classes = label_to_index.keys())
+            try:
+                from ..visualisation.plots import plot_confusion
+                cm, confusion_path = plot_confusion(preds, truths, title=f"{self}", classes = label_to_index.keys())
+
+                print(type(cm))
+                im = PIL.Image.open(confusion_path)
+                im = torchvision.transforms.v2.functional.pil_to_tensor(im)
+                self.writer.add_image(f"confusion", im, self.data["epoch"])
+                del im
+            except Exception as e:
+                print(e)
+
         self.save(temp=not re_load)
+
 
 
     def loss(self,
