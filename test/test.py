@@ -5,6 +5,7 @@ from src.bioiain import log
 from src.bioiain.utilities.parallel import *
 from src.bioiain.utilities.exceptions import *
 import asyncio
+import datetime
 
 
 log("title", "test.py")
@@ -287,7 +288,7 @@ if "-t" in sys.argv:
 
 
     log("header", f"Epochs: {epochs}")
-
+    data_len = len(dataset)
     model.add_epoch()
     for epoch in range(epochs):
         epoch = epoch +1
@@ -303,7 +304,9 @@ if "-t" in sys.argv:
             log(1, "Disabling dropout layers...")
             print(repr(model))
 
-
+        if not is_cluster:
+            epoch_start = datetime.datetime.now()
+            eta = datetime.timedelta(0)
         try:
             for n, item in enumerate(dataset):
                 if not is_cluster:
@@ -321,7 +324,11 @@ if "-t" in sys.argv:
                 model.step()
 
                 if not is_cluster:
-                    print(f"{n:6d}/{len(dataset):6d}: LOSS={model.running_loss['default']/model.running_loss['total']:6.4f} ({loss:6.4f}) <-- o:{torch.max(out, dim=0)[1].item()} t:{item.li}", end = "\r")
+                    if n % (data_len // 100) == 0:
+                        now = datetime.datetime.now() 
+                        delta = now - epoch_start
+                        eta = datetime.timedelta(seconds=(delta.total_seconds() / (n+1)) * (data_len - n))
+                    print(f"{n:6d}/{len(dataset):6d}: LOSS={model.running_loss['default']/model.running_loss['total']:6.4f} ({loss:6.4f}) <-- o:{torch.max(out, dim=0)[1].item()} t:{item.li} ETA: {eta}", end = "\r")
 
             model.save()
             model.test(dataset)
