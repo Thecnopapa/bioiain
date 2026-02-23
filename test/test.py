@@ -300,7 +300,7 @@ if "-t" in sys.argv:
         dataset.train()
 
 
-        if "no-dropout" in model.layers.keys() and epoch > 10:
+        if "no-dropout" in model.layers.keys() and epoch > 20:
             model.set_mode("no-dropout")
             log(1, "Disabling dropout layers...")
             print(repr(model))
