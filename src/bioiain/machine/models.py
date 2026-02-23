@@ -71,7 +71,10 @@ class CustomModel(nn.Module):
 
 
     def __str__(self):
-        return f"{self.__class__.__name__}_{self.data['dataname']}_{self.optimisers['default'].__class__.__name__}-{self.criterions['default'].__class__.__name__}"
+        if self.mounted:
+            return f"{self.__class__.__name__}_{self.data['dataname']}_{self.optimisers['default'].__class__.__name__}-{self.criterions['default'].__class__.__name__}"
+        else:
+            return f"{self.__class__.__name__}_{self.data['dataname']}"
 
 
     def __repr__(self):
@@ -119,10 +122,10 @@ class CustomModel(nn.Module):
             try:
                 folder = platform.node()
                 #print(self.writer.__dict__)
-                run = os.path.basename(self.writer.log_dir)
-                print(run)
-                file = os.path.join(run, os.listdir(run)[-1])
-                return send_tensorboard_run(*args, folder=folder, run=run, file=file, **kwargs)
+                run_name = os.path.basename(self.writer.log_dir)
+                print(run_name)
+                file = os.path.join(self.writer.log_dir, os.listdir(self.writer.log_dir)[-1])
+                return send_tensorboard_run(*args, folder=folder, run=run_name, file=file, **kwargs)
             except Exception as e:
                 log("warning", "Error uploading run:", e)
 
