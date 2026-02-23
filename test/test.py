@@ -101,11 +101,15 @@ else:
 
 log(1, f"Model class: {model_class}")
 
-LR = 0.001
+LR = 0.0001
 if "--lr" in sys.argv:
     LR = float(sys.argv[sys.argv.index("--lr") + 1])
 
 log(1, f"Learning rate: {LR}")
+
+MIX = False
+if "--mix" in sys.argv:
+    MIX = True
 
 
 #Comment
@@ -267,17 +271,20 @@ if "-t" in sys.argv:
     log(2, "Label count:")
     print(json.dumps(label_count, indent=4))
 
-
-
-    run_name = f"{data_name}"
-    log(1, f"Run name: {run_name}")
-
-    model = model_class(name=run_name, in_shape=(1280,), num_classes=len(label_to_index), lr=LR, weights=label_count  ).to(DEVICE)
-    model.add_map(dataset)
-
     epochs = 10
     if "--epochs" in sys.argv:
         epochs = int(sys.argv[sys.argv.index("--epochs") + 1])
+
+    
+    run_name = f"{data_name}_LR{str(LR).split(".")[-1]}_E{epochs}"
+    model = model_class(name=run_name, in_shape=(1280,), num_classes=len(label_to_index), lr=LR, weights=label_count  ).to(DEVICE)
+    model.add_map(dataset)
+    run_name = model.data["name"]
+
+
+    log(1, f"Run name: {run_name}")
+
+
 
     log("header", f"Epochs: {epochs}")
 
@@ -287,13 +294,14 @@ if "-t" in sys.argv:
 
         log("header", "EPOCH:", epoch)
         dataset.split()
-        dataset.train()
+        if MIX:
+            dataset.train()
 
 
         if "no-dropout" in model.layers.keys() and epoch > 10:
             model.set_mode("no-dropout")
             log(1, "Disabling dropout layers...")
-            log(2, model)
+            print(repr(model))
 
 
         try:
@@ -321,12 +329,13 @@ if "-t" in sys.argv:
             model.add_epoch()
 
         except KeyboardInterrupt:
-            print("\nStopping model...")
+            log("warning", "!! Stopping model...")
             try:
                 #print(os.environ)
                 #print("KEY:", os.getenv("IAINVISA_FILE_KEY"))
                 #model.send_run(host="iainvisa.com", key=os.environ.get("IAINVISA_FILE_KEY"))
                 #print(model.send_run(host="127.0.0.1:5000", key=os.getenv("IAINVISA_FILE_KEY"), protocol="http").__dict__)
+                print(repr(model))
                 model.test(dataset, re_load=False)
             except ModelNotFound as e:
                 print(e)

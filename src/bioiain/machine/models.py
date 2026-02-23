@@ -33,7 +33,8 @@ class CustomModel(nn.Module):
     def __init__(self, name, in_shape, lr=0.001, folder="./models"):
         super().__init__()
         self.data = {}
-        self.data["name"] = name
+        self.data["dataname"] = name
+
         self.data["folder"] = folder
         self.data["epoch"] = None
         self.data["path"] = False
@@ -63,13 +64,28 @@ class CustomModel(nn.Module):
         }
         self.running_loss = {"total":0, "default":0}
 
-        log("header", f"Model initialised: {self}")
+        self.data["name"] = str(self)
+
+        log("header", f"Model initialised: {self.data["name"]}")
 
 
+
+    def __str__(self):
+        return f"{self.__class__.__name__}_{self.data['dataname']}_{self.optimisers['default'].__class__.__name__}-{self.criterions['default'].__class__.__name__}"
 
 
     def __repr__(self):
-        return f"<bi.{self.__class__.__name__}:{self.data['name']} loss={self.criterions['default'].__class__.__name__} mode={self.mode} epoch={self.data['epoch']}>"
+
+        try: optim = self.optimisers[self.mode]
+        except KeyError: optim = self.optimisers['default']
+        try: crit = self.criterions[self.mode]
+        except KeyError: crit = self.criterions['default']
+        try: layers = self.layers[self.mode]
+        except KeyError: layers = self.layers['default']
+        try: loss = self.running_loss[self.mode]
+        except KeyError: loss = self.running_loss['default']
+
+        return f"<bi.CustomModel: {self.data['name']}\n - MODE: {self.mode}\n - class: {self.__class__.__name__}\n - optimiser: {optim.__class__.__name__}\n - criterion: {crit.__class__.__name__}\n - current epoch: {self.data['epoch']}\n - running loss: {loss}\n - layers: {[l for l in layers.keys()]}\n>\n"
 
 
     def _mount_submodels(self):
@@ -83,9 +99,12 @@ class CustomModel(nn.Module):
         self.mounted = True
 
         self.reset_loss()
+        self.data["name"] = str(self)
 
-        self.writer = SummaryWriter(log_dir=f"runs/{self.data['name']}/{self.__class__.__name__}/{self.optimisers["default"].__class__.__name__}-{self.criterions["default"].__class__.__name__}-{datetime.datetime.now()}")
+        self.writer = SummaryWriter(log_dir=f"runs/{self.__class__.__name__}/{str(self)}_{datetime.datetime.now().strftime("%m-%d_%H-%M-%S")}")
         #self.writer.add_graph(self, torch.rand(self.data["in_shape"]))
+
+        print(repr(self))
 
 
         return self.submodels.keys()
@@ -100,13 +119,12 @@ class CustomModel(nn.Module):
             try:
                 folder = platform.node()
                 #print(self.writer.__dict__)
-                run = self.writer.log_dir
+                run = os.path.basename(self.writer.log_dir)
                 print(run)
                 file = os.path.join(run, os.listdir(run)[-1])
                 return send_tensorboard_run(*args, folder=folder, run=run, file=file, **kwargs)
             except Exception as e:
                 log("warning", "Error uploading run:", e)
-                raise
 
 
 
@@ -283,43 +301,20 @@ class CustomModel(nn.Module):
                         correct += 1
 
         print()
-        print(json.dumps(confusion, indent=4))
-        try:
-            self.writer.add_scalar(f"accuracy/dual/total", (correct / total) * 100, self.data["epoch"])
-            self.writer.add_scalar(f"accuracy/dual/contactability", (confusion["contactability"]["right"] / total) * 100, self.data["epoch"])
-            self.writer.add_scalar(f"accuracy/dual/outer", (confusion["outer"]["right"] / total) * 100, self.data["epoch"])
-        except:
-            pass
+        #print(json.dumps(confusion, indent=4))
+
+        self.writer.add_scalar(f"accuracy/total", (correct / total) * 100, self.data["epoch"])
+        #self.writer.add_scalar(f"accuracy/dual/contactability", (confusion["contactability"]["right"] / total) * 100, self.data["epoch"])
+        #self.writer.add_scalar(f"accuracy/dual/outer", (confusion["outer"]["right"] / total) * 100, self.data["epoch"])
+
 
 
         log(1, f"Results: EPOCH:{self.data['epoch']-1} correct={correct}, total={total}, accuracy={(correct / total) * 100:2.3f}%")
-        #print(json.dumps(confusion, indent=4))
-        if len(label_to_index) == 4:
-            df = pd.DataFrame.from_dict(confusion, orient='index')
-            cf=""" ** Confusion Matrix: {} **
-                P  R  E  D  S
-            T    |  {:2s}|  {:2s}|  {:2s}|  {:2s}
-            R  {:2s}|{:4d}|{:4d}|{:4d}|{:4d}
-            U  {:2s}|{:4d}|{:4d}|{:4d}|{:4d}
-            T  {:2s}|{:4d}|{:4d}|{:4d}|{:4d}
-            H  {:2s}|{:4d}|{:4d}|{:4d}|{:4d}
-            S
-    ********""".format(
-                f"EPOCH:{self.data['epoch']} correct={correct}, total={total}, accuracy={(correct / total) * 100:2.3f}%",
-                *confusion.keys(),
-                list(confusion.keys())[0], *confusion[list(confusion.keys())[0]].values(),
-                list(confusion.keys())[1], *confusion[list(confusion.keys())[1]].values(),
-                list(confusion.keys())[2], *confusion[list(confusion.keys())[2]].values(),
-                list(confusion.keys())[3], *confusion[list(confusion.keys())[3]].values(),
-            )
-            print(cf)
-            #df.rename({0:"Truth\\Pred"}, inplace = True)
-            #print(df)
-            self.data["confusion_matrix"] = cf
+
         if len(preds) > 0 and len(truths) > 0:
             try:
                 from ..visualisation.plots import plot_confusion
-                _, confusion_path = plot_confusion(preds, truths, title=f"{self}", classes = label_to_index.keys())
+                _, confusion_path = plot_confusion(preds, truths, title=f"{str(self)}", classes = label_to_index.keys())
 
                 im = PIL.Image.open(confusion_path)
                 im = torchvision.transforms.v2.functional.pil_to_tensor(im)
@@ -463,7 +458,7 @@ class DUAL_MLP_MK6(CustomModel):
 
 
 
-        self.layers["no-dropout"] = self.layers["default"]
+        self.layers["no-dropout"] = self.layers["default"].copy()
         self.layers["no-dropout"].pop("drop1")
         self.layers["no-dropout"].pop("drop2")
         #self.criterions["no-dropout"] = self.CustomHalfHalf(weights)

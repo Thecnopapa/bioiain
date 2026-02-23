@@ -12,6 +12,12 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
 
+
+from sklearn.decomposition import PCA
+from sklearn.metrics import confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sb
+
 mpl_colours = 'blue', 'orange', 'green', 'red', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan'
 
 try:
@@ -88,17 +94,13 @@ class Arrow3D(FancyArrowPatch):
 
 
 
-from sklearn.decomposition import PCA
-from sklearn.metrics import confusion_matrix
-import matplotlib.pyplot as plt
-import seaborn as sb
-import bioiain as bi
+
 
 
 # Confusion matrices
 def plot_confusion(preds, labels, title, score=None, classes=None):
     try:
-        bi.log(1, "Plotting confusion...")
+        log(1, "Plotting confusion...")
         cm = confusion_matrix(labels, preds)
         if classes is None:
             classes = list(set(labels))
