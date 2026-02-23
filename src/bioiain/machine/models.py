@@ -49,6 +49,7 @@ class CustomModel(nn.Module):
         }
         self.optimisers = {
             "default": {
+                "layer_set": "default",
                 "class":torch.optim.Adam,
                 "kwargs":{"lr":lr},
             }
@@ -75,7 +76,10 @@ class CustomModel(nn.Module):
         log(1, "Mounting submodels...")
         for k, layer_set in self.layers.items():
             self.submodels[k] = nn.Sequential(*layer_set.values())
-            self.optimisers[k] = self.optimisers[k]["class"](self.submodels[k].parameters(), **self.optimisers[k]["kwargs"])
+
+        for o, op_data in self.optimisers.items():
+            self.optimisers[o] = self.optimisers[o]["class"](self.submodels[self.optimisers[o]["layer_set"]].parameters(), **self.optimisers[o]["kwargs"])
+        
         self.mounted = True
 
         self.reset_loss()
@@ -334,6 +338,7 @@ class CustomModel(nn.Module):
              criterion_name:str="mode",
              backwards:bool=True,
              zero_optims:str|None="mode") -> torch.Tensor|float:
+
         self.zero_grad(zero_optims)
 
         if criterion_name == "mode": criterions = [self.mode]
@@ -346,7 +351,8 @@ class CustomModel(nn.Module):
 
         losses = []
 
-        for criterion in criterions:
+        for n, criterion in enumerate(criterions):
+            if criterion not in self.criterions: criterions[n] = "default"; criterion = "default"
             if isinstance(self.criterions[criterion], CustomLoss):
                 losses.append(self.criterions[criterion](output, item))
 
@@ -371,7 +377,8 @@ class CustomModel(nn.Module):
 
         if backwards:
             self.running_loss["total"] += 1
-            for l,c in zip(losses, criterions):
+            #print(criterions)
+            for l, c in zip(losses, criterions):
                 self.running_loss[c] += l
 
             loss.backward()
@@ -382,6 +389,8 @@ class CustomModel(nn.Module):
     def step(self, optimizer_name:str|None="mode") -> bool:
         if optimizer_name is None: return False
         if optimizer_name == "mode": optimizer_name = self.mode
+        if optimizer_name not in self.optimisers: optimizer_name = "default"
+
 
         if optimizer_name == "all":
             for optimizer in self.optimisers.values():
@@ -393,6 +402,7 @@ class CustomModel(nn.Module):
     def zero_grad(self, optimizer_name:str|None="mode") -> bool:
         if optimizer_name is None: return False
         if optimizer_name == "mode": optimizer_name = self.mode
+        if optimizer_name not in self.optimisers: optimizer_name = "default"
 
         if optimizer_name == "all":
             for optimizer in self.optimisers.values():
@@ -419,6 +429,82 @@ class CustomModel(nn.Module):
         else:
             x = self.submodels[submodel_name](x)
         return x
+
+
+
+
+
+
+
+class DUAL_MLP_MK6(CustomModel):
+    def __init__(self, *args, hidden_dims=[2560, 128], num_classes=4, dropout=0.2, weights=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.data["num_classes"] = num_classes
+        self.data["hidden_dims"] = hidden_dims
+        self.data["dropout"] = dropout
+
+        self.layers["default"] = {
+            "l1": nn.Linear(self.data["in_shape"][0], hidden_dims[0]),
+            "drop1": nn.Dropout(dropout),
+            "relu1": nn.LeakyReLU(),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "drop2": nn.Dropout(dropout),
+            "relu2": nn.LeakyReLU(),
+            "l3": nn.Linear(hidden_dims[1], num_classes),
+            "softmax": nn.Softmax(dim=0)
+        }
+
+
+
+
+        self.criterions["default"] = self.CustomHalfHalf(weights)
+        self.data["weights"] = list([w.item() for w in self.criterions["default"].weight])
+
+
+
+        self.layers["no-dropout"] = self.layers["default"]
+        self.layers["no-dropout"].pop("drop1")
+        self.layers["no-dropout"].pop("drop2")
+        #self.criterions["no-dropout"] = self.CustomHalfHalf(weights)
+
+        self._mount_submodels()
+
+
+
+    class CustomHalfHalf(CustomLoss):
+        def __init__(self, weights=None):
+            log(1, "Using label weights:")
+
+            if type(weights) is dict:
+                weights = weights.values()
+            w = np.array(list(weights))
+            w = w
+            w = w / w.sum()
+            w = torch.Tensor(w)
+            log(2, w)
+            self.CEL = nn.MSELoss()
+            self.weight = w
+
+        def __call__(self, o, item):
+            true_index = item.li
+            true_tensor = item.lt
+            pred = torch.max(o, dim=0)[1]
+            if item.li < 5:
+                true_tensor[:5] = 0.5
+            else:
+                true_tensor[5:] = 0.5
+            true_tensor[item.li:item.li+1] = 1.
+
+            #print(true_tensor)
+            weighted_out = o# * self.weight
+            #print("Weighted out:", weighted_out)
+            loss = self.CEL(o, true_tensor)
+            #if true_index < 5 == torch.max(o, dim=0)[1] < 5:
+            #    loss *= 0.5
+            loss *= self.weight[pred]
+            return loss
+
 
 
 

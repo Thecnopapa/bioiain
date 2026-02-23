@@ -91,6 +91,8 @@ from src.bioiain.machine.models import *
 
 if "mk5" in sys.argv:
     model_class = DUAL_MLP_MK5
+elif "mk6" in sys.argv:
+    model_class = DUAL_MLP_MK6
 else:
     if DUAL:
         model_class = DUAL_MLP_MK4
@@ -159,7 +161,7 @@ if "-l" in sys.argv or "-e" in sys.argv:
 
                 except FoldseekError as e:
                     log("warning", e)
-                    mon_data = get_monomers(file, file_folder, only_ids=True, force=True, contact_threshold=15)
+                    #mon_data = get_monomers(file, file_folder, only_ids=True, force=True, contact_threshold=15)
 
                     continue
                 except Exception as e:
@@ -286,6 +288,14 @@ if "-t" in sys.argv:
         log("header", "EPOCH:", epoch)
         dataset.split()
         dataset.train()
+
+
+        if "no-dropout" in model.layers.keys() and epoch > 10:
+            model.set_mode("no-dropout")
+            log(1, "Disabling dropout layers...")
+            log(2, model)
+
+
         try:
             for n, item in enumerate(dataset):
                 if not is_cluster:
