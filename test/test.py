@@ -315,7 +315,8 @@ if "-t" in sys.argv:
                 #print("tensor:", item.t)
                 #print("label:", item.l)
                 print(DEVICE)
-                out = model(item.t.to(DEVICE))
+                item.to(DEVICE)
+                out = model(item.t)
                 print("out:", out)
                 print(type(item.l), item.l)
 

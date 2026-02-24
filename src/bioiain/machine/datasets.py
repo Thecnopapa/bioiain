@@ -61,6 +61,17 @@ class Item(object):
             raise StopIteration
         return self[self.i]
 
+    def to(self, device):
+        try:
+            self.l.to(device)
+        except:
+            pass
+        self.t.to(device)
+        if hasattr(self, "lt"):
+            self.lt.to(device)
+        if hasattr(self, "label_tensor"):
+            self.label_tensor.to(device)
+
 
 class EmbeddingDataset(Dataset):
     def __init__(self,*args,  name, folder="./datasets", **kwargs):
