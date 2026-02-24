@@ -20,6 +20,15 @@ import datetime
 import psutil
 
 
+DEVICE = "cpu"
+if torch.cuda.is_available():
+    DEVICE = "cuda"
+elif torch.xpu.is_available():
+    DEVICE = "xpu"
+
+log(1, "DEVICE:", DEVICE)
+
+
 class ModelNotFound(Exception):
     pass
 
@@ -94,7 +103,7 @@ class CustomModel(nn.Module):
     def _mount_submodels(self):
         log(1, "Mounting submodels...")
         for k, layer_set in self.layers.items():
-            self.submodels[k] = nn.Sequential(*layer_set.values())
+            self.submodels[k] = nn.Sequential(*layer_set.values()).to(DEVICE)
 
         for o, op_data in self.optimisers.items():
             self.optimisers[o] = self.optimisers[o]["class"](self.submodels[self.optimisers[o]["layer_set"]].parameters(), **self.optimisers[o]["kwargs"])
@@ -108,6 +117,7 @@ class CustomModel(nn.Module):
         #self.writer.add_graph(self, torch.rand(self.data["in_shape"]))
 
         print(repr(self))
+        self.to(DEVICE)
 
 
         return self.submodels.keys()
