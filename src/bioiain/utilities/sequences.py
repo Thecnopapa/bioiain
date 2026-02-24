@@ -248,6 +248,8 @@ class MSA(object):
                             neighbours.append(num1)
                     except Exception as e:
                         log("warning", f"Error reading tree file: {self.tree_path}")
+                        print(line)
+                        print(comps)
                         raise e
 
 
