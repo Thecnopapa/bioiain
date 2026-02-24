@@ -236,7 +236,7 @@ class MSA(object):
             for line in f.readlines():
                 if "DIST" in line and "length" in line:
                     try:
-                        comps = [l for l in re.strip(" |.|;|=",line.strip()) if l != ""]
+                        comps = [l for l in re.split(" |.|;|=",line.strip()) if l != ""]
                         num1 = int(comps[0])
                         num2 = int(comps[2])
                         dist = float(comps[5].replace(";", ""))
