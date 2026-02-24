@@ -103,7 +103,7 @@ class CustomModel(nn.Module):
     def _mount_submodels(self):
         log(1, "Mounting submodels...")
         for k, layer_set in self.layers.items():
-            self.submodels[k] = nn.Sequential(*layer_set.values()).to(DEVICE)
+            self.submodels[k] = nn.Sequential(*[l.to(DEVICE) for l in layer_set.values()]).to(DEVICE)
 
         for o, op_data in self.optimisers.items():
             self.optimisers[o] = self.optimisers[o]["class"](self.submodels[self.optimisers[o]["layer_set"]].parameters(), **self.optimisers[o]["kwargs"])
