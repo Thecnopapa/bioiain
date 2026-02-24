@@ -236,11 +236,11 @@ class MSA(object):
             for line in f.readlines():
                 if "DIST" in line and "length" in line:
                     try:
-                        comps = [l for l in re.split(' |\.|;|=', line.strip()) if l != ""]
+                        comps = [l for l in re.split(' |vs\.|;|=', line.strip()) if l != ""]
                         num1 = int(comps[0])
-                        num2 = int(comps[2])
-                        dist = float(comps[5].replace(";", ""))
-                        length = int(comps[8].replace("\n", ""))
+                        num2 = int(comps[1])
+                        dist = float(comps[3])
+                        length = int(comps[5].replace("\n", ""))
                         if dist > threshold:
                             continue
                         if seq_num == num1:
