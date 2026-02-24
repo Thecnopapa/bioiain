@@ -63,14 +63,14 @@ class Item(object):
 
     def to(self, device):
         try:
-            self.l.to(device)
+            self.l = self.l.to(device)
         except:
             pass
-        self.t.to(device)
+        self.t = self.t.to(device)
         if hasattr(self, "lt"):
-            self.lt.to(device)
+            self.lt = self.lt.to(device)
         if hasattr(self, "label_tensor"):
-            self.label_tensor.to(device)
+            self.label_tensor = self.label_tensor.to(device)
 
 
 class EmbeddingDataset(Dataset):
