@@ -230,12 +230,13 @@ class MSA(object):
 
     def _get_neighbours(self, seq_num, threshold=0.05):
         log(3, f"Finding neighbours (seq. {seq_num}), threshold={threshold}")
+        import re
         neighbours = []
         with open(self.tree_path, "r") as f:
             for line in f.readlines():
                 if "DIST" in line and "length" in line:
                     try:
-                        comps = [l for l in line.strip().split(" ") if l != ""]
+                        comps = [l for l in re.strip(" |.|;|=",line.strip()) if l != ""]
                         num1 = int(comps[0])
                         num2 = int(comps[2])
                         dist = float(comps[5].replace(";", ""))
