@@ -247,7 +247,7 @@ class MSA(object):
                         elif seq_num == num2:
                             neighbours.append(num1)
                     except Exception as e:
-                        log("warning", "Error reading tree file: {self.tree_path}")
+                        log("warning", f"Error reading tree file: {self.tree_path}")
                         raise e
 
 
