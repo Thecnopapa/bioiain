@@ -112,14 +112,21 @@ MIX = False
 if "--mix" in sys.argv:
     MIX = True
 
+SKIP_ABS = False
+if "--skip-abs" in sys.argv:
+    SKIP_ABS = True
 
 #Comment
 
 if "-l" in sys.argv or "-e" in sys.argv:
 
-    if not "absolute_calcuated" in dataset.data or REBUILD:
+    if (not "absolute_calcuated" in dataset.data or REBUILD) and not SKIP_ABS:
+        log("start", "ABSOLUTE LABELS")
 
+        n_files = len(os.listdir(file_folder))
         for n, file in enumerate(sorted(os.listdir(file_folder))):
+            log("title", f"ABSOLUTE {n}/{n_files}")
+
             if not file.endswith(".cif"):
                 continue
 
@@ -177,21 +184,28 @@ if "-l" in sys.argv or "-e" in sys.argv:
                 dataset.save()
 
 
-    dataset.data["absolute_calcuated"] = True
-    dataset.save()
-    if DUAL_CLASSES:
-        dataset.use_label("abs_label")
+        dataset.data["absolute_calcuated"] = True
+        dataset.save()
+
+
+
+
+    if (not "relative_calcuated" in dataset.data) or REBUILD or "--rel" in sys.argv:
+        log("start", "RELATIVE LABELS")
+
+        if DUAL_CLASSES:
+            dataset.use_label("abs_label")
         dataset.map()
 
 
-    datset_path = dataset.save()
-    log("header", "DATASET:", dataset)
-    msa = MSA(dataset.data["fasta_path"], dataset.data["name"])
-    log("header", "MSA:", msa)
+        datset_path = dataset.save()
+        log("header", "DATASET:", dataset)
+        msa = MSA(dataset.data["fasta_path"], dataset.data["name"])
+        log("header", "MSA:", msa)
 
-    if (not "relative_calcuated" in dataset.data) or REBUILD or "-rel" in sys.argv:
-
-        for monomer_id in list(dataset.embeddings.keys()):
+        n_mons = len(list(dataset.embeddings.keys()))
+        for n, monomer_id in enumerate(list(dataset.embeddings.keys())):
+            log("title", f"RELATIVE {n}/{n_mons}")
             try:
                 log("header", f"Calculating relative interactions for: {monomer_id}")
 
@@ -231,28 +245,14 @@ if "-l" in sys.argv or "-e" in sys.argv:
                 continue
 
 
-    if DUAL_CLASSES:
-        dataset.use_label("dual_class_label")
-    elif DUAL:
-        dataset.use_label("dual_label")
-    else:
-        dataset.use_label("rel_label")
-
-    dataset.map()
-    dataset.data["relative_calcuated"] = True
-    dataset.save()
-    #if len(dataset) >= 1:
-    #    log("start", "Dataset test")
-    #    print(len(dataset))
-    #    print(dataset[len(dataset)-1])
-
-
+        dataset.data["relative_calcuated"] = True
+        dataset.save()
 
 
 
 if "-t" in sys.argv:
     log("title", "TRAINING")
-    log("start", "Training")
+    log("start", "TRAINING")
 
     log("header", f"Dataset: {dataset}")
     if DUAL_CLASSES:
