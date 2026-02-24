@@ -189,8 +189,8 @@ class EmbeddingDataset(Dataset):
 
     def map(self, single_lab=False, label_to_index:dict|None=None, reuse=True) -> dict:
         log(1, "Mapping dataset...")
-
-        if self.data["mapped"] and (self.data["mapped_label"] == self.data["label_key"]) and reuse:
+        
+        if self.data["mapped"] and (self.data.get("mapped_label", None) == self.data["label_key"]) and reuse:
             return self.data["label_to_index"]
 
         self.data["mapped"] = False
