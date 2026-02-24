@@ -187,13 +187,14 @@ class EmbeddingDataset(Dataset):
 
 
 
-    def map(self, single_lab=False, label_to_index:dict|None=None, reuse=False) -> dict:
+    def map(self, single_lab=False, label_to_index:dict|None=None, reuse=True) -> dict:
         log(1, "Mapping dataset...")
 
-        if self.data["mapped"] and reuse:
+        if self.data["mapped"] and (self.data["mapped_label"] == self.data["label_key"]) and reuse:
             return self.data["label_to_index"]
 
         self.data["mapped"] = False
+        self.data["mapped_label"] = None
         self.data["label_to_index"] = {}
         self.data["index_to_label"] = {}
         self.data["lab_count"] = {}
@@ -223,7 +224,7 @@ class EmbeddingDataset(Dataset):
                 if len(lab_count) > 0:
                     self.data["lab_count"][str(k)] = int(lab_count[k])
 
-
+        self.data["mapped_label"] = self.data["label_key"]
         self.data["mapped"] = True
         return self.data["label_to_index"]
 
@@ -254,7 +255,7 @@ class EmbeddingDataset(Dataset):
         self.data["length"] += embedding.length
         if fasta and hasattr(embedding, "sequence"):
             self._add_to_fasta(key, embedding.sequence)
-            
+
         self.data["mapped"] = False
         return key
 
