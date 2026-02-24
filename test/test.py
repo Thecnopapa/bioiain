@@ -314,10 +314,10 @@ if "-t" in sys.argv:
                     print(f"\033]0;TRAIN {epoch}/{epochs} {(n/len(dataset))*100:3.0f}%\a", end="\r")
                 #print("tensor:", item.t)
                 #print("label:", item.l)
-
-                out = model(item.t)
-                #print("out:", out)
-                #print(type(item.l), item.l)
+                print(DEVICE)
+                out = model(item.t.to(DEVICE))
+                print("out:", out)
+                print(type(item.l), item.l)
 
                 loss = model.loss(out, item)
                 #print(out.item(), item.l, loss)
