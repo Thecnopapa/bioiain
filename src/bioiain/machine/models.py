@@ -252,6 +252,7 @@ class CustomModel(nn.Module):
             confusion = {k: {l:0 for l in label_to_index.keys()} for k in label_to_index.keys()}
 
             for n, item in enumerate(dataset):
+                item.to(DEVICE)
                 if not is_cluster:
                     print(f"\033]0;Testing {(total/len(dataset))*100:3.0f}%\a", end="\r")
                 l = item.l
