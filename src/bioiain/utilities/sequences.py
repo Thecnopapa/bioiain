@@ -234,17 +234,21 @@ class MSA(object):
         with open(self.tree_path, "r") as f:
             for line in f.readlines():
                 if "DIST" in line and "length" in line:
-                    comps = [l for l in line.strip().split(" ") if l != ""]
-                    num1 = int(comps[0])
-                    num2 = int(comps[2])
-                    dist = float(comps[5].replace(";", ""))
-                    length = int(comps[8].replace("\n", ""))
-                    if dist > threshold:
-                        continue
-                    if seq_num == num1:
-                        neighbours.append(num2)
-                    elif seq_num == num2:
-                        neighbours.append(num1)
+                    try:
+                        comps = [l for l in line.strip().split(" ") if l != ""]
+                        num1 = int(comps[0])
+                        num2 = int(comps[2])
+                        dist = float(comps[5].replace(";", ""))
+                        length = int(comps[8].replace("\n", ""))
+                        if dist > threshold:
+                            continue
+                        if seq_num == num1:
+                            neighbours.append(num2)
+                        elif seq_num == num2:
+                            neighbours.append(num1)
+                    except Exception as e:
+                        log("warning", "Error reading tree file: {self.tree_path}")
+                        raise e
 
 
 

@@ -187,8 +187,11 @@ class EmbeddingDataset(Dataset):
 
 
 
-    def map(self, single_lab=False, label_to_index:dict|None=None) -> dict:
+    def map(self, single_lab=False, label_to_index:dict|None=None, reuse=False) -> dict:
         log(1, "Mapping dataset...")
+
+        if self.data["mapped"] and reuse:
+            return self.data["label_to_index"]
 
         self.data["mapped"] = False
         self.data["label_to_index"] = {}
@@ -251,13 +254,15 @@ class EmbeddingDataset(Dataset):
         self.data["length"] += embedding.length
         if fasta and hasattr(embedding, "sequence"):
             self._add_to_fasta(key, embedding.sequence)
-
+            
+        self.data["mapped"] = False
         return key
 
 
     def remove(self, key):
         self.data["deleted_indexes"] += self.embeddings[key]["end"] - self.embeddings[key]["start"]
         self.embeddings[key]["deleted"] = True
+        self.data["mapped"] = False
 
 
 
@@ -400,6 +405,8 @@ class EmbeddingDataset(Dataset):
 
     def add_label(self, key, label):
         self.embeddings[key]["label"] = label
+        self.data["mapped"] = False
+
         return self[key]
 
     def add_label_from_string(self, label, key=None, var_name="label_path"):
@@ -418,6 +425,8 @@ class EmbeddingDataset(Dataset):
             f.write(label)
         assert self.embeddings[key]["length"] == len(label)
         self.embeddings[key][var_name] = path
+        self.data["mapped"] = False
+
         return key
 
     def add_label_from_list(self, label, key=None, var_name="label_path", paddings=(None, None)):
@@ -444,6 +453,7 @@ class EmbeddingDataset(Dataset):
             f.write(",".join(labels))
         assert self.embeddings[key]["length"] == len(label)
         self.embeddings[key][var_name] = path
+        self.data["mapped"] = False
         return key
 
 
