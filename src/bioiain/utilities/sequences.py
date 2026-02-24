@@ -113,7 +113,7 @@ class FASTA(object):
 
 
 class MSA(object):
-    def __init__(self, fasta_path, name=None):
+    def __init__(self, fasta_path, name=None, verbose=False):
         self.fasta_path = fasta_path
         fasta = FASTA(fasta_path)
         self.fasta_dict = fasta.parse()
@@ -121,7 +121,7 @@ class MSA(object):
             name = os.path.basename(fasta_path)
         self.name = name
         log("header", f"Initialising MSA: {self}")
-        self.msa_path = self._run_clustal_msa(name=self.name)
+        self.msa_path = self._run_clustal_msa(name=self.name, verbose=verbose)
         self.tree_path = self._build_tree(self.msa_path)
         self.msa_fasta = FASTA(self.msa_path)
 
@@ -133,7 +133,7 @@ class MSA(object):
 
 
 
-    def _run_clustal_msa(self, fasta_path=None, name="temp", out_folder=None, clustal_cmd="clustalw", matrix="BLOSUM", out_format="fasta", force=False):
+    def _run_clustal_msa(self, fasta_path=None, name="temp", out_folder=None, clustal_cmd="clustalw", matrix="BLOSUM", out_format="fasta", force=False, verbose=False):
 
         if fasta_path is None:
             fasta_path = self.fasta_path
@@ -153,10 +153,12 @@ class MSA(object):
             f"-outfile={out_path}",
             f"-output={out_format}"
         ]
-
-        #print("$", " ".join(cmd))
-        out_log = open("/dev/null", "w")
-        subprocess.run(cmd, stdout=out_log)
+        if verbose:
+            log(3, "$", " ".join(cmd))
+            subprocess.run(cmd)
+        else:
+            out_log = open("/dev/null", "w")
+            subprocess.run(cmd, stdout=out_log)
         return out_path
 
 
