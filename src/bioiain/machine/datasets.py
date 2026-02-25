@@ -99,7 +99,7 @@ class EmbeddingDataset(Dataset):
 
     def __repr__(self):
         if self.data["deleted_indexes"] > 0:
-            return f"<bi.{self.__class__.__name__}:{self.data["name"]} N={len(self)} mode={self.mode} deleted={self.data['deleted']}>"
+            return f"<bi.{self.__class__.__name__}:{self.data["name"]} N={len(self)} mode={self.mode} deleted={self.data.get('deleted',False)}>"
         else:
             return f"<bi.{self.__class__.__name__}:{self.data["name"]} N={len(self)} mode={self.mode}>"
 
@@ -246,6 +246,7 @@ class EmbeddingDataset(Dataset):
             "label_path": label_path,
             "length": embedding.length,
             "iter_dim": embedding.iter_dim,
+            "deleted": False,
 
         }
         if embedding.keep_padding:
@@ -315,7 +316,7 @@ class EmbeddingDataset(Dataset):
             if key >= e["end"]: continue
 
             if e.get("deleted", False):
-                raise DeletedIndex()
+                raise DeletedIndex(f"Index: {key}")
 
             iter_dim = e["iter_dim"]
 
