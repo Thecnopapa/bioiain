@@ -380,15 +380,15 @@ if "-p" in sys.argv:
                 monomer = Monomer.cast(chain)
                 monomer.export(folder=prediction_folder)
                 print(monomer)
-                embedding = SaProtEmbedding(entity=monomer, folder=prediction_folder, force=True)
+                embedding = SaProtEmbedding(entity=monomer, folder=prediction_folder, force=FORCE)
                 from src.bioiain.machine.models import *
                 data = json.load(open(model_path))
                 weights = data.get("weights", [])
                 model = model_class(name="interactions", in_shape=data["in_shape"], num_classes=data["num_classes"], weights=weights)
-                del data
                 model.load(model_path)
-                print(model)
-                print(json.dumps(model.data, indent=4))
+                print(model.set_mode("no-dropout"))
+                print(repr(model))
+                #print(json.dumps(model.data, indent=4))
 
                 dataset = EmbeddingDataset(name=os.path.basename(file), folder=prediction_folder)
                 dataset.add(embedding=embedding, key=monomer.get_name())
@@ -419,6 +419,7 @@ if "-p" in sys.argv:
                 #print(full_pred)
 
                 interaction = PredictedMonomerContacts(monomer, full_pred, label_to_index)
+                interaction._agglomerate()
                 #interaction.plot_mpl()
                 pred_path = interaction.save_structure(prediction_folder)
                 script = PymolScript(name=f"{monomer.get_name()}_{chain.id}_prediction_pml_session", folder=prediction_folder)

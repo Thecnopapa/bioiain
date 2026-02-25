@@ -296,7 +296,7 @@ class PredictedMonomerContacts(object):
         self.label_to_index = label_to_index
 
         self._set_bfactors()
-        self._agglomerate()
+        
 
 
     def _set_bfactors(self):
@@ -331,13 +331,13 @@ class PredictedMonomerContacts(object):
         labels = [a.b for a in atomlist]
         data = [coords, labels]
         agg.fit(coords)
-        print(agg)
+        #print(agg)
         #reduced = agg.transform(coords)
-        [print(x) for x in zip(agg.labels_, coords)]
-        print("...\n")
+        #[print(x) for x in zip(agg.labels_, coords)]
+        #print("...\n")
         #print(reduced)
         #print(reduced.shape)
-        print("CLUSTERS:", agg.n_clusters_)
+        print("N CLUSTERS:", agg.n_clusters_)
 
         labelled_coords = zip(agg.labels_, coords, labels)
 
@@ -353,14 +353,14 @@ class PredictedMonomerContacts(object):
 
         cmap = mpl.colormaps["plasma"]
         cluster_cmap = mpl.colormaps["gist_rainbow"]
-        print("NCOLORS:", cluster_cmap.N)
+        #print("N COLORS:", cluster_cmap.N)
 
         for k, v in cluster_intensities.items():
             cluster_intensities[k]["a"] = v["i"] / v["n"]
             cluster_intensities[k]["cc"] = cluster_cmap(round(cluster_cmap.N/agg.n_clusters_*int(k)))
 
         cluster_intensities = {k:v for k, v in sorted(cluster_intensities.items(), key=lambda x: x[1]["a"], reverse=True)}
-        print(json.dumps(cluster_intensities, indent=4))
+        #print(json.dumps(cluster_intensities, indent=4))
 
         max_i = max(c["a"] for c in cluster_intensities.values())
         for n, (k, v) in enumerate(cluster_intensities.items()):
@@ -368,7 +368,7 @@ class PredictedMonomerContacts(object):
             cluster_intensities[k]["r"] = v["a"] / max_i
             cluster_intensities[k]["c"] = cmap(round((cluster_intensities[k]["r"]*255/2)+127))
 
-        print(json.dumps(cluster_intensities, indent=4))
+        #print(json.dumps(cluster_intensities, indent=4))
 
 
         fig, ax = fig3D()
@@ -388,10 +388,10 @@ class PredictedMonomerContacts(object):
 
         for n, (k, v) in enumerate(cluster_intensities.items()):
             cluster_intensities[k]["center"] =  list(cluster_intensities[k]["center"])
-        print(json.dumps(cluster_intensities, indent=4))
+        #print(json.dumps(cluster_intensities, indent=4))
 
         fig.show()
-        input("Press Enter to close fig")
+        #input("Press Enter to close fig")
 
 
 

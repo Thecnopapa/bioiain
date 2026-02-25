@@ -424,6 +424,7 @@ class CustomModel(nn.Module):
 
 
     def set_mode(self, mode:str):
+        print(f"Model mode: {self.mode} -> {mode}")
         self.mode = mode
         return self.mode
 
