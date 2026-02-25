@@ -96,6 +96,7 @@ class EmbeddingDataset(Dataset):
             "test": None,
             "train": None,
         }
+        
 
     def __repr__(self):
         if self.data["deleted_indexes"] > 0:
@@ -111,15 +112,19 @@ class EmbeddingDataset(Dataset):
         elif self.mode == "train": return self.splitted["train_length"]
         else: raise Exception(f"Unknown mode: {self.mode}")
 
+
     def __getitem__(self, key):
         return self.get(key)
+
 
     def __contains__(self, item):
         return item in self.embeddings.keys()
 
+
     def __iter__(self):
         self.i = 0
         return self
+
 
     def __next__(self):
         if self.i >= len(self):
@@ -131,19 +136,24 @@ class EmbeddingDataset(Dataset):
         self.i += 1
         return r
 
+
     def test(self):
         assert self.splitted["test"] is not None
         self.mode="test"
+
 
     def train(self):
         assert self.splitted["train"] is not None
         self.mode="train"
 
+
     def normal(self):
         self.mode="normal"
 
+
     def use_label(self, label_key):
         self.data["label_key"] = label_key
+
 
     def split(self, mode="embeddings", test_ratio=0.1, random_state=42):
         import random, math
@@ -183,8 +193,6 @@ class EmbeddingDataset(Dataset):
         #     self.test_info["length"] = len(self.test_info["indices"])
         #     self.data["length"] -= self.test_info["length"]
         #     return self.test_info["indices"]
-
-
 
 
     def map(self, single_lab=False, label_to_index:dict|None=None, reuse=True) -> dict:
@@ -229,10 +237,6 @@ class EmbeddingDataset(Dataset):
         return self.data["label_to_index"]
 
 
-
-
-
-
     def add(self, embedding, key:str|int|None=None, label_path=None, fasta=False):
         if key is None:
             key = len(self.embeddings)
@@ -267,8 +271,6 @@ class EmbeddingDataset(Dataset):
         self.data["mapped"] = False
 
 
-
-
     def _add_to_fasta(self, key, sequence):
         if "fasta_path" in self.data:
             fasta_path = self.data["fasta_path"]
@@ -283,8 +285,6 @@ class EmbeddingDataset(Dataset):
                 pass
             f.write(f"> {key}\n")
             f.write(f"{sequence}\n\n")
-
-
 
 
     def get(self, key, embedding=True, label=True, cache=True, label_key=None) -> Item:
@@ -403,13 +403,12 @@ class EmbeddingDataset(Dataset):
         return Item(target_tensor, target_label, label_to_index=l_to_i, key=key, dataset=self)
 
 
-
-
     def add_label(self, key, label):
         self.embeddings[key]["label"] = label
         self.data["mapped"] = False
 
         return self[key]
+
 
     def add_label_from_string(self, label, key=None, var_name="label_path"):
         if key is None:
@@ -430,6 +429,7 @@ class EmbeddingDataset(Dataset):
         self.data["mapped"] = False
 
         return key
+
 
     def add_label_from_list(self, label, key=None, var_name="label_path", paddings=(None, None)):
         if key is None:
@@ -462,6 +462,7 @@ class EmbeddingDataset(Dataset):
     def save(self, *args, **kwargs):
         return self.export(*args, **kwargs)
 
+
     def export(self, folder=None, save_split=False):
         if folder is None:
             assert self.data["folder"] is not None
@@ -476,6 +477,7 @@ class EmbeddingDataset(Dataset):
         path = os.path.join(folder, self.data["fname"])
         json.dump(data, open(path, "w"), indent=4)
         return path
+
 
     def load(self, folder=None, missing_ok=True, load_split=False):
         if folder is None:
@@ -493,6 +495,7 @@ class EmbeddingDataset(Dataset):
             except KeyError: log("warning", f"Dataset split info not found at: {path}")
         return self
 
+
     @classmethod
     def from_file(cls, path, load_split=False):
         raw = json.load(open(path, "r"))
@@ -505,6 +508,7 @@ class EmbeddingDataset(Dataset):
             try:  new.splitted = raw["splitted"]
             except KeyError: log("warning", f"Dataset split info not found at: {path}")
         return new
+
 
 
 class EmbeddingDataloader(DataLoader):
