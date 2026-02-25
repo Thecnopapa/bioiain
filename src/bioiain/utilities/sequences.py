@@ -25,7 +25,6 @@ class FASTA(object):
         return f"<bi.{self.__class__.__name__}: {self.fasta_path}>"
 
 
-
     def _parse_fasta(self, names=True, sequences=True, key=None):
         assert names or sequences
 
@@ -95,19 +94,16 @@ class FASTA(object):
             return seqs
 
 
-
-
-
     def get_names(self, key=None):
         return self._parse_fasta(names=True, sequences=False, key=key)
+
 
     def get_sequences(self, key=None):
         return self._parse_fasta(names=False, sequences=True, key=key)
 
+
     def parse(self, key=None):
         return self._parse_fasta(key=key)
-
-
 
 
 
@@ -125,12 +121,13 @@ class MSA(object):
         self.tree_path = self._build_tree(self.msa_path)
         self.msa_fasta = FASTA(self.msa_path)
 
+
     def __repr__(self):
         return f"<bi.{self.__class__.__name__}:{self.name} ({len(self)} sequences)>"
 
+
     def __len__(self):
         return len(self.fasta_dict)
-
 
 
     def _run_clustal_msa(self, fasta_path=None, name="temp", out_folder=None, clustal_cmd="clustalw", matrix="BLOSUM", out_format="fasta", force=False, verbose=False):
@@ -184,8 +181,6 @@ class MSA(object):
         return out_path
 
 
-
-
     def get_similar(self, target, name="temp", similarity=95):
         threshold = (100-similarity) / 100
         log(2, f"Finding similar at {similarity}% for {target}")
@@ -213,6 +208,7 @@ class MSA(object):
                     seq_num = int(comps[1].replace(":", ""))
                     break
         return seq_num
+        
 
     def _get_seq_name(self, seq_num):
         #log(3, f"Finding seq_name for {seq_num}")

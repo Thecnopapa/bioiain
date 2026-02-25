@@ -34,9 +34,10 @@ class ModelNotFound(Exception):
 
 
 
-
 class CustomLoss(object):
     pass
+
+
 
 class CustomModel(nn.Module):
     def __init__(self, name, in_shape, lr=0.001, folder="./models"):
@@ -76,7 +77,6 @@ class CustomModel(nn.Module):
         self.data["name"] = str(self)
 
         log("header", f"Model initialised: {self.data["name"]}")
-
 
 
     def __str__(self):
@@ -122,10 +122,12 @@ class CustomModel(nn.Module):
 
         return self.submodels.keys()
 
+
     def reset_loss(self):
         self.running_loss["total"] = 0
         for c in self.running_loss.keys():
             self.running_loss[c] = 0
+
 
     def send_run(self, *args, **kwargs):
         if self.writer is not None:
@@ -138,9 +140,6 @@ class CustomModel(nn.Module):
                 return send_tensorboard_run(*args, folder=folder, run=run_name, file=file, **kwargs)
             except Exception as e:
                 log("warning", "Error uploading run:", e)
-
-
-
 
 
     def write_loss(self):
@@ -161,6 +160,7 @@ class CustomModel(nn.Module):
         self.data["epoch"] = epoch
         return self.data["epoch"]
 
+
     def add_epoch(self):
 
         if self.writer is not None:
@@ -177,12 +177,14 @@ class CustomModel(nn.Module):
         else: self.data["epoch"] += 1
         return self.data["epoch"]
 
+
     def get_fname(self, add_epoch=False) -> str:
         if add_epoch and self.data["epoch"] is not None:
             fname = f"{self.data['model']}_{self.data['name']}_E{self.data['epoch']}"
         else:
             fname = f"{self.data['model']}_{self.data['name']}"
         return fname
+
 
     def save(self, path=None, add_epoch=False, temp=False):
         if path is None:
@@ -194,6 +196,7 @@ class CustomModel(nn.Module):
         self.data["path"] = model_path
         torch.save(self.state_dict(), model_path)
         return self.export(path=model_path, add_epoch=add_epoch)
+
 
     def export(self, path=None, add_epoch=False):
         if path is None:
@@ -207,6 +210,7 @@ class CustomModel(nn.Module):
         json.dump(self.data, open(data_path, "w"), indent=4)
         return data_path
 
+
     def load(self, data_path=None, epoch=None, weights_only=False):
         if data_path is None:
             data_path = os.path.join(self.data["folder"], self.get_fname(add_epoch=epoch))+".data.json"
@@ -217,6 +221,7 @@ class CustomModel(nn.Module):
         self.load_state_dict(torch.load(self.data["path"], weights_only=weights_only))
         return self
 
+
     def add_map(self, dataset):
         self.data["label_to_index"] = dataset.data["label_to_index"]
         self.data["index_to_label"] = dataset.data["index_to_label"]
@@ -224,6 +229,7 @@ class CustomModel(nn.Module):
             self.data["lab_count"] = dataset.data["lab_count"]
 
         return self.data["label_to_index"], dataset.data["index_to_label"]
+
 
     def test(self, dataset, re_load=True):
         if re_load:
@@ -340,13 +346,7 @@ class CustomModel(nn.Module):
         self.save(temp=not re_load)
 
 
-
-    def loss(self,
-             output:torch.Tensor,
-             item:Item,
-             criterion_name:str="mode",
-             backwards:bool=True,
-             zero_optims:str|None="mode") -> torch.Tensor|float:
+    def loss(self, output:torch.Tensor, item:Item, criterion_name:str="mode", backwards:bool=True, zero_optims:str|None="mode") -> torch.Tensor|float:
 
         self.zero_grad(zero_optims)
 
@@ -395,6 +395,7 @@ class CustomModel(nn.Module):
 
         return loss
 
+
     def step(self, optimizer_name:str|None="mode") -> bool:
         if optimizer_name is None: return False
         if optimizer_name == "mode": optimizer_name = self.mode
@@ -408,6 +409,7 @@ class CustomModel(nn.Module):
             self.optimisers[optimizer_name].step()
         return True
 
+
     def zero_grad(self, optimizer_name:str|None="mode") -> bool:
         if optimizer_name is None: return False
         if optimizer_name == "mode": optimizer_name = self.mode
@@ -420,9 +422,11 @@ class CustomModel(nn.Module):
             self.optimisers[optimizer_name].zero_grad()
         return True
 
+
     def set_mode(self, mode:str):
         self.mode = mode
         return self.mode
+
 
     def __call__(self, x, **kwargs):
         return self.forward(x, **kwargs)
@@ -438,10 +442,6 @@ class CustomModel(nn.Module):
         else:
             x = self.submodels[submodel_name](x)
         return x
-
-
-
-
 
 
 
@@ -480,7 +480,6 @@ class DUAL_MLP_MK6(CustomModel):
         self._mount_submodels()
 
 
-
     class CustomHalfHalf(CustomLoss):
         def __init__(self, weights=None):
             log(1, "Using label weights:")
@@ -513,12 +512,6 @@ class DUAL_MLP_MK6(CustomModel):
             #    loss *= 0.5
             loss *= self.weight[pred]
             return loss
-
-
-
-
-
-
 
 
 
@@ -556,7 +549,6 @@ class DUAL_MLP_MK5(CustomModel):
         self._mount_submodels()
 
 
-
     class CustomHalfHalf(CustomLoss):
         def __init__(self, weights=None):
             log(1, "Using label weights:")
@@ -589,13 +581,6 @@ class DUAL_MLP_MK5(CustomModel):
             #    loss *= 0.5
             loss *= self.weight[pred]
             return loss
-
-
-
-
-
-
-
 
 
 
@@ -629,7 +614,6 @@ class DUAL_MLP_MK4(CustomModel):
         self._mount_submodels()
 
 
-
     class CustomHalfHalf(CustomLoss):
         def __init__(self, weights=None):
             log(1, "Using label weights:")
@@ -665,8 +649,6 @@ class DUAL_MLP_MK4(CustomModel):
 
 
 
-
-
 class DUAL_MLP_MK3(CustomModel):
     def __init__(self, *args, hidden_dims=[640, 1280, 128], num_classes=4, dropout=0.2, **kwargs):
         super().__init__(*args, **kwargs)
@@ -693,9 +675,6 @@ class DUAL_MLP_MK3(CustomModel):
         self.criterions["default"] = nn.CrossEntropyLoss()
 
         self._mount_submodels()
-
-
-
 
 
 
@@ -746,6 +725,7 @@ class DUAL_MLP_MK2(CustomModel):
             return contact_loss * outer_loss
 
 
+
 class DUAL_MLP_MK1(CustomModel):
     def __init__(self, *args, hidden_dims=[128, 256], num_classes=2, dropout=0.2, **kwargs):
         super().__init__(*args, **kwargs)
@@ -788,6 +768,7 @@ class DUAL_MLP_MK1(CustomModel):
             return contact_loss + outer_loss
 
 
+
 class MLP_MK3(CustomModel):
     def __init__(self, *args, hidden_dims=[128 ,256], num_classes=8, dropout=0.2, **kwargs):
         super().__init__(*args, **kwargs)
@@ -808,9 +789,12 @@ class MLP_MK3(CustomModel):
 
         self._mount_submodels()
 
+
     @staticmethod
     def simpleloss(o, t):
             return abs(o-t)
+
+
 
 class MLP_MK2(CustomModel):
     def __init__(self, *args, hidden_dims=[256 ,128], num_classes=8, dropout=0.2, **kwargs):
@@ -832,9 +816,12 @@ class MLP_MK2(CustomModel):
 
         self._mount_submodels()
 
+
     @staticmethod
     def simpleloss(o, t):
             return abs(o-t)
+
+
 
 class MLP_MK1(CustomModel):
     def __init__(self, *args, input_dim, hidden_dims=[256 ,128], num_classes=8, dropout=0.2, **kwargs):
@@ -851,5 +838,8 @@ class MLP_MK1(CustomModel):
         }
 
         self._mount_submodels()
+
+
+
 
 

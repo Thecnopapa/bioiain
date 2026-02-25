@@ -10,14 +10,18 @@ from torch.utils.data import Dataset
 
 device = "cpu"
 
+
 class MissingProgram(Exception):
     pass
+
+
 
 class FoldseekError(Exception):
     pass
 
-class Embedding(object):
 
+
+class Embedding(object):
     def __init__(self, *args, name=None, folder=None, **kwargs):
         assert name is not None
         self.name=name
@@ -28,6 +32,7 @@ class Embedding(object):
         self.path = None
         self.length = 0
         self.iter_dim = 1
+
 
     def __repr__(self):
         return f"<bi.{self.__class__.__name__}:{self.name} N={self.length} at: {self.path}"
@@ -41,9 +46,11 @@ class Embedding(object):
         self.length = tensor.shape[length_dim]
         self.iter_dim = iter_dim
 
+
     def get_tensor(self):
         tensor = torch.load(self.path)
         return tensor
+
 
     def generate_embedding(self, *args, **kwargs):
         raise NotImplementedError("Embedding: generate_embedding() must be overridden by subclass")
@@ -58,13 +65,14 @@ class PerResidueEmbedding(Embedding):
         self.sequence = self._get_sequence()
         self.subfolder = os.path.join(self.folder, self.name)
 
+
     def _get_sequence(self, force=False):
         self.sequence = self.entity.get_sequence(force=force)
         return self.sequence
 
 
-class SaProtEmbedding(PerResidueEmbedding):
 
+class SaProtEmbedding(PerResidueEmbedding):
     def __init__(self, *args, foldseek_cmd="foldseek", with_foldseek=True, force=False, padding=1, keep_padding=False, save_to_tmp=False, **kwargs):
         super().__init__(self, *args, **kwargs)
         self.folder = os.path.join(self.folder, "SaProt")
@@ -86,11 +94,13 @@ class SaProtEmbedding(PerResidueEmbedding):
         self.iter_dim = 1
         self.generate_embedding(with_foldseek=with_foldseek, force=force)
 
+
     def generate_embedding(self, *args, with_foldseek=True, force=False, **kwargs):
         #print("GENERATING_EMBEDDING")
         if with_foldseek:
             if self._get_foldseek(force=force) is None: return None
         return self._get_saprot(force=force)
+
 
     def _run_foldseek(self, out_path):
         #print("RUNNING FOLDSEEK")
@@ -102,6 +112,7 @@ class SaProtEmbedding(PerResidueEmbedding):
         subprocess.run(cmd)
         if not os.path.exists(out_path):
             raise MissingProgram("Foldseek not installed or not working")
+
 
     def _read_foldseek(self, out_path, try_again=False):
         #print("READING FOLDSEEK")
@@ -126,6 +137,7 @@ class SaProtEmbedding(PerResidueEmbedding):
             #print(self.fs_tokens)
             return self.fs_tokens
 
+
     def _get_foldseek(self, force=False):
         #print("GETTING_FOLDSEEK")
         out_path = f"/tmp/bioiain/foldseek/{self.name}.foldseek.tsv"
@@ -135,6 +147,7 @@ class SaProtEmbedding(PerResidueEmbedding):
             return self._read_foldseek(out_path)
         else:
             return self._read_foldseek(out_path, try_again=True)
+
 
     def _get_saprot(self, force=False):
         from transformers import AutoTokenizer, AutoModelForMaskedLM
@@ -225,6 +238,9 @@ class SaProtEmbedding(PerResidueEmbedding):
         #print(self.path)
 
         return self.path
+
+
+
 
 
 
