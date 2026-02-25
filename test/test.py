@@ -351,6 +351,7 @@ if "-t" in sys.argv:
             break
 
 
+
 if "-p" in sys.argv:
     from src.bioiain.symmetries import PredictedMonomerContacts
     from src.bioiain.visualisation import PymolScript
@@ -360,6 +361,7 @@ if "-p" in sys.argv:
     model_path = "./models/DUAL_MLP_MK3_saprot_interactions_rcps_T10_DUAL_CLASSES.temp.data.json"
     if "--model" in sys.argv:
         model_path = sys.argv[sys.argv.index("--model") + 1]
+    print("MODEL PATH:", model_path)
 
     if "--file" in sys.argv:
         chains = None
@@ -417,6 +419,7 @@ if "-p" in sys.argv:
                 #print(full_pred)
 
                 interaction = PredictedMonomerContacts(monomer, full_pred, label_to_index)
+                #interaction.plot_mpl()
                 pred_path = interaction.save_structure(prediction_folder)
                 script = PymolScript(name=f"{monomer.get_name()}_{chain.id}_prediction_pml_session", folder=prediction_folder)
                 script.load(pred_path, monomer.get_name())
@@ -427,6 +430,9 @@ if "-p" in sys.argv:
                 print("Session saved at:")
                 print("pymol", session_path)
                 #script.execute()
+
+
+
 
 if "-w" in sys.argv:
     from src.bioiain.symmetries import PredictedMonomerContacts
@@ -477,14 +483,6 @@ if "-w" in sys.argv:
         session_path = script.write_script()
         print("Session saved at:")
         print("pymol", session_path)
-
-
-
-
-
-
-
-
 
 
 

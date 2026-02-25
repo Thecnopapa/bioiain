@@ -1,6 +1,7 @@
 import os, json, math
 
 from ..visualisation import pymol, PymolScript
+from ..visualisation.plots import *
 
 from .operations import coord_operation_entity, entity_to_frac, entity_to_orth
 from ..utilities.logging import log
@@ -295,6 +296,7 @@ class PredictedMonomerContacts(object):
         self.label_to_index = label_to_index
 
         self._set_bfactors()
+        self._agglomerate()
 
 
     def _set_bfactors(self):
@@ -317,6 +319,115 @@ class PredictedMonomerContacts(object):
         os.makedirs(folder, exist_ok=True)
         path = write_atoms(self.monomer, path)
         return path
+
+
+
+    def _agglomerate(self):
+        atomlist = self.monomer.atoms(ca_only=True, group_by_residue=False)
+        from sklearn.cluster import AgglomerativeClustering
+        from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+        agg = AgglomerativeClustering(n_clusters=None, distance_threshold=25, compute_full_tree=True)
+        coords = [a.coord for a in atomlist]
+        labels = [a.b for a in atomlist]
+        data = [coords, labels]
+        agg.fit(coords)
+        print(agg)
+        #reduced = agg.transform(coords)
+        [print(x) for x in zip(agg.labels_, coords)]
+        print("...\n")
+        #print(reduced)
+        #print(reduced.shape)
+        print("CLUSTERS:", agg.n_clusters_)
+
+        labelled_coords = zip(agg.labels_, coords, labels)
+
+        cluster_intensities = {}
+        for l, c, b in labelled_coords:
+            l = str(int(l))
+            if l not in cluster_intensities:
+                cluster_intensities[l] = {"i":0, "n":0, "r":0,  "a":0, "center":None,"c":None, "cc":None, "o":None}
+            cluster_intensities[l]["i"] += b
+            cluster_intensities[l]["n"] += 1
+
+
+
+        cmap = mpl.colormaps["plasma"]
+        cluster_cmap = mpl.colormaps["gist_rainbow"]
+        print("NCOLORS:", cluster_cmap.N)
+
+        for k, v in cluster_intensities.items():
+            cluster_intensities[k]["a"] = v["i"] / v["n"]
+            cluster_intensities[k]["cc"] = cluster_cmap(round(cluster_cmap.N/agg.n_clusters_*int(k)))
+
+        cluster_intensities = {k:v for k, v in sorted(cluster_intensities.items(), key=lambda x: x[1]["a"], reverse=True)}
+        print(json.dumps(cluster_intensities, indent=4))
+
+        max_i = max(c["a"] for c in cluster_intensities.values())
+        for n, (k, v) in enumerate(cluster_intensities.items()):
+            cluster_intensities[k]["o"] = n
+            cluster_intensities[k]["r"] = v["a"] / max_i
+            cluster_intensities[k]["c"] = cmap(round((cluster_intensities[k]["r"]*255/2)+127))
+
+        print(json.dumps(cluster_intensities, indent=4))
+
+
+        fig, ax = fig3D()
+        for n, (k, v) in enumerate(cluster_intensities.items()):
+            cluster_intensities[k]["center"] = np.array([0.,0.,0.])
+
+        for c, b, l in zip(coords, labels, agg.labels_):
+            l = str(int(l))
+            cluster_intensities[l]["center"] += np.array(c)
+            ax.scatter(*c, s=b*100, color=cluster_intensities[l]["c"], edgecolors=cluster_intensities[l]["cc"], alpha=0.5)
+
+        for n, (k, v) in enumerate(cluster_intensities.items()):
+            cluster_intensities[k]["center"] /=  cluster_intensities[k]["n"]
+            if cluster_intensities[k]["o"] < 5:
+
+                ax.text(*cluster_intensities[k]["center"], v["o"], fontsize=50.**cluster_intensities[k]["r"])
+
+        for n, (k, v) in enumerate(cluster_intensities.items()):
+            cluster_intensities[k]["center"] =  list(cluster_intensities[k]["center"])
+        print(json.dumps(cluster_intensities, indent=4))
+
+        fig.show()
+        input("Press Enter to close fig")
+
+
+
+
+    def plot_mpl(self):
+        import matplotlib as mpl
+        cmap=mpl.colormaps["plasma"]
+        print(cmap.N)
+
+        fig, ax = fig3D()
+
+        reslist = self.monomer.atoms(ca_only=True, group_by_residue=True).items()
+        pcolor = None
+        pcoord=None
+        for n, (res, atom_list) in enumerate(reslist):
+            for atom in atom_list:
+                color_index = round(atom.b*25.5)
+                #print(atom.b, color_index, cmap(color_index))
+                color = cmap(color_index)
+                coord = np.array(atom.coord)
+                ax.scatter(*atom.coord, s=100, color=color)
+                if n != 0:
+                    middle = (coord + pcoord) / 2
+                    line1 = list(zip(coord, middle))
+                    line2 = list(zip(middle, pcoord))
+                    ax.plot(*line1, color=color)
+                    ax.plot(*line2, color=pcolor)
+                pcolor = color
+                pcoord = coord
+
+
+
+        fig.show()
+        input("Press Enter to close fig")
+
+
 
 
 

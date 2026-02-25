@@ -217,7 +217,7 @@ class CustomModel(nn.Module):
         if not os.path.exists(data_path):
             raise ModelNotFound(data_path)
         raw_data = json.load(open(data_path, "r"))
-        self.data = raw_data
+        self.data = self.data | raw_data
         self.load_state_dict(torch.load(self.data["path"], weights_only=weights_only))
         return self
 
