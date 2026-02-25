@@ -96,7 +96,7 @@ class EmbeddingDataset(Dataset):
             "test": None,
             "train": None,
         }
-        
+
 
     def __repr__(self):
         if self.data["deleted_indexes"] > 0:
@@ -132,6 +132,7 @@ class EmbeddingDataset(Dataset):
         try:
             r = self.get(self.i)
         except DeletedIndex:
+            self.i += 1
             r = self.__next__()
         self.i += 1
         return r
