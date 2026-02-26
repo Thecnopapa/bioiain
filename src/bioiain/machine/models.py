@@ -97,7 +97,7 @@ class CustomModel(nn.Module):
         try: loss = self.running_loss[self.mode]
         except KeyError: loss = self.running_loss['default']
 
-        return f"<bi.CustomModel: {self.data['name']}\n - MODE: {self.mode}\n - class: {self.__class__.__name__}\n - optimiser: {optim.__class__.__name__}\n - criterion: {crit.__class__.__name__}\n - current epoch: {self.data['epoch']}\n - running loss: {loss}\n - layers: {[l for l in layers.keys()]}\n>\n"
+        return f"<bi.CustomModel: {self.data['name']}\n - MODE: {self.mode}\n - class: {self.__class__.__name__}\n - optimiser: {optim.__class__.__name__}\n - criterion: {crit.__class__.__name__}\n - current epoch: {self.data['epoch']}\n - running loss: {loss}\n - layers: {[f'{k}({v.__class__.__name__})' for k, v in layers.items()]}\n>\n"
 
 
     def _mount_submodels(self):
@@ -443,6 +443,101 @@ class CustomModel(nn.Module):
         else:
             x = self.submodels[submodel_name](x)
         return x
+
+
+
+class DUAL_MLP_MK7(CustomModel):
+    def __init__(self, *args, hidden_dims=[2560, 128], num_classes=4, dropout=0.2, weights=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.data["num_classes"] = num_classes
+        self.data["hidden_dims"] = hidden_dims
+        self.data["dropout"] = dropout
+
+        self.data["n_sublayers_l1"] = 20
+        self.data["l_subsize_l1"] = hidden_dims[0]//self.data["n_sublayers_l1"] 
+
+        self.layers["default"] = {
+            "sl1": self.splitLinear(input_dim=self.data["in_shape"][0], layer_size=self.data["l_subsize_l1"], n_layers=self.data["n_sublayers_l1"]),
+            "drop1": nn.Dropout(dropout),
+            "relu1": nn.LeakyReLU(),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "drop2": nn.Dropout(dropout),
+            "relu2": nn.LeakyReLU(),
+            "l3": nn.Linear(hidden_dims[1], num_classes),
+            "softmax": nn.Softmax(dim=0)
+        }
+
+        self.criterions["default"] = self.CustomHalfHalf(weights)
+        self.data["weights"] = list([w.item() for w in self.criterions["default"].weight])
+
+
+
+        self.layers["no-dropout"] = self.layers["default"].copy()
+        self.layers["no-dropout"].pop("drop1")
+        self.layers["no-dropout"].pop("drop2")
+        #self.criterions["no-dropout"] = self.CustomHalfHalf(weights)
+
+        self._mount_submodels()
+
+
+    class splitLinear(nn.Module):
+        def __init__(self, *args, input_dim=1280, layer_size=128, n_layers=20, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.layers = nn.ModuleList()
+            self.input_dim = input_dim
+            self.layer_size = layer_size
+            for i in range(n_layers):
+                self.layers.append(nn.Linear(self.input_dim, layer_size))
+
+
+        def forward(self, x):
+            segments = []
+            for l in self.layers:
+                segments.append(l(x))
+            return torch.cat(segments)
+
+
+
+
+
+
+
+
+    class CustomHalfHalf(CustomLoss):
+        def __init__(self, weights=None):
+            log(1, "Using label weights:")
+
+            if type(weights) is dict:
+                weights = weights.values()
+            w = np.array(list(weights))
+            w = w
+            w = w / w.sum()
+            w = torch.Tensor(w)
+            log(2, w)
+            self.CEL = nn.MSELoss()
+            self.weight = w
+
+        def __call__(self, o, item):
+            true_index = item.li
+            true_tensor = item.lt
+            pred = torch.max(o, dim=0)[1]
+            if item.li < 5:
+                true_tensor[:5] = 0.5
+            else:
+                true_tensor[5:] = 0.5
+            true_tensor[item.li:item.li+1] = 1.
+
+            #print(true_tensor)
+            weighted_out = o# * self.weight
+            #print("Weighted out:", weighted_out)
+            loss = self.CEL(o, true_tensor)
+            #if true_index < 5 == torch.max(o, dim=0)[1] < 5:
+            #    loss *= 0.5
+            loss *= self.weight[pred]
+            return loss
+
+
 
 
 

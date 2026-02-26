@@ -94,6 +94,8 @@ if "mk5" in sys.argv:
     model_class = DUAL_MLP_MK5
 elif "mk6" in sys.argv:
     model_class = DUAL_MLP_MK6
+elif "mk7" in sys.argv:
+    model_class = DUAL_MLP_MK7
 else:
     if DUAL:
         model_class = DUAL_MLP_MK4
@@ -286,6 +288,8 @@ if "-t" in sys.argv:
 
 
     log(1, f"Run name: {run_name}")
+    total_params = sum(p.numel() for p in model.submodels["default"].parameters())
+    log(1, "Number of parameters in the model:", total_params)
 
 
 
