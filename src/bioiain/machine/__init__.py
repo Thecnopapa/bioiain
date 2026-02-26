@@ -2,7 +2,7 @@ __all_ = ["datasets", "embeddings", "models"]
 
 from ..utilities.logging import log
 
-import torch
+import torch, sys
 
 DEVICE = "cpu"
 if torch.cuda.is_available():
