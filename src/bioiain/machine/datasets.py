@@ -131,8 +131,10 @@ class EmbeddingDataset(Dataset):
             raise StopIteration
         try:
             r = self.get(self.i)
-        except DeletedIndex:
-            self.i += 1
+        except DeletedIndex as e:
+            next_n = e.next_n
+            log("warning", f"Deleted embeddig found skipping to index: {next_n}")
+            self.i = next_n
             r = self.__next__()
         self.i += 1
         return r
@@ -317,7 +319,7 @@ class EmbeddingDataset(Dataset):
             if key >= e["end"]: continue
 
             if e.get("deleted", False):
-                raise DeletedIndex(f"Index: {key}")
+                raise DeletedIndex(f"Index: {key}", next_n=e["end"])
 
             iter_dim = e["iter_dim"]
 

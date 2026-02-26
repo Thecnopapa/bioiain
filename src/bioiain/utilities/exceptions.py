@@ -13,7 +13,9 @@ class MisslabellingException(SequenceMissmatchException):
 	pass
 
 class DeletedIndex(Exception):
-	pass
+	def __init__(self, *args, next_=None, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.next_n = next_n
 
 
 class StructureLoadException(Exception):

@@ -140,7 +140,9 @@ if "-l" in sys.argv or "-e" in sys.argv:
                 print("retrying")
                 mon_data = get_monomers(file, file_folder, only_ids=True, force=True, contact_threshold=15)
                 monomer = Monomer.recover(data_path=os.path.join(dataset.data["export_folder"], monomer_id.split("_")[0], "monomers", monomer_id))
-
+            except Exception as e:
+                log("warning", "Error processing crystal (skipped): {e}")
+                continue
             if mon_data is None:
                 log("Warning", f"{file} has no monomers")
                 continue
