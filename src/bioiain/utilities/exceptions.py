@@ -13,7 +13,7 @@ class MisslabellingException(SequenceMissmatchException):
 	pass
 
 class DeletedIndex(Exception):
-	def __init__(self, *args, next_=None, **kwargs):
+	def __init__(self, *args, next_n=None, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.next_n = next_n
 
