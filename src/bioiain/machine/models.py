@@ -18,15 +18,8 @@ from .datasets import Item, Dataset
 from torch.utils.tensorboard import SummaryWriter
 import datetime
 import psutil
+from . import DEVICE
 
-
-DEVICE = "cpu"
-if torch.cuda.is_available():
-    DEVICE = "cuda"
-elif torch.xpu.is_available():
-    DEVICE = "xpu"
-
-log(1, "DEVICE:", DEVICE)
 
 
 class ModelNotFound(Exception):
@@ -306,6 +299,7 @@ class CustomModel(nn.Module):
 
                     else:
                         truth = label_to_index[l]
+
                         pred = out.argmax(dim=0)
                         p = index_to_label[pred.item()]
                         confusion[l][p] += 1
@@ -321,20 +315,27 @@ class CustomModel(nn.Module):
                         correct += 1
 
         print()
-        #print(json.dumps(confusion, indent=4))
+        print(json.dumps(confusion, indent=4))
 
         self.writer.add_scalar(f"accuracy/total", (correct / total) * 100, self.data["epoch"])
         #self.writer.add_scalar(f"accuracy/dual/contactability", (confusion["contactability"]["right"] / total) * 100, self.data["epoch"])
         #self.writer.add_scalar(f"accuracy/dual/outer", (confusion["outer"]["right"] / total) * 100, self.data["epoch"])
 
 
+        weighted_accuracy = sum([( v[k]/sum(v.values()) ) * ( 1-(truths.count(k) / len(truths)) ) for k, v in confusion.items()])
+        self.writer.add_scalar(f"accuracy/weighted", weighted_accuracy * 100, self.data["epoch"])
 
-        log(1, f"Results: EPOCH:{self.data['epoch']-1} correct={correct}, total={total}, accuracy={(correct / total) * 100:2.3f}%")
+
+
+
+        log(1, f"Results: EPOCH:{self.data['epoch']-1} correct={correct}, total={total}, accuracy={(correct / total) * 100:2.3f}%, weighted={weighted_accuracy * 100:2.3f}% ")
 
         if len(preds) > 0 and len(truths) > 0:
             try:
                 from ..visualisation.plots import plot_confusion
                 _, confusion_path = plot_confusion(preds, truths, title=f"{str(self)}", classes = label_to_index.keys())
+                _, confusion_path = plot_confusion(preds, truths, title=f"{str(self)}.weighted", classes = label_to_index.keys())
+
 
                 im = PIL.Image.open(confusion_path)
                 im = torchvision.transforms.v2.functional.pil_to_tensor(im)

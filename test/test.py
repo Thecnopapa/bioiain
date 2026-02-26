@@ -48,13 +48,7 @@ log(1, f"Torch using {avail_cpus} threads")
 
 #mlog = mem_log()
 
-DEVICE = "cpu"
-if torch.cuda.is_available():
-    DEVICE = "cuda"
-elif torch.xpu.is_available():
-    DEVICE = "xpu"
-
-log(1, "DEVICE:", DEVICE)
+from src.bioiain.machine import DEVICE
 
 
 FORCE = "force" in sys.argv or "-f" in sys.argv

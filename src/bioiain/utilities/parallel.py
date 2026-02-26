@@ -30,7 +30,7 @@ if use_max or cpu_count <= 1:
 else:
     avail_cpus = cpu_count -1
 log(1, f"Available CPUs: {avail_cpus}/{cpu_count}, using max: {use_max}, using_logical: {use_logical}")
-log(2, f"Processor: {platform.processor()}")
+log(2,f"Machine: {platform.processor()} ({platform.machine()})")
 
 
 pools = []
