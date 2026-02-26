@@ -454,7 +454,7 @@ class DUAL_MLP_MK7(CustomModel):
         self.data["hidden_dims"] = hidden_dims
         self.data["dropout"] = dropout
 
-        self.data["n_sublayers_l1"] = 20
+        self.data["n_sublayers_l1"] = 10
         self.data["l_subsize_l1"] = hidden_dims[0]//self.data["n_sublayers_l1"] 
 
         self.layers["default"] = {
@@ -492,10 +492,14 @@ class DUAL_MLP_MK7(CustomModel):
 
 
         def forward(self, x):
+            #print("IN:", x.shape)
             segments = []
-            for l in self.layers:
+            for n, l in enumerate(self.layers):
                 segments.append(l(x))
-            return torch.cat(segments)
+                #print(f"SEGMENT {n}:", segments[-1].shape)
+            r = torch.cat(segments)
+            #print("OUT:", r.shape)
+            return r
 
 
 
