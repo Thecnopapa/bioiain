@@ -322,7 +322,7 @@ class CustomModel(nn.Module):
         #self.writer.add_scalar(f"accuracy/dual/outer", (confusion["outer"]["right"] / total) * 100, self.data["epoch"])
 
 
-        weighted_accuracy = sum([( v[k]/sum(v.values()) ) * ( 1-(truths.count(k) / len(truths)) ) for k, v in confusion.items()])
+        weighted_accuracy = sum([( v[k]/sum(v.values()) ) * ( 1-(truths.count(k) / len(truths)) ) for k, v in confusion.items()])/len(set(truths))
         self.writer.add_scalar(f"accuracy/weighted", weighted_accuracy * 100, self.data["epoch"])
 
 
