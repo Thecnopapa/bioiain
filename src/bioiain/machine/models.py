@@ -58,6 +58,9 @@ class CustomModel(nn.Module):
                 "kwargs":{"lr":lr},
             }
         }
+        self.schedulers = {
+            "default": None
+        }
 
         self.layers = {
             "default": {
@@ -100,7 +103,9 @@ class CustomModel(nn.Module):
 
         for o, op_data in self.optimisers.items():
             self.optimisers[o] = self.optimisers[o]["class"](self.submodels[self.optimisers[o]["layer_set"]].parameters(), **self.optimisers[o]["kwargs"])
-        
+            if op_data.get("LRS", None) is not None:
+                self.schedulers[o] = op_data["LRS"](optimiser=self.optimisers[o])
+
         self.mounted = True
 
         self.reset_loss()
@@ -136,7 +141,10 @@ class CustomModel(nn.Module):
 
 
     def write_loss(self):
+        av_losses = {}
         for c, rl in self.running_loss.items():
+            if c == "total":
+                pass
             total = self.running_loss["total"]
             if isinstance(rl, torch.Tensor):
                 rl = rl.item()
@@ -147,6 +155,9 @@ class CustomModel(nn.Module):
             if self.writer is not None:
                 #print("writing", av_loss)
                 self.writer.add_scalar(f"loss/{c}", float(av_loss), self.data["epoch"])
+            av_losses[c] = av_loss
+        return av_losses
+
 
 
     def set_epoch(self, epoch):
@@ -163,8 +174,11 @@ class CustomModel(nn.Module):
                         self.writer.add_histogram(f"{set_name}/weight/{layer_name}", layer.weight, self.data["epoch"])
                     if hasattr(layer, "bias"):
                         self.writer.add_histogram(f"{set_name}/bias/{layer_name}", layer.bias,  self.data["epoch"])
+        
+        av_losses = self.write_loss()
 
-        self.write_loss()
+        if self.data["epoch"] not in (None, 0):
+            self.step_schedulers(running_loss=av_losses)
         self.reset_loss()
         if self.data["epoch"] is None: self.data["epoch"] = 1
         else: self.data["epoch"] += 1
@@ -403,6 +417,27 @@ class CustomModel(nn.Module):
         return loss
 
 
+    
+    def step_schedulers(self, scheduler_name:str|None="mode", running_loss=None) -> bool:
+        if scheduler_name is None: return False
+        if scheduler_name == "mode": scheduler_name = self.mode
+        if scheduler_name not in self.schedulers: scheduler_name = "default"
+
+        if running_loss is None:
+            running_loss = self.running_loss.get("default", 0.5)
+
+        if scheduler_name == "all":
+            for name, scheduler in self.schedulers.items():
+                if scheduler is not None:
+                    scheduler.step(running_loss=running_loss.get(name, 0.5))
+        else:
+            if self.schedulers[scheduler_name] is not None:
+                lr = self.schedulers[scheduler_name].step(running_loss=running_loss.get(scheduler_name, 0.5))
+                self.writer.add_scalar(f"learning_rate/{scheduler_name}", torch.Tensor(lr), self.data["epoch"])
+
+        return True
+
+
     def step(self, optimizer_name:str|None="mode") -> bool:
         if optimizer_name is None: return False
         if optimizer_name == "mode": optimizer_name = self.mode
@@ -492,7 +527,73 @@ class CustomHalfHalf(CustomLoss):
 
 
 
+class DUAL_MLP_MK9(CustomModel):
+    """
+    MK4 with Custom LR
+    """
+    def __init__(self, *args, hidden_dims=[2560, 128], num_classes=4, dropout=0.2, weights=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.data["num_classes"] = num_classes
+        self.data["hidden_dims"] = hidden_dims
+        self.data["dropout"] = dropout
+
+        self.layers["default"] = {
+            "l1": nn.Linear(self.data["in_shape"][0], hidden_dims[0]),
+            "drop1": nn.Dropout(dropout),
+            "relu1": nn.LeakyReLU(),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "drop2": nn.Dropout(dropout),
+            "relu2": nn.LeakyReLU(),
+            "l3": nn.Linear(hidden_dims[1], num_classes),
+            "softmax": nn.Softmax(dim=0)
+        }
+
+
+        self.optimisers["default"]["class"] = torch.optim.AdamW
+        self.optimisers["default"]["LRS"] = self.customLRS
+        self.optimisers["default"]["kwargs"]["fused"] = True
+
+
+        self.criterions["default"] = CustomHalfHalf(weights)
+        self.data["weights"] = list([w.item() for w in self.criterions["default"].weight])
+
+        self._mount_submodels()
+
+    class customLRS(torch.optim.lr_scheduler.LRScheduler):
+        def __init__(self, *args, optimiser, **kwargs):
+            self.o_lrs = [p["lr"] for p in optimiser.param_groups]
+            super().__init__(optimiser, *args, **kwargs)
+
+        def get_lr(self):
+            print("LRS: getting lrs")
+            print(self.lrs)
+            return torch.Tensor(np.array(self.lrs))
+            
+
+        def step(self, running_loss=0.5):
+            print("LRS: stepping...")
+            print(running_loss)
+            self.lrs = []
+            for p, olr in zip(self.optimizer.param_groups, self.o_lrs):
+                old_log = math.log(olr, 10)
+                print("OLD_LOG", old_log)
+                new_log = old_log - ((1-running_loss)*4) +2 
+                print("NEW_LOG", new_log)
+                new_lr = 10 ** new_log
+                print("NEW_LR", new_lr)
+                self.lrs.append(new_lr)
+                p["lr"] = torch.Tensor(np.array([new_lr]))
+            print(self.lrs)
+            return self.lrs
+
+
+
+
 class DUAL_MLP_MK8(CustomModel):
+    """
+    MK4 with AdamW
+    """
     def __init__(self, *args, hidden_dims=[2560, 128], num_classes=4, dropout=0.2, weights=None, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -526,6 +627,9 @@ class DUAL_MLP_MK8(CustomModel):
 
 
 class DUAL_MLP_MK7(CustomModel):
+    """ 
+    MK6 with splitted Linear 1
+    """
     def __init__(self, *args, hidden_dims=[2560, 128], num_classes=4, dropout=0.2, weights=None, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -583,6 +687,9 @@ class DUAL_MLP_MK7(CustomModel):
 
 
 class DUAL_MLP_MK6(CustomModel):
+    """
+    MK4 with no-dropout mode
+    """
     def __init__(self, *args, hidden_dims=[2560, 128], num_classes=4, dropout=0.2, weights=None, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -619,6 +726,9 @@ class DUAL_MLP_MK6(CustomModel):
 
 
 class DUAL_MLP_MK5(CustomModel):
+    """
+    6 Lienar model (massive)
+    """
     def __init__(self, *args, hidden_dims=[2560, 1280, 128], num_classes=4, dropout=0.2, weights=None, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -655,6 +765,12 @@ class DUAL_MLP_MK5(CustomModel):
 
 
 class DUAL_MLP_MK4(CustomModel):
+    """
+    3 Linear Model
+    1280 -> 2560 -> 128
+    3M params
+    Custom MSE Loss
+    """
     def __init__(self, *args, hidden_dims=[2560, 128], num_classes=4, dropout=0.2, weights=None, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -684,6 +800,10 @@ class DUAL_MLP_MK4(CustomModel):
 
 
 class DUAL_MLP_MK3(CustomModel):
+    """
+    4 Linear model
+    Cross Entropy Loss
+    """
     def __init__(self, *args, hidden_dims=[640, 1280, 128], num_classes=4, dropout=0.2, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -713,6 +833,10 @@ class DUAL_MLP_MK3(CustomModel):
 
 
 class DUAL_MLP_MK2(CustomModel):
+    """
+    4 Linear model 
+    Dual Loss
+    """
     def __init__(self, *args, hidden_dims=[2560, 1280, 128], num_classes=2, dropout=0.2, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -761,6 +885,10 @@ class DUAL_MLP_MK2(CustomModel):
 
 
 class DUAL_MLP_MK1(CustomModel):
+    """
+    3 Linear 
+    Dual Loss
+    """
     def __init__(self, *args, hidden_dims=[128, 256], num_classes=2, dropout=0.2, **kwargs):
         super().__init__(*args, **kwargs)
 

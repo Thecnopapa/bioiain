@@ -92,6 +92,8 @@ elif "mk7" in sys.argv:
     model_class = DUAL_MLP_MK7
 elif "mk8" in sys.argv:
     model_class = DUAL_MLP_MK8
+elif "mk9" in sys.argv:
+    model_class = DUAL_MLP_MK9
 else:
     if DUAL:
         model_class = DUAL_MLP_MK4
@@ -113,6 +115,10 @@ if "--mix" in sys.argv:
 SKIP_ABS = False
 if "--skip-abs" in sys.argv:
     SKIP_ABS = True
+
+SHORT_EPOCHS = False
+if "--short-e" in sys.argv:
+    SHORT_EPOCHS = True
 
 #Comment
 
@@ -310,11 +316,19 @@ if "-t" in sys.argv:
             log(1, "Disabling dropout layers...")
             print(repr(model))
 
+        for optimiser in model.optimisers.values():
+            log(1, "Learning rates")
+            for group in optimiser.param_groups:
+                log(2, group['lr'], type(group['lr']), group['lr'].shape)
+
         if not is_cluster:
             epoch_start = datetime.datetime.now()
             eta = datetime.timedelta(0)
+        print()
         try:
             for n, item in enumerate(dataset):
+                if SHORT_EPOCHS:
+                    if n > 100: break
                 if not is_cluster:
                     print(f"\033]0;TRAIN {epoch}/{epochs} {(n/len(dataset))*100:3.0f}%\a", end="\r")
                 #print("tensor:", item.t)
