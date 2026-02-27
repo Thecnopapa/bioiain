@@ -90,6 +90,8 @@ elif "mk6" in sys.argv:
     model_class = DUAL_MLP_MK6
 elif "mk7" in sys.argv:
     model_class = DUAL_MLP_MK7
+elif "mk8" in sys.argv:
+    model_class = DUAL_MLP_MK8
 else:
     if DUAL:
         model_class = DUAL_MLP_MK4
@@ -221,12 +223,14 @@ if "-l" in sys.argv or "-e" in sys.argv:
                 log(1, "Generating relative labels...")
                 ints = InteractionProfile(monomer, threshold=THRESHOLD, force=FORCE)
 
-                rel_label = ints.generate_labels(relative=True, force=FORCE, dataset=dataset, msa=msa, dual=DUAL, in_lab_var="abs_label")
+                rel_label, n_neighbours = ints.generate_labels(relative=True, force=FORCE, dataset=dataset, msa=msa, dual=DUAL, in_lab_var="abs_label")
                 print("REL LAB:", len(rel_label), f"DUAL={DUAL}")
 
                 if DUAL:
                     if DUAL_CLASSES:
                         dataset.add_label_from_list(rel_label, key=monomer_id, var_name="dual_class_label")
+                        dataset.embeddings[monomer_id]["n_neighbours"] = n_neighbours
+
                     else:
                         dataset.add_label_from_list(rel_label, key=monomer_id, var_name="dual_label")
                 else:
@@ -279,6 +283,7 @@ if "-t" in sys.argv:
     model = model_class(name=run_name, in_shape=(1280,), num_classes=len(label_to_index), lr=LR, weights=label_count  ).to(DEVICE)
     model.add_map(dataset)
     run_name = model.data["name"]
+    model.add_histogram("relative_neighbours", [int(e.get("n_neighbours", 0)) for e in dataset.embeddings.values() if not e.get("deleted", False)])
 
 
     log(1, f"Run name: {run_name}")
@@ -385,7 +390,7 @@ if "-p" in sys.argv:
                 data = json.load(open(model_path))
                 weights = data.get("weights", [])
                 model = model_class(name="interactions", in_shape=data["in_shape"], num_classes=data["num_classes"], weights=weights)
-                model.load(model_path)
+                model.load(model_path, weights_only=False)
                 print(model.set_mode("no-dropout"))
                 print(repr(model))
                 #print(json.dumps(model.data, indent=4))

@@ -28,14 +28,19 @@ class InteractionProfile:
     def generate_labels(self, relative=False, export=True, force=False, dataset=None, msa=None, dual=False, in_lab_var="label_path"):
 
         if relative:
-            labs = self._generate_relative_labels(export=export, force=force, dataset=dataset, msa=msa, in_lab_var=in_lab_var)
+            labs, n_neighbours = self._generate_relative_labels(export=export, force=force, dataset=dataset, msa=msa, in_lab_var=in_lab_var)
+            
+            if dual:
+                labs = self._generate_dual_labels(labs, export=export, dataset=dataset, force=force)
+
+            return labs, n_neighbours
+
         else:
             labs = self._generate_absolute_labels(export=export, force=force)
+            return labs
 
-        if dual:
-            labs = self._generate_dual_labels(labs, export=export, dataset=dataset, force=force)
 
-        return labs
+
 
 
 
@@ -146,10 +151,12 @@ class InteractionProfile:
         if export:
             self.monomer.export()
 
+        n_neighbours = len(similar_ids)
+
         if padding > 0:
-            return [0]*padding + rel_label + [0]*padding
+            return ([0]*padding + rel_label + [0]*padding, n_neighbours)
         else:
-            return rel_label
+            return (rel_label, n_neighbours) 
 
 
 

@@ -223,6 +223,12 @@ class CustomModel(nn.Module):
 
         return self.data["label_to_index"], dataset.data["index_to_label"]
 
+    def add_histogram(self, name, data):
+        if not(isinstance(data, np.ndarray) or isinstance(data, torch.Tensor)):
+            data = np.array(data)
+        self.writer.add_histogram(name, data,  self.data["epoch"])
+
+
 
     def test(self, dataset, re_load=True):
         if re_load:
@@ -447,6 +453,78 @@ class CustomModel(nn.Module):
 
 
 
+
+
+
+
+class CustomHalfHalf(CustomLoss):
+    def __init__(self, weights=None):
+        log(1, "Using label weights:")
+
+        if type(weights) is dict:
+            weights = weights.values()
+        w = np.array(list(weights))
+        w = w
+        w = w / w.sum()
+        w = torch.Tensor(w)
+        log(2, w)
+        self.CEL = nn.MSELoss()
+        self.weight = w
+
+    def __call__(self, o, item):
+        true_index = item.li
+        true_tensor = item.lt
+        pred = torch.max(o, dim=0)[1]
+        if item.li < 5:
+            true_tensor[:5] = 0.5
+        else:
+            true_tensor[5:] = 0.5
+        true_tensor[item.li:item.li+1] = 1.
+
+        #print(true_tensor)
+        weighted_out = o# * self.weight
+        #print("Weighted out:", weighted_out)
+        loss = self.CEL(o, true_tensor)
+        #if true_index < 5 == torch.max(o, dim=0)[1] < 5:
+        #    loss *= 0.5
+        loss *= self.weight[pred]
+        return loss
+
+
+
+class DUAL_MLP_MK8(CustomModel):
+    def __init__(self, *args, hidden_dims=[2560, 128], num_classes=4, dropout=0.2, weights=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.data["num_classes"] = num_classes
+        self.data["hidden_dims"] = hidden_dims
+        self.data["dropout"] = dropout
+
+        self.layers["default"] = {
+            "l1": nn.Linear(self.data["in_shape"][0], hidden_dims[0]),
+            "drop1": nn.Dropout(dropout),
+            "relu1": nn.LeakyReLU(),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "drop2": nn.Dropout(dropout),
+            "relu2": nn.LeakyReLU(),
+            "l3": nn.Linear(hidden_dims[1], num_classes),
+            "softmax": nn.Softmax(dim=0)
+        }
+
+
+        self.optimisers["default"]["class"] = torch.optim.AdamW
+        self.optimisers["default"]["kwargs"]["fused"] = True
+
+
+        self.criterions["default"] = CustomHalfHalf(weights)
+        self.data["weights"] = list([w.item() for w in self.criterions["default"].weight])
+
+        self._mount_submodels()
+
+
+
+
+
 class DUAL_MLP_MK7(CustomModel):
     def __init__(self, *args, hidden_dims=[2560, 128], num_classes=4, dropout=0.2, weights=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -469,7 +547,7 @@ class DUAL_MLP_MK7(CustomModel):
             "softmax": nn.Softmax(dim=0)
         }
 
-        self.criterions["default"] = self.CustomHalfHalf(weights)
+        self.criterions["default"] = CustomHalfHalf(weights)
         self.data["weights"] = list([w.item() for w in self.criterions["default"].weight])
 
 
@@ -477,7 +555,6 @@ class DUAL_MLP_MK7(CustomModel):
         self.layers["no-dropout"] = self.layers["default"].copy()
         self.layers["no-dropout"].pop("drop1")
         self.layers["no-dropout"].pop("drop2")
-        #self.criterions["no-dropout"] = self.CustomHalfHalf(weights)
 
         self._mount_submodels()
 
@@ -505,47 +582,6 @@ class DUAL_MLP_MK7(CustomModel):
 
 
 
-
-
-
-
-    class CustomHalfHalf(CustomLoss):
-        def __init__(self, weights=None):
-            log(1, "Using label weights:")
-
-            if type(weights) is dict:
-                weights = weights.values()
-            w = np.array(list(weights))
-            w = w
-            w = w / w.sum()
-            w = torch.Tensor(w)
-            log(2, w)
-            self.CEL = nn.MSELoss()
-            self.weight = w
-
-        def __call__(self, o, item):
-            true_index = item.li
-            true_tensor = item.lt
-            pred = torch.max(o, dim=0)[1]
-            if item.li < 5:
-                true_tensor[:5] = 0.5
-            else:
-                true_tensor[5:] = 0.5
-            true_tensor[item.li:item.li+1] = 1.
-
-            #print(true_tensor)
-            weighted_out = o# * self.weight
-            #print("Weighted out:", weighted_out)
-            loss = self.CEL(o, true_tensor)
-            #if true_index < 5 == torch.max(o, dim=0)[1] < 5:
-            #    loss *= 0.5
-            loss *= self.weight[pred]
-            return loss
-
-
-
-
-
 class DUAL_MLP_MK6(CustomModel):
     def __init__(self, *args, hidden_dims=[2560, 128], num_classes=4, dropout=0.2, weights=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -568,7 +604,7 @@ class DUAL_MLP_MK6(CustomModel):
 
 
 
-        self.criterions["default"] = self.CustomHalfHalf(weights)
+        self.criterions["default"] = CustomHalfHalf(weights)
         self.data["weights"] = list([w.item() for w in self.criterions["default"].weight])
 
 
@@ -576,43 +612,9 @@ class DUAL_MLP_MK6(CustomModel):
         self.layers["no-dropout"] = self.layers["default"].copy()
         self.layers["no-dropout"].pop("drop1")
         self.layers["no-dropout"].pop("drop2")
-        #self.criterions["no-dropout"] = self.CustomHalfHalf(weights)
 
         self._mount_submodels()
 
-
-    class CustomHalfHalf(CustomLoss):
-        def __init__(self, weights=None):
-            log(1, "Using label weights:")
-
-            if type(weights) is dict:
-                weights = weights.values()
-            w = np.array(list(weights))
-            w = w
-            w = w / w.sum()
-            w = torch.Tensor(w)
-            log(2, w)
-            self.CEL = nn.MSELoss()
-            self.weight = w
-
-        def __call__(self, o, item):
-            true_index = item.li
-            true_tensor = item.lt
-            pred = torch.max(o, dim=0)[1]
-            if item.li < 5:
-                true_tensor[:5] = 0.5
-            else:
-                true_tensor[5:] = 0.5
-            true_tensor[item.li:item.li+1] = 1.
-
-            #print(true_tensor)
-            weighted_out = o# * self.weight
-            #print("Weighted out:", weighted_out)
-            loss = self.CEL(o, true_tensor)
-            #if true_index < 5 == torch.max(o, dim=0)[1] < 5:
-            #    loss *= 0.5
-            loss *= self.weight[pred]
-            return loss
 
 
 
@@ -644,44 +646,11 @@ class DUAL_MLP_MK5(CustomModel):
 
 
 
-        self.criterions["default"] = self.CustomHalfHalf(weights)
+        self.criterions["default"] = CustomHalfHalf(weights)
         self.data["weights"] = list([w.item() for w in self.criterions["default"].weight])
 
         self._mount_submodels()
 
-
-    class CustomHalfHalf(CustomLoss):
-        def __init__(self, weights=None):
-            log(1, "Using label weights:")
-
-            if type(weights) is dict:
-                weights = weights.values()
-            w = np.array(list(weights))
-            w = w
-            w = w / w.sum()
-            w = torch.Tensor(w)
-            log(2, w)
-            self.CEL = nn.MSELoss()
-            self.weight = w
-
-        def __call__(self, o, item):
-            true_index = item.li
-            true_tensor = item.lt
-            pred = torch.max(o, dim=0)[1]
-            if item.li < 5:
-                true_tensor[:5] = 0.5
-            else:
-                true_tensor[5:] = 0.5
-            true_tensor[item.li:item.li+1] = 1.
-
-            #print(true_tensor)
-            weighted_out = o# * self.weight
-            #print("Weighted out:", weighted_out)
-            loss = self.CEL(o, true_tensor)
-            #if true_index < 5 == torch.max(o, dim=0)[1] < 5:
-            #    loss *= 0.5
-            loss *= self.weight[pred]
-            return loss
 
 
 
@@ -707,46 +676,10 @@ class DUAL_MLP_MK4(CustomModel):
 
 
 
-
-
-        self.criterions["default"] = self.CustomHalfHalf(weights)
+        self.criterions["default"] = CustomHalfHalf(weights)
         self.data["weights"] = list([w.item() for w in self.criterions["default"].weight])
 
         self._mount_submodels()
-
-
-    class CustomHalfHalf(CustomLoss):
-        def __init__(self, weights=None):
-            log(1, "Using label weights:")
-
-            if type(weights) is dict:
-                weights = weights.values()
-            w = np.array(list(weights))
-            w = w
-            w = w / w.sum()
-            w = torch.Tensor(w)
-            log(2, w)
-            self.CEL = nn.MSELoss()
-            self.weight = w
-
-        def __call__(self, o, item):
-            true_index = item.li
-            true_tensor = item.lt
-            pred = torch.max(o, dim=0)[1]
-            if item.li < 5:
-                true_tensor[:5] = 0.5
-            else:
-                true_tensor[5:] = 0.5
-            true_tensor[item.li:item.li+1] = 1.
-
-            #print(true_tensor)
-            weighted_out = o# * self.weight
-            #print("Weighted out:", weighted_out)
-            loss = self.CEL(o, true_tensor)
-            #if true_index < 5 == torch.max(o, dim=0)[1] < 5:
-            #    loss *= 0.5
-            loss *= self.weight[pred]
-            return loss
 
 
 
