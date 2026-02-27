@@ -275,7 +275,7 @@ if "-t" in sys.argv:
         epochs = int(sys.argv[sys.argv.index("--epochs") + 1])
 
     
-    run_name = f"{data_name}_LR{str(LR).split(".")[-1]}_E{epochs}_MIX:{int(MIX)}"
+    run_name = f"{data_name}_LR{str(LR).split(".")[-1]}_E{epochs}_MIX{int(MIX)}"
     model = model_class(name=run_name, in_shape=(1280,), num_classes=len(label_to_index), lr=LR, weights=label_count  ).to(DEVICE)
     model.add_map(dataset)
     run_name = model.data["name"]
