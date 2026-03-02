@@ -23,3 +23,13 @@ class StructureLoadException(Exception):
 
 class StructureRecoverException(StructureLoadException):
 	pass
+
+
+class CCP4Error(Exception):
+	pass
+
+class CCP4NotEnabled(CCP4Error):
+	pass
+
+class PISAError(CCP4Error):
+	pass

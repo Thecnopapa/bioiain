@@ -2,6 +2,7 @@ import os, sys, json, xmltodict
 
 import subprocess
 from ..utilities.logging import log
+from ..utilities.exceptions import *
 
 
 
@@ -17,6 +18,7 @@ class PISA(object):
         self.pisa_id = pisa_id
         self.out_folder = out_folder
         self.xml_folder = xml_folder
+        self.data = None
 
     def analyse(self, filepath):
         filepath = os.path.abspath(filepath)
@@ -134,6 +136,7 @@ class PISA(object):
         os.makedirs(self.out_folder, exist_ok=True)
         out_path = os.path.join(self.out_folder, f"{pdb_code}.pisa.json")
         json.dump(data, open(out_path, "w"), indent=4)
+        self.data = data
         return out_path, pdb_code
 
 
@@ -166,8 +169,9 @@ class PISA(object):
         except KeyError:
             log("error", "CCP4 not enabled")
             ccp4_path = None
+            raise CCP4NotEnabled()
         if ccp4_path is None:
-            return None
+            raise CCP4Error()
         print(" ... CCP4 detected at:", ccp4_path)
         filepath = os.path.abspath(filepath)
         cmd = [
@@ -179,8 +183,8 @@ class PISA(object):
         try:
             print(" ... "+ " ".join(cmd))
             subprocess.run(cmd, check=True)
-        except:
-            return None
+        except Exception as e:
+            raise PISAError(e)
 
         if interfaces or assemblies:
             int_file, ass_fie = self._pisa_to_xml()
