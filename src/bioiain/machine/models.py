@@ -162,7 +162,7 @@ class CustomModel(nn.Module):
 
 
         if self.data["batch_size"] != 0:
-            if self.batch_loss["n_batches"] == 0: av_batch_loss = self.batch_loss["cumulative"] 
+            if self.batch_loss["n_batches"] == 0: av_batch_loss = self.batch_loss["cumulative"]
             else: av_batch_loss = self.batch_loss["cumulative"] / self.batch_loss["n_batches"]
             if self.writer is not None:
                 #print("writing", av_batch_loss)
@@ -186,7 +186,7 @@ class CustomModel(nn.Module):
                         self.writer.add_histogram(f"{set_name}/weight/{layer_name}", layer.weight, self.data["epoch"])
                     if hasattr(layer, "bias"):
                         self.writer.add_histogram(f"{set_name}/bias/{layer_name}", layer.bias,  self.data["epoch"])
-        
+
         if self.data["batch_size"] != 0:
             if self.batch_loss["current_n"] != 0:
                 batch_loss = torch.mean(torch.stack(self.batch_loss["current_list"]))
@@ -388,7 +388,7 @@ class CustomModel(nn.Module):
         self.save(temp=not re_load)
 
 
-    def loss(self, output:torch.Tensor, item:Item, criterion_name:str="mode", backwards:bool=True, zero_optims:str|None="mode") -> torch.Tensor|float:
+    def loss(self, output:torch.Tensor, item:Item, criterion_name:str="mode", backwards:bool=True, zero_optims:str|None="mode", step="mode") -> torch.Tensor|float:
 
 
         if criterion_name == "mode": criterions = [self.mode]
@@ -429,21 +429,27 @@ class CustomModel(nn.Module):
             self.batch_loss["current_list"].append(loss)
 
         if backwards:
-            self.zero_grad(zero_optims)
 
             if self.data["batch_size"] == 0:
                 loss.backward()
-            elif self.batch_loss["current_n"] >= self.data["batch_size"]:
-                batch_loss = torch.mean(torch.stack(self.batch_loss["current_list"]))
-                print(f"Backpropagating ({batch_loss:5.4f})   ", end="\r")
+                self.step(step)
+                self.zero_grad(zero_optims)
+            else:
+                loss.backward(retain_graph=True)
 
-                batch_loss.backward()
+                if self.batch_loss["current_n"] >= self.data["batch_size"]:
+                    batch_loss = torch.mean(torch.stack(self.batch_loss["current_list"]))
+                    print(f"Backpropagating ({batch_loss:5.4f})   ", end="\r")
 
-                self.batch_loss["n_batches"] += 1
-                self.batch_loss["cumulative"] += batch_loss
+                    #batch_loss.backward()
 
-                self.batch_loss["current_n"] = 0
-                self.batch_loss["current_list"] = []
+                    self.batch_loss["n_batches"] += 1
+                    self.batch_loss["cumulative"] += batch_loss
+
+                    self.batch_loss["current_n"] = 0
+                    self.batch_loss["current_list"] = []
+                    self.step(step)
+                    self.zero_grad(zero_optims)
 
 
 
@@ -452,13 +458,12 @@ class CustomModel(nn.Module):
             for l, c in zip(losses, criterions):
                 self.running_loss[c] += l
 
-            
 
 
         return loss
 
 
-    
+
     def step_schedulers(self, scheduler_name:str|None="mode", running_loss=None) -> bool:
         if scheduler_name is None: return False
         if scheduler_name == "mode": scheduler_name = self.mode
@@ -611,7 +616,7 @@ class DUAL_MLP_MK9(CustomModel):
             print("LRS: getting lrs")
             print(self.lrs)
             return torch.Tensor(np.array(self.lrs))
-            
+
 
         def step(self, running_loss=0.5):
             print("LRS: stepping...")
@@ -620,7 +625,7 @@ class DUAL_MLP_MK9(CustomModel):
             for p, olr in zip(self.optimizer.param_groups, self.o_lrs):
                 old_log = math.log(olr, 10)
                 print("OLD_LOG", old_log)
-                new_log = old_log - ((1-running_loss)*4) +2 
+                new_log = old_log - ((1-running_loss)*4) +2
                 print("NEW_LOG", new_log)
                 new_lr = 10 ** new_log
                 print("NEW_LR", new_lr)
@@ -669,7 +674,7 @@ class DUAL_MLP_MK8(CustomModel):
 
 
 class DUAL_MLP_MK7(CustomModel):
-    """ 
+    """
     MK6 with splitted Linear 1
     """
     def __init__(self, *args, hidden_dims=[2560, 128], num_classes=4, dropout=0.2, weights=None, **kwargs):
@@ -680,7 +685,7 @@ class DUAL_MLP_MK7(CustomModel):
         self.data["dropout"] = dropout
 
         self.data["n_sublayers_l1"] = 10
-        self.data["l_subsize_l1"] = hidden_dims[0]//self.data["n_sublayers_l1"] 
+        self.data["l_subsize_l1"] = hidden_dims[0]//self.data["n_sublayers_l1"]
 
         self.layers["default"] = {
             "sl1": self.splitLinear(input_dim=self.data["in_shape"][0], layer_size=self.data["l_subsize_l1"], n_layers=self.data["n_sublayers_l1"]),
@@ -876,7 +881,7 @@ class DUAL_MLP_MK3(CustomModel):
 
 class DUAL_MLP_MK2(CustomModel):
     """
-    4 Linear model 
+    4 Linear model
     Dual Loss
     """
     def __init__(self, *args, hidden_dims=[2560, 1280, 128], num_classes=2, dropout=0.2, **kwargs):
@@ -928,7 +933,7 @@ class DUAL_MLP_MK2(CustomModel):
 
 class DUAL_MLP_MK1(CustomModel):
     """
-    3 Linear 
+    3 Linear
     Dual Loss
     """
     def __init__(self, *args, hidden_dims=[128, 256], num_classes=2, dropout=0.2, **kwargs):

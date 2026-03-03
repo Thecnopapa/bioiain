@@ -306,7 +306,7 @@ if "-t" in sys.argv:
     if "--epochs" in sys.argv:
         epochs = int(sys.argv[sys.argv.index("--epochs") + 1])
 
-    
+
     run_name = f"{data_name}_LR{str(LR).split(".")[-1]}_E{epochs}_MIX{int(MIX)}_B{BATCH_SIZE}"
     model = model_class(name=run_name, in_shape=(1280,), num_classes=len(label_to_index), lr=LR, weights=label_count, batch_size=BATCH_SIZE).to(DEVICE)
     model.add_map(dataset)
@@ -364,11 +364,11 @@ if "-t" in sys.argv:
                 loss = model.loss(out, item)
                 #print(out.item(), item.l, loss)
                 #exit()
-                model.step()
+                #model.step()
 
                 if not is_cluster:
                     if n % (data_len // 100) == 0:
-                        now = datetime.datetime.now() 
+                        now = datetime.datetime.now()
                         delta = now - epoch_start
                         eta = datetime.timedelta(seconds=(delta.total_seconds() / (n+1)) * (data_len - n))
                     print(f"{n:6d}/{len(dataset):6d}: LOSS={model.running_loss['default']/model.running_loss['total']:6.4f} ({loss:6.4f}) <-- o:{torch.max(out, dim=0)[1].item()} t:{item.li} ETA: {eta}", end = "\r")
