@@ -5,7 +5,8 @@ from ..visualisation.plots import *
 
 from .operations import coord_operation_entity, entity_to_frac, entity_to_orth
 from ..utilities.logging import log
-from ..utilities.exceptions import SequenceMissmatchException
+from ..utilities.exceptions import SequenceMissmatchException 
+from ..symmetries.elements import Monomer
 
 
 
@@ -28,10 +29,20 @@ class InteractionProfile:
     def generate_labels(self, relative=False, export=True, force=False, dataset=None, msa=None, dual=False, in_lab_var="label_path"):
 
         if relative:
-            labs, n_neighbours = self._generate_relative_labels(export=export, force=force, dataset=dataset, msa=msa, in_lab_var=in_lab_var)
+            if dual:
+                surface_res = self.monomer.get_surface_residues(force=force)
+                resnums = self.monomer.atoms(group_by_residue=True).keys()
+                surface_bools=[]
+                for res in resnums:
+                    if int(res) in surface_res:
+                        surface_bools.append(1)
+                    else:
+                        surface_bools.append(0)
+
+            labs, n_neighbours = self._generate_relative_labels(export=export, force=force, dataset=dataset, msa=msa, in_lab_var=in_lab_var, surface=surface_bools)
             
             if dual:
-                labs = self._generate_dual_labels(labs, export=export, dataset=dataset, force=force)
+                labs = self._generate_dual_labels(labs, export=export, dataset=dataset, force=force, surface=surface_bools)
 
             return labs, n_neighbours
 
@@ -46,13 +57,10 @@ class InteractionProfile:
 
 
 
-    def _generate_dual_labels(self, labs, dataset=None, export=True, force=False, use_classes=True, n_classes=5):
+    def _generate_dual_labels(self, labs, dataset=None, export=True, force=False, use_classes=True, n_classes=5, v2=True, surface=None):
 
 
         new_labs = []
-
-
-        surface_res = self.monomer.get_surface_residues(force=force)
 
         resnums = self.monomer.atoms(group_by_residue=True).keys()
 
@@ -61,20 +69,24 @@ class InteractionProfile:
             discrete_labs = []
             for n, (cont, res) in enumerate(zip(labs, resnums)):
                 #print(n, cont, res)
-                discrete = int(cont//(1/n_classes))
+                if v2:
+                    if cont <= 0.1: discrete=0
+                    elif cont >= 0.9: discrete=1
+                    else: discrete=2
+                else:
+                    discrete = int(cont//(1/n_classes))
                 #print(discrete)
                 discrete_labs.append(discrete)
 
         #print(labs)
-        for res in resnums:
-            if int(res) in surface_res:
+        for outer in surface:
+            if outer:
                 if use_classes: new_labs.append("O")
                 else: new_labs.append(0)
-                #print(res, "outer")
             else:
                 if use_classes: new_labs.append("I")
                 else:new_labs.append(1)
-                #print(res, "inner")
+                
 
 
         #print(new_labs)
@@ -87,7 +99,15 @@ class InteractionProfile:
 
         if use_classes:
             assert len(new_labs) == len(discrete_labs)
-            dual_labels = [f"{nl}-{dl}" for nl, dl in zip(new_labs, discrete_labs)]
+            dual_labels = []
+            for nl, dl in zip(new_labs, discrete_labs):
+                if v2:
+                    if nl == "I":
+                        dual_labels.append("I")
+                    else:
+                        dual_labels.append(f"{nl}-{dl}")
+                else:
+                    dual_labels.append(f"{nl}-{dl}")
             print(json.dumps({k: sum([1 for v in dual_labels if k == v]) for k in sorted(set(dual_labels))}, indent=4))
         else:
             dual_labels = list(zip(labs, new_labs))
@@ -99,7 +119,7 @@ class InteractionProfile:
 
 
 
-    def _generate_relative_labels(self, export=True, force=False, dataset=None, msa=None, similarity=95, in_lab_var="label_path"):
+    def _generate_relative_labels(self, export=True, force=False, dataset=None, msa=None, similarity=95, in_lab_var="label_path", surface=None):
         assert dataset is not None and msa is not None
         similar_ids = [self.monomer.get_name()]
         similar_ids.extend(msa.get_similar(self.monomer.get_name(), similarity=similarity))
@@ -108,10 +128,23 @@ class InteractionProfile:
         open(tmp_fasta, "w").close()
         os.makedirs(os.path.dirname(tmp_fasta), exist_ok=True)
         simlabels = {}
+        sim_outer = {}
         for simid in similar_ids:
             lab_path = dataset.embeddings[simid][in_lab_var]
             with open(lab_path, "r") as f:
                 simlabels[simid] = f.read().strip()
+            print("simid", simid)
+            sim_mon = Monomer.recover(data_path=os.path.join("./exports",simid[:4],"monomers", simid), load_structure=True)
+            print("sim_mon", sim_mon)
+            sim_surface = sim_mon.get_surface_residues(force=force)
+            sim_resnums = sim_mon.atoms(group_by_residue=True).keys()
+            sim_surface_bools=[]
+            for res in sim_resnums:
+                if int(res) in sim_surface:
+                    sim_surface_bools.append(1)
+                else:
+                    sim_surface_bools.append(0)
+            sim_outer[simid] = sim_surface_bools
 
         padding = dataset.embeddings[simid]["padding"]
         #print(simlabels.keys())
@@ -119,32 +152,42 @@ class InteractionProfile:
         sim_seqs = sim_fasta.parse(key=simlabels.keys())
         #print(sim_seqs.keys())
         tok_fastas = {}
+        outer_fastas = {}
         for k, v in sim_seqs.items():
             if padding > 0:
                 label = simlabels[k][padding:-padding]
+                outer_label = sim_outer[k][padding:-padding]
             else:
                 label = simlabels[k]
+                outer_label = sim_outer[k]
             #print(k)
             #print("label:", label)
             #print(v)
             #print("alignment:", v[0])
             replaced = v[0]
+            replaced_outer = v[0]
             for n, s, in enumerate(v[0]):
                 if s == "-":
                     continue
                 else:
                     #print(label)
                     replaced = replaced[:n] + label[0] + replaced[n+1:]
+                    replaced_outer = replaced_outer[:n] + str(outer_label[0]) + replaced_outer[n+1:]
+
                     label = label[1:]
+                    outer_label = outer_label[1:]
             #print("replaced", replaced, "\n\n")
             assert len(label) == 0
+            assert len(outer_label) == 0
             tok_fastas[k] = replaced
+            outer_fastas[k] = replaced_outer
+
 
         rel_label = []
         for n, t in enumerate(tok_fastas[self.monomer.get_name()]):
             if t == "-":
                 continue
-            prob = sum([int(v[n] == "C") for v in tok_fastas.values()]) / len(tok_fastas)
+            prob = sum([int(v[n] == "C" or o[n] == "0") for v, o in zip(tok_fastas.values(), outer_fastas.values())]) / len(tok_fastas)
             rel_label.append(prob)
         #print(rel_label)
         #print(len(rel_label))

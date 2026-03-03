@@ -65,12 +65,16 @@ if "--only" in sys.argv:
     ONLY = sys.argv[sys.argv.index("--only") + 1].split(",")
 DUAL = True
 DUAL_CLASSES = True
+DUAL_CLASSES_v2 = True
+
 
 data_name = f"saprot_interactions_{pdb_list}_T{THRESHOLD}"
 if DUAL:
     data_name += "_DUAL"
     if DUAL_CLASSES:
         data_name += "_CLASSES"
+        if DUAL_CLASSES_v2:
+            data_name += "_V2"
 
 
 if ONLY is not None:
@@ -245,7 +249,12 @@ if "-l" in sys.argv or "-e" in sys.argv:
 
                 if DUAL:
                     if DUAL_CLASSES:
-                        dataset.add_label_from_list(rel_label, key=monomer_id, var_name="dual_class_label")
+                        if DUAL_CLASSES_v2:
+                            dataset.add_label_from_list(rel_label, key=monomer_id, var_name="dual_discrete_2")
+
+                        else:
+                            dataset.add_label_from_list(rel_label, key=monomer_id, var_name="dual_class_label")
+
                         dataset.embeddings[monomer_id]["n_neighbours"] = n_neighbours
 
                     else:

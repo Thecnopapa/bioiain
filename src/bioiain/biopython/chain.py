@@ -147,7 +147,9 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
         sasa = SASA(**kwargs)
         return sasa.compute(self, **kwargs)
 
-    def get_surface_residues(self, threshold = 50, ball_radius=1.40, force=False, reset_other=True):
+    def get_surface_residues(self, threshold = 50, ball_radius=1.40, force=False, reset_other=True, as_bool=False):
+
+        #TODO: implement as_bool
 
         if "surface" in self.data and not force:
             if str(threshold) in self.data["surface"]:

@@ -390,7 +390,6 @@ class CustomModel(nn.Module):
 
     def loss(self, output:torch.Tensor, item:Item, criterion_name:str="mode", backwards:bool=True, zero_optims:str|None="mode") -> torch.Tensor|float:
 
-        self.zero_grad(zero_optims)
 
         if criterion_name == "mode": criterions = [self.mode]
 
@@ -430,6 +429,8 @@ class CustomModel(nn.Module):
             self.batch_loss["current_list"].append(loss)
 
         if backwards:
+            self.zero_grad(zero_optims)
+
             if self.data["batch_size"] == 0:
                 loss.backward()
             elif self.batch_loss["current_n"] >= self.data["batch_size"]:
