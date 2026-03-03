@@ -283,7 +283,9 @@ if "-t" in sys.argv:
     log("start", "TRAINING")
 
     log("header", f"Dataset: {dataset}")
-    if DUAL_CLASSES:
+    if DUAL_CLASSES_v2:
+        dataset.use_label("dual_discrete_2")
+    elif DUAL_CLASSES:
         dataset.use_label("dual_class_label")
     elif DUAL:
         dataset.use_label("dual_label")
@@ -478,7 +480,7 @@ if "-w" in sys.argv:
     from src.bioiain.symmetries import PredictedMonomerContacts
     from src.bioiain.visualisation import PymolScript
 
-    LABNAME = "dual_class_label"
+    LABNAME = "dual_discrete_2"
     if "--label" in sys.argv:
         LABNAME = sys.argv[sys.argv.index("--label") + 1]
 
