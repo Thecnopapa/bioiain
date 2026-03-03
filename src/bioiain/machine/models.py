@@ -551,11 +551,12 @@ class CustomHalfHalf(CustomLoss):
         true_index = item.li
         true_tensor = item.lt
         pred = torch.max(o, dim=0)[1]
-        if item.li < 5:
-            true_tensor[:5] = 0.5
-        else:
-            true_tensor[5:] = 0.5
-        true_tensor[item.li:item.li+1] = 1.
+        if len(item.lt) == 10:
+            if item.li < 5:
+                true_tensor[:5] = 0.5
+            else:
+                true_tensor[5:] = 0.5
+            true_tensor[item.li:item.li+1] = 1.
 
         #print(true_tensor)
         weighted_out = o# * self.weight
