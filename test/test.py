@@ -120,6 +120,10 @@ SHORT_EPOCHS = False
 if "--short-e" in sys.argv:
     SHORT_EPOCHS = True
 
+BATCH_SIZE = 1
+if "--batch" in sys.argv:
+    BATCH_SIZE = int(sys.argv[sys.argv.index("--batch") + 1])
+
 #Comment
 
 if "-l" in sys.argv or "-e" in sys.argv:
@@ -285,8 +289,8 @@ if "-t" in sys.argv:
         epochs = int(sys.argv[sys.argv.index("--epochs") + 1])
 
     
-    run_name = f"{data_name}_LR{str(LR).split(".")[-1]}_E{epochs}_MIX{int(MIX)}"
-    model = model_class(name=run_name, in_shape=(1280,), num_classes=len(label_to_index), lr=LR, weights=label_count  ).to(DEVICE)
+    run_name = f"{data_name}_LR{str(LR).split(".")[-1]}_E{epochs}_MIX{int(MIX)}_B{BATCH_SIZE}"
+    model = model_class(name=run_name, in_shape=(1280,), num_classes=len(label_to_index), lr=LR, weights=label_count, batch_size=BATCH_SIZE).to(DEVICE)
     model.add_map(dataset)
     run_name = model.data["name"]
     model.add_histogram("relative_neighbours", [int(e.get("n_neighbours", 0)) for e in dataset.embeddings.values() if not e.get("deleted", False)])
@@ -319,7 +323,7 @@ if "-t" in sys.argv:
         for optimiser in model.optimisers.values():
             log(1, "Learning rates")
             for group in optimiser.param_groups:
-                log(2, group['lr'], type(group['lr']), group['lr'].shape)
+                log(2, group['lr'], type(group['lr']))
 
         if not is_cluster:
             epoch_start = datetime.datetime.now()

@@ -33,7 +33,7 @@ class CustomLoss(object):
 
 
 class CustomModel(nn.Module):
-    def __init__(self, name, in_shape, lr=0.001, folder="./models"):
+    def __init__(self, name, in_shape, lr=0.001, batch_size=1, folder="./models"):
         super().__init__()
         self.data = {}
         self.data["dataname"] = name
@@ -42,6 +42,7 @@ class CustomModel(nn.Module):
         self.data["epoch"] = None
         self.data["path"] = False
         self.data["model"] = self.__class__.__name__
+        self.data["batch_size"] = batch_size
         self.mode = "default"
         self.writer = None
         self.mounted = False
@@ -69,6 +70,7 @@ class CustomModel(nn.Module):
         self.submodels = {
         }
         self.running_loss = {"total":0, "default":0}
+        self.batch_loss = {"current_n":0, "current_list":[], "cumulative":0, "n_batches": 0}
 
         self.data["name"] = str(self)
 
@@ -125,6 +127,7 @@ class CustomModel(nn.Module):
         self.running_loss["total"] = 0
         for c in self.running_loss.keys():
             self.running_loss[c] = 0
+        self.batch_loss = {"current_n":0, "current_list":[], "cumulative":0, "n_batches": 0}
 
 
     def send_run(self, *args, **kwargs):
@@ -156,6 +159,15 @@ class CustomModel(nn.Module):
                 #print("writing", av_loss)
                 self.writer.add_scalar(f"loss/{c}", float(av_loss), self.data["epoch"])
             av_losses[c] = av_loss
+
+
+
+        if self.batch_loss["n_batches"] == 0: av_batch_loss = self.batch_loss["cumulative"] 
+        else: av_batch_loss = self.batch_loss["cumulative"] / self.batch_loss["n_batches"]
+        if self.writer is not None:
+            #print("writing", av_batch_loss)
+            self.writer.add_scalar(f"loss/batch", float(av_batch_loss), self.data["epoch"])
+
         return av_losses
 
 
@@ -404,14 +416,36 @@ class CustomModel(nn.Module):
         else:
             loss = losses[0]
 
+        if self.data["batch_size"] != 0:
+            self.batch_loss["current_n"] += 1
+            self.batch_loss["current_list"].append(loss)
 
         if backwards:
+            if self.data["batch_size"] == 0:
+                loss.backward()
+            if self.batch_loss["current_n"] >= self.data["batch_size"]:
+                log(1, "\nBackpropagating...")
+                #print(self.batch_loss["current_list"])
+                #print("...")
+                batch_loss = torch.mean(torch.stack(self.batch_loss["current_list"]))
+                #print(batch_loss)
+
+                batch_loss.backward()
+
+                self.batch_loss["n_batches"] += 1
+                self.batch_loss["cumulative"] += batch_loss
+
+                self.batch_loss["current_n"] = 0
+                self.batch_loss["current_list"] = []
+
+
+
             self.running_loss["total"] += 1
             #print(criterions)
             for l, c in zip(losses, criterions):
                 self.running_loss[c] += l
 
-            loss.backward()
+            
 
 
         return loss
