@@ -67,6 +67,8 @@ DUAL = True
 DUAL_CLASSES = True
 DUAL_CLASSES_v2 = True
 
+if "--v1" in sys.argv:
+    DUAL_CLASSES_v2 = False
 
 data_name = f"saprot_interactions_{pdb_list}_T{THRESHOLD}"
 if DUAL:
