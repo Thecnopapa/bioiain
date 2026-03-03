@@ -5,7 +5,7 @@ from ..visualisation.plots import *
 
 from .operations import coord_operation_entity, entity_to_frac, entity_to_orth
 from ..utilities.logging import log
-from ..utilities.exceptions import SequenceMissmatchException 
+from ..utilities.exceptions import SequenceMissmatchException
 from ..symmetries.elements import Monomer
 
 
@@ -26,9 +26,10 @@ class InteractionProfile:
 
 
 
-    def generate_labels(self, relative=False, export=True, force=False, dataset=None, msa=None, dual=False, in_lab_var="label_path"):
+    def generate_labels(self, relative=False, export=True, force=False, dataset=None, msa=None, dual=False, in_lab_var="label_path", v2=True):
 
         if relative:
+            surface_bools = None
             if dual:
                 surface_res = self.monomer.get_surface_residues(force=force)
                 resnums = self.monomer.atoms(group_by_residue=True).keys()
@@ -40,9 +41,9 @@ class InteractionProfile:
                         surface_bools.append(0)
 
             labs, n_neighbours = self._generate_relative_labels(export=export, force=force, dataset=dataset, msa=msa, in_lab_var=in_lab_var, surface=surface_bools)
-            
+
             if dual:
-                labs = self._generate_dual_labels(labs, export=export, dataset=dataset, force=force, surface=surface_bools)
+                labs = self._generate_dual_labels(labs, export=export, dataset=dataset, force=force, surface=surface_bools, v2=v2)
 
             return labs, n_neighbours
 
@@ -86,7 +87,7 @@ class InteractionProfile:
             else:
                 if use_classes: new_labs.append("I")
                 else:new_labs.append(1)
-                
+
 
 
         #print(new_labs)
@@ -199,7 +200,7 @@ class InteractionProfile:
         if padding > 0:
             return ([0]*padding + rel_label + [0]*padding, n_neighbours)
         else:
-            return (rel_label, n_neighbours) 
+            return (rel_label, n_neighbours)
 
 
 
@@ -317,7 +318,7 @@ class InteractionProfile:
             except:
                 log("warning", f"Atom at res: {i[0]} has issues")
                 continue
- 
+
             if i[1] == "contact":
                 labels = labels[:pos] + "C" + labels[pos + 1:]
 
@@ -346,7 +347,7 @@ class PredictedMonomerContacts(object):
         self.label_to_index = label_to_index
 
         self._set_bfactors()
-        
+
 
 
     def _set_bfactors(self):
