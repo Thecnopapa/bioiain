@@ -161,12 +161,12 @@ class CustomModel(nn.Module):
             av_losses[c] = av_loss
 
 
-
-        if self.batch_loss["n_batches"] == 0: av_batch_loss = self.batch_loss["cumulative"] 
-        else: av_batch_loss = self.batch_loss["cumulative"] / self.batch_loss["n_batches"]
-        if self.writer is not None:
-            #print("writing", av_batch_loss)
-            self.writer.add_scalar(f"loss/batch", float(av_batch_loss), self.data["epoch"])
+        if self.data["batch_size"] != 0:
+            if self.batch_loss["n_batches"] == 0: av_batch_loss = self.batch_loss["cumulative"] 
+            else: av_batch_loss = self.batch_loss["cumulative"] / self.batch_loss["n_batches"]
+            if self.writer is not None:
+                #print("writing", av_batch_loss)
+                self.writer.add_scalar(f"loss/batch", float(av_batch_loss), self.data["epoch"])
 
         return av_losses
 
@@ -187,6 +187,15 @@ class CustomModel(nn.Module):
                     if hasattr(layer, "bias"):
                         self.writer.add_histogram(f"{set_name}/bias/{layer_name}", layer.bias,  self.data["epoch"])
         
+        if self.data["batch_size"] != 0:
+            if self.batch_loss["current_n"] != 0:
+                batch_loss = torch.mean(torch.stack(self.batch_loss["current_list"]))
+                batch_loss.backward()
+                self.batch_loss["n_batches"] += 1
+                self.batch_loss["cumulative"] += batch_loss
+                self.batch_loss["current_n"] = 0
+                self.batch_loss["current_list"] = []
+
         av_losses = self.write_loss()
 
         if self.data["epoch"] not in (None, 0):
@@ -423,12 +432,9 @@ class CustomModel(nn.Module):
         if backwards:
             if self.data["batch_size"] == 0:
                 loss.backward()
-            if self.batch_loss["current_n"] >= self.data["batch_size"]:
-                log(1, "\nBackpropagating...")
-                #print(self.batch_loss["current_list"])
-                #print("...")
+            elif self.batch_loss["current_n"] >= self.data["batch_size"]:
                 batch_loss = torch.mean(torch.stack(self.batch_loss["current_list"]))
-                #print(batch_loss)
+                print(f"Backpropagating ({batch_loss:5.4f})   ", end="\r")
 
                 batch_loss.backward()
 

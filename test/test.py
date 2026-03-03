@@ -120,9 +120,16 @@ SHORT_EPOCHS = False
 if "--short-e" in sys.argv:
     SHORT_EPOCHS = True
 
-BATCH_SIZE = 1
+BATCH_SIZE = 0
 if "--batch" in sys.argv:
     BATCH_SIZE = int(sys.argv[sys.argv.index("--batch") + 1])
+log(1, "BATCH_SIZE:", BATCH_SIZE)
+
+SEED = None
+if "--seed" in sys.argv:
+    SEED = int(sys.argv[sys.argv.index("--seed") + 1])
+log(1, "SEED:", SEED)
+
 
 #Comment
 
@@ -273,7 +280,7 @@ if "-t" in sys.argv:
         dataset.use_label("dual_label")
     else:
         dataset.use_label("rel_label")
-    dataset.split()
+    dataset.split(seed=SEED)
     if DUAL and not DUAL_CLASSES:
         label_to_index = dataset.map(label_to_index={"contactability":0, "outer":1})
     else:

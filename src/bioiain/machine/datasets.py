@@ -158,13 +158,18 @@ class EmbeddingDataset(Dataset):
         self.data["label_key"] = label_key
 
 
-    def split(self, mode="embeddings", test_ratio=0.1, random_state=42):
+    def split(self, mode="embeddings", test_ratio=0.1, random_state=42, seed=None):
         import random, math
         log(1, f"Splitting dataset...")
         if mode == "embeddings" or True:
             data = [e for e in self.embeddings.items() if not e[1].get("deleted", False)]
 
             n_keys = math.floor(len(data)*test_ratio)
+            if seed is None:
+                random.seed()
+            else:
+                random.seed(seed)
+            self.data["split_seed"] = seed
             random.shuffle(data)
             test = data[0:n_keys]
             train = data[n_keys:]
