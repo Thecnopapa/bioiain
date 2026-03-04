@@ -158,10 +158,12 @@ class InteractionProfile:
         for k, v in sim_seqs.items():
             if padding > 0:
                 label = simlabels[k][padding:-padding]
-                outer_label = sim_outer[k][padding:-padding]
+                if V2:
+                    outer_label = sim_outer[k][padding:-padding]
             else:
                 label = simlabels[k]
-                outer_label = sim_outer[k]
+                if V2:
+                    outer_label = sim_outer[k]
             #print(k)
             #print("label:", label)
             #print(v)
@@ -182,9 +184,9 @@ class InteractionProfile:
 
             #print("replaced", replaced, "\n\n")
             assert len(label) == 0
-            assert len(outer_label) == 0
             tok_fastas[k] = replaced
             if V2:
+                assert len(outer_label) == 0
                 outer_fastas[k] = replaced_outer
 
 

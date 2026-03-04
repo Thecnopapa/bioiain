@@ -296,6 +296,8 @@ if "-t" in sys.argv:
     log("header", f"Dataset: {dataset}")
     if DUAL_CLASSES_V2:
         dataset.use_label("dual_discrete_2")
+    elif DUAL_CLASSES_V3:
+        dataset.use_label("dual_discrete_3")
     elif DUAL_CLASSES:
         dataset.use_label("dual_class_label")
     elif DUAL:
