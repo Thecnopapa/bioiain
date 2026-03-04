@@ -1,0 +1,109 @@
+// Documentation at https://www.sublimetext.com/docs/color_schemes.html
+// Copy to .config/sublime-text/Packages/User
+{
+	"name": "Colorfull Monokai",
+    "author": "Iain Visa",
+	"variables":
+	{
+		"white-trans": "rgba(100, 100, 100, 0.5)",
+		"white": "rgba(255, 255, 255, 0.8)",
+		"white-extra": "rgba(255, 255, 255, 1)",
+		"black": "rgba(0, 0, 0, 0.7)",
+		"green": "rgba(0, 100, 0, 0.7)",
+		"lightgreen": "rgba(0, 255, 80, 0.8)",
+		"cyan": "rgba(0, 200, 255, 0.7)",
+		"orange-bright": "rgba(255, 128, 0, 1)",
+		"yellow": "rgba(255, 255, 0, 0.7)"
+	},
+	"globals":
+	{
+		"foreground": "var(white)",
+        "background": "var(black)",
+        "line_highlight": "var(white-trans)",
+        "selection": "var(white-trans)"
+	},
+	"rules":
+	[
+		{
+            "name": "String",
+            "scope": "string",
+            "foreground": "lime"
+        },
+        {
+            "name": "Comment",
+            "scope": "comment",
+            "foreground": "var(white-extra)"
+        },
+        {
+            "name": "Number",
+            "scope": "constant.numeric",
+            "foreground": "var(cyan)"
+        },
+        {
+            "name": "Keyword",
+            "scope": "keyword - (source.c keyword.operator | source.c++ keyword.operator | source.objc keyword.operator | source.objc++ keyword.operator), keyword.operator.word, source.ruby keyword.declaration",
+            "foreground": "var(orange-bright)",
+            "font_style": "bold"
+        },
+        {
+            "name": "Variable",
+            "scope": "variable.parameter",
+            "foreground": "var(yellow)"
+        },
+        {
+            "name": "Storage type",
+            "scope": "storage.type, storage",
+            "foreground": "var(orange-bright)",
+            "font_style": "italic"
+        },
+        {
+            "name": "Language variable",
+            "scope": "variable.language",
+            "foreground": "magenta",
+            "font_style": "italic"
+        },
+        {
+            "name": "Function argument",
+            "scope": "variable.parameter",
+            "foreground": "yellow",
+            "font_style": "italic"
+        },
+        {
+            "name": "builtins",
+            "scope": "support.function",
+            "foreground": "deeppink"
+
+        },
+        {
+            "name": "builtins",
+            "scope": "support.constant",
+             "foreground": "pink"
+
+        },
+        {
+            "name": "Function call",
+            "scope": "variable.function, variable.annotation",
+            "foreground": "darkturquoise"
+        },
+        {
+            "name": "Variables",
+            "scope": "variable.other",
+            "foreground": "hotpink"
+        },
+        {
+            "name": "Constants",
+            "scope": "objc.constant",
+            "foreground": "lightpink"
+        },
+        {
+            "name": "Entities",
+            "scope": "entity.name.class",
+            "foreground": "cyan"
+        },
+                {
+            "name": "Entities",
+            "scope": "entity.name.type",
+            "foreground": "cyan"
+        },
+	]
+}
