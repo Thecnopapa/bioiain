@@ -65,18 +65,25 @@ if "--only" in sys.argv:
     ONLY = sys.argv[sys.argv.index("--only") + 1].split(",")
 DUAL = True
 DUAL_CLASSES = True
-DUAL_CLASSES_v2 = True
+DUAL_CLASSES_V2 = True
+DUAL_CLASSES_V3 = False
 
 if "--v1" in sys.argv:
-    DUAL_CLASSES_v2 = False
+    DUAL_CLASSES_V2 = False
+elif "--v3" in sys.argv:
+    DUAL_CLASSES_V2 = False
+    DUAL_CLASSES_V3 = True
 
 data_name = f"saprot_interactions_{pdb_list}_T{THRESHOLD}"
 if DUAL:
     data_name += "_DUAL"
     if DUAL_CLASSES:
         data_name += "_CLASSES"
-        if DUAL_CLASSES_v2:
+        if DUAL_CLASSES_V2:
             data_name += "_V2"
+        elif DUAL_CLASSES_V3:
+            data_name += "_V3"
+
 
 
 if ONLY is not None:
@@ -246,13 +253,15 @@ if "-l" in sys.argv or "-e" in sys.argv:
                 log(1, "Generating relative labels...")
                 ints = InteractionProfile(monomer, threshold=THRESHOLD, force=FORCE)
 
-                rel_label, n_neighbours = ints.generate_labels(relative=True, force=FORCE, dataset=dataset, msa=msa, dual=DUAL, in_lab_var="abs_label")
+                rel_label, n_neighbours = ints.generate_labels(relative=True, force=FORCE, dataset=dataset, msa=msa, dual=DUAL, in_lab_var="abs_label", V2=DUAL_CLASSES_V2, V3=DUAL_CLASSES_V3)
                 print("REL LAB:", len(rel_label), f"DUAL={DUAL}")
 
                 if DUAL:
                     if DUAL_CLASSES:
-                        if DUAL_CLASSES_v2:
+                        if DUAL_CLASSES_V2:
                             dataset.add_label_from_list(rel_label, key=monomer_id, var_name="dual_discrete_2")
+                        elif DUAL_CLASSES_V3:
+                            dataset.add_label_from_list(rel_label, key=monomer_id, var_name="dual_discrete_3")
 
                         else:
                             dataset.add_label_from_list(rel_label, key=monomer_id, var_name="dual_class_label")
@@ -285,7 +294,7 @@ if "-t" in sys.argv:
     log("start", "TRAINING")
 
     log("header", f"Dataset: {dataset}")
-    if DUAL_CLASSES_v2:
+    if DUAL_CLASSES_V2:
         dataset.use_label("dual_discrete_2")
     elif DUAL_CLASSES:
         dataset.use_label("dual_class_label")

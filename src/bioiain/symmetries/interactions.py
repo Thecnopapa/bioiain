@@ -26,7 +26,7 @@ class InteractionProfile:
 
 
 
-    def generate_labels(self, relative=False, export=True, force=False, dataset=None, msa=None, dual=False, in_lab_var="label_path", v2=True):
+    def generate_labels(self, relative=False, export=True, force=False, dataset=None, msa=None, dual=False, in_lab_var="label_path", V2=False, V3=False):
 
         if relative:
             surface_bools = None
@@ -43,7 +43,7 @@ class InteractionProfile:
             labs, n_neighbours = self._generate_relative_labels(export=export, force=force, dataset=dataset, msa=msa, in_lab_var=in_lab_var, surface=surface_bools)
 
             if dual:
-                labs = self._generate_dual_labels(labs, export=export, dataset=dataset, force=force, surface=surface_bools, v2=v2)
+                labs = self._generate_dual_labels(labs, export=export, dataset=dataset, force=force, surface=surface_bools, V2=V2, V3=V3)
 
             return labs, n_neighbours
 
@@ -58,7 +58,7 @@ class InteractionProfile:
 
 
 
-    def _generate_dual_labels(self, labs, dataset=None, export=True, force=False, use_classes=True, n_classes=5, v2=True, surface=None):
+    def _generate_dual_labels(self, labs, dataset=None, export=True, force=False, use_classes=True, n_classes=5, V2=False, V3=False, surface=None):
 
 
         new_labs = []
@@ -70,7 +70,7 @@ class InteractionProfile:
             discrete_labs = []
             for n, (cont, res) in enumerate(zip(labs, resnums)):
                 #print(n, cont, res)
-                if v2:
+                if V2 or V3:
                     if cont <= 0.1: discrete=0
                     elif cont >= 0.9: discrete=1
                     else: discrete=2
@@ -102,7 +102,7 @@ class InteractionProfile:
             assert len(new_labs) == len(discrete_labs)
             dual_labels = []
             for nl, dl in zip(new_labs, discrete_labs):
-                if v2:
+                if V2 or V3:
                     if nl == "I":
                         dual_labels.append("I")
                     else:
@@ -120,7 +120,7 @@ class InteractionProfile:
 
 
 
-    def _generate_relative_labels(self, export=True, force=False, dataset=None, msa=None, similarity=95, in_lab_var="label_path", surface=None):
+    def _generate_relative_labels(self, export=True, force=False, dataset=None, msa=None, similarity=95, in_lab_var="label_path", V2=False, V3=False, surface=None):
         assert dataset is not None and msa is not None
         similar_ids = [self.monomer.get_name()]
         similar_ids.extend(msa.get_similar(self.monomer.get_name(), similarity=similarity))
@@ -134,18 +134,19 @@ class InteractionProfile:
             lab_path = dataset.embeddings[simid][in_lab_var]
             with open(lab_path, "r") as f:
                 simlabels[simid] = f.read().strip()
-            print("simid", simid)
-            sim_mon = Monomer.recover(data_path=os.path.join("./exports",simid[:4],"monomers", simid), load_structure=True)
-            print("sim_mon", sim_mon)
-            sim_surface = sim_mon.get_surface_residues(force=force)
-            sim_resnums = sim_mon.atoms(group_by_residue=True).keys()
-            sim_surface_bools=[]
-            for res in sim_resnums:
-                if int(res) in sim_surface:
-                    sim_surface_bools.append(1)
-                else:
-                    sim_surface_bools.append(0)
-            sim_outer[simid] = sim_surface_bools
+            if V2:
+                print("simid", simid)
+                sim_mon = Monomer.recover(data_path=os.path.join("./exports",simid[:4],"monomers", simid), load_structure=True)
+                print("sim_mon", sim_mon)
+                sim_surface = sim_mon.get_surface_residues(force=force)
+                sim_resnums = sim_mon.atoms(group_by_residue=True).keys()
+                sim_surface_bools=[]
+                for res in sim_resnums:
+                    if int(res) in sim_surface:
+                        sim_surface_bools.append(1)
+                    else:
+                        sim_surface_bools.append(0)
+                sim_outer[simid] = sim_surface_bools
 
         padding = dataset.embeddings[simid]["padding"]
         #print(simlabels.keys())
@@ -173,22 +174,29 @@ class InteractionProfile:
                 else:
                     #print(label)
                     replaced = replaced[:n] + label[0] + replaced[n+1:]
-                    replaced_outer = replaced_outer[:n] + str(outer_label[0]) + replaced_outer[n+1:]
-
                     label = label[1:]
-                    outer_label = outer_label[1:]
+
+                    if V2:
+                        replaced_outer = replaced_outer[:n] + str(outer_label[0]) + replaced_outer[n+1:]
+                        outer_label = outer_label[1:]
+
             #print("replaced", replaced, "\n\n")
             assert len(label) == 0
             assert len(outer_label) == 0
             tok_fastas[k] = replaced
-            outer_fastas[k] = replaced_outer
+            if V2:
+                outer_fastas[k] = replaced_outer
 
 
         rel_label = []
         for n, t in enumerate(tok_fastas[self.monomer.get_name()]):
             if t == "-":
                 continue
-            prob = sum([int(v[n] == "C" or o[n] == "0") for v, o in zip(tok_fastas.values(), outer_fastas.values())]) / len(tok_fastas)
+            if V2:
+                prob = sum([int(v[n] == "C" or o[n] == "0") for v, o in zip(tok_fastas.values(), outer_fastas.values())]) / len(tok_fastas)
+            else:
+                prob = sum([int(v[n] == "C") for v in tok_fastas.values()]) / len(tok_fastas)
+
             rel_label.append(prob)
         #print(rel_label)
         #print(len(rel_label))
