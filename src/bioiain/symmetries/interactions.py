@@ -71,9 +71,9 @@ class InteractionProfile:
             for n, (cont, res) in enumerate(zip(labs, resnums)):
                 #print(n, cont, res)
                 if V2 or V3:
-                    if cont <= 0.1: discrete=0
-                    elif cont >= 0.9: discrete=1
-                    else: discrete=2
+                    if cont <= 0.25: discrete=0
+                    elif cont >= 0.75: discrete=2
+                    else: discrete=1
                 else:
                     discrete = int(cont//(1/n_classes))
                 #print(discrete)
