@@ -175,8 +175,15 @@ class InteractionProfile:
                     continue
                 else:
                     #print(label)
-                    replaced = replaced[:n] + label[0] + replaced[n+1:]
-                    label = label[1:]
+                    try:
+                        replaced = replaced[:n] + label[0] + replaced[n+1:]
+                        label = label[1:]
+                    except:
+                        print("label:")
+                        print(label)
+                        print("replaced:")
+                        print(replaced)
+                        raise
 
                     if V2:
                         replaced_outer = replaced_outer[:n] + str(outer_label[0]) + replaced_outer[n+1:]

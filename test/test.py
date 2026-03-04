@@ -11,10 +11,14 @@ import datetime
 log("title", "test.py")
 log("start", "SET UP")
 
+
+
+BLACKLIST = ["1JJ2"]
+
 #file_folder = downloadPDB("./data", "test_list", ["5JJM", "6nwl"],
 #                          file_path="./pdb_list.txt", file_format="pdb",
 #                          overwrite=False)
-if "no-download" in sys.argv:
+if "--no-download" in sys.argv:
     file_folder = "./data/cath-nonredundant-S20"
     pdb_list = "cath"
 else:
@@ -51,7 +55,7 @@ log(1, f"Torch using {avail_cpus} threads")
 from src.bioiain.machine import DEVICE
 
 
-FORCE = "force" in sys.argv or "-f" in sys.argv
+FORCE = "--force" in sys.argv or "-f" in sys.argv
 
 THRESHOLD=10
 if "--threshold" in sys.argv:
@@ -153,18 +157,20 @@ if "-l" in sys.argv or "-e" in sys.argv:
 
         n_files = len(os.listdir(file_folder))
         for n, file in enumerate(sorted(os.listdir(file_folder))):
-            log("title", f"ABSOLUTE {n}/{n_files}")
 
             if not file.endswith(".cif"):
+                continue
+            if any([b in file for b in BLACKLIST]):
+                log("warning", f"File: {file} in blacklist!")
                 continue
 
             if ONLY is not None:
                 if file[:4] not in ONLY:
                     continue
-
+            log("title", f"ABSOLUTE {n}/{n_files}")
             try:
                 mon_data = get_monomers(file, file_folder, only_ids=True, force=FORCE, contact_threshold=15)
-            except (FileNotFoundError, StructureRecoverException):
+            except (StructureRecoverException):
                 print("retrying")
                 mon_data = get_monomers(file, file_folder, only_ids=True, force=True, contact_threshold=15)
                 monomer = Monomer.recover(data_path=os.path.join(dataset.data["export_folder"], monomer_id.split("_")[0], "monomers", monomer_id))
