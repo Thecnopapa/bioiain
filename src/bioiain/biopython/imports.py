@@ -336,7 +336,8 @@ def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list
                     #print("line_list",line_list)
                     #print(n)
                     if n != 1:
-                        log("warning", f"No key-value structure found in line {n}:", repr(line))
+                        log("warning", f"No key-value structure found in line {n}:", repr(line), f"\n  (In file: {file_path})")
+
                     else:
                         #log("debug", "Parsing:", line.replace("\n", "").strip())
                         pass
