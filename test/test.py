@@ -331,6 +331,20 @@ if "-t" in sys.argv:
     model.add_map(dataset)
     run_name = model.data["name"]
     model.add_histogram("relative_neighbours", [int(e.get("n_neighbours", 0)) for e in dataset.embeddings.values() if not e.get("deleted", False)])
+    model.add_text("hparams", json.dumps({
+        "model_name": model.__class__.__name__,
+        "dataset": data_name,
+        "label": dataset.data["label_key"],
+        "seed": SEED,
+        "optimiser": model.optimisers["default"].__class__.__name__,
+        "loss_fn": model.criterions["default"].__class__.__name__,
+        "lr": LR,
+        "batch_size": BATCH_SIZE,
+        "mix": MIX,
+        "target_epochs": epochs,
+        "device": DEVICE,
+        }, indent=4))
+
 
 
     log(1, f"Run name: {run_name}")
@@ -394,7 +408,7 @@ if "-t" in sys.argv:
 
             model.save()
             model.test(dataset)
-            model.send_run(host="iainvisa.com", key=os.environ.get("IAINVISA_FILE_KEY"), epoch=epoch)
+            model.send_run(host="iainvisa.com", key=os.environ.get("IAINVISA_FILE_KEY", None), epoch=epoch)
             model.add_epoch()
 
         except KeyboardInterrupt:

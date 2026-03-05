@@ -138,6 +138,7 @@ class CustomModel(nn.Module):
                 run_name = os.path.basename(self.writer.log_dir)
                 print(run_name)
                 file = os.path.join(self.writer.log_dir, os.listdir(self.writer.log_dir)[-1])
+                self.writer.flush()
                 return send_tensorboard_run(*args, folder=folder, run=run_name, file=file, **kwargs)
             except Exception as e:
                 log("warning", "Error uploading run:", e)
@@ -263,7 +264,14 @@ class CustomModel(nn.Module):
             data = np.array(data)
         self.writer.add_histogram(name, data,  self.data["epoch"])
 
+    def add_hparams(self, hparams={}, hmetrics={}):
+        self.writer.add_hparams(hparams, hmetrics, run_name=".")
 
+    def add_protein(self, name, coords, colours):
+        self.writer.add_mesh(name, coords, colours, global_step=self.data["epoch"])
+
+    def add_text(self, name, text):
+        self.writer.add_text(name, text)
 
     def test(self, dataset, re_load=True):
         if re_load:
@@ -435,13 +443,13 @@ class CustomModel(nn.Module):
                 self.step(step)
                 self.zero_grad(zero_optims)
             else:
-                loss.backward(retain_graph=True)
+                #loss.backward(retain_graph=True)
 
                 if self.batch_loss["current_n"] >= self.data["batch_size"]:
                     batch_loss = torch.mean(torch.stack(self.batch_loss["current_list"]))
                     print(f"Backpropagating ({batch_loss:5.4f})   ", end="\r")
 
-                    #batch_loss.backward()
+                    batch_loss.backward()
 
                     self.batch_loss["n_batches"] += 1
                     self.batch_loss["cumulative"] += batch_loss

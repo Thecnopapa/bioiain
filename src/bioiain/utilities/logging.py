@@ -235,6 +235,7 @@ def send_tensorboard_run(host, folder, run, file, key, epoch=0, protocol="https"
     fname = os.path.basename(file)
     fname = fname.replace(".0", f".{epoch}")
     log("header", "Uploading run to:", url)
+    assert key is not None
 
     with open(file, "rb") as f:
 
@@ -247,7 +248,11 @@ def send_tensorboard_run(host, folder, run, file, key, epoch=0, protocol="https"
                     "run":run,
                     "fname":fname
                 },
-                data=f.read()
+                data=f.read(),
+                timeout=3000
                 )
         print(resp.text)
+        if resp.status_code != 200:
+            print(resp)
+            raise Exception(f"Error [{resp.status_code}] uploading file to: {url}")
     return resp
