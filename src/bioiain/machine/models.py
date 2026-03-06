@@ -272,7 +272,7 @@ class CustomModel(nn.Module):
             if is_tmp:
                 model_path += ".temp"
             model_path += ".model.pt"
-            submodel.load_state_dict(torch.load(model_path, weights_only=weights_only))
+            submodel.load_state_dict(torch.load(model_path, weights_only=weights_only, map_location=torch.device("cpu")))
         return self
 
 
