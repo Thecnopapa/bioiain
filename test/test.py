@@ -433,6 +433,13 @@ if "-p" in sys.argv:
     log("title", "PREDICTING...")
     prediction_folder = "./predictions"
 
+    seed = 6
+    import random
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed) # For multi-GPU
     model_path = "./models/DUAL_MLP_MK3_saprot_interactions_rcps_T10_DUAL_CLASSES.temp.data.json"
     if "--model" in sys.argv:
         model_path = sys.argv[sys.argv.index("--model") + 1]
@@ -459,23 +466,23 @@ if "-p" in sys.argv:
                 from src.bioiain.machine.models import *
                 data = json.load(open(model_path))
                 weights = data.get("weights", [])
-                model = model_class(name="interactions", in_shape=data["in_shape"], num_classes=data["num_classes"], weights=weights)
-                model.load(model_path, weights_only=False)
-                print(model.set_mode("no-dropout"))
+                model = model_class(name="interactions", in_shape=data["in_shape"], num_classes=data["num_classes"], weights=weights, inference=True)
+                model.load(model_path, weights_only=True)
+                #print(model.set_mode("no-dropout"))
                 print(repr(model))
                 #print(json.dumps(model.data, indent=4))
 
-                dataset = EmbeddingDataset(name=os.path.basename(file), folder=prediction_folder)
-                dataset.add(embedding=embedding, key=monomer.get_name())
+                pred_dataset = EmbeddingDataset(name=os.path.basename(file), folder=prediction_folder)
+                pred_dataset.add(embedding=embedding, key=monomer.get_name())
                 label_to_index = model.data["label_to_index"]
                 index_to_label = model.data["index_to_label"]
                 print(dataset)
 
                 full_pred=[]
                 with torch.no_grad():
-                    for item in dataset:
+                    for item in pred_dataset:
                         out = model(item.t)
-                        #print(out)
+                        print(out)
                         #print(out.shape)
                         if out.shape[0]>2:
                             pred = out.max(dim=0)[1]
@@ -491,10 +498,10 @@ if "-p" in sys.argv:
                             full_pred.append(pred[1].item())
                         else:
                             full_pred.append(pred.item())
-                #print(full_pred)
+                print(full_pred)
 
                 interaction = PredictedMonomerContacts(monomer, full_pred, label_to_index)
-                interaction._agglomerate()
+                #interaction._agglomerate()
                 #interaction.plot_mpl()
                 pred_path = interaction.save_structure(prediction_folder)
                 script = PymolScript(name=f"{monomer.get_name()}_{chain.id}_prediction_pml_session", folder=prediction_folder)
@@ -551,7 +558,8 @@ if "-w" in sys.argv:
         view_path = interaction.save_structure("/tmp/bioiain/visualisations", extra_name="_visualised_monomer_contacts")
         log(1, interaction)
 
-        script = PymolScript(name=f"{monomer.get_name()}_visualisation_pml_session", folder="/tmp/bioiain/visualisations")
+        if "-p" not in sys.argv:
+            script = PymolScript(name=f"{monomer.get_name()}_visualisation_pml_session", folder="/tmp/bioiain/visualisations")
         script.load(view_path, monomer.get_name())
         script.spectrum(monomer.get_name())
 

@@ -33,7 +33,7 @@ class CustomLoss(object):
 
 
 class CustomModel(nn.Module):
-    def __init__(self, name, in_shape, lr=0.001, batch_size=1, folder="./models"):
+    def __init__(self, name, in_shape, lr=0.001, batch_size=1, folder="./models", inference=False):
         super().__init__()
         self.data = {}
         self.data["dataname"] = name
@@ -47,6 +47,7 @@ class CustomModel(nn.Module):
         self.writer = None
         self.mounted = False
         self.data["in_shape"] = in_shape
+        self.inference = inference
         os.makedirs(self.data["folder"], exist_ok=True)
 
         self.criterions = {
@@ -102,11 +103,11 @@ class CustomModel(nn.Module):
         log(1, "Mounting submodels...")
         for k, layer_set in self.layers.items():
             self.submodels[k] = nn.Sequential(*[l.to(DEVICE) for l in layer_set.values()]).to(DEVICE)
-
-        for o, op_data in self.optimisers.items():
-            self.optimisers[o] = self.optimisers[o]["class"](self.submodels[self.optimisers[o]["layer_set"]].parameters(), **self.optimisers[o]["kwargs"])
-            if op_data.get("LRS", None) is not None:
-                self.schedulers[o] = op_data["LRS"](optimiser=self.optimisers[o])
+        if not self.inference:
+            for o, op_data in self.optimisers.items():
+                self.optimisers[o] = self.optimisers[o]["class"](self.submodels[self.optimisers[o]["layer_set"]].parameters(), **self.optimisers[o]["kwargs"])
+                if op_data.get("LRS", None) is not None:
+                    self.schedulers[o] = op_data["LRS"](optimiser=self.optimisers[o])
 
         self.mounted = True
 
@@ -218,12 +219,16 @@ class CustomModel(nn.Module):
     def save(self, path=None, add_epoch=False, temp=False):
         if path is None:
             path = os.path.join(self.data["folder"], self.get_fname(add_epoch=add_epoch))
-        if not path.endswith(".model.pt"):
-            model_path = path + ".model.pt"
-        if temp:
-            model_path = model_path.replace(".model.pt", ".temp.model.pt")
-        self.data["path"] = model_path
-        torch.save(self.state_dict(), model_path)
+        for name, submodel in self.submodels.items():
+            if not path.endswith(".model.pt"):
+                model_path = path + f".{name}.model.pt"
+            else:
+               model_path = model_path.replace(".model.pt", f".{name}.model.pt") 
+            if temp:
+                model_path = model_path.replace(".model.pt", ".temp.model.pt")
+            if name == "default":
+                self.data["path"] = model_path
+            torch.save(submodel.state_dict(), model_path)
         return self.export(path=model_path, add_epoch=add_epoch)
 
 
