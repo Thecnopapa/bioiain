@@ -131,7 +131,11 @@ class InteractionProfile:
         simlabels = {}
         sim_outer = {}
         for simid in similar_ids:
-            lab_path = dataset.embeddings[simid][in_lab_var]
+            try:
+                lab_path = dataset.embeddings[simid][in_lab_var]
+            except KeyError:
+                log("warning", f"simid ({simid}) not found in dataset.embeddings")
+                continue
             with open(lab_path, "r") as f:
                 simlabels[simid] = f.read().strip()
             if V2:

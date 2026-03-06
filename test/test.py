@@ -163,6 +163,9 @@ if "-l" in sys.argv or "-e" in sys.argv:
             if any([b in file for b in BLACKLIST]):
                 log("warning", f"File: {file} in blacklist!")
                 continue
+            if os.path.getsize(os.path.join(file_folder, file)) > 1.5 * 1024 * 1024:
+                log("warning", f"File: {file} too large! ({os.path.getsize(os.path.join(file_folder, file)) * 1024 * 1024} MiB)")
+                continue
 
             if ONLY is not None:
                 if file[:4] not in ONLY:
@@ -210,13 +213,11 @@ if "-l" in sys.argv or "-e" in sys.argv:
                 except FoldseekError as e:
                     log("warning", e)
                     #mon_data = get_monomers(file, file_folder, only_ids=True, force=True, contact_threshold=15)
-
                     continue
                 except Exception as e:
                     log("Error", f"Exception occurred processing: {monomer_id}:\n", e)
                     raise e
-                    continue
-
+ 
                 dataset.save()
 
 
