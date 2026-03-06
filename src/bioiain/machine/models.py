@@ -217,6 +217,7 @@ class CustomModel(nn.Module):
 
 
     def save(self, path=None, add_epoch=False, temp=False):
+        log(1, f"Saving model (TEMP={temp})")
         if path is None:
             path = os.path.join(self.data["folder"], self.get_fname(add_epoch=add_epoch))
         for name, submodel in self.submodels.items():
@@ -233,6 +234,8 @@ class CustomModel(nn.Module):
 
 
     def export(self, path=None, add_epoch=False, temp=False):
+        log(1, f"Exporting model (TEMP={temp})")
+
         if path is None:
             path = os.path.join(self.data["folder"], self.get_fname(add_epoch=add_epoch))
         if path.endswith(".model.pt"):
@@ -242,12 +245,14 @@ class CustomModel(nn.Module):
         else:
             data_path = path
         if temp and not path.endswith(".temp.data.json"):
-            data_path.replace(".data.json", ".temp.data.json")
+            data_path = data_path.replace(".data.json", ".temp.data.json")
         json.dump(self.data, open(data_path, "w"), indent=4)
         return data_path
 
 
     def load(self, data_path=None, epoch=None, weights_only=False):
+        log(1, f"Loading model (weights_only={weights_only})")
+
         if data_path is None:
             data_path = os.path.join(self.data["folder"], self.get_fname(add_epoch=epoch))+".data.json"
         if not os.path.exists(data_path):
@@ -293,11 +298,14 @@ class CustomModel(nn.Module):
     def add_text(self, name, text):
         self.writer.add_text(name, text)
 
-    def test(self, dataset, re_load=False):
+    def test(self, dataset, re_load=False, temp=False):
+
+        log("header", "Model Validation")
         if re_load:
+            log(1, f"reloading saved model: {self.data['path']}")
+
             self.load()
         dataset.test()
-        log(1, f"Testing: using model saved at: {self.data['path']}")
         log(2, "Dataset:", dataset)
         #print(json.dumps(dataset.splitted["test"], indent=4))
         # for e in dataset.splitted["test"].values():
@@ -413,7 +421,7 @@ class CustomModel(nn.Module):
             except Exception as e:
                 print(e)
 
-        self.save(temp=not re_load)
+        self.save(temp=temp)
 
 
     def loss(self, output:torch.Tensor, item:Item, criterion_name:str="mode", backwards:bool=True, zero_optims:str|None="mode", step="mode") -> torch.Tensor|float:
