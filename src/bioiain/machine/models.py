@@ -293,7 +293,7 @@ class CustomModel(nn.Module):
     def add_text(self, name, text):
         self.writer.add_text(name, text)
 
-    def test(self, dataset, re_load=True):
+    def test(self, dataset, re_load=False):
         if re_load:
             self.load()
         dataset.test()
