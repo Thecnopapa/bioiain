@@ -210,9 +210,9 @@ class CustomModel(nn.Module):
 
     def get_fname(self, add_epoch=False) -> str:
         if add_epoch and self.data["epoch"] is not None:
-            fname = f"{self.data['model']}_{self.data['name']}_E{self.data['epoch']}"
+            fname = f"{self.data['name']}_E{self.data['epoch']}"
         else:
-            fname = f"{self.data['model']}_{self.data['name']}"
+            fname = f"{self.data['name']}"
         return fname
 
 
@@ -229,10 +229,10 @@ class CustomModel(nn.Module):
             if name == "default":
                 self.data["path"] = model_path
             torch.save(submodel.state_dict(), model_path)
-        return self.export(path=model_path, add_epoch=add_epoch)
+        return self.export(path=path, add_epoch=add_epoch, temp=temp)
 
 
-    def export(self, path=None, add_epoch=False):
+    def export(self, path=None, add_epoch=False, temp=False):
         if path is None:
             path = os.path.join(self.data["folder"], self.get_fname(add_epoch=add_epoch))
         if path.endswith(".model.pt"):
@@ -241,6 +241,8 @@ class CustomModel(nn.Module):
             data_path = path + ".data.json"
         else:
             data_path = path
+        if temp and not path.endswith(".temp.data.json"):
+            data_path.replace(".data.json", ".temp.data.json")
         json.dump(self.data, open(data_path, "w"), indent=4)
         return data_path
 
@@ -252,7 +254,20 @@ class CustomModel(nn.Module):
             raise ModelNotFound(data_path)
         raw_data = json.load(open(data_path, "r"))
         self.data = self.data | raw_data
-        self.load_state_dict(torch.load(self.data["path"], weights_only=weights_only))
+
+        base_path = data_path.replace(".data.json", "")
+        is_tmp = base_path.endswith(".temp")
+        if is_tmp:
+            base_path = base_path.replace(".temp", "")
+
+        print("BASE", base_path)
+
+        for name, submodel in self.submodels.items():
+            model_path = f"{base_path}.{name}"
+            if is_tmp:
+                model_path += ".temp"
+            model_path += ".model.pt"
+            submodel.load_state_dict(torch.load(model_path, weights_only=weights_only))
         return self
 
 

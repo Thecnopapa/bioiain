@@ -440,10 +440,17 @@ if "-p" in sys.argv:
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed) # For multi-GPU
-    model_path = "./models/DUAL_MLP_MK3_saprot_interactions_rcps_T10_DUAL_CLASSES.temp.data.json"
+    data_path = None
     if "--model" in sys.argv:
-        model_path = sys.argv[sys.argv.index("--model") + 1]
-    print("MODEL PATH:", model_path)
+        data_path = sys.argv[sys.argv.index("--model") + 1]
+
+    if data_path is None:
+        log("header", "Loading last model...")
+        av_models = [os.path.join("./models",f) for f in os.listdir("./models") if f.endswith("data.json")]
+        data_path = max(av_models, key = os.path.getctime)
+
+
+    print("MODEL PATH:", data_path)
 
     if "--file" in sys.argv:
         chains = None
@@ -464,10 +471,10 @@ if "-p" in sys.argv:
                 print(monomer)
                 embedding = SaProtEmbedding(entity=monomer, folder=prediction_folder, force=FORCE)
                 from src.bioiain.machine.models import *
-                data = json.load(open(model_path))
+                data = json.load(open(data_path))
                 weights = data.get("weights", [])
                 model = model_class(name="interactions", in_shape=data["in_shape"], num_classes=data["num_classes"], weights=weights, inference=True)
-                model.load(model_path, weights_only=True)
+                model.load(data_path, weights_only=True)
                 #print(model.set_mode("no-dropout"))
                 print(repr(model))
                 #print(json.dumps(model.data, indent=4))
