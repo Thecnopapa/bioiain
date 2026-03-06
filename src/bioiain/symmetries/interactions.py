@@ -152,7 +152,7 @@ class InteractionProfile:
                         sim_surface_bools.append(0)
                 sim_outer[simid] = sim_surface_bools
 
-        padding = dataset.embeddings[simid]["padding"]
+        padding = dataset.data.get("padding", 0)
         #print(simlabels.keys())
         sim_fasta = msa.msa_fasta
         sim_seqs = sim_fasta.parse(key=simlabels.keys())

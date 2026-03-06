@@ -87,6 +87,7 @@ class EmbeddingDataset(Dataset):
             mapped = False,
             label_key = "label_path",
             deleted_indexes = 0,
+            padding = 0,
         )
         self.mode="normal"
         os.makedirs(self.data["folder"], exist_ok=True)
