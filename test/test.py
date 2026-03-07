@@ -217,7 +217,7 @@ if "-l" in sys.argv or "-e" in sys.argv:
                 except Exception as e:
                     log("Error", f"Exception occurred processing: {monomer_id}:\n", e)
                     raise e
- 
+
                 dataset.save()
 
 
@@ -427,113 +427,59 @@ if "-t" in sys.argv:
 
 
 
-if "-p" in sys.argv:
-    from src.bioiain.symmetries import PredictedMonomerContacts
-    from src.bioiain.visualisation import PymolScript
-    log("title", "PREDICTING...")
-    prediction_folder = "./predictions"
 
-    seed = 6
-    import random
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed) # For multi-GPU
+
+SCRIPT = None
+TEMP = "--temp" in sys.argv
+if "-p" in sys.argv:
+    log("title", "PREDICTING...")
+    from src.bioiain.machine.flows import predict
+
+
+
     data_path = None
+    file = None
+    chain = "A"
+
     if "--model" in sys.argv:
         data_path = sys.argv[sys.argv.index("--model") + 1]
+
+    if "--file" in sys.argv:
+        file = sys.argv[sys.argv.index("--file") + 1]
+
+    if "--chain" in sys.argv:
+        chain = sys.argv[sys.argv.index("--chain") + 1]
+
+    print("MODEL PATH:", data_path)
+    print("FILE PATH:", file)
+    print("CHAIN:", chain)
+    assert file is not None
+    assert os.path.exists(file)
 
     if data_path is None:
         log("header", "Loading last model...")
         av_models = [os.path.join("./models",f) for f in os.listdir("./models") if f.endswith("data.json")]
         data_path = max(av_models, key = os.path.getctime)
 
-
     print("MODEL PATH:", data_path)
+    print(f"Predicting contacts in file: {file}")
 
-    if "--file" in sys.argv:
-        chains = None
-        if "--chains" in sys.argv:
-            chains = sys.argv[sys.argv.index("--chains") + 1]
-        file = sys.argv[sys.argv.index("--file") + 1]
-        print(f"Predicting contacts in file: {file}")
-        assert os.path.exists(file)
-        from src.bioiain.biopython import loadPDB
-        structure = loadPDB(file, name=os.path.basename(file).split(".")[0])
-        print(structure)
-
-        for chain in structure.get_chains():
-            if chains is None or chain.id in chains:
-                print(chain)
-                monomer = Monomer.cast(chain)
-                monomer.export(folder=prediction_folder)
-                print(monomer)
-                embedding = SaProtEmbedding(entity=monomer, folder=prediction_folder, force=FORCE)
-                from src.bioiain.machine.models import *
-                data = json.load(open(data_path))
-                weights = data.get("weights", [])
-                model = model_class(name="interactions", in_shape=data["in_shape"], num_classes=data["num_classes"], weights=weights, inference=True)
-                model.load(data_path, weights_only=True)
-                #print(model.set_mode("no-dropout"))
-                print(repr(model))
-                #print(json.dumps(model.data, indent=4))
-
-                pred_dataset = EmbeddingDataset(name=os.path.basename(file), folder=prediction_folder)
-                pred_dataset.add(embedding=embedding, key=monomer.get_name())
-                label_to_index = model.data["label_to_index"]
-                index_to_label = model.data["index_to_label"]
-                print(dataset)
-
-                full_pred=[]
-                with torch.no_grad():
-                    for item in pred_dataset:
-                        out = model(item.t)
-                        print(out)
-                        #print(out.shape)
-                        if out.shape[0]>2:
-                            pred = out.max(dim=0)[1]
-                        else:
-                            pred = out
-                        #print(pred)
-                        if len(label_to_index) > 2:
-                            p = index_to_label[str(pred.item())]
-                            full_pred.append(p)
-                        elif len(label_to_index) == 2:
-                            cp = round(pred[0].item()*100)
-                            op = int(pred[1].item() > 0.5)
-                            full_pred.append(pred[1].item())
-                        else:
-                            full_pred.append(pred.item())
-                print(full_pred)
-
-                interaction = PredictedMonomerContacts(monomer, full_pred, label_to_index)
-                #interaction._agglomerate()
-                #interaction.plot_mpl()
-                pred_path = interaction.save_structure(prediction_folder)
-                script = PymolScript(name=f"{monomer.get_name()}_{chain.id}_prediction_pml_session", folder=prediction_folder)
-                script.load(pred_path, monomer.get_name())
-                script.spectrum(monomer.get_name())
-                if label_to_index is not None:
-                    script.print(json.dumps(label_to_index, indent=4))
-                session_path = script.write_script()
-                print("Session saved at:")
-                print("pymol", session_path)
-                #script.execute()
-
-
+    SCRIPT = predict(file_path=file, model_data_path=data_path, chain_id=chain, use_temp=TEMP, timestamp=True)
 
 
 if "-w" in sys.argv:
-    from src.bioiain.symmetries import PredictedMonomerContacts
-    from src.bioiain.visualisation import PymolScript
+    log("title", "VISUALISATION")
+
+    from src.bioiain.machine.flows import display_monomer_labels
+
+
 
     LABNAME = "dual_discrete_2"
     if "--label" in sys.argv:
         LABNAME = sys.argv[sys.argv.index("--label") + 1]
 
-    dataset.use_label(LABNAME)
-    dataset.map()
+
+
 
 
     if "--monomer" in sys.argv:
@@ -543,90 +489,14 @@ if "-w" in sys.argv:
         except:
             [print(t) for t in dataset.embeddings.keys()]
             raise
-        log("title", "VISUALISATION")
-        log("start", "VISUALISATION")
-        log("header", f"Displaying monomer: {target}")
 
-        embedding = dataset.embeddings[target]
-        print(json.dumps(embedding, indent=4))
+        dataset.use_label(LABNAME)
+        dataset.map()
+        display_monomer_labels(monomer_id=target, dataset=dataset, label_name=LABNAME, script=SCRIPT, use_temp=TEMP)
 
-        label_path = embedding[LABNAME]
-        with open(label_path, "r") as f:
-            label = f.read().split(",")
+    else:
+        log("error", "Monomer id not provided (eg. --monomer 1M2Z_0_mon_A)")
 
-        monomer = Monomer.recover(data_path=os.path.join(dataset.data["export_folder"], target.split("_")[0], "monomers", target))
-
-
-        log(1, f"label: {label}")
-        print(dataset.data["label_to_index"])
-        if len(label) == 1:
-            label = label[0]
-        interaction = PredictedMonomerContacts(monomer, label, label_to_index=dataset.data["label_to_index"])
-        view_path = interaction.save_structure("/tmp/bioiain/visualisations", extra_name="_visualised_monomer_contacts")
-        log(1, interaction)
-
-        if "-p" not in sys.argv:
-            script = PymolScript(name=f"{monomer.get_name()}_visualisation_pml_session", folder="/tmp/bioiain/visualisations")
-        script.load(view_path, monomer.get_name())
-        script.spectrum(monomer.get_name())
-
-
-        session_path = script.write_script()
-        print("Session saved at:")
-        print("pymol", session_path)
-
-
-
-
-
-
-#     script.line(f"int_{n}", sele1=f"monomer and c. {a1['chain']} and i. {a1['resn']} and n. CA",
-#                 sele2=f"interacting_{n} and c. {a2['chain']} and i. {a2['resn']} and n. CA")
-# script.disable(name)
-
-# script = pymol.PymolScript(name=monomer, pymol_path="$CONDA_PREFIX/bin/pymol")
-# script.load(crystal.paths["original"], "original", to="pdb")
-# script.cell()
-# script.symmetries()
-# script.group()
-# script.disable("sym")
-# script.disable("original")
-
-
-# embeddings.append(interactions_per_monomer(monomer, crystal.paths["monomer_folder"], script=script))
-
-# script.write_script()
-# script.execute()
-
-
-
-
-# Oligo  (to be reworked)
-
-
-    # crystal.get_oligomers(
-    #     oligomer_levels=[2],
-    # )
-
-
-    # from src.bioiain.symmetries import Oligomer
-    #
-    # print(crystal.paths["oligo_folder"])
-    # for file in sorted(os.listdir(crystal.paths["oligo_folder"]))   :
-    #     print(file)
-    #     if file.endswith(".data.json"):
-    #         oligo = Oligomer.recover(id="recovered",data_path=os.path.join(crystal.paths["oligo_folder"], file))
-    #         print(oligo)
-    #
-    #
-    # from src.bioiain.visualisation import pymol
-    #
-    # script = pymol.PymolScript(folder=".", name="test")
-    # script.load(crystal.paths["original"], "original", to="pdb")
-    # script.cell()
-    # script.symmetries()
-    # script.group()
-    # script.write_script()
 
 
 
