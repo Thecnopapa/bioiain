@@ -25,7 +25,7 @@ dependencies = [
 ]
 
 name = "bioiain"
-version = "0.0.7.0.0"
+version = "0.0.7.1.0"
 authors = [
   { name="Iain Visa", email="iainvisa@gmail.com" },
 ]
@@ -64,10 +64,10 @@ conda = [
     "clustalw" #bioconda::clustalw
 ]
 ml = [
-    "torch >= 2.10.0",
-    "torchvision >= 0.25.0",
-    "transformers >= 5.0.0",
-    "tensorboard >= 2.20.0"
+    "torch",
+    "torchvision",
+    "transformers",
+    "tensorboard"
 ]
 
 
