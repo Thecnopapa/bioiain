@@ -464,7 +464,7 @@ if "-p" in sys.argv:
     print("MODEL PATH:", data_path)
     print(f"Predicting contacts in file: {file}")
 
-    SCRIPT = predict(file_path=file, model_data_path=data_path, chain_id=chain, use_temp=TEMP, timestamp=True)
+    SCRIPT = predict(file_path=file, model_data_path=data_path, chain_id=chain, use_temp=TEMP, timestamp=True)["script"]
 
 
 if "-w" in sys.argv:

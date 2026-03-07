@@ -26,8 +26,10 @@ def predict(file_path, model_data_path, chain_id="A", use_temp=True, force=False
 
 
     name = os.path.basename(file_path).split(".")[0]
-    if timestamp:
-        name += datetime.datetime.now().strftime('_%y-%m-%d_%H-%M')
+    if type(timestamp) is str:
+        name = name + "_" + timestamp
+    elif timestamp:
+        name += datetime.datetime.now().strftime('_%y-%m-%d_%H-%M-%S')
     prediction_folder = os.path.join(prediction_folder, name)
 
 
@@ -100,7 +102,8 @@ def predict(file_path, model_data_path, chain_id="A", use_temp=True, force=False
     print("Session saved at:")
     print("pymol", session_path)
     # script.execute()
-    return script
+    return {"script": script, "prediction": pred_path, "timestamp":timestamp, "name":name,
+            "label_to_index":label_to_index, "chain":chain, "session":session_path}
 
 
 
