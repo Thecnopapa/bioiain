@@ -206,18 +206,21 @@ class SaProtEmbedding(PerResidueEmbedding):
             model.save_pretrained(model_path)
         model = AutoModelForMaskedLM.from_pretrained(model_path)
 
-
+        print("model eval")
         model.eval()
         model.to(device)
         #resume_logging()
 
-
+        print("Preparing tokens...")
         inputs = tokenizer("".join(in_tokens), return_tensors="pt").to(device)
         inputs = {k: v.to(device) for k, v in inputs.items()}
+        print("Tokens ready")
         #print(inputs)
 
         with torch.no_grad():
+            print("Generating output...")
             outputs = model(**inputs, output_hidden_states=True)
+            print("Output ready")
 
         last_hidden = outputs.hidden_states[-1]
         if not self.keep_padding:
