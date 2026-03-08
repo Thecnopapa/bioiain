@@ -104,7 +104,7 @@ def predict(file_path, model_data_path, chain_id="A", use_temp=True, force=False
     print("pymol", session_path)
     # script.execute()
     return {"script": script, "prediction": pred_path, "timestamp":timestamp, "name":name,
-            "label_to_index":label_to_index, "chain":chain, "session":session_path}
+            "label_to_index":label_to_index, "chain":chain.id, "session":session_path}
 
 
 
