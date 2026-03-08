@@ -108,8 +108,9 @@ class SaProtEmbedding(PerResidueEmbedding):
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
         cmd = [self.foldseek_cmd, "structureto3didescriptor", "-v", "0", "--threads", f"{avail_cpus}", "--chain-name-mode", "0",
                self.entity.paths["self"], out_path]
-        #log("debug", "$", " ".join(cmd))
+        log("debug", "$", " ".join(cmd))
         subprocess.run(cmd)
+        log("debug", ">", out_path)
         if not os.path.exists(out_path):
             raise MissingProgram("Foldseek not installed or not working")
 
