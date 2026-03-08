@@ -11,11 +11,10 @@ from ..machine import models
 
 
 
-def predict(file_path, model_data_path, chain_id="A", use_temp=True, force=False, timestamp=False, with_foldseek=True,
-            foldseek_cmd="foldseek", download_folder=".models"):
-    prediction_folder = "./predictions"
-    if use_temp:
-        prediction_folder = "/tmp/bioiain/predictions"
+def predict(file_path, model_data_path, chain_id="A", pred_folder="./predictions", use_temp=True, force=False, timestamp=False, with_foldseek=True,
+            foldseek_cmd="foldseek", download_folder=".models", **kwargs):
+    prediction_folder = pred_folder
+
     seed = 6
     import random, torch
 
@@ -49,7 +48,8 @@ def predict(file_path, model_data_path, chain_id="A", use_temp=True, force=False
     monomer = Monomer.cast(chain)
     monomer.export(folder=prediction_folder)
     print(monomer)
-    embedding = SaProtEmbedding(entity=monomer, folder=prediction_folder, force=force, with_foldseek=with_foldseek, foldseek_cmd=foldseek_cmd, download_folder=download_folder)
+    embedding = SaProtEmbedding(entity=monomer, folder=prediction_folder, force=force, with_foldseek=with_foldseek,
+                                foldseek_cmd=foldseek_cmd, download_folder=download_folder, use_temp=use_temp)
     data = json.load(open(model_data_path))
     print("Model class (data):", data.get("model"))
     model_class = getattr(models, data.get("model"))
