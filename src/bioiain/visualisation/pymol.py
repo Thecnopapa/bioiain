@@ -1,5 +1,5 @@
 import os, sys, subprocess
-
+from ..utilities.logging import log
 from ..utilities import *
 from ..biopython.base import BiopythonOverlayClass
 
@@ -118,7 +118,10 @@ class PymolScript(object):
             for cmd in self.commands:
                 f.write(repr(cmd)+"\n")
         self.path = os.path.abspath(filepath)
-        os.chmod(self.path, 0o755)
+        try:
+            os.chmod(self.path, 0o755)
+        except:
+            log("warning", "Could not give exec permissions to script")
         return self.path
 
 
