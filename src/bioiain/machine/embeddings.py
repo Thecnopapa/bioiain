@@ -73,7 +73,7 @@ class PerResidueEmbedding(Embedding):
 
 
 class SaProtEmbedding(PerResidueEmbedding):
-    def __init__(self, *args, foldseek_cmd="foldseek", with_foldseek=True, force=False, padding=1, keep_padding=False, use_temp=False, save_to_tmp=False, **kwargs):
+    def __init__(self, *args, foldseek_cmd="foldseek", with_foldseek=True, force=False, padding=1, keep_padding=False, use_temp=True, download_folder=".models", **kwargs):
         super().__init__(self, *args, **kwargs)
         self.folder = os.path.join(self.folder, "SaProt")
         self.subfolder = os.path.join(self.folder, self.name)
@@ -83,7 +83,7 @@ class SaProtEmbedding(PerResidueEmbedding):
         self.length = len(self.sequence)
         self.keep_padding = keep_padding
         self.padding = padding
-        self.save_to_tmp = save_to_tmp
+        self.download_folder = download_folder
 
 
         if keep_padding:
@@ -183,10 +183,8 @@ class SaProtEmbedding(PerResidueEmbedding):
 
             in_tokens = [f"{s.upper()}{fs.lower()}" for s, fs in zip(self.sequence, self.fs_tokens)]
 
-        if self.save_to_tmp:
-            model_folder = "/tmp/bioiain/models/"
-        else:
-            model_folder = ".models/"
+        model_folder = self.download_folder
+
 
         stop_logging()
         tokenizer_path = os.path.join(model_folder, f"tok_{tokenizer_name}")
