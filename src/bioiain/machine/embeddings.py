@@ -73,7 +73,7 @@ class PerResidueEmbedding(Embedding):
 
 
 class SaProtEmbedding(PerResidueEmbedding):
-    def __init__(self, *args, foldseek_cmd="foldseek", with_foldseek=True, force=False, padding=1, keep_padding=False, save_to_tmp=False, **kwargs):
+    def __init__(self, *args, foldseek_cmd="foldseek", with_foldseek=True, force=False, padding=1, keep_padding=False, use_temp=False, save_to_tmp=False, **kwargs):
         super().__init__(self, *args, **kwargs)
         self.folder = os.path.join(self.folder, "SaProt")
         self.subfolder = os.path.join(self.folder, self.name)
@@ -92,13 +92,13 @@ class SaProtEmbedding(PerResidueEmbedding):
 
 
         self.iter_dim = 1
-        self.generate_embedding(with_foldseek=with_foldseek, force=force)
+        self.generate_embedding(with_foldseek=with_foldseek, force=force, use_temp=use_temp)
 
 
-    def generate_embedding(self, *args, with_foldseek=True, force=False, **kwargs):
+    def generate_embedding(self, *args, with_foldseek=True, force=False, use_temp=False, **kwargs):
         #print("GENERATING_EMBEDDING")
         if with_foldseek:
-            if self._get_foldseek(force=force) is None: return None
+            if self._get_foldseek(force=force, use_temp=use_temp) is None: return None
         return self._get_saprot(force=force)
 
 
@@ -138,9 +138,13 @@ class SaProtEmbedding(PerResidueEmbedding):
             return self.fs_tokens
 
 
-    def _get_foldseek(self, force=False):
+    def _get_foldseek(self, force=False, use_temp=True):
         #print("GETTING_FOLDSEEK")
-        out_path = f"/tmp/bioiain/foldseek/{self.name}.foldseek.tsv"
+        if use_temp:
+            out_path = f"/tmp/bioiain/foldseek/{self.name}.foldseek.tsv"
+        else:
+            out_path = f"./foldseek/{self.name}.foldseek.tsv"
+
         #print(not os.path.exists(out_path), force)
         if (not os.path.exists(out_path)) or force:
             self._run_foldseek(out_path)
