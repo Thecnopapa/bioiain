@@ -186,16 +186,21 @@ class SaProtEmbedding(PerResidueEmbedding):
         model_folder = self.download_folder
 
 
-        stop_logging()
+        #stop_logging()
         tokenizer_path = os.path.join(model_folder, f"tok_{tokenizer_name}")
+        print("tok", tokenizer_path)
         if not os.path.exists(tokenizer_path):
+            print("Downloading tokeniser...")
             tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
             os.makedirs(os.path.dirname(tokenizer_path), exist_ok=True)
             tokenizer.save_pretrained(tokenizer_path)
         tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
 
         model_path = os.path.join(model_folder, f"mod_{model_name}")
+        print("mod", model_path)
+
         if not os.path.exists(model_path):
+            print("Downloading model...")
             model = AutoModelForMaskedLM.from_pretrained(model_name)
             os.makedirs(os.path.dirname(model_path), exist_ok=True)
             model.save_pretrained(model_path)
@@ -204,7 +209,7 @@ class SaProtEmbedding(PerResidueEmbedding):
 
         model.eval()
         model.to(device)
-        resume_logging()
+        #resume_logging()
 
 
         inputs = tokenizer("".join(in_tokens), return_tensors="pt").to(device)
