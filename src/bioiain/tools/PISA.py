@@ -20,6 +20,51 @@ class PISA(object):
         self.xml_folder = xml_folder
         self.data = None
 
+    def __getitem__(self, key):
+        return self.data.get(key, None)
+
+    def run_pisa(self, filepath, interfaces=True, assemblies=True):
+        try:
+            ccp4_path = os.environ["CCP4"]
+        except KeyError:
+            log("error", "CCP4 not enabled")
+            ccp4_path = None
+            raise CCP4NotEnabled()
+        if ccp4_path is None:
+            raise CCP4Error()
+        print(" ... CCP4 detected at:", ccp4_path)
+        filepath = os.path.abspath(filepath)
+        cmd = [
+            self.pisa_command,
+            self.pisa_id,
+            "-analyse",
+            filepath
+        ]
+        try:
+            print(" ... "+ " ".join(cmd))
+            subprocess.run(cmd, check=True)
+        except Exception as e:
+            raise PISAError(e)
+
+        if interfaces or assemblies:
+            int_file, ass_fie = self._pisa_to_xml()
+            return self.pisa_id, int_file, ass_fie
+        else:
+            return self.pisa_id
+
+    def delete(self):
+        cmd = [
+            self.pisa_command,
+            self.pisa_id,
+            "-erase"
+        ]
+        try:
+            print(" ... "+ " ".join(cmd))
+            subprocess.run(cmd, check=True)
+        except Exception as e:
+            raise PISAError(e)
+
+
     def analyse(self, filepath):
         filepath = os.path.abspath(filepath)
         print(f" ... PISA: analysing: {filepath}")
@@ -96,16 +141,24 @@ class PISA(object):
             if xml["status"] != "Ok":
                 raise Exception(f"Assembly XML error: {xml}")
             data["pisa_id"] = xml["name"]
-            data["multimeric_state"] = xml["multimeric_state"]
+            data["multimeric_state"] = int(xml["multimeric_state"])
             data["assessment"] = xml["assessment"]
-            data["n_assembly_groups"] = xml["total_asm"]
-            xml = xml["asm_set"]
+            data["n_assembly_groups"] = int(xml["total_asm"])
+            is_multimeric = data["multimeric_state"] > 1
+            if is_multimeric:
+                xml = xml["asm_set"]
+            else:
+                xml = xml["asu_complex"]
+                
             if type(xml) != list:
                 xml = [xml]
             for assembly_group in xml:
-                assembly_serial = assembly_group["ser_no"]
-                #print(">>>> serial group:", assembly_serial)
-                #print(assembly_group["assembly"]["serial_no"])
+                if is_multimeric:
+                    assembly_serial = assembly_group["ser_no"]
+                else:
+                    assembly_serial = "0"
+                    #print(">>>> serial group:", assembly_serial)
+                    #print(assembly_group["assembly"]["serial_no"])
                 if type(assembly_group["assembly"]) == dict:
                     asss = [assembly_group["assembly"]]
                 elif type(assembly_group["assembly"]) == list:
@@ -163,33 +216,5 @@ class PISA(object):
             subprocess.run(cmd_a, stdout=open(assemblies_path, "w"))
         return interfaces_path, assemblies_path
 
-    def run_pisa(self, filepath, interfaces=True, assemblies=True):
-        try:
-            ccp4_path = os.environ["CCP4"]
-        except KeyError:
-            log("error", "CCP4 not enabled")
-            ccp4_path = None
-            raise CCP4NotEnabled()
-        if ccp4_path is None:
-            raise CCP4Error()
-        print(" ... CCP4 detected at:", ccp4_path)
-        filepath = os.path.abspath(filepath)
-        cmd = [
-            self.pisa_command,
-            self.pisa_id,
-            "-analyse",
-            filepath
-        ]
-        try:
-            print(" ... "+ " ".join(cmd))
-            subprocess.run(cmd, check=True)
-        except Exception as e:
-            raise PISAError(e)
-
-        if interfaces or assemblies:
-            int_file, ass_fie = self._pisa_to_xml()
-            return self.pisa_id, int_file, ass_fie
-        else:
-            return self.pisa_id
 
 

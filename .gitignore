@@ -224,6 +224,9 @@ test/.models
 
 test/figs
 
+test/pisa_raw
+test/pisa_data
+
 
 
 html
