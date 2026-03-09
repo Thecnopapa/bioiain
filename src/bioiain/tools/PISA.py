@@ -64,8 +64,21 @@ class PISA(object):
         except Exception as e:
             raise PISAError(e)
 
+    def load(self, data_path):
+        with open(data_path, "r") as f:
+            self.data = json.load(f)
+        return self
 
-    def analyse(self, filepath):
+
+    def analyse(self, filepath, force=False):
+        if not force:
+            fname = os.path.basename(filepath)
+            out_path = os.path.join(self.out_folder, f"{fname.split(".")[0]}.pisa.json")
+            print(out_path)
+            if os.path.exists(out_path):
+                self.load(out_path)
+                print(" ... reusing pisa otput from:", out_path)
+                return out_path, self["pdb_code"]
         filepath = os.path.abspath(filepath)
         print(f" ... PISA: analysing: {filepath}")
         self.run_pisa(filepath)
@@ -90,58 +103,68 @@ class PISA(object):
             print(" ... " + "parsing interfaces")
             xml = xmltodict.parse(f.read())["pdb_entry"]
             if xml["status"] != "Ok":
-                raise Exception(f"Interaction XML error: {xml}")
+                raise PISAError(f"Interaction XML error: {xml}")
             data["pdb_code"] = pdb_code = xml["pdb_code"].upper()
-            data["n_interfaces"] = xml["n_interfaces"]
-            xml = xml["interface"]
-            for interface in xml:
-                interfaces[interface["id"]] = {
-                    "info": {k:v for k,v in interface.items() if type(v) not in [list, dict]},
-                    "molecules": {}
-                    }
-                i = interfaces[interface["id"]]
-                for molecule in interface["molecule"]:
-                    i["molecules"][molecule["id"]] = {
-                        "info": {k:v for k,v in molecule.items() if type(v) not in [list, dict]},
-                    }
-                    if molecule["chain_id"] not in molecules:
-                        molecules[molecule["chain_id"]] = {
-                            "id": molecule["id"],
-                            "chain_id": molecule["chain_id"],
-                            "class": molecule["class"],
-                            "residues": {}
-                        }
-                    m = molecules[molecule["chain_id"]]
-                    for n, residue in enumerate(molecule["residues"]["residue"]):
-                        if type(residue) == str:
-                            continue
-                        #print(residue)
-                        if residue["ser_no"] not in m["residues"]:
-                            m["residues"][residue["ser_no"]] = {
-                                "ser_no": residue["ser_no"],
-                                "name": residue["name"],
-                                "seq_num": residue["seq_num"],
-                                "label_seq_num": residue["label_seq_num"],
-                                "interactions": {}
-                                }
-                        solv_en = float(residue["solv_en"])
-                        if  solv_en != 0:
-                            m["residues"][residue["ser_no"]]["interactions"][interface["id"]] = {
-                                "asa": float(residue["asa"]),
-                                "bsa": float(residue["bsa"]),
-                                "solv_en": solv_en,
+            data["n_interfaces"] = int(xml["n_interfaces"])
+            if data["n_interfaces"] != 0:
+                xml = xml["interface"]
+                if type(xml) != list:
+                    xml = [xml]
+                for interface in xml:
+                    try:
+                        interfaces[interface["id"]] = {
+                            "info": {k:v for k,v in interface.items() if type(v) not in [list, dict]},
+                            "molecules": {}
                             }
-            data["interfaces"] = interfaces
-            data["molecules"] = molecules
+                    except:
+                        print(interface)
+                        raise
+                    i = interfaces[interface["id"]]
+                    for molecule in interface["molecule"]:
+                        i["molecules"][molecule["id"]] = {
+                            "info": {k:v for k,v in molecule.items() if type(v) not in [list, dict]},
+                        }
+                        if molecule["chain_id"] not in molecules:
+                            molecules[molecule["chain_id"]] = {
+                                "id": molecule["id"],
+                                "chain_id": molecule["chain_id"],
+                                "class": molecule["class"],
+                                "residues": {}
+                            }
+                        m = molecules[molecule["chain_id"]]
+                        for n, residue in enumerate(molecule["residues"]["residue"]):
+                            if type(residue) == str:
+                                continue
+                            #print(residue)
+                            if residue["ser_no"] not in m["residues"]:
+                                m["residues"][residue["ser_no"]] = {
+                                    "ser_no": residue["ser_no"],
+                                    "name": residue["name"],
+                                    "seq_num": residue["seq_num"],
+                                    "label_seq_num": residue["label_seq_num"],
+                                    "interactions": {}
+                                    }
+                            solv_en = float(residue["solv_en"])
+                            if  solv_en != 0:
+                                m["residues"][residue["ser_no"]]["interactions"][interface["id"]] = {
+                                    "asa": float(residue["asa"]),
+                                    "bsa": float(residue["bsa"]),
+                                    "solv_en": solv_en,
+                                }
+                data["interfaces"] = interfaces
+                data["molecules"] = molecules
 
         assemblies = {}
         with open(assemblies_path) as f:
             print(" ... " + "parsing assemblies")
             xml = xmltodict.parse(f.read())["pisa_results"]
             if xml["status"] != "Ok":
-                raise Exception(f"Assembly XML error: {xml}")
+                raise PISAError(f"Assembly XML error: {xml}")
             data["pisa_id"] = xml["name"]
-            data["multimeric_state"] = int(xml["multimeric_state"])
+            try:
+                data["multimeric_state"] = int(xml["multimeric_state"])
+            except:
+                raise PISAError(f"multimeric_state not found (probably non-cristallographic)")
             data["assessment"] = xml["assessment"]
             data["n_assembly_groups"] = int(xml["total_asm"])
             is_multimeric = data["multimeric_state"] > 1
@@ -164,7 +187,7 @@ class PISA(object):
                 elif type(assembly_group["assembly"]) == list:
                     asss = assembly_group["assembly"]
                 else:
-                    raise Exception(f"Assembly group XML error: {assembly_group['assembly']}")
+                    raise PISAError(f"Assembly group XML error: {assembly_group['assembly']}")
                 #print_children(assembly_group["assembly"])
                 for assembly in asss:
                     #print(">>>> assembly:", assembly["serial_no"])

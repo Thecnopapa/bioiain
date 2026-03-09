@@ -35,7 +35,7 @@ for file in sorted(os.listdir(file_folder)):
 
 	pisa = PISA(pisa_id=code)
 	try:
-		pisa.analyse(fpath)
+		pisa.analyse(fpath, force=False)
 	except PISAError as e:
 		log("warning", "PISA error at file:", file)
 		log("warning", e)
