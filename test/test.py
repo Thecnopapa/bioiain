@@ -19,10 +19,24 @@ BLACKLIST = ["1JJ2"]
 #                          file_path="./pdb_list.txt", file_format="pdb",
 #                          overwrite=False)
 if "--no-download" in sys.argv:
-    file_folder = "./data/cath-nonredundant-S20"
-    pdb_list = "cath"
+    if "monomers" in sys.argv:
+        file_folder = "./data/cath-monomeric"
+        pdb_list = "cath"
+    elif "cath" in sys.argv:
+        file_folder = "./data/cath-nonredundant-S20"
+        pdb_list = "cath"
+    else: 
+        file_folder = "./data/receptors"
+        pdb_list = "cath"
 else:
-    if "cath" in sys.argv:
+    if "monomers" in sys.argv:
+        file_folder = downloadPDB("./data", "cath-monomeric",
+                                               file_path="./data/cath-dataset-nonredundant-S20.monomeric.list",
+                                               file_format="cif",
+                                               overwrite=False)
+        pdb_list = "monomers"
+
+    elif "cath" in sys.argv:
         file_folder = downloadPDB("./data", "cath-nonredundant-S20",
                                                file_path="./data/cath-dataset-nonredundant-S20.list",
                                                file_format="cif",

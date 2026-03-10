@@ -33,6 +33,12 @@ for file in sorted(os.listdir(file_folder)):
 	code = file.split(".")[0]
 	fpath = os.path.join(file_folder, file)
 
+	if os.path.getsize(os.path.join(file_folder, file)) > 1.5 * 1024 * 1024:
+		log("warning", f"File: {file} too large! ({os.path.getsize(os.path.join(file_folder, file)) / 1024 / 1024 :3.2f} MiB)")
+		with open(no_pisa_fname, "a") as f:
+			f.write(code+"\n")
+		continue
+
 	pisa = PISA(pisa_id=code)
 	try:
 		pisa.analyse(fpath, force=False)
