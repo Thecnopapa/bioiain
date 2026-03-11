@@ -323,7 +323,7 @@ def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list
                     multi_line = True
                     multi_cache = line_list[-1]
                     multi_delimiter = line_list[-1][0]
-                    exit()
+                    
                 if next_line[0] in multi_delimiters and not multi_line:
                     #print("MULTI_LINE START")
                     multi_line = True
