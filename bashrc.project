@@ -235,19 +235,26 @@ testing(){
 upload(){
   cd $FOLDER_PATH | exit 0
   python3 -m build
-  python3 -m twine upload --repository testpypi dist/* && rm dist/*
+  python3 -m twine upload --repository testpypi dist/* --verbose
+  rm dist/*
 }
 
 upload-gcloud(){
   cd $FOLDER_PATH | exit 0
   python3 -m build
-  python3 -m twine upload --repository-url  https://europe-west1-python.pkg.dev/iainvisa/python/ dist/* --verbose && rm dist/* 
+  python3 -m twine upload --repository-url  https://europe-west1-python.pkg.dev/iainvisa/python/ dist/* --verbose
+  rm dist/* 
 
 }
 
 update(){
     echo '$ pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ bioiain -U'
     pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ bioiain -U
+}
+
+update-gcloud(){
+    echo '$ pip install -i https://europe-west1-python.pkg.dev/iainvisa/python/simple/ --extra-index-url https://pypi.org/simple/ bioiain -U'
+    pip install -i  https://europe-west1-python.pkg.dev/iainvisa/python/simple/ --extra-index-url https://pypi.org/simple/ bioiain -U
 }
 
 update_all(){
