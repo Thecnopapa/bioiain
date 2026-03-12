@@ -80,11 +80,18 @@ class GoldenAdamW(Golden):
 
 
 
+class GoldenDynamix(Golden):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.optimisers["default"]["LRS"] = customLRS
 
 
 
 
 
+
+
+### DEPRECATED #########################################################################################################
 
 
 
