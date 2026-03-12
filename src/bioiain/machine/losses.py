@@ -24,7 +24,7 @@ class CustomLoss(object):
 
 
 class CustomWeighted(CustomLoss):
-    def __init__(self, weights=None):
+    def __init__(self, weights=None, addto1=False):
         log(1, "Using label weights:")
 
         if weights is not None:
@@ -32,7 +32,12 @@ class CustomWeighted(CustomLoss):
             if type(weights) is dict:
                 weights = weights.values()
             w = np.array(list(weights))
-            w = w / w.sum()
+            print(w)
+            if addto1:
+                w = w / w.sum()
+            else:
+                w = w / w.max()
+
             self.weight = torch.Tensor(w)
 
         self.CEL = nn.MSELoss()

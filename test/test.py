@@ -147,6 +147,12 @@ if "--lr" in sys.argv:
 
 log(1, f"Learning rate: {LR}")
 
+DROPOUT = 0.1
+if "--dropout" in sys.argv:
+    DROPOUT = float(sys.argv[sys.argv.index("--dropout") + 1])
+
+log(1, f"Dropout rate: {DROPOUT}")
+
 MIX = False
 if "--mix" in sys.argv:
     MIX = True
@@ -350,7 +356,8 @@ if "-t" in sys.argv:
 
 
     run_name = f"{data_name}_LR{str(LR).split(".")[-1]}_E{epochs}_MIX{int(MIX)}_B{BATCH_SIZE}"
-    model = MODEL_CLASS(name=run_name, in_shape=(1280,), num_classes=len(label_to_index), lr=LR, weights=label_count, batch_size=BATCH_SIZE).to(DEVICE)
+    model = MODEL_CLASS(name=run_name, in_shape=(1280,), num_classes=len(label_to_index), lr=LR, weights=label_count,
+     batch_size=BATCH_SIZE, dropout=DROPOUT).to(DEVICE)
 
     model.add_map(dataset)
     run_name = model.data["name"]

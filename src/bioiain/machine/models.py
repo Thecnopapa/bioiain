@@ -46,6 +46,7 @@ class Golden(BaseModel):
         self.data["num_classes"] = num_classes
         self.data["hidden_dims"] = hidden_dims
         self.data["dropout"] = dropout
+        self.data["weights"] = weights
 
         self.layers["default"] = {
             "l1": nn.Linear(self.data["in_shape"][0], hidden_dims[0]),
@@ -58,10 +59,16 @@ class Golden(BaseModel):
             "softmax": nn.Softmax(dim=0)
         }
 
-        self.criterions["default"] = CustomWeighted(weights)
-        self.data["weights"] = list([w.item() for w in self.criterions["default"].weight])
+        self.criterions["default"] = CustomWeighted(self.data["weights"])
 
 
+
+
+class GoldenTo1(Golden):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.criterions["default"] = CustomWeighted(self.data["weights"], addto1=True)
 
 
 class GoldenAdamW(Golden):

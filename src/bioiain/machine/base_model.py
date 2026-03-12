@@ -26,7 +26,16 @@ from .losses import *
 
 
 class BaseModel(nn.Module):
-    def __init__(self, name, in_shape, lr=0.001, batch_size=1, folder="./models", inference=False):
+    def __init__(
+            self, 
+            name:str, 
+            in_shape:list|tuple, 
+            lr:float=0.001, 
+            batch_size:int=0, 
+            folder:str="./models", 
+            inference:bool=False, 
+            **kwargs):
+    
         super().__init__()
         self.data = {}
         self.data["dataname"] = name
