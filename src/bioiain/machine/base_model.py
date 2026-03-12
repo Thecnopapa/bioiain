@@ -196,18 +196,20 @@ class BaseModel(nn.Module):
 
     def write_loss(self):
         av_losses = {}
+        print("writing losses")
         for c, rl in self.running_loss.items():
             if c == "total":
                 pass
+            print("  ", c)
             total = self.running_loss["total"]
             if isinstance(rl, torch.Tensor):
                 rl = rl.item()
-            #print(total, c, rl)
+            print(total, c, rl)
 
             if total == 0: av_loss = rl
             else: av_loss = rl / total
             if self.writer is not None:
-                #print("writing", av_loss)
+                print("writing", av_loss)
                 self.writer.add_scalar(f"loss/{c}", float(av_loss), self.data["epoch"])
             av_losses[c] = av_loss
 
@@ -216,7 +218,7 @@ class BaseModel(nn.Module):
             if self.batch_loss["n_batches"] == 0: av_batch_loss = self.batch_loss["cumulative"]
             else: av_batch_loss = self.batch_loss["cumulative"] / self.batch_loss["n_batches"]
             if self.writer is not None:
-                #print("writing", av_batch_loss)
+                print("writing", av_batch_loss)
                 self.writer.add_scalar(f"loss/batch", float(av_batch_loss), self.data["epoch"])
 
         return av_losses
@@ -227,8 +229,15 @@ class BaseModel(nn.Module):
         self.data["epoch"] = epoch
         return self.data["epoch"]
 
+    def leftover_batch(self):
+        if self.data["batch_size"] != 0:
+            if self.batch_loss["current_n"] != 0:
+                log(2, f"Leftover backpropagation... ({self.batch_loss['current_n']})")
+                self.loss(force_backpropagation=True)
 
     def add_epoch(self):
+
+        self.leftover_batch()
 
         if self.writer is not None:
             for set_name, layers in self.layers.items():
@@ -238,14 +247,7 @@ class BaseModel(nn.Module):
                     if hasattr(layer, "bias"):
                         self.writer.add_histogram(f"{set_name}/bias/{layer_name}", layer.bias,  self.data["epoch"])
 
-        if self.data["batch_size"] != 0:
-            if self.batch_loss["current_n"] != 0:
-                batch_loss = torch.mean(torch.stack(self.batch_loss["current_list"]))
-                batch_loss.backward()
-                self.batch_loss["n_batches"] += 1
-                self.batch_loss["cumulative"] += batch_loss
-                self.batch_loss["current_n"] = 0
-                self.batch_loss["current_list"] = []
+
 
         av_losses = self.write_loss()
 
@@ -352,6 +354,7 @@ class BaseModel(nn.Module):
         self.writer.add_text(name, text)
 
     def test(self, dataset, re_load=False, temp=False):
+        self.leftover_batch()
 
         log("header", "Model Validation")
         if re_load:
@@ -477,8 +480,9 @@ class BaseModel(nn.Module):
         self.save(temp=temp)
 
 
-    def loss(self, output:torch.Tensor, item:Item, criterion_name:str="mode", backwards:bool=True, zero_optims:str|None="mode", step="mode") -> torch.Tensor|float:
 
+
+    def _calculate_loss(self, output:torch.Tensor, item:Item, criterion_name:str="mode") -> torch.Tensor|float:
 
         if criterion_name == "mode": criterions = [self.mode]
 
@@ -517,37 +521,49 @@ class BaseModel(nn.Module):
             self.batch_loss["current_n"] += 1
             self.batch_loss["current_list"].append(loss)
 
-        if backwards:
 
-            if self.data["batch_size"] == 0:
-                loss.backward()
+        self.running_loss["total"] += 1
+        #print(criterions)
+        for l, c in zip(losses, criterions):
+            self.running_loss[c] += l.item()
+
+        return loss
+
+
+    def _backpropagate(self, loss:torch.Tensor|None=None, zero_optims:str|None="mode", step="mode", force=False):
+        if self.data["batch_size"] == 0:
+            assert loss is not None
+            loss.backward()
+            self.step(step)
+            self.zero_grad(zero_optims)
+        else:
+            #loss.backward(retain_graph=True)
+
+            if self.batch_loss["current_n"] >= self.data["batch_size"] or force:
+                batch_loss = torch.mean(torch.stack(self.batch_loss["current_list"]))
+                print(f"Backpropagating ({batch_loss:5.4f})   ", end="\r")
+
+                batch_loss.backward()
+
+                self.batch_loss["n_batches"] += 1
+                self.batch_loss["cumulative"] += batch_loss.item()
+
+                self.batch_loss["current_n"] = 0
+                self.batch_loss["current_list"] = []
                 self.step(step)
                 self.zero_grad(zero_optims)
-            else:
-                #loss.backward(retain_graph=True)
-
-                if self.batch_loss["current_n"] >= self.data["batch_size"]:
-                    batch_loss = torch.mean(torch.stack(self.batch_loss["current_list"]))
-                    print(f"Backpropagating ({batch_loss:5.4f})   ", end="\r")
-
-                    batch_loss.backward()
-
-                    self.batch_loss["n_batches"] += 1
-                    self.batch_loss["cumulative"] += batch_loss
-
-                    self.batch_loss["current_n"] = 0
-                    self.batch_loss["current_list"] = []
-                    self.step(step)
-                    self.zero_grad(zero_optims)
+        return loss
 
 
 
-            self.running_loss["total"] += 1
-            #print(criterions)
-            for l, c in zip(losses, criterions):
-                self.running_loss[c] += l
 
 
+    def loss(self, output:torch.Tensor|None=None, item:Item|None=None, criterion_name:str="mode", backwards:bool=True, zero_optims:str|None="mode", step="mode", force_backpropagation=False) -> torch.Tensor|float:
+
+        if (output is not None) and (item is not None):
+            loss = self._calculate_loss(output, item, criterion_name=criterion_name)
+        else: loss = None
+        loss = self._backpropagate(loss=loss, zero_optims=zero_optims, step=step, force=force_backpropagation)
 
         return loss
 
