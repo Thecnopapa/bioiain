@@ -35,7 +35,7 @@ class BaseModel(nn.Module):
             folder:str="./models", 
             inference:bool=False, 
             **kwargs):
-    
+
         super().__init__()
         self.data = {}
         self.data["dataname"] = name
@@ -82,7 +82,7 @@ class BaseModel(nn.Module):
 
     def __str__(self):
         if self.mounted:
-            return f"{self.__class__.__name__}_{self.data['dataname']}_{self.optimisers['default'].__class__.__name__}-{self.criterions['default'].__class__.__name__}"
+            return f"{self.__class__.__name__}_{self.data['dataname']}"
         else:
             return f"{self.__class__.__name__}_{self.data['dataname']}"
 
@@ -100,6 +100,9 @@ class BaseModel(nn.Module):
 
         return f"<bi.CustomModel: {self.data['name']}\n - MODE: {self.mode}\n - class: {self.__class__.__name__}\n - optimiser: {optim.__class__.__name__}\n - criterion: {crit.__class__.__name__}\n - current epoch: {self.data['epoch']}\n - running loss: {loss}\n - layers: {[f'{k}({v.__class__.__name__})' for k, v in layers.items()]}\n>\n"
 
+
+    def json(self):
+        return json.dumps(self.data, indent=4)
 
     def to(self, device=None):
         if not self.mounted:

@@ -355,7 +355,7 @@ if "-t" in sys.argv:
         epochs = int(sys.argv[sys.argv.index("--epochs") + 1])
 
 
-    run_name = f"{data_name}_LR{str(LR).split(".")[-1]}_E{epochs}_MIX{int(MIX)}_B{BATCH_SIZE}"
+    run_name = f"{data_name}_LR{str(LR).split(".")[-1]}_E{epochs}_MIX{int(MIX)}_B{BATCH_SIZE}_DR{str(DROPOUT).split(".")[-1]}"
     model = MODEL_CLASS(name=run_name, in_shape=(1280,), num_classes=len(label_to_index), lr=LR, weights=label_count,
      batch_size=BATCH_SIZE, dropout=DROPOUT).to(DEVICE)
 
@@ -367,6 +367,7 @@ if "-t" in sys.argv:
         "dataset": data_name,
         "label": dataset.data["label_key"],
         "seed": SEED,
+        "dropout": DROPOUT,
         "optimiser": model.optimisers["default"].__class__.__name__,
         "loss_fn": model.criterions["default"].__class__.__name__,
         "lr": LR,
@@ -375,6 +376,7 @@ if "-t" in sys.argv:
         "target_epochs": epochs,
         "device": DEVICE,
         }, indent=4))
+    model.add_text("data", model.json())
 
 
 
