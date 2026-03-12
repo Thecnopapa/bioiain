@@ -41,4 +41,9 @@ class PISAError(CCP4Error):
 
 # Model related
 class ModelNotFound(Exception):
-    pass
+	pass
+
+#Residue related
+
+class NoCaFound(Exception):
+	pass

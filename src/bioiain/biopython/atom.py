@@ -15,7 +15,7 @@ class AtomDisorderException(Exception):
     pass
 
 
-class BIAtom(BiopythonOverlayClass):
+class BIAtom(object):
     child_class = None
     def __init__(self, data):
         if len(data) == 1:
@@ -52,9 +52,9 @@ class BIAtom(BiopythonOverlayClass):
 
         #ATOM
         self.atomnum = int(data["id"])
-        self.type = data["group_PDB"]
-        self.element = data["type_symbol"]
-        self.name = data["label_atom_id"]
+        self.type = data["group_PDB"] # ATOM / HETATM
+        self.element = data["type_symbol"] #C
+        self.name = data["label_atom_id"] # CA
         #RES
         self.resname = data["label_comp_id"]
         self.resseq = data["label_seq_id"] # Auto

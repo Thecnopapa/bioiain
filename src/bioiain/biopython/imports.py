@@ -44,7 +44,7 @@ def loadPDB(file_path:str, name:str=None, quiet=True) -> Structure|None:
     return structure
 
 
-def downloadPDB(data_dir:str, list_name:str, pdb_list:list=None, file_path:str = None, file_format="pdb",
+def downloadPDB(data_dir:str, list_name:str, pdb_list:list=None, file_path:str = None, file_format="cif",
                 overwrite:bool=False) -> str:
     """
     Downloads a list of PDB files into a folder of given name within the data_dir. Creates a file containing all
@@ -323,7 +323,7 @@ def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list
                     multi_line = True
                     multi_cache = line_list[-1]
                     multi_delimiter = line_list[-1][0]
-                    
+
                 if next_line[0] in multi_delimiters and not multi_line:
                     #print("MULTI_LINE START")
                     multi_line = True

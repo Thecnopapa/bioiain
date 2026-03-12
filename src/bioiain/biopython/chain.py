@@ -1,7 +1,7 @@
 import os, sys, json
 import Bio.PDB as bp
 from .base import BiopythonOverlayClass
-from .residue import Residue, DResidue
+from .residue import Residue, DResidue, BIResidue
 from ..utilities.sequences import d3to1
 from ..utilities.logging import log
 import numpy as np
@@ -23,43 +23,30 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
     def __str__(self):
         return "<bi.{} id={}>".format(self.__class__.__name__, self.id)
 
-    def residues():
-        pass
+    def residues(self, force=False):
+        return self.atoms(ca_only=False, as_residues=True, force=force)
 
-    def atoms(self, ca_only=False, hetatm=False, force=False, group_by_residue=False, disordered=False, **kwargs):
+    def atoms(self, ca_only=False, hetatm=False, force=False, group_by_residue=False, disordered=False, as_residues=False, **kwargs):
         from .imports import read_mmcif
         from .atom import BIAtom
-
-        _params = {ca_only:ca_only, hetatm:hetatm, group_by_residue:group_by_residue, disordered:disordered}
-
-        if not force:
-        #    if hasattr(self, "_atoms_params"):
-        #        for k, v in _params.items():
-        #            if self._atoms_params.get(k, None) != v:
-        #                force= True
-        #                break
-        #    else:
-        #        force = True
-            pass
 
         if not hasattr(self, "_atoms"):
             force = True
         elif self._atoms is None:
             force = True
 
-
         if force:
+            if self.paths.get("self", None) is  None:
+                self.export()
+            if not os.path.exists(self.paths["self"]):
+                self.export()
+
             print("Reading atoms from CIF:",self.paths["self"])
             atoms = read_mmcif(self.paths["self"], subset=["_atom_site"])("_atom_site")
             atoms = [BIAtom(a) for a in atoms]
 
             self._atoms = atoms
-            self._atoms_params = {
-                "ca_only": ca_only,
-                "hetatm": hetatm,
-                "group_by_residue": group_by_residue,
-                "disordered": disordered,
-            }
+
 
         atoms = self._atoms
         if not disordered:
@@ -69,7 +56,7 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
             atoms = [a for a in atoms if a.type != "HETATM"]
         if ca_only:
             atoms = [a for a in atoms if a.name == "CA"]
-        if group_by_residue:
+        if group_by_residue or as_residues:
             atoms_by_res = {}
             residues_with_ca = []
             for atom in atoms:
@@ -77,7 +64,7 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
                     atoms_by_res[atom.resnum].append(atom)
                 else:
                     atoms_by_res[atom.resnum] = [atom]
-                    
+
                 if atom.name == "CA":
                     residues_with_ca.append(atom.resnum)
             for key in list(atoms_by_res.keys()):
@@ -87,6 +74,8 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
                     atoms_by_res.pop(key)
 
             atoms = atoms_by_res
+            if as_residues:
+                atoms = [BIResidue(resatms) for resatms in atoms.values()]
 
         return atoms
 
