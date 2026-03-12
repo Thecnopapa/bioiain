@@ -147,7 +147,7 @@ if "--lr" in sys.argv:
 
 log(1, f"Learning rate: {LR}")
 
-DROPOUT = 0.1
+DROPOUT = 0.2
 if "--dropout" in sys.argv:
     DROPOUT = float(sys.argv[sys.argv.index("--dropout") + 1])
 
@@ -170,7 +170,7 @@ if "--batch" in sys.argv:
     BATCH_SIZE = int(sys.argv[sys.argv.index("--batch") + 1])
 log(1, "BATCH_SIZE:", BATCH_SIZE)
 
-SEED = None
+SEED = 42
 if "--seed" in sys.argv:
     SEED = int(sys.argv[sys.argv.index("--seed") + 1])
 log(1, "SEED:", SEED)
