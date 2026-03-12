@@ -18,8 +18,10 @@ from ..utilities.exceptions import *
 
 
 class customLRS(torch.optim.lr_scheduler.LRScheduler):
-    def __init__(self, *args, optimiser, **kwargs):
+    def __init__(self, *args, optimiser, use_original=True, range=4, **kwargs):
         self.o_lrs = [p["lr"] for p in optimiser.param_groups]
+        self.use_original = use_original
+        self.loss_list = []
         super().__init__(optimiser, *args, **kwargs)
 
     def get_lr(self):
@@ -28,19 +30,36 @@ class customLRS(torch.optim.lr_scheduler.LRScheduler):
         return torch.Tensor(np.array(self.lrs))
 
 
-    def step(self, running_loss=0.5):
+    def step(self, running_loss=None):
         print("LRS: stepping...")
-        print(running_loss)
+        print("Current loss:", running_loss)
+        
+        if running_loss is None:
+            return self.o_lrs
+        
+        if len(self.loss_list) == 0:
+            self.loss_list.append(running_loss)
+        print("Previous loss", self.loss_list[-1])
         self.lrs = []
         for p, olr in zip(self.optimizer.param_groups, self.o_lrs):
-            old_log = math.log(olr, 10)
+            if self.use_original: 
+                old_log = math.log(olr, 10)
+                new_log = old_log - ((1-running_loss)*4) + 2
+            else: 
+                old_log = math.log(p["lr"], 10)
+                delta = self.loss_list[-1] / running_loss
+                new_log = old_log - delta + 1 # -0.5
+
+
             print("OLD_LOG", old_log)
-            new_log = old_log - ((1-running_loss)*4) +2
+            
             print("NEW_LOG", new_log)
             new_lr = 10 ** new_log
             print("NEW_LR", new_lr)
             self.lrs.append(new_lr)
             p["lr"] = torch.Tensor(np.array([new_lr]))
+
+        self.loss_list.append(running_loss)
         print(self.lrs)
         return self.lrs
 

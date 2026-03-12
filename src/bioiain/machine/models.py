@@ -85,6 +85,11 @@ class GoldenDynamix(Golden):
         super().__init__(*args, **kwargs)
         self.optimisers["default"]["LRS"] = customLRS
 
+class GoldenDynamixExtra(GoldenDynamix):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.optimisers["default"]["LRS_kwargs"] = {"use_original": False}
+
 
 
 

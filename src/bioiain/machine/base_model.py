@@ -126,7 +126,7 @@ class BaseModel(nn.Module):
             for o, op_data in self.optimisers.items():
                 self.optimisers[o] = self.optimisers[o]["class"](self.submodels[self.optimisers[o]["layer_set"]].parameters(), **self.optimisers[o]["kwargs"])
                 if op_data.get("LRS", None) is not None:
-                    self.schedulers[o] = op_data["LRS"](optimiser=self.optimisers[o])
+                    self.schedulers[o] = op_data["LRS"](optimiser=self.optimisers[o], **op_data.get("LRS_kwargs", {}))
 
         self.mounted = True
 
@@ -196,20 +196,20 @@ class BaseModel(nn.Module):
 
     def write_loss(self):
         av_losses = {}
-        print("writing losses")
+        log(1, "Writing losses...")
         for c, rl in self.running_loss.items():
             if c == "total":
                 pass
-            print("  ", c)
+            #print("  ", c)
             total = self.running_loss["total"]
             if isinstance(rl, torch.Tensor):
                 rl = rl.item()
-            print(total, c, rl)
+            #print(total, c, rl)
 
-            if total == 0: av_loss = rl
+            if total == 0: continue
             else: av_loss = rl / total
             if self.writer is not None:
-                print("writing", av_loss)
+                log(2, f"Regular loss ({c})", av_loss)
                 self.writer.add_scalar(f"loss/{c}", float(av_loss), self.data["epoch"])
             av_losses[c] = av_loss
 
@@ -218,7 +218,7 @@ class BaseModel(nn.Module):
             if self.batch_loss["n_batches"] == 0: av_batch_loss = self.batch_loss["cumulative"]
             else: av_batch_loss = self.batch_loss["cumulative"] / self.batch_loss["n_batches"]
             if self.writer is not None:
-                print("writing", av_batch_loss)
+                log(2, "Batch loss:", av_batch_loss)
                 self.writer.add_scalar(f"loss/batch", float(av_batch_loss), self.data["epoch"])
 
         return av_losses
