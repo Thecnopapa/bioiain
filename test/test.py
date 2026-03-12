@@ -113,25 +113,33 @@ dataset = EmbeddingDataset(name=data_name)
 if not REBUILD:
     dataset.load()
 
-from src.bioiain.machine.models import *
+from src.bioiain.machine import models
 
-if "mk5" in sys.argv:
-    model_class = DUAL_MLP_MK5
-elif "mk6" in sys.argv:
-    model_class = DUAL_MLP_MK6
-elif "mk7" in sys.argv:
-    model_class = DUAL_MLP_MK7
-elif "mk8" in sys.argv:
-    model_class = DUAL_MLP_MK8
-elif "mk9" in sys.argv:
-    model_class = DUAL_MLP_MK9
+
+MODEL_NAME = "Golden"
+
+if "--mk" in sys.argv: 
+    MODEL_NAME = sys.argv[sys.argv.index("--mk") + 1]
+
 else:
-    if DUAL:
-        model_class = DUAL_MLP_MK4
-    else:
-        model_class = MLP_MK3
+    if "mk3" in sys.argv:
+        MODEL_CLASS = MLP_MK3
+    elif "mk4" in sys.argv:
+        MODEL_CLASS = DUAL_MLP_MK4
+    elif "mk5" in sys.argv:
+        MODEL_CLASS = DUAL_MLP_MK5
+    elif "mk6" in sys.argv:
+        MODEL_CLASS = DUAL_MLP_MK6
+    elif "mk7" in sys.argv:
+        MODEL_CLASS = DUAL_MLP_MK7
+    elif "mk8" in sys.argv:
+        MODEL_CLASS = DUAL_MLP_MK8
+    elif "mk9" in sys.argv:
+        MODEL_CLASS = DUAL_MLP_MK9
 
-log(1, f"Model class: {model_class}")
+MODEL_CLASS = getattr(models, MODEL_NAME)
+
+log(1, f"Model class: {MODEL_CLASS}")
 
 LR = 0.0001
 if "--lr" in sys.argv:
@@ -151,7 +159,7 @@ SHORT_EPOCHS = False
 if "--short-e" in sys.argv:
     SHORT_EPOCHS = True
 
-BATCH_SIZE = 0
+BATCH_SIZE = 32
 if "--batch" in sys.argv:
     BATCH_SIZE = int(sys.argv[sys.argv.index("--batch") + 1])
 log(1, "BATCH_SIZE:", BATCH_SIZE)
@@ -342,7 +350,8 @@ if "-t" in sys.argv:
 
 
     run_name = f"{data_name}_LR{str(LR).split(".")[-1]}_E{epochs}_MIX{int(MIX)}_B{BATCH_SIZE}"
-    model = model_class(name=run_name, in_shape=(1280,), num_classes=len(label_to_index), lr=LR, weights=label_count, batch_size=BATCH_SIZE).to(DEVICE)
+    model = MODEL_CLASS(name=run_name, in_shape=(1280,), num_classes=len(label_to_index), lr=LR, weights=label_count, batch_size=BATCH_SIZE).to(DEVICE)
+
     model.add_map(dataset)
     run_name = model.data["name"]
     model.add_histogram("relative_neighbours", [int(e.get("n_neighbours", 0)) for e in dataset.embeddings.values() if not e.get("deleted", False)])

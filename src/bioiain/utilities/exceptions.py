@@ -4,7 +4,7 @@ from .logging import log
 
 
 
-
+# Labelling related
 class SequenceMissmatchException(Exception):
 	pass
 
@@ -12,12 +12,15 @@ class SequenceMissmatchException(Exception):
 class MisslabellingException(SequenceMissmatchException):
 	pass
 
+
+# Dataset related
 class DeletedIndex(Exception):
 	def __init__(self, *args, next_n=None, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.next_n = next_n
 
 
+# Structure import related
 class StructureLoadException(Exception):
 	pass
 
@@ -25,6 +28,7 @@ class StructureRecoverException(StructureLoadException):
 	pass
 
 
+# CCP4 related
 class CCP4Error(Exception):
 	pass
 
@@ -33,3 +37,8 @@ class CCP4NotEnabled(CCP4Error):
 
 class PISAError(CCP4Error):
 	pass
+
+
+# Model related
+class ModelNotFound(Exception):
+    pass
