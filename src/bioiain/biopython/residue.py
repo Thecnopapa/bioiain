@@ -28,8 +28,8 @@ class BIResidue(object):
         self.chain = None
 
         for a in self.atoms:
-            print(a)
-            print(a.name)
+            #print(a)
+            #print(a.name)
             if a.name == "CA":
                 self.ca = a
             elif a.name == "CB":

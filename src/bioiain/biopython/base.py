@@ -128,6 +128,69 @@ class BiopythonOverlayClass:
         if export:
             self.export()
 
+    def residues(self, force=False, chain=None, **kwargs):
+        return self.atoms(ca_only=False, as_residues=True, force=force, chain=chain, **kwargs)
+
+    def atoms(self, ca_only=False, hetatm=False, force=False, group_by_residue=False, disordered=False, as_residues=False, chain=None, **kwargs):
+
+        from .imports import read_mmcif
+        from .atom import BIAtom
+        from .residue import BIResidue
+
+        if not hasattr(self, "_atoms"):
+            force = True
+        elif self._atoms is None:
+            force = True
+
+        if force:
+            if self.paths.get("self", None) is  None:
+                self.export()
+            if not os.path.exists(self.paths["self"]):
+                self.export()
+
+            print("Reading atoms from CIF:",self.paths["self"])
+            atoms = read_mmcif(self.paths["self"], subset=["_atom_site"])("_atom_site")
+            atoms = [BIAtom(a) for a in atoms]
+
+            self._atoms = atoms
+
+
+        atoms = self._atoms
+        if not disordered:
+            atoms = self._fix_disordered(atoms)
+
+        if not hetatm:
+            atoms = [a for a in atoms if a.type != "HETATM"]
+        if ca_only:
+            atoms = [a for a in atoms if a.name == "CA"]
+        if chain is not None:
+            atoms = [a for a in atoms if a.chain == chain]
+        if group_by_residue or as_residues:
+            atoms_by_res = {}
+            residues_with_ca = []
+            for atom in atoms:
+                if atom.resnum in atoms_by_res:
+                    atoms_by_res[atom.resnum].append(atom)
+                else:
+                    atoms_by_res[atom.resnum] = [atom]
+
+                if atom.name == "CA":
+                    residues_with_ca.append(atom.resnum)
+            for key in list(atoms_by_res.keys()):
+                try:
+                    residues_with_ca.remove(key)
+                except:
+                    atoms_by_res.pop(key)
+
+            atoms = atoms_by_res
+            if as_residues:
+                atoms = [BIResidue(resatms) for resatms in atoms.values()]
+
+        return atoms
+
+
+
+
     def export(self, folder:str|None=None, filename:str|None=None, data:bool=True,
                structure:bool=True, structure_format:str="cif", include_unused=True,include_misc=False) -> list[str|None]|str:
 
@@ -137,6 +200,7 @@ class BiopythonOverlayClass:
             folder = self.paths["export_folder"]
         structure_format = structure_format.lower()
         assert structure_format in ["pdb", "cif"]
+        print("exporting...")
 
         paths = []
         os.makedirs(folder, exist_ok=True)

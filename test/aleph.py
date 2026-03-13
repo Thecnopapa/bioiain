@@ -14,7 +14,9 @@ print(structure)
 for chain in structure.get_chains():
     print(chain)
 
-    print(chain.residues())
+    #print(chain.residues())
+
+    chain._calculate_cvectors()
 
 
 

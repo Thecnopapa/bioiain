@@ -89,13 +89,24 @@ class BIAtom(object):
             self.doppelgangers = []
             self.favourite = True
 
-    def __repr__(self):
+
+
+    def print_full(self):
         if self.disordered:
             if self.favourite:
                 r = "\n<bi.{} id={}.{} b={} occupancy={} (disordred)>".format(self.__class__.__name__, self.id, self.alt_id, self.b, self.occupancy)
                 for datm in self.doppelgangers:
                     r += "\n - <bi.{} id={}.{} b={} occupancy={} (disordered)>".format(self.__class__.__name__, self.id, self.alt_id, self.b, self.occupancy)
                 return r
+            else:
+                return "<bi.{} id={}.{} b={} occupancy={} (disordred/not-favourite)>".format(self.__class__.__name__, self.id, self.alt_id, self.b, self.occupancy)
+        else:
+            return "<bi.{} id={}> b={}".format(self.__class__.__name__, self.id, self.b)
+
+    def __repr__(self):
+        if self.disordered:
+            if self.favourite:
+                return "<bi.{} id={}.{} b={} occupancy={} (disordred)>".format(self.__class__.__name__, self.id, self.alt_id, self.b, self.occupancy)
             else:
                 return "<bi.{} id={}.{} b={} occupancy={} (disordred/not-favourite)>".format(self.__class__.__name__, self.id, self.alt_id, self.b, self.occupancy)
         else:

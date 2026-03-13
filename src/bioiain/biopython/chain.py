@@ -13,8 +13,11 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
     disordered_child_class = DResidue
 
     def _init(self, *args, **kwargs):
+        self.paths["export_folder"] = self.paths["export_folder"] +"/chains"
+        self.data["info"]["name"] = self.data["info"]["name"]+f"_{self.id}"
         self.data["sequence"] = None
         self._kdtree = None
+
 
 
     def __repr__(self):
@@ -23,61 +26,10 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
     def __str__(self):
         return "<bi.{} id={}>".format(self.__class__.__name__, self.id)
 
-    def residues(self, force=False):
-        return self.atoms(ca_only=False, as_residues=True, force=force)
 
-    def atoms(self, ca_only=False, hetatm=False, force=False, group_by_residue=False, disordered=False, as_residues=False, **kwargs):
-        from .imports import read_mmcif
-        from .atom import BIAtom
-
-        if not hasattr(self, "_atoms"):
-            force = True
-        elif self._atoms is None:
-            force = True
-
-        if force:
-            if self.paths.get("self", None) is  None:
-                self.export()
-            if not os.path.exists(self.paths["self"]):
-                self.export()
-
-            print("Reading atoms from CIF:",self.paths["self"])
-            atoms = read_mmcif(self.paths["self"], subset=["_atom_site"])("_atom_site")
-            atoms = [BIAtom(a) for a in atoms]
-
-            self._atoms = atoms
-
-
-        atoms = self._atoms
-        if not disordered:
-            atoms = self._fix_disordered(atoms)
-
-        if not hetatm:
-            atoms = [a for a in atoms if a.type != "HETATM"]
-        if ca_only:
-            atoms = [a for a in atoms if a.name == "CA"]
-        if group_by_residue or as_residues:
-            atoms_by_res = {}
-            residues_with_ca = []
-            for atom in atoms:
-                if atom.resnum in atoms_by_res:
-                    atoms_by_res[atom.resnum].append(atom)
-                else:
-                    atoms_by_res[atom.resnum] = [atom]
-
-                if atom.name == "CA":
-                    residues_with_ca.append(atom.resnum)
-            for key in list(atoms_by_res.keys()):
-                try:
-                    residues_with_ca.remove(key)
-                except:
-                    atoms_by_res.pop(key)
-
-            atoms = atoms_by_res
-            if as_residues:
-                atoms = [BIResidue(resatms) for resatms in atoms.values()]
-
-        return atoms
+    def atoms(self, **kwargs):
+        kwargs.pop("chain")
+        return super().atoms(chain=self.id, **kwargs)
 
 
     @staticmethod
@@ -181,7 +133,7 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
 
 
     def _export_structure(self, folder, filename, extension="cif", include_unused=True, include_misc=False) -> str|None:
-        filename = "{}.structure.{}".format(filename, extension)
+        filename = f"{filename}.structure.{extension}"
         filepath = os.path.join(folder, filename)
         self.paths["self"] = filepath
         if extension == "pdb":
@@ -217,3 +169,20 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
             script.color(f"i. {resn}", "orange")
         script.execute()
         log("end", "showing exposed residues")
+
+
+    def _calculate_cvectors(self):
+        print("CALCULATING _calculate_cvectors")
+        from ..aleph.vectors import CVector
+        residues = self.residues()
+        n_res = len(residues)
+        for n, res in enumerate(residues):
+
+            if n == 0 or n == n_res -1:
+                continue
+
+            #print(n, res)
+            cvector = CVector(residues[n-1], res, residues[n+1])
+            print(cvector)
+
+
