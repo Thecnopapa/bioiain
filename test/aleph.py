@@ -1,7 +1,7 @@
 import os, json, sys
 sys.path.append('..')
 
-from src.bioiain.aleph import *
+from src.bioiain.aleph import CVMatrix
 
 from src.bioiain.biopython.imports import *
 
@@ -16,7 +16,14 @@ for chain in structure.get_chains():
 
     #print(chain.residues())
 
-    chain._calculate_cvectors()
+    cvectors = chain._calculate_cvectors()
+
+    cvmatrix = CVMatrix(cvectors) 
+
+    cvmatrix.show("d")
+    cvmatrix.show("a")
+    cvmatrix.show("t1")
+    cvmatrix.show("t2")
 
 
 

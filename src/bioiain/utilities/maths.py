@@ -1,4 +1,5 @@
 import numpy as np
+import math
 from types import GeneratorType
 from ..biopython.base import BiopythonOverlayClass
 
@@ -99,6 +100,7 @@ def distance(p0, p1) -> float:
 
 
 
+
 def rotation_matrix_from_vectors(vec1, vec2):
     """ Find the rotation matrix that aligns vec1 to vec2
     :param vec1: A 3d "source" vector
@@ -115,3 +117,54 @@ def rotation_matrix_from_vectors(vec1, vec2):
 
     else:
         return np.eye(3) #cross of all zeros only occurs on identical directions
+
+
+
+def angle_3_points(a, b, c):
+    a = np.array(a)
+    b = np.array(b)
+    c = np.array(c)
+
+    ba = a - b
+    bc = c - b
+
+    cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
+    angle = np.arccos(cosine_angle)
+
+    return np.degrees(angle)
+
+def angle_between_vectors(u, v, degrees=True):
+    #dot_product = sum(i * j for i, j in zip(u, v))
+    dot_product = dot(u, v)
+    norm_u = math.sqrt(sum(i ** 2 for i in u))
+    norm_v = math.sqrt(sum(i ** 2 for i in v))
+    cos_theta = dot_product / (norm_u * norm_v)
+    angle_rad = math.acos(cos_theta)
+    if degrees:
+        angle_deg = math.degrees(angle_rad)
+        return angle_deg
+    return angle_rad
+
+
+def dot(v, w):
+    x, y, z = v
+    X, Y, Z = w
+    return x * X + y * Y + z * Z
+
+
+
+
+def unit(v):
+    x, y, z = v
+    mag = length(v)
+    return (x / mag, y / mag, z / mag)
+
+
+
+def scale(v, sc):
+    x, y, z = v
+    return (x * sc, y * sc, z * sc)
+
+def square_matrix(triangular_matrix):
+    U = np.array(triangular_matrix)
+    return U + U.T - np.diag(np.diag(U))

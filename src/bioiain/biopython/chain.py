@@ -176,13 +176,17 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
         from ..aleph.vectors import CVector
         residues = self.residues()
         n_res = len(residues)
+        cvector_list = []
         for n, res in enumerate(residues):
-
             if n == 0 or n == n_res -1:
                 continue
 
-            #print(n, res)
             cvector = CVector(residues[n-1], res, residues[n+1])
-            print(cvector)
+            cvector_list.append(cvector)
+
+        self._cvectors = cvector_list
+        return cvector_list
+
+
 
 

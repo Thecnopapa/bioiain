@@ -118,3 +118,12 @@ def plot_confusion(preds, labels, title, score=None, classes=None):
         return cm, path
     except Exception as e:
         print(e)
+
+
+
+def plot_heatmap(matrix):
+    fig = plt.figure()
+    ax = fig.add_subplot()
+
+    ax.imshow(matrix)
+    plt.show(block=True)
