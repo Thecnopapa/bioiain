@@ -19,9 +19,12 @@ class CVector(object):
         self.res2 = res2
         self.res3 = res3
         self.residues = (res1, res2, res3)
-        self.chain = res2.chain
 
-        self.id = (res2.resnum, self.chain)
+        self.chain = res2.chain
+        self.resnum = res2.resnum
+
+        self.id = (self.resnum, self.chain)
+
 
         self.d = None
         self.start = None
@@ -65,6 +68,13 @@ class CVPair(object):
     def __init__(self, cvec1, cvec2):
         self.v1 = cvec1
         self.v2 = cvec2
+
+        self.chain1 = self.v1.chain
+        self.chain2 = self.v2.chain
+
+        self.resnum1 = self.v1.resnum
+        self.resnum2 = self.v2.resnum
+
 
         self.v = None
         self.d = None
@@ -128,7 +138,54 @@ class CVMatrix(object):
         t = self.map(attribute)
 
 
-
+    def save_fig(self, attribute="d", save_folder="./cvmaps"):
+        os.makedirs(save_folder, exist_ok=True)
+        filename = os.path.join(save_folder, f"{attribute}.png")
+        plot_heatmap(self.square(attribute), filename=filename)
+        return filename
 
     def show(self, attribute="d"):
-        plot_heatmap(self.square(attribute))
+        plot_heatmap(self.square(attribute), show=True)
+
+    def calculate_neighbours(self):
+        for n1, cv in enumerate(self.vectors):
+            print("NVECTORS:", len(self.vectors))
+
+            target = (99999., None)
+            for n2, vp in enumerate(self.matrix[n1]):
+
+
+                if vp is None:
+                    vp = self.matrix[n2][n1]
+
+                #print(vp.chain1, vp.chain2)
+
+                if vp.chain1 == vp.chain2:
+                    continue
+
+
+                #print(str(cv), str(vp.v1), str(vp.v2))
+
+                if str(cv) == str(vp.v1):
+                    t = vp.v2
+                elif str(cv) == str(vp.v2):
+                    t = vp.v1
+                else:
+                    continue
+                #print(cv, t)
+
+                if vp.d < target[0]:
+                    target = (vp.d, t)
+                    continue
+
+               
+            cv.closest = target
+            print("closest to", cv, "is", cv.closest)
+            if target[1] is None:
+                raise Exception("AAAAA")
+
+
+
+
+
+

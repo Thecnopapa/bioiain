@@ -121,9 +121,12 @@ def plot_confusion(preds, labels, title, score=None, classes=None):
 
 
 
-def plot_heatmap(matrix):
+def plot_heatmap(matrix, show=False, filename=None):
     fig = plt.figure()
     ax = fig.add_subplot()
 
     ax.imshow(matrix)
-    plt.show(block=True)
+    if filename is not None:
+        plt.savefig(filename)
+    if show:
+        plt.show(block=True)

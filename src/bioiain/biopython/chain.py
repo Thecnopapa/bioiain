@@ -171,7 +171,7 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
         log("end", "showing exposed residues")
 
 
-    def _calculate_cvectors(self):
+    def cvectors(self):
         print("CALCULATING _calculate_cvectors")
         from ..aleph.vectors import CVector
         residues = self.residues()

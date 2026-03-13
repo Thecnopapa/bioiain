@@ -167,4 +167,7 @@ def scale(v, sc):
 
 def square_matrix(triangular_matrix):
     U = np.array(triangular_matrix)
+    print(U.dtype)
+    if str(U.dtype).startswith("<U"):
+        return U + U.T 
     return U + U.T - np.diag(np.diag(U))
