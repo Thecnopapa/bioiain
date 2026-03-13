@@ -131,7 +131,7 @@ class BIAtom(object):
                 return self
             else:
                 self.i += 1
-                print(len(self.doppelgangers), self.i, self.i-2)
+                #print(len(self.doppelgangers), self.i, self.i-2)
                 return self.doppelgangers[self.i - 2]
 
     def set_bfactor(self, bfactor):
