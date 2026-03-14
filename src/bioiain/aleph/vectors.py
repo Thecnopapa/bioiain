@@ -58,7 +58,7 @@ class CVector(object):
 
         return self
 
-    def __mod__(self, target:CVector):
+    def __mod__(self, target):
         return CVPair(self, target)
 
 
@@ -111,10 +111,13 @@ class CVMatrix(object):
 
     def calculate(self):
         self.matrix = []
-        for n, v1 in enumerate(self.vectors[:-1]):
+        for n, v1 in enumerate(self.vectors):
             self.matrix.append([])
-            for v2 in self.vectors[n+1:]:
-                pair = v1 % v2
+            for v2 in self.vectors:
+                if v1 == v2:
+                    pair = None
+                else:
+                    pair = v1 % v2
                 self.matrix[n].append(pair)
 
         for n, r in enumerate(self.matrix):
@@ -148,15 +151,21 @@ class CVMatrix(object):
         plot_heatmap(self.square(attribute), show=True)
 
     def calculate_neighbours(self):
+
+        print("n vectors", len(self.vectors))
+        print("m shape", len(self.matrix))
+        
         for n1, cv in enumerate(self.vectors):
-            print("NVECTORS:", len(self.vectors))
 
             target = (99999., None)
             for n2, vp in enumerate(self.matrix[n1]):
 
-
+                if n2 == n1:
+                    continue
                 if vp is None:
                     vp = self.matrix[n2][n1]
+                    #if vp is None:
+                    #    continue
 
                 #print(vp.chain1, vp.chain2)
 
