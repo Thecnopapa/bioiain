@@ -159,7 +159,9 @@ class Crystal(Model):
         self.paths["monomer_folder"] = None
         self.paths["ligand_folder"] = None
         for n, mon in enumerate(monomers):
+            print("casting monomer")
             m = Monomer.cast(mon)
+            print("exporting monomer")
             m.export()
             mon_ids.append(m.get_name())
             if n == 0:
@@ -206,8 +208,8 @@ class Crystal(Model):
         except KeyError as e:
             raise MissingCrystalError(self)
 
-        
-        
+
+
         monomers = [self._restore_monomer(m) for m in self.data["monomers"]]
         ligands = [self._restore_ligand(l) for l in self.data["ligands"]]
 

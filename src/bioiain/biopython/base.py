@@ -148,7 +148,7 @@ class BiopythonOverlayClass:
             if not os.path.exists(self.paths["self"]):
                 self.export()
 
-            print("Reading atoms from CIF:",self.paths["self"])
+            #print("Reading atoms from CIF:",self.paths["self"])
             atoms = read_mmcif(self.paths["self"], subset=["_atom_site"])("_atom_site")
             atoms = [BIAtom(a) for a in atoms]
 
@@ -200,7 +200,6 @@ class BiopythonOverlayClass:
             folder = self.paths["export_folder"]
         structure_format = structure_format.lower()
         assert structure_format in ["pdb", "cif"]
-        print("exporting...")
 
         paths = []
         os.makedirs(folder, exist_ok=True)
