@@ -1,11 +1,15 @@
-import os, sys, json
+import os
 import Bio.PDB as bp
 from .base import BiopythonOverlayClass
-from .residue import Residue, DResidue, BIResidue
+from src.bioiain.base.entity import BIEntity
+from .residue import Residue, DResidue
 from ..utilities.sequences import d3to1
 from ..utilities.logging import log
-import numpy as np
-import math
+
+
+class BIChain(BIEntity):
+    pass
+
 
 
 class Chain(bp.Chain.Chain, BiopythonOverlayClass):
@@ -32,34 +36,7 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
         return super().atoms(chain=self.id, **kwargs)
 
 
-    @staticmethod
-    def _fix_disordered(atoms):
-        fixed_atoms = []
-        for atom in atoms:
-            if atom.disordered:
-                for a in fixed_atoms:
-                    if a.resseq == atom.resseq and a.name == atom.name:
-                        if a.resseq is None and not (a.resnum == atom.resnum):
-                            continue
-                        try:
-                            assert a.disordered
-                        except:
-                            print(">>>")
-                            print(a, a.resseq, a.resnum)
-                            print("###")
-                            print(atom, atom.resseq, atom.resnum)
-                            print("<<<")
-                            raise
-                        a.doppelgangers.append(atom)
-                        a.favourite = True
-                        atom.favourite = False
-                        atom.doppelgangers = None
-                        break
-                if atom.favourite:
-                    fixed_atoms.append(atom)
-            else:
-                fixed_atoms.append(atom)
-        return fixed_atoms
+
 
 
 

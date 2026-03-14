@@ -1,9 +1,9 @@
 import numpy as np
 import math
 from types import GeneratorType
-from ..biopython.base import BiopythonOverlayClass
 
-def find_com(atoms:list|GeneratorType|np.ndarray|BiopythonOverlayClass) -> list[float]:
+
+def find_com(atoms:list|GeneratorType|np.ndarray) -> list[float]:
     """
     Find the center of mass of a list of atoms. All atoms weight the same.
     :param atoms: List (or generator) of Atom objects. Also accepts as atoms lists and np.arrays, where the first 3
@@ -13,7 +13,7 @@ def find_com(atoms:list|GeneratorType|np.ndarray|BiopythonOverlayClass) -> list[
     x = 0
     y = 0
     z = 0
-
+    from ..biopython.base import BiopythonOverlayClass
     if isinstance(atoms, BiopythonOverlayClass):
         atoms = atoms.get_atoms()
 
@@ -169,5 +169,5 @@ def square_matrix(triangular_matrix):
     U = np.array(triangular_matrix)
     print(U.dtype)
     if str(U.dtype).startswith("<U"):
-        return U + U.T 
+        return U + U.T
     return U + U.T - np.diag(np.diag(U))
