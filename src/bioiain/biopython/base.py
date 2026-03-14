@@ -257,7 +257,6 @@ class BiopythonOverlayClass:
                 self = cls(temp_id, *args, *kwargs)
 
         self.base_init()
-        print("recovering...")
 
 
         if load_structure:
