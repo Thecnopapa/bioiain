@@ -1,6 +1,16 @@
 import os, json, sys
 sys.path.append('..')
 
+
+from src.bioiain.aleph import *
+
+core.ALEPH.annotate_pdb_model_with_aleph("./1M2Z.cif")
+
+
+
+exit()
+
+
 from src.bioiain.aleph import CVMatrix
 
 from src.bioiain.biopython.imports import *
@@ -21,7 +31,7 @@ for chain in structure.get_chains():
 
     cvectors.extend(chain.cvectors())
 
-cvmatrix = CVMatrix(cvectors) 
+cvmatrix = CVMatrix(cvectors)
 
 
 fig_folder = f"./cvmatrixes/{pdb}"
@@ -34,6 +44,10 @@ cvmatrix.save_fig("t2", save_folder=fig_folder)
 
 cvmatrix.calculate_neighbours()
 [print(c.closest)for c in cvmatrix.vectors]
+
+
+
+
 
 
 
