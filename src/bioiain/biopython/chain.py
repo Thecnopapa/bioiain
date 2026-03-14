@@ -17,8 +17,6 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
     disordered_child_class = DResidue
 
     def _init(self, *args, **kwargs):
-        self.paths["export_folder"] = self.paths["export_folder"] +"/chains"
-        self.data["info"]["name"] = self.data["info"]["name"]+f"_{self.id}"
         self.data["sequence"] = None
         self._kdtree = None
 
@@ -32,7 +30,7 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
 
 
     def atoms(self, **kwargs):
-        kwargs.pop("chain")
+        kwargs.pop("chain", None)
         return super().atoms(chain=self.id, **kwargs)
 
 
@@ -163,6 +161,35 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
 
         self._cvectors = cvector_list
         return cvector_list
+
+    @staticmethod
+    def _fix_disordered(atoms):
+        fixed_atoms = []
+        for atom in atoms:
+            if atom.disordered:
+                for a in fixed_atoms:
+                    if a.resseq == atom.resseq and a.name == atom.name:
+                        if a.resseq is None and not (a.resnum == atom.resnum):
+                            continue
+                        try:
+                            assert a.disordered
+                        except:
+                            print(">>>")
+                            print(a, a.resseq, a.resnum)
+                            print("###")
+                            print(atom, atom.resseq, atom.resnum)
+                            print("<<<")
+                            raise
+                        a.doppelgangers.append(atom)
+                        a.favourite = True
+                        atom.favourite = False
+                        atom.doppelgangers = None
+                        break
+                if atom.favourite:
+                    fixed_atoms.append(atom)
+            else:
+                fixed_atoms.append(atom)
+        return fixed_atoms
 
 
 

@@ -9,6 +9,55 @@ class BIChain(BIEntity):
     extension = "chain"
     level = "chain"
 
-    def __init__(self):
-        super().__init__()
-        self.data["export_subdir"] = "chains"
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.paths["sub_folder"] = "chains"
+
+    def find_id(self, method="first"):
+
+        if method == "first":
+            chain_id = self.atoms()[0].chain
+        else:
+            chain_id = method
+        return chain_id
+
+
+    def id(self):
+        return self.data["info"]["chain_id"]
+
+
+
+    def set_chain_id(self, chain_id=None):
+        if chain_id is None:
+            chain_id = self.find_id()
+        chain_id = str(chain_id)
+        assert(len(chain_id) == 1)
+        self.data["info"]["chain_id"] = chain_id
+        if self.has_flag("has_chain_id", True):
+            old_name = self.name().split("_")
+            for n, o in enumerate(old_name):
+                if o == self.id():
+                    old_name[n] = self.id()
+            new_name = "_".join(old_name)
+            self.set_name(new_name, append=False)
+        else:
+            self.set_name(chain_id, append=True)
+            self.set_flag("has_chain_id", True)
+        return self.id()
+
+
+
+    @classmethod
+    def from_atoms(cls, atoms, code=None, chain_id=None, **kwargs):
+        self = super().from_atoms(atoms, code, **kwargs)
+        self._atoms = atoms
+        self.set_chain_id(chain_id)
+        return self
+
+    @classmethod
+    def from_file(cls,*args, chain_id=None, **kwargs):
+        self = super().from_file(*args, **kwargs)
+        self._atoms = self.atoms(chain=chain_id, hetatm=True, disordered=True)
+        self.set_chain_id(chain_id)
+        return self
+

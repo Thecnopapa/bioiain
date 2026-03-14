@@ -74,7 +74,6 @@ def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list
         eof = False
         multi_line = False
         multi_cached = None
-        multi_delimiter = None
         multi_delimiters = [";"]
         looping = False
         while not eof:

@@ -441,7 +441,7 @@ def write_atoms(entity, file_path, include_unused=False, include_misc=False, pre
 
         return file_path
     except Exception as e:
-        log("error", f"Atom write interrumped, deleting corruped file: {filepath}")
-        os.remove(filepath)
+        log("error", f"Atom write interrumped, deleting corruped file: {file_path}")
+        os.remove(file_path)
         log("error", "File deleted succesfully!")
         raise e
