@@ -33,7 +33,7 @@ cvmatrix.save_fig("t2", save_folder=fig_folder)
 
 
 cvmatrix.calculate_neighbours()
-print(c.closest for c in cvmatrix.vectors)
+[print(c.closest)for c in cvmatrix.vectors]
 
 
 

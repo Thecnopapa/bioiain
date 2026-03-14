@@ -184,7 +184,7 @@ class CVMatrix(object):
                 #print(cv, t)
 
                 if vp.d < target[0]:
-                    target = (vp.d, t)
+                    target = (vp.d, t, vp)
                     continue
 
                
