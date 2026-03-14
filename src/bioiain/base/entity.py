@@ -21,7 +21,7 @@ class BIEntity(object):
             "parent": None, # Parent entity cif path
             "export_folder": export_folder, # Folder with all exports (default: "bioiain/exports")
             "top_folder": None, # Highest related folder
-            "sub_folder": None, # Path of self under top_folder
+            "sub_folder": "", # Path of self under top_folder
         }
         self.data = {
             "info": {
@@ -133,23 +133,16 @@ class BIEntity(object):
 
         if group_by_residue or as_residues:
             atoms_by_res = {}
-            residues_with_ca = []
             for atom in atoms:
-                if atom.resnum in atoms_by_res:
-                    atoms_by_res[atom.resnum].append(atom)
+                if atom.id[1:] in atoms_by_res:
+                    atoms_by_res[atom.id[1:]].append(atom)
                 else:
-                    atoms_by_res[atom.resnum] = [atom]
+                    atoms_by_res[atom.id[1:]] = [atom]
 
-                if atom.name == "CA":
-                    residues_with_ca.append(atom.resnum)
-            for key in list(atoms_by_res.keys()):
-                try:
-                    residues_with_ca.remove(key)
-                except:
-                    atoms_by_res.pop(key)
 
             atoms = atoms_by_res
             if as_residues:
+
                 atoms = [BIResidue(resatms) for resatms in atoms.values()]
 
         return atoms
@@ -159,7 +152,11 @@ class BIEntity(object):
         if self.use_tmp:
             root = self.tmp_folder
         fname = f"{self.name()}.{self.extension}"
-        base_folder = os.path.join(root, self.paths["export_folder"], self.paths["top_folder"], self.paths["sub_folder"])
+        try:
+            base_folder = os.path.join(root, self.paths["export_folder"], self.paths["top_folder"], self.paths["sub_folder"])
+        except TypeError:
+            print(self.paths)
+            raise
         os.makedirs(base_folder, exist_ok=True)
         base_path = os.path.join(base_folder, fname)
         self.paths["self"] = self._export_structure(base_path)
@@ -187,6 +184,7 @@ class BIEntity(object):
 
     @classmethod
     def from_file(cls, filepath, code="auto", file_format="auto", force=False, **kwargs):
+        log(1, "Loading from file:", filepath)
         self = cls(**kwargs)
         if self.has_flag("loaded", True):
             if force:
@@ -211,8 +209,6 @@ class BIEntity(object):
         self.data["info"]["code"] = clean_string(code).upper()
         self.paths["top_folder"] = self.code()
         self.set_name(self.code())
-        print(self.code())
-
         return self
 
 
@@ -261,7 +257,7 @@ class BIEntity(object):
         return filepath
 
 
-    def _export_structure(self, filepath, atoms=None, headers=None, unused_fields=False, misc_fields=False) -> str:
+    def _export_structure(self, filepath, atoms=None, headers=None, misc_fields=True) -> str:
         mode = "w"
         if atoms is None:
             atoms = self.atoms()
@@ -269,7 +265,7 @@ class BIEntity(object):
             #write_headers(self, filepath, mode=mode)
             mode = "a"
             pass
-        return write_atoms(atoms, filepath, include_unused=unused_fields, include_misc=misc_fields, mode=mode)
+        return write_atoms(atoms, filepath, name=self.name(), include_misc=misc_fields, mode=mode)
 
 
 

@@ -20,6 +20,7 @@ class BIResidue(object):
         self.resname = None
         self.resseq = None
         self.chain = None
+        self.fragment = None
 
         for a in self.atoms:
             #print(a)
@@ -42,12 +43,22 @@ class BIResidue(object):
             log("error", "Trying to initialise residue with no CA")
             raise NoCaFound()
 
+
+        self.fragment = self.ca.get_misc("fragment", None)
+
         self.resnum = self.ca.resnum
         self.resname = self.ca.resname
         self.resseq = self.ca.resseq
         self.chain = self.ca.chain
-        self.id = ( self.resname, self.resnum, self.resseq, self.chain)
+        if self.fragment is None:
+            self.id = ( self.resname, self.resnum, self.resseq, self.chain)
+        else:
+            self.id = ( self.resname, self.resnum, self.resseq, self.chain, self.fragment)
 
     def __repr__(self):
         return f"<bi.BIResidue id={self.id}>"
+
+    def to_atoms(self, key, value):
+        for atom in self.atoms:
+            atom.set_misc(key, value)
 

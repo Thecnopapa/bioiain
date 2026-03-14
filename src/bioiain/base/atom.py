@@ -36,6 +36,7 @@ class BIAtom(object):
         for k, v in data.items():
             if not (k  in essential_labs):
                 self.unused[k] = v
+
         self.misc = {}
 
         #ATOM
@@ -54,6 +55,7 @@ class BIAtom(object):
 
         #PROPERTIES
         self.id = (self.name,  self.resnum, self.chain)
+        self.id2 = (self.name,  self.resseq, self.chain)
         self.x = float(data["Cartn_x"])
         self.y = float(data["Cartn_y"])
         self.z = float(data["Cartn_z"])
@@ -152,13 +154,16 @@ class BIAtom(object):
                 t.misc[label] = value
             return self.misc[label]
 
-    def get_misc(self, label):
+    def get_misc(self, label, keyerror="undefined"):
         if label in self.misc:
             return self.misc[label]
         elif label in self.unused:
             return self.unused[label]
         else:
-            raise KeyError
+            if keyerror == "undefined":
+                raise KeyError
+            else:
+                return keyerror
 
     def pdb_string(self):
         return ""
@@ -206,7 +211,7 @@ def _fix_disordered(atoms):
     for atom in atoms:
         if atom.disordered:
             for a in fixed_atoms:
-                if a.resseq == atom.resseq and a.name == atom.name:
+                if a.id2 == atom.id2:
                     if a.resseq is None and not (a.resnum == atom.resnum):
                         continue
                     try:

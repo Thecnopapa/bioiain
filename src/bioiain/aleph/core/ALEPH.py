@@ -1255,7 +1255,7 @@ def get_cvs(structure, use_list=[], ignore_list=[], length_fragment=3, one_model
                                                                             numberOfResidues, ignore_list)
     if numberOfResidues < 3:
         print("ERROR: There are not enough residues with occupancy higher than the 10% for computing Characteristic Vectors")
-        raise Exeption("ERROR: There are not enough residues with occupancy higher than the 10% for computing Characteristic Vectors")
+        raise Exception("ERROR: There are not enough residues with occupancy higher than the 10% for computing Characteristic Vectors")
     # This is the number of possible cvs n_cvs = n_aa - (n_peptides - 1) = n_aa - n_peptides + 1
     numberOfSegments = numberOfResidues - length_fragment + 1
 

@@ -22,6 +22,7 @@ class CVector(object):
 
         self.chain = res2.chain
         self.resnum = res2.resnum
+        self.fragment = res2.fragment
 
         self.id = (self.resnum, self.chain)
 
@@ -75,6 +76,9 @@ class CVPair(object):
         self.resnum1 = self.v1.resnum
         self.resnum2 = self.v2.resnum
 
+        self.fragment1 = self.v1.fragment
+        self.fragment2 = self.v2.fragment
+
 
         self.v = None
         self.d = None
@@ -85,7 +89,10 @@ class CVPair(object):
         self.calculate()
 
     def __repr__(self):
-        return f"<bi.{self.__class__.__name__} {self.v1.id} - {self.v2.id}>"
+        if self.fragment1 is not None and self.fragment2 is not None:
+            return f"<bi.{self.__class__.__name__} {self.v1.resnum}(F{self.v1.fragment}) - {self.v2.resnum}(F{self.v2.fragment})>"
+        else:
+            return f"<bi.{self.__class__.__name__} {self.v1.resnum}({self.v1.chain}) - {self.v2.resnum}({self.v2.chain})>"
 
 
     def calculate(self):
@@ -124,7 +131,7 @@ class CVMatrix(object):
             extension = self.length - len(r) -1
             zeros = [None] * extension
             self.matrix[n] = zeros + self.matrix[n]
-            
+
 
         return self
 
@@ -150,11 +157,11 @@ class CVMatrix(object):
     def show(self, attribute="d"):
         plot_heatmap(self.square(attribute), show=True)
 
-    def calculate_neighbours(self):
+    def calculate_neighbours(self, use_fragments=True):
 
         print("n vectors", len(self.vectors))
         print("m shape", len(self.matrix))
-        
+
         for n1, cv in enumerate(self.vectors):
 
             target = (99999., None)
@@ -169,8 +176,13 @@ class CVMatrix(object):
 
                 #print(vp.chain1, vp.chain2)
 
-                if vp.chain1 == vp.chain2:
-                    continue
+                if use_fragments:
+                    #print(vp.fragment1, vp.fragment2)
+                    if vp.fragment1 == vp.fragment2:
+                        continue
+                else:
+                    if vp.chain1 == vp.chain2:
+                        continue
 
 
                 #print(str(cv), str(vp.v1), str(vp.v2))
@@ -187,7 +199,7 @@ class CVMatrix(object):
                     target = (vp.d, t, vp)
                     continue
 
-               
+
             cv.closest = target
             print("closest to", cv, "is", cv.closest)
             if target[1] is None:

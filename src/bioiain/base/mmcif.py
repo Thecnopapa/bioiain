@@ -261,7 +261,7 @@ def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list
         mmcif.save(save_path)
     return mmcif
 
-def write_atoms(atoms, file_path, name=None, include_unused=False, include_misc=False, preserve_ids=False,
+def write_atoms(atoms, file_path, name=None, include_unused=True, include_misc=True, preserve_ids=False,
                 mode="w", key="_atom_site") -> str:
 
     labels = atoms[0]._mmcif_dict(include_unused=include_unused,  include_misc=include_misc).keys()
@@ -272,7 +272,7 @@ def write_atoms(atoms, file_path, name=None, include_unused=False, include_misc=
     try:
         with open(file_path, mode) as f:
             if mode == "w" and name is not None:
-                f.write(f"data_{name.get_name()}\n")
+                f.write(f"data_{name}\n")
             f.write("#\n")
             f.write("loop_\n")
 

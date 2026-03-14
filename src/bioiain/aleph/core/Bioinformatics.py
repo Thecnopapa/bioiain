@@ -1425,7 +1425,10 @@ def get_structure(name, pdbf, get_header=False):
     elif not os.path.exists(pdbf):
         pdbf = io.StringIO(SystemUtility.py2_3_unicode(pdbf))
 
-    parser = Bio.PDB.PDBParser()
+    if pdbf.endswith(".cif"):
+        parser = Bio.PDB.MMCIFParser()
+    else:
+        parser = Bio.PDB.PDBParser()
     structure = parser.get_structure(name, pdbf)
 
     if not get_header:

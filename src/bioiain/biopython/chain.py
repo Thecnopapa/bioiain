@@ -146,21 +146,7 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
         log("end", "showing exposed residues")
 
 
-    def cvectors(self):
-        print("CALCULATING _calculate_cvectors")
-        from ..aleph.vectors import CVector
-        residues = self.residues()
-        n_res = len(residues)
-        cvector_list = []
-        for n, res in enumerate(residues):
-            if n == 0 or n == n_res -1:
-                continue
 
-            cvector = CVector(residues[n-1], res, residues[n+1])
-            cvector_list.append(cvector)
-
-        self._cvectors = cvector_list
-        return cvector_list
 
     @staticmethod
     def _fix_disordered(atoms):
