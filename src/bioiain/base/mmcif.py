@@ -303,10 +303,10 @@ def write_pdb_atoms(atoms, file_path, mode="w", end=True):
 
 
 
-def write_atoms(atoms, file_path, name=None, include_unused=True, include_misc=True, preserve_ids=False,
+def write_atoms(atoms, file_path, name=None, include_misc=True, preserve_ids=False,
                 mode="w", key="_atom_site") -> str:
 
-    labels = atoms[0]._mmcif_dict(include_unused=include_unused,  include_misc=include_misc).keys()
+    labels = atoms[0]._mmcif_dict( include_misc=include_misc).keys()
 
     if not file_path.endswith(".cif"):
         file_path += ".cif"
@@ -315,14 +315,14 @@ def write_atoms(atoms, file_path, name=None, include_unused=True, include_misc=T
         with open(file_path, mode) as f:
             if mode == "w" and name is not None:
                 f.write(f"data_{name}\n")
-            f.write("#\n")
+            f.write("\n#\n")
             f.write("loop_\n")
 
             for l in labels:
                 f.write(f"{key}.{l}\n")
 
             for n, a in enumerate(atoms):
-                d = a._mmcif_dict(include_unused=include_unused, include_misc=include_misc)
+                d = a._mmcif_dict(include_misc=include_misc)
                 if not preserve_ids:
                     d["id"] = f"{n:4d}"
                 f.write("  ".join(d.values()) + "\n")
@@ -345,7 +345,7 @@ def write_dict(data, label, file_path, name=None, mode="w"):
         with open(file_path, mode) as f:
             if mode == "w" and name is not None:
                 f.write(f"data_{name}\n")
-            f.write("#\n")
+            f.write("\n#\n")
 
             for k, v in data.items():
                 f.write(f"{label}.{k}   {str(v)}\n")

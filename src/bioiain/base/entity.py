@@ -27,6 +27,7 @@ class BIEntity(object):
             "info": {
                 "code": None, # The code of this structure, if any
                 "name": None, # The name of this structure (used mainly for file naming)
+                "class": self.__class__.__name__,
             },
             "sequences": {
                 "aa": None,
@@ -63,6 +64,11 @@ class BIEntity(object):
         else:
             self.data["info"]["name"] = name
 
+    def path(self):
+        if self.paths.get("self", None) is None:
+            self.export()
+        return self.paths["self"]
+
     def code(self):
         return self.data["info"]["code"]
 
@@ -70,6 +76,10 @@ class BIEntity(object):
         return self.data["info"]["code"]
 
     def get_sequence(self, name="aa"):
+        return self.data["sequences"][name]
+
+    def set_sequence(self, name, seq):
+        self.data["sequences"][name] = seq
         return self.data["sequences"][name]
 
     def has_flag(self, flag, value=None):
@@ -83,7 +93,7 @@ class BIEntity(object):
 
     def sequence(self, force=False):
         if self.get_sequence() is None or force:
-            seq = "".join([d3to1(r.resname) for r in self.residues()])
+            seq = "".join([d3to1[r.resname] for r in self.residues()])
             self.data["sequences"]["aa"] = seq
         return self.get_sequence()
 
@@ -147,7 +157,7 @@ class BIEntity(object):
 
         return atoms
 
-    def export(self):
+    def export(self, minimal=False, as_pdb=False):
         root = "."
         if self.use_tmp:
             root = self.tmp_folder
@@ -159,8 +169,10 @@ class BIEntity(object):
             raise
         os.makedirs(base_folder, exist_ok=True)
         base_path = os.path.join(base_folder, fname)
-        self.paths["self"] = self._export_structure(base_path)
-        self.paths["data"] = self._export_data(base_path)
+        self.paths["self"] = self._export_structure(base_path, headers=not minimal, misc_fields=not minimal, cleanup=minimal, as_pdb=as_pdb)
+        if not as_pdb:
+            self.set_flag("exported", True)
+            self.paths["data"] = self._export_data(base_path)
         return base_path
 
 
@@ -257,21 +269,79 @@ class BIEntity(object):
         return filepath
 
 
-    def _export_structure(self, filepath, atoms=None, headers=None, misc_fields=True) -> str:
+    def _export_structure(self, filepath:str, atoms:list=None, headers:bool=None, misc_fields:bool=True, cleanup=True, as_pdb=False) -> str:
         mode = "w"
         if atoms is None:
-            atoms = self.atoms()
-        if headers:
-            #write_headers(self, filepath, mode=mode)
-            mode = "a"
-            pass
-        return write_atoms(atoms, filepath, name=self.name(), include_misc=misc_fields, mode=mode)
+            if cleanup:
+                atoms = self.atoms()
+            else:
+                atoms = self._all_atoms()
+        if as_pdb:
+            return write_pdb_atoms(atoms, filepath, mode=mode, end=True)
+        else:
+            if headers:
+                for e in self.exporting:
+                    d = getattr(self, e)
+                    if e == "data":
+                        for k, v in d.items():
+                            write_dict(v, file_path=filepath, label=f"bi_{e}_{k}", mode=mode, name=self.name())
+                            mode = "a"
+                    else:
+                        write_dict(d, file_path=filepath, label=f"bi_{e}", mode=mode, name=self.name())
+                        mode = "a"
+
+            return write_atoms(atoms, filepath, name=self.name(), include_misc=misc_fields, mode=mode)
+
+    @classmethod
+    def recover_from_id(cls, code, endswith=None, full_name=None, **kwargs):
+        placeholder = cls(**kwargs)
+        path = os.path.join(placeholder.paths["export_folder"], code, placeholder.paths["sub_folder"])
+        if full_name is not None:
+            path = os.path.join(path, full_name)
+        elif endswith is not None:
+            for file in os.listdir(path):
+                ext = path.split(".")[-1]
+                if ext == placeholder.extension:
+                    if file.split(".")[0].endswith(endswith):
+                        path = os.path.join(path, file)
+                        break
+
+        return cls.recover_from_path(path)
 
 
 
 
-    def recover(self, data_path):
-        pass
+    @classmethod
+    def recover_from_path(cls, path):
+
+        if path.endswith(".json"):
+            data_path = None
+            cif_path = data_path.replace(".json", ".cif")
+        elif path.endswith(".cif"):
+            cif_path = path
+            data_path = cif_path.replace(".cif", ".json")
+        else:
+            cif_path = path+".cif"
+            data_path = path+".json"
+
+        raw = None
+        if os.path.exists(cif_path):
+            self = cls.from_file(cif_path)
+        elif os.path.exists(data_path):
+            raw = json.load(open(path, "r"))
+            self = cls.from_file(raw["paths"]["self"])
+        else:
+            raise FileNotFoundError(path, cif_path, data_path)
+
+        if os.path.exists(data_path) and raw is None:
+            raw = json.load(open(path, "r"))
+            for k, v in raw.items():
+                setattr(self, k, v)
+        else:
+            log("Warning", "Data file not found for:", path)
+
+        return self
+
 
 
 

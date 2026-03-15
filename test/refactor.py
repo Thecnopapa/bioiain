@@ -30,4 +30,4 @@ for n, atom in enumerate(struc.atoms(hetatm=True, disordered=True)):
         continue
     print(atom.pdb_string())
 
-write_pdb_atoms(struc._all_atoms(), file_path="./testpdb")
+struc.export(as_pdb=True)

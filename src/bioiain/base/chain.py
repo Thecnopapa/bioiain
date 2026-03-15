@@ -12,6 +12,7 @@ class BIChain(BIEntity):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.paths["sub_folder"] = "chains"
+        self.sequence()
 
     def find_id(self, method="first"):
 

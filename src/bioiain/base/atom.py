@@ -32,12 +32,11 @@ class BIAtom(object):
         ]
 
 
-        self.unused = {}
+        self.misc = {}
         for k, v in data.items():
             if not (k  in essential_labs):
-                self.unused[k] = v
+                self.misc[k] = v
 
-        self.misc = {}
 
         #ATOM
         self.atomnum = int(data["id"])
@@ -144,21 +143,13 @@ class BIAtom(object):
 
     def set_misc(self, label, value):
 
-        if label in self.unused:
-            for t in self:
-                t.unused[label] = value
-            return self.unused[label]
-
-        else:
-            for t in self:
-                t.misc[label] = value
-            return self.misc[label]
+        for t in self:
+            t.misc[label] = value
+        return self.misc[label]
 
     def get_misc(self, label, keyerror="undefined"):
         if label in self.misc:
             return self.misc[label]
-        elif label in self.unused:
-            return self.unused[label]
         else:
             if keyerror == "undefined":
                 raise KeyError
@@ -219,32 +210,35 @@ class BIAtom(object):
         return string
 
 
-    def _mmcif_dict(self, include_unused=True, include_misc=False):
-        if self.alt_id is None:
-            self.alt_id = "."
+    def _mmcif_dict(self, include_misc=True):
 
-        data = {
-            "group_PDB": f"{self.type:6s}",
-            "id": f"{self.atomnum:4d}",
-            "label_alt_id": f"{self.alt_id}",
-            "label_seq_id": f"{self.resseq:4d}",
-            "type_symbol": f"{self.element:3s}",
-            "label_atom_id": f"{self.name:3s}",
-            "label_comp_id": f"{self.resname:4s}",
-            "auth_seq_id": f"{self.resnum:4d}",
-            "auth_asym_id": f"{self.chain:2s}",
-            "Cartn_x": f"{self.x:7.3f}",
-            "Cartn_y": f"{self.y:7.3f}",
-            "Cartn_z": f"{self.z:7.3f}",
-            "occupancy": f"{self.occupancy:6.3f}",
-            "B_iso_or_equiv": f"{self.b:6.2f}",
 
-        }
-        if include_unused or include_misc:
-            for k, v in self.unused.items():
-                assert k not in data.keys()
-                if v is None: v = "."
-                data[k] = f"{v}"
+
+        try:
+            data = {}
+            data["group_PDB"] = f"{self.type:6s}"
+            data["id"] = f"{self.atomnum:4d}"
+            if self.alt_id is None: data["label_alt_id"] = "."
+            else: data["label_alt_id"] = f"{self.alt_id}"
+            if self.resseq is None: self.resseq = "."
+            else: data["label_seq_id"] = f"{self.resseq:4d}"
+            data["type_symbol"] = f"{self.element:3s}"
+            data["label_atom_id"] = f"{self.name:3s}"
+            data["label_comp_id"] =f"{self.resname:4s}"
+            data["auth_seq_id"] = f"{self.resnum:4d}"
+            data["auth_asym_id"] = f"{self.chain:2s}"
+            data["Cartn_x"] = f"{self.x:7.3f}"
+            data["Cartn_y"] = f"{self.y:7.3f}"
+            data["Cartn_z"] = f"{self.z:7.3f}"
+            data["occupancy"] = f"{self.occupancy:6.3f}"
+            data["B_iso_or_equiv"] = f"{self.b:6.2f}"
+
+
+        except Exception as e:
+            print(self)
+            print(self.__dict__)
+            raise e
+
 
         if include_misc:
             for k, v in self.misc.items():
