@@ -58,6 +58,8 @@ class MMCIF(object):
 
 
 
+
+
 def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list|str=None) -> MMCIF:
     from ..utilities.strings import str_to_list_with_literals
     data = {}
@@ -260,6 +262,46 @@ def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list
         log("debug","Headers saved to:", os.path.abspath(save_path))
         mmcif.save(save_path)
     return mmcif
+
+
+def write_pdb_atoms(atoms, file_path, mode="w", end=True):
+
+    if not file_path.endswith(".pdb"):
+        file_path += ".pdb"
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+    try:
+        with open(file_path, mode) as f:
+
+            rn = 1
+            for an, atom in enumerate(atoms):
+                if (atom.chain != atoms[an-1].chain and an != 0):
+                    rn += 1
+                    ter = atoms[an-1].pdb_string(rn)
+                    ter = "TER   "+ter[6:27]
+                    f.write(ter + "\n")
+                s = atom.pdb_string(rn)
+                f.write(s + "\n")
+                rn += 1
+                if an == len(atoms) - 1:
+                    rn += 1
+                    ter = atoms[an - 1].pdb_string(rn)
+                    ter = "TER   " + ter[6:27]
+                    f.write(ter + "\n")
+            if end:
+                f.write("END\n")
+
+
+    except Exception as e:
+        log("error", f"Atom write (pdb) interrupted, deleting corrupted file: {file_path}")
+        os.remove(file_path)
+        log("error", "File deleted successfully!")
+        raise e
+
+
+
+
+
 
 def write_atoms(atoms, file_path, name=None, include_unused=True, include_misc=True, preserve_ids=False,
                 mode="w", key="_atom_site") -> str:

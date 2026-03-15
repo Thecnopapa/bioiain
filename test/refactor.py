@@ -26,6 +26,8 @@ for chain in struc.chains():
 
 
 for n, atom in enumerate(struc.atoms(hetatm=True, disordered=True)):
-    if atom.type == "ATOM":
+    if False:
         continue
     print(atom.pdb_string())
+
+write_pdb_atoms(struc._all_atoms(), file_path="./testpdb")

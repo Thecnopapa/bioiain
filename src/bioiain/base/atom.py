@@ -165,20 +165,57 @@ class BIAtom(object):
             else:
                 return keyerror
 
-    def pdb_string(self):
+    def pdb_string(self, new_id=None):
         record_name = f"{self.type:<6s}"[-6:]
-        atom_serial_number = f"{self.atomnum:5d}"[-5:]
+        if new_id is None:
+            atom_serial_number = f"{self.atomnum:5d}"[-5:]
+        else:
+            atom_serial_number = f"{new_id:5d}"[-5:]
         if len(self.element) >= 2 or len(self.name) >= 4:
             atom_name = f"{self.name:<4s}"[-4:]
         else:
             atom_name = f" {self.name:<3s}"[-4:]
+        if self.alt_id is None or self.alt_id==".":
+            alternate_location_indicator = " "
+        else:
+            alternate_location_indicator = f"{self.alt_id:1s}"[0]
+        residue_name = f"{self.resname:>3s}"[:3]
+        chain_identifier = f"{self.chain:1s}"[0]
+        residue_sequence_number = f"{self.resnum:>4d}"[-4:]
+        code_for_insertions_of_residues = " " # ??
+        xcoord = f"{self.x:>8.3f}"[:8]
+        ycoord = f"{self.y:>8.3f}"[:8]
+        zcoord = f"{self.z:>8.3f}"[:8]
+        occupancy = f"{self.occupancy:>6.2f}"[-6:]
+        temperature_factor = f"{self.b:>6.2f}"[-6:]
+        segment_identifier = f"    " # ??
+        element_symbol = f"{self.element:>2s}"[:2]
+        charge = "  " # ??
+
+
 
         string = ""
         string+=record_name # 1-6
         string+=atom_serial_number # 7-11
         string+=" " # 12
         string+=atom_name # 13-16
-        
+        string+=alternate_location_indicator # 17
+        string+=residue_name # 18-20
+        string+=" " # 21
+        string+=chain_identifier # 22
+        string+=residue_sequence_number # 23-26
+        string+=code_for_insertions_of_residues # 26
+        string+="   " # 28-30
+        string+=xcoord # 31-38
+        string+=ycoord # 39-46
+        string+=zcoord # 47-54
+        string+=occupancy # 55-60
+        string+=temperature_factor # 61-66
+        string+= "      " # 67-72
+        string+=segment_identifier # 73-76
+        string+=element_symbol # 77-78
+        string+=charge # 79-80
+
         return string
 
 
