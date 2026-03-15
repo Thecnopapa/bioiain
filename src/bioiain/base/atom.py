@@ -211,6 +211,37 @@ class BIAtom(object):
 
         return string
 
+    def __add__(self, other):
+        if type(other) in (int, float):
+            if len(other) == 1:
+                a = (other, other, other)
+            elif len(other) == 3:
+                a = other
+            else:
+                raise TypeError
+            self.x += a[0]
+            self.y += a[1]
+            self.z += a[2]
+            self.coord = self.x, self.y, self.z
+            return self
+        else:
+            raise NotImplementedError()
+
+    def __sub__(self, other):
+        if type(other) in (int, float):
+            if len(other) == 1:
+                a = (other, other, other)
+            elif len(other) == 3:
+                a = other
+            else:
+                raise TypeError
+            self.x -= a[0]
+            self.y -= a[1]
+            self.z -= a[2]
+            self.coord = self.x, self.y, self.z
+            return self
+        else:
+            raise NotImplementedError()
 
     def copy(self):
         from copy import deepcopy
@@ -258,6 +289,33 @@ class BIAtom(object):
         self.is_fractional = False
 
         return self
+
+    def _symop(self, symop, params):
+        from ..utilities.space_groups import dictio_space_groups
+        if not self.is_fractional:
+            self.to_frac(params)
+            was_orth = True
+        else:
+            was_orth = False
+
+        rot = symop["rot"]
+        tra = symop["tra"]
+
+        x, y, z = self.coord
+
+        nx = (rot[0][0] * x) + (rot[0][1] * y) + (rot[0][2] * z) + tra[0]
+        ny = (rot[1][0] * x) + (rot[1][1] * y) + (rot[1][2] * z) + tra[1]
+        nz = (rot[2][0] * x) + (rot[2][1] * y) + (rot[2][2] * z) + tra[2]
+
+        self.x = nx
+        self.y = ny
+        self.z = nz
+        self.coord = (self.x, self.y, self.z)
+
+        if was_orth:
+            self.to_orth(params)
+        return self
+
 
 
 

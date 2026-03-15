@@ -33,6 +33,8 @@ class BIEntity(object):
             "sequences": {
                 "aa": None,
             },
+            "symmetry": {
+            }
         }
         self.headers = {}
         self.flags = {
@@ -280,6 +282,7 @@ class BIEntity(object):
             atoms=mmcif("_atom_site")
             self.headers["cell"] = mmcif("_cell")
             self.headers["symmetry"] = mmcif("_symmetry")
+            self.data["symmetry"]["in_asu"] = True
             self._calculate_crystal()
             print(self.headers)
             atoms = [BIAtom(a) for a in atoms]
@@ -408,10 +411,13 @@ class BIEntity(object):
             self._get_operations()
         return self._operations
 
-    def symops(self):
+    def symops(self, n=None):
         if self._operations is None:
             self._get_operations()
-        return self._operations["symops"].keys()
+        if n is None:
+            return self._operations["symops"].keys()
+        else:
+            return self._operations["symops"][n]
 
     def params(self):
         if self._parameters is None:
@@ -458,8 +464,12 @@ class BIEntity(object):
         new.set_flag("is_copy", True)
         return new
 
-    def _displace(self):
-        pass
+    def displace(self, distance:float|int|list[float|int]|tuple[float|int], inplace=True):
+        if not inplace:
+            self = self.copy()
+        for a in self.all_atoms():
+            a + distance
+        return self
 
     def _to_fractional(self):
         if self.has_flag("is_fractional", True):
@@ -478,11 +488,17 @@ class BIEntity(object):
 
 
     def _symmetry_operation(self, symop):
+        was_orth = False
         if self.has_flag("is_fractional", False):
+            was_orth = True
             self._to_fractional()
 
+        for a in self.all_atoms():
+            a._symop(self.symops(symop), self.params())
 
-
+        if was_orth:
+            self._to_orthogonal()
+        return self
 
 
     def symmetry(self, symop, in_place=False):
@@ -490,6 +506,18 @@ class BIEntity(object):
             self = self.copy()
 
         self._symmetry_operation(symop)
+        self.set_flag("is_symmetry", True)
+        self.data["symmetry"]["in_asu"] = False
+        return self
+
+
+    def mates(self):
+        mates = []
+        for symop in self.symops():
+            mates.append(self.symmetry(symop))
+        return mates
+
+
 
 
 
