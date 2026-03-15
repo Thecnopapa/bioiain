@@ -19,6 +19,7 @@ class BIEntity(object):
         self.children = []
         self.paths = {
             "self": None, # This entity cif path
+            "minimal": None, # This but only nice atoms (no headers or data)
             "parent": None, # Parent entity cif path
             "export_folder": export_folder, # Folder with all exports (default: "bioiain/exports")
             "top_folder": None, # Highest related folder
@@ -36,16 +37,26 @@ class BIEntity(object):
             "symmetry": {
             }
         }
-        self.headers = {}
+        self.headers = {
+            "entry":{
+                "id":None
+            }
+        }
         self.flags = {
             "loaded": False,
         }
         self.exporting = ["data", "paths", "flags"]
+
+        # Children
         self._chains = None
         self._residues = None
         self._atoms = None
+        self._mates = None
+
+        # Crystal
         self._card = None
         self._parameters = None
+        self._operations = None
 
         if use_tmp:
             self.paths["export_folder"] = os.path.join(self.tmp_folder, self.paths["export_folder"] )
@@ -57,6 +68,8 @@ class BIEntity(object):
 
 
     def __repr__(self):
+        if self.is_symmetry():
+            return "<{}:{} id={} op={}>".format(self.__class__.__name__, self.code(), self.id(), self.op())
         return "<{}:{} id={}>".format(self.__class__.__name__, self.code(), self.id())
 
     def __str__(self):
@@ -125,7 +138,7 @@ class BIEntity(object):
     def atoms(self, ca_only=False, hetatm=False, force=False, group_by_residue=False, disordered=False, as_residues=False, chain=None, group_by_chain=False, as_chains=False, **kwargs):
         from .atom import _fix_disordered
         from .residue import BIResidue
-        atoms = self._all_atoms(force=force)
+        atoms = self.all_atoms()
 
         if not disordered:
             atoms = _fix_disordered(atoms)
@@ -167,31 +180,18 @@ class BIEntity(object):
 
         return atoms
 
-    def export(self, minimal=False, as_pdb=False):
 
 
-        fname = f"{self.name()}.{self.extension}"
+    def remove_atom(self, atom):
         try:
-            base_folder = os.path.join(self.paths["export_folder"], self.paths.get("top_folder", self.code()), self.paths["sub_folder"])
-        except TypeError:
-            print(self.paths)
-            raise
-        os.makedirs(base_folder, exist_ok=True)
-        base_path = os.path.join(base_folder, fname)
-        if self.has_flag("is_fractional", True):
-            log("Warning", "A fractional entity was about to be exported!")
-            log("Warning", "An orthogonal copy was made for you and exported instead! (only for atoms)")
-            orth = self.copy()._to_orthogonal()
-        else:
-            orth = self
-
-        self.paths["self"] = orth._export_structure(base_path, headers=not minimal, misc_fields=not minimal, cleanup=minimal, as_pdb=as_pdb)
-        if not as_pdb:
-            self.set_flag("exported", True)
-            self.paths["data"] = self._export_data(base_path)
-        return base_path
-
-
+            print(len(self._atoms))
+            self._atoms.remove(atom)
+            print(len(self._atoms))
+            log(f"warning", f"Atom {atom} removed")
+        except:
+            log("warning", f"Atom {atom} not found, not removed")
+            return False
+        return True
 
     def set_symmetry(self):
         pass
@@ -242,9 +242,11 @@ class BIEntity(object):
             code = filepath.split(".")[0]
 
         self.data["info"]["code"] = clean_string(code).upper()
+        self.headers["entry"]["id"] = self.code()
         self.paths["top_folder"] = self.code()
         self.set_name(self.code())
         self.set_flag("fractional", False)
+        self.set_flag("loaded", True)
         return self
 
 
@@ -290,6 +292,39 @@ class BIEntity(object):
             self._atoms = atoms
         return self._atoms
 
+    def fix_headers(self):
+        if self.headers["symmetry"].get("space_group_name_H-M", None) is not None:
+            self.headers["symmetry"]["space_group_name_H-M"] = f"\'{self.headers["symmetry"]["space_group_name_H-M"]}\'"
+
+
+    def export(self, minimal=False, cleanup=False, as_pdb=False):
+
+
+        fname = f"{self.name()}.{self.extension}"
+        if minimal:
+            fname += ".minimal"
+        try:
+            base_folder = os.path.join(self.paths["export_folder"], self.paths.get("top_folder", self.code()), self.paths["sub_folder"])
+        except TypeError:
+            print(self.paths)
+            raise
+        os.makedirs(base_folder, exist_ok=True)
+        base_path = os.path.join(base_folder, fname)
+        if self.has_flag("is_fractional", True):
+            log("Warning", "A fractional entity was about to be exported!")
+            log("Warning", "An orthogonal copy was made for you and exported instead! (only for atoms)")
+            orth = self.copy()._to_orthogonal()
+        else:
+            orth = self
+
+        if minimal:
+            self.paths["minimal"] = orth._export_structure(base_path, headers=False, misc_fields=True, cleanup=True, as_pdb=as_pdb)
+        else:
+            self.paths["self"] = orth._export_structure(base_path, headers=True, misc_fields=True, cleanup=cleanup, as_pdb=as_pdb)
+            if not as_pdb:
+                self.set_flag("exported", True)
+                self.paths["data"] = self._export_data(base_path)
+            return self.paths["self"]
 
     def _export_data(self, filepath, mode="w") -> str:
         if filepath.endswith(".cif"):
@@ -302,7 +337,7 @@ class BIEntity(object):
         return filepath
 
 
-    def _export_structure(self, filepath:str, atoms:list=None, headers:bool=None, misc_fields:bool=True, cleanup=True, as_pdb=False) -> str:
+    def _export_structure(self, filepath:str, atoms:list=None, headers:bool=None, misc_fields:bool=True, cleanup=False, as_pdb=False) -> str:
         mode = "w"
         if atoms is None:
             if cleanup:
@@ -462,6 +497,7 @@ class BIEntity(object):
         new.data = deepcopy(self.data)
         new.flags = deepcopy(self.flags)
         new.set_flag("is_copy", True)
+        new.set_flag("exported", False)
         return new
 
     def displace(self, distance:float|int|list[float|int]|tuple[float|int], inplace=True):
@@ -500,6 +536,12 @@ class BIEntity(object):
             self._to_orthogonal()
         return self
 
+    def is_symmetry(self):
+        return self.has_flag("is_symmetry", True)
+
+    def op(self):
+        return self.data["symmetry"].get("symop", None)
+
 
     def symmetry(self, symop, in_place=False):
         if not in_place:
@@ -508,6 +550,7 @@ class BIEntity(object):
         self._symmetry_operation(symop)
         self.set_flag("is_symmetry", True)
         self.data["symmetry"]["in_asu"] = False
+        self.data["symmetry"]["symop"] = symop
         return self
 
 
@@ -515,7 +558,20 @@ class BIEntity(object):
         mates = []
         for symop in self.symops():
             mates.append(self.symmetry(symop))
-        return mates
+        self._mates = mates
+        return self._mates
+
+    def show(self):
+        from ..visualisation.pymol import PymolScript
+        script = PymolScript(self.name())
+        script.load(self.export(), self.name())
+        script.spectrum(self.name())
+        script.orient()
+        script.execute()
+
+
+
+
 
 
 

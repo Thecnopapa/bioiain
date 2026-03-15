@@ -125,7 +125,7 @@ class PymolScript(object):
         return self.path
 
 
-    def execute(self, quiet=False, pymol_path=None):
+    def execute(self, quiet=False, pymol_path=None, full_screen=False):
         """
         Executes the script on the current thread. Not sure if it is blocking or not.
         """
@@ -135,7 +135,8 @@ class PymolScript(object):
             pymol_path = self.pymol_path
         cmd = [pymol_path]
 
-        cmd.extend(["-x", "-e"])
+        if full_screen:
+            cmd.extend(["-x", "-e"])
 
         if quiet:
             cmd.extend(["-q"])
@@ -309,7 +310,7 @@ class PymolScript(object):
 
         return self.add(fun, *args, **kwargs)
 
-    def spectrum(self, sele: str, spectrum: str = "b", color="rainbow", **kwargs) -> Command:
+    def spectrum(self, sele:str="(all)", spectrum: str = "b", color="rainbow", **kwargs) -> Command:
         fun = "spectrum"
         sele = self._to_str(sele)
         spectrum = self._to_str(spectrum)

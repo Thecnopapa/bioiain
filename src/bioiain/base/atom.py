@@ -62,6 +62,8 @@ class BIAtom(object):
         self.occupancy = float(data["occupancy"])
         self.b = float(data["B_iso_or_equiv"])
         self.coord = (self.x, self.y, self.z)
+
+        #CRYSTAL
         self.is_fractional = False
 
         #DISORDER

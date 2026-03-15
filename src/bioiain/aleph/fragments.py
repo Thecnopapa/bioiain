@@ -40,15 +40,16 @@ class FragmentedStructure(BIStructure):
         super().__init__(*args, **kwargs)
         self.paths["sub_folder"] = "fragments"
         self._cvectors = None
+        self._fragments = None
 
 
 
     def fragment_with_aleph(self):
         from .core.ALEPH import annotate_pdb_model_with_aleph
-        self.export()
+        self.export(minimal=True)
         print("### ALEPH start ###")
         graph, _, _, _, _ = annotate_pdb_model_with_aleph(
-            self.paths["self"],
+            self.paths["minimal"],
             weight="distance_avg",
             strictness_ah=0.45,
             strictness_bs=0.20,
@@ -57,39 +58,64 @@ class FragmentedStructure(BIStructure):
         )
         print("### ALEPH end ###")
 
-        log(1, "Fragmented:", self)
+        log(1, "Fragmented:", self.paths["minimal"],)
 
 
 
         fragments = []
         fragmented_ids = graph.vs
-
+        atoms = []
         for n, fraglist in enumerate(fragmented_ids):
             cvs = fraglist["reslist"]
             reslist = self.residues()
             target_res= []
             for fres in cvs:
-                _, model, chain, full_id, resname = fres
-
+                try:
+                    _, model, chain, full_id, resname = fres
+                except:
+                    log("warning", fres)
+                    _, model, chain, full_id = fres
+                    resname = None
                 for res in reslist.copy():
                     if res.resname == resname and res.chain == chain and res.resnum == full_id[1]:
                         #print(res, fres)
                         target_res.append(res)
                         reslist.remove(res)
-                        break
+                        continue
+                del res
+            del fres
             log(2, f"fragment {n}: {len(target_res)}")
+            if len(target_res) == 0:
+                log("warning", f"fragment {n}: no residues")
+                break
+
             fatoms = []
             for res in target_res:
                 fatoms.extend(res.atoms)
+                atoms.extend(res.atoms)
             chain = list(set([r.chain for r in fatoms]))
-            assert len(chain) == 1
-            chain = chain[0]
-            fragment = Fragment.from_atoms(fatoms, code=self.code(), chain_id=chain, fragment_id=n, parent=self)
-            fragment.export()
-            fragments.append(fragment)
-
+            if len(chain) > 0:
+                chain = chain[0]
+                fragment = Fragment.from_atoms(fatoms, code=self.code(), chain_id=chain, fragment_id=n, parent=self)
+                fragment.export()
+                fragments.append(fragment)
+            else:
+                log("warning", f"fragment {n}: no residues")
+        self._atoms = atoms
         self._fragments = fragments
-        return fragments
+        for a in self.all_atoms():
+            if a.get_misc("fragment", None) is None:
+                self.remove_atom(a)
+        self.export()
+        #print(self.all_atoms())
+
+        return self
+
+    def fragments(self):
+        if self._fragments is None:
+            self.fragment_with_aleph()
+        return self._fragments
+
 
 
     def _calculate_cvectors(self):
@@ -113,6 +139,22 @@ class FragmentedStructure(BIStructure):
             self._cvectors = self._calculate_cvectors()
         matrix = CVMatrix(self._cvectors)
         return matrix
+
+    def show(self):
+        for a in self.all_atoms():
+            a.set_bfactor(a.get_misc("fragment"))
+        super().show()
+
+    def show_fragments(self):
+        from ..visualisation.pymol import PymolScript
+        script = PymolScript(self.name())
+        for fragment in self.fragments():
+            for a in fragment.all_atoms():
+                a.set_bfactor(a.get_misc("fragment"))
+            script.load(fragment.export(), fragment.name())
+        script.spectrum("(all)")
+        script.orient()
+        script.execute()
 
 
 

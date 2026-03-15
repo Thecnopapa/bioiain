@@ -316,17 +316,18 @@ def write_atoms(atoms, file_path, name=None, include_misc=True, preserve_ids=Fal
         with open(file_path, mode) as f:
             if mode == "w" and name is not None:
                 f.write(f"data_{name}\n")
-            f.write("\n#\n")
+            f.write("#\n")
             f.write("loop_\n")
 
             for l in labels:
                 f.write(f"{key}.{l}\n")
-
-            for n, a in enumerate(atoms):
+            n = 1
+            for a in atoms:
                 d = a._mmcif_dict(include_misc=include_misc)
                 if not preserve_ids:
                     d["id"] = f"{n:4d}"
                 f.write("  ".join(d.values()) + "\n")
+                n+=1
 
         return file_path
     except Exception as e:
@@ -338,6 +339,8 @@ def write_atoms(atoms, file_path, name=None, include_misc=True, preserve_ids=Fal
 
 def write_dict(data, label, file_path, name=None, mode="w"):
 
+    if len(data) == 0:
+        return file_path
     if not file_path.endswith(".cif"):
         file_path += ".cif"
     if not label.startswith("_"):
@@ -346,10 +349,15 @@ def write_dict(data, label, file_path, name=None, mode="w"):
         with open(file_path, mode) as f:
             if mode == "w" and name is not None:
                 f.write(f"data_{name}\n")
-            f.write("\n#\n")
+            f.write("#\n")
 
             for k, v in data.items():
-                f.write(f"{label}.{k}   {str(v)}\n")
+                if v is None:
+                    f.write(f"{label}.{k}   ?\n")
+                elif f"{label}.{k}" in quoted_headers or should_be_quoted(v):
+                    f.write(f"{label}.{k}   '{str(v)}'\n")
+                else:
+                    f.write(f"{label}.{k}   {str(v)}\n")
         return file_path
     except Exception as e:
         log("error", f"Dict writing to mmcif failed, deleting corrupted file: {file_path}")
@@ -360,3 +368,22 @@ def write_list(data, label, file_path, name=None, mode="w"):
     pass
 
 
+
+def should_be_quoted(value):
+    if value is None:
+        return False
+    value = str(value)
+    if value.strip() == "":
+        return True
+    if value.startswith("'") and value.endswith("'"):
+        return False
+    if value.startswith("<") or value.endswith(">"):
+        return True
+
+    return False
+
+
+
+quoted_headers = [
+    "_symmetry.space_group_name_H-M",
+]
