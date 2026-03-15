@@ -52,6 +52,8 @@ test/foldseek
 test/pisa_raw
 test/pisa_data
 
+test/bioiain
+test/cvmaps
 
 
 html
