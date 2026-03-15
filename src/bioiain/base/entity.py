@@ -31,8 +31,9 @@ class BIEntity(object):
             },
             "sequences": {
                 "aa": None,
-            }
+            },
         }
+        self.headers = {}
         self.flags = {
             "loaded": False,
         }
@@ -44,6 +45,7 @@ class BIEntity(object):
         if parent is not None:
             self.paths["parent"] = parent.paths["self"]
             self.data["info"]["parent"] = repr(parent)
+            self.headers = parent.headers
 
 
     def __repr__(self):
@@ -101,7 +103,7 @@ class BIEntity(object):
         from .structure import BIStructure
         if code is None:
             code = self.data["info"]["code"]
-        return BIStructure.from_atoms(self._atoms, code)
+        return BIStructure.from_atoms(self._atoms, code, parent=self)
 
     def chains(self):
         return self.atoms(as_chains=True, hetatm=True)
@@ -163,7 +165,7 @@ class BIEntity(object):
             root = self.tmp_folder
         fname = f"{self.name()}.{self.extension}"
         try:
-            base_folder = os.path.join(root, self.paths["export_folder"], self.paths["top_folder"], self.paths["sub_folder"])
+            base_folder = os.path.join(root, self.paths["export_folder"], self.paths.get("top_folder", self.code()), self.paths["sub_folder"])
         except TypeError:
             print(self.paths)
             raise
@@ -177,6 +179,8 @@ class BIEntity(object):
 
 
 
+    def set_symmetry(self):
+        pass
 
 
 
@@ -246,12 +250,16 @@ class BIEntity(object):
 
         if force:
             if filepath is None:
-                self._export()
+                self.export()
             if not os.path.exists(filepath):
-                self._export()
+                self.export()
 
             log(1, "Reading atoms from CIF:", filepath)
-            atoms= read_mmcif(filepath, subset=["_atom_site"])("_atom_site")
+            mmcif= read_mmcif(filepath, subset=["_atom_site", "_cell", "_symmetry"])
+            atoms=mmcif("_atom_site")
+            self.headers["cell"] = mmcif("_cell")
+            self.headers["symmetry"] = mmcif("_symmetry")
+            print(self.headers)
             atoms = [BIAtom(a) for a in atoms]
 
             self._atoms = atoms
@@ -289,6 +297,9 @@ class BIEntity(object):
                     else:
                         write_dict(d, file_path=filepath, label=f"bi_{e}", mode=mode, name=self.name())
                         mode = "a"
+                for k, d in self.headers.items():
+                    write_dict(d, file_path=filepath, label=k, mode=mode, name=self.name())
+                    mode = "a"
 
             return write_atoms(atoms, filepath, name=self.name(), include_misc=misc_fields, mode=mode)
 

@@ -30,7 +30,8 @@ class MMCIF(object):
         else:
             log("warning", "Invalid key {}".format(key))
 
-
+        if not key.startswith("_"):
+            key = "_" + key
         try:
             d = self.data[key]
             if len(d) == 1 and index is None:

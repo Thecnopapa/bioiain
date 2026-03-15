@@ -201,7 +201,7 @@ class CVMatrix(object):
 
 
             cv.closest = target
-            print("closest to", cv, "is", cv.closest)
+            #print("closest to", cv, "is", cv.closest)
             if target[1] is None:
                 raise Exception("AAAAA")
 

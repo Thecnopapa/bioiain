@@ -212,15 +212,13 @@ class BIAtom(object):
 
     def _mmcif_dict(self, include_misc=True):
 
-
-
         try:
             data = {}
             data["group_PDB"] = f"{self.type:6s}"
             data["id"] = f"{self.atomnum:4d}"
             if self.alt_id is None: data["label_alt_id"] = "."
             else: data["label_alt_id"] = f"{self.alt_id}"
-            if self.resseq is None: self.resseq = "."
+            if self.resseq is None: data["label_seq_id"] = "."
             else: data["label_seq_id"] = f"{self.resseq:4d}"
             data["type_symbol"] = f"{self.element:3s}"
             data["label_atom_id"] = f"{self.name:3s}"

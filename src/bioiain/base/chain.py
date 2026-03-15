@@ -12,7 +12,6 @@ class BIChain(BIEntity):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.paths["sub_folder"] = "chains"
-        self.sequence()
 
     def find_id(self, method="first"):
 
@@ -53,6 +52,7 @@ class BIChain(BIEntity):
         self = super().from_atoms(atoms, code, **kwargs)
         self._atoms = atoms
         self.set_chain_id(chain_id)
+        self.sequence()
         return self
 
     @classmethod
@@ -60,5 +60,6 @@ class BIChain(BIEntity):
         self = super().from_file(*args, **kwargs)
         self._atoms = self.atoms(chain=chain_id, hetatm=True, disordered=True)
         self.set_chain_id(chain_id)
+        self.sequence()
         return self
 
