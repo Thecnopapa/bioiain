@@ -70,8 +70,8 @@ ml = [
     "tensorboard"
 ]
 aleph = [
-    "future"
-    "termcolor"
+    "future",
+    "termcolor",
     "igraph"
 ]
 
