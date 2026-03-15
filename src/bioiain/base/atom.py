@@ -166,7 +166,22 @@ class BIAtom(object):
                 return keyerror
 
     def pdb_string(self):
-        return ""
+        record_name = f"{self.type:<6s}"[-6:]
+        atom_serial_number = f"{self.atomnum:5d}"[-5:]
+        if len(self.element) >= 2 or len(self.name) >= 4:
+            atom_name = f"{self.name:<4s}"[-4:]
+        else:
+            atom_name = f" {self.name:<3s}"[-4:]
+
+        string = ""
+        string+=record_name # 1-6
+        string+=atom_serial_number # 7-11
+        string+=" " # 12
+        string+=atom_name # 13-16
+        
+        return string
+
+
     def _mmcif_dict(self, include_unused=True, include_misc=False):
         if self.alt_id is None:
             self.alt_id = "."

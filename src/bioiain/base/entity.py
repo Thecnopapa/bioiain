@@ -111,7 +111,7 @@ class BIEntity(object):
             atoms = _fix_disordered(atoms)
 
         if not hetatm:
-            atoms = [a for a in atoms if a.type != "HETATM"]
+            atoms = [a for a in atoms if a.type == "ATOM"]
         if ca_only:
             atoms = [a for a in atoms if a.name == "CA"]
         if chain is not None:

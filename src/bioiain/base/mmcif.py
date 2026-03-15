@@ -291,3 +291,29 @@ def write_atoms(atoms, file_path, name=None, include_unused=True, include_misc=T
         os.remove(file_path)
         log("error", "File deleted successfully!")
         raise e
+
+
+def write_dict(data, label, file_path, name=None, mode="w"):
+
+    if not file_path.endswith(".cif"):
+        file_path += ".cif"
+    if not label.startswith("_"):
+        label = "_" + label
+    try:
+        with open(file_path, mode) as f:
+            if mode == "w" and name is not None:
+                f.write(f"data_{name}\n")
+            f.write("#\n")
+
+            for k, v in data.items():
+                f.write(f"{label}.{k}   {str(v)}\n")
+        return file_path
+    except Exception as e:
+        log("error", f"Dict writing to mmcif failed, deleting corrupted file: {file_path}")
+        os.remove(file_path)
+        raise e
+
+def write_list(data, label, file_path, name=None, mode="w"):
+    pass
+
+
