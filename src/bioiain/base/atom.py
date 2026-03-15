@@ -1,6 +1,7 @@
 import os, json
 
 from ..utilities.exceptions import *
+from ..utilities import *
 
 
 class BIAtom(object):

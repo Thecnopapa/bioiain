@@ -10,5 +10,7 @@ print(entity)
 struc = entity.structure()
 struc.export()
 print(struc)
-print(struc.headers)
+#print(struc.headers)
 
+print(struc.params())
+print(struc._get_operations())

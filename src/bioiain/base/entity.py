@@ -2,6 +2,7 @@ import os, json
 from ..utilities import *
 from ..utilities import clean_string, d3to1
 from .mmcif import *
+import numpy as np
 
 
 
@@ -9,10 +10,9 @@ class BIEntity(object):
     child_class = None
     extension = "structure"
     level = "structure"
-    tmp_folder = "/tmp/bioiain"
-    use_tmp = False
+    tmp_folder = "/tmp"
 
-    def __init__(self, export_folder="bioiain/exports", parent=None, **kwargs):
+    def __init__(self, export_folder="bioiain/exports", parent=None, use_tmp=False, **kwargs):
         from . import BIAtom, BIResidue, BIChain
 
         self.children = []
@@ -41,6 +41,11 @@ class BIEntity(object):
         self._chains = None
         self._residues = None
         self._atoms = None
+        self._card = None
+        self._parameters = None
+
+        if use_tmp:
+            self.paths["export_folder"] = os.path.join(self.tmp_folder, self.paths["export_folder"] )
 
         if parent is not None:
             self.paths["parent"] = parent.paths["self"]
@@ -161,8 +166,6 @@ class BIEntity(object):
 
     def export(self, minimal=False, as_pdb=False):
         root = "."
-        if self.use_tmp:
-            root = self.tmp_folder
         fname = f"{self.name()}.{self.extension}"
         try:
             base_folder = os.path.join(root, self.paths["export_folder"], self.paths.get("top_folder", self.code()), self.paths["sub_folder"])
@@ -259,6 +262,7 @@ class BIEntity(object):
             atoms=mmcif("_atom_site")
             self.headers["cell"] = mmcif("_cell")
             self.headers["symmetry"] = mmcif("_symmetry")
+            self._calculate_crystal()
             print(self.headers)
             atoms = [BIAtom(a) for a in atoms]
 
@@ -352,6 +356,80 @@ class BIEntity(object):
             log("Warning", "Data file not found for:", path)
 
         return self
+
+    def _calculate_crystal(self):
+        self._get_crystal_card()
+        self._get_operations()
+
+    def _get_crystal_card(self):
+        cell = self.headers["cell"]
+
+        a = float(cell["length_a"])
+        b = float(cell["length_b"])
+        c = float(cell["length_c"])
+        alpha = float(cell["angle_alpha"])
+        beta = float(cell["angle_beta"])
+        gamma = float(cell["angle_gamma"])
+        Z = float(cell["Z_PDB"])
+
+        card = dict(a=a, b=b, c=c, alpha=alpha, beta=beta, gamma=gamma, Z=Z)
+        self._card = card
+        return self._card
+
+    def _get_operations(self):
+        from ..utilities.space_groups import dictio_space_groups
+
+        space_group_key = self.headers["symmetry"].get("Int_Tables_number")
+
+        space_group_key = int(space_group_key)
+        self._operations = dictio_space_groups[space_group_key]
+        return self._operations
+
+
+    def params(self):
+        if self._parameters is None:
+            self._calculate_parameters()
+        return self._parameters
+
+
+    def _calculate_parameters(self) -> dict:
+        """
+        Calculate parameters from crystal card.
+        :param card: Crystal card
+        :return: Parameters dictionary
+        """
+        if self._card is None:
+            self._get_crystal_card()
+
+        card = self._card
+
+        parameters = {}
+        parameters["A"] = A = float(card["a"])
+        parameters["B"] = B = float(card["b"])
+        parameters["C"] = C = float(card["c"])
+        parameters["alphaDeg"] = alphaDeg = float(card["alpha"])
+        parameters["betaDeg"] = betaDeg = float(card["beta"])
+        parameters["gammaDeg"] = gammaDeg = float(card["gamma"])
+        parameters["alpha"] = alpha = (alphaDeg * 2 * np.pi) / 360
+        parameters["beta"] = beta = (betaDeg * 2 * np.pi) / 360
+        parameters["gamma"] = gamma = (gammaDeg * 2 * np.pi) / 360
+        parameters["c_a"] = c_a = np.cos(alpha)
+        parameters["c_b"] = c_b = np.cos(beta)
+        parameters["c_g"] = c_g = np.cos(gamma)
+        parameters["s_g"] = s_g = np.sin(gamma)
+        parameters["q"] = q = np.sqrt(1 + 2 * c_a * c_b * c_g - c_a ** 2 - c_b ** 2 - c_g ** 2)
+        parameters["uu"] = uu = s_g / (q * C)
+        parameters["vv"] = vv = (c_b * c_g - c_a) / (q * B * s_g)
+        parameters["uuy"] = uuy = 1 / (B * s_g)
+        parameters["vvz"] = vvz = -1 * (c_g / (A * s_g))
+        parameters["uuz"] = uuz = (c_a * c_g - c_b) / (q * A * s_g)
+        parameters["vvy"] = vvy = 1 / A
+
+        self._parameters = parameters
+        return self._parameters
+
+
+
 
 
 
