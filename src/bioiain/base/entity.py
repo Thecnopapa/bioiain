@@ -1,6 +1,7 @@
 import os, json
 from ..utilities import *
 from ..utilities import clean_string, d3to1
+from ..utilities.exceptions import *
 from .mmcif import *
 import numpy as np
 
@@ -12,7 +13,7 @@ class BIEntity(object):
     level = "structure"
     tmp_folder = "/tmp"
 
-    def __init__(self, export_folder="bioiain/exports", parent=None, use_tmp=False, **kwargs):
+    def __init__(self, export_folder="./bioiain/exports", parent=None, use_tmp=False, **kwargs):
         from . import BIAtom, BIResidue, BIChain
 
         self.children = []
@@ -165,16 +166,24 @@ class BIEntity(object):
         return atoms
 
     def export(self, minimal=False, as_pdb=False):
-        root = "."
+
+
         fname = f"{self.name()}.{self.extension}"
         try:
-            base_folder = os.path.join(root, self.paths["export_folder"], self.paths.get("top_folder", self.code()), self.paths["sub_folder"])
+            base_folder = os.path.join(self.paths["export_folder"], self.paths.get("top_folder", self.code()), self.paths["sub_folder"])
         except TypeError:
             print(self.paths)
             raise
         os.makedirs(base_folder, exist_ok=True)
         base_path = os.path.join(base_folder, fname)
-        self.paths["self"] = self._export_structure(base_path, headers=not minimal, misc_fields=not minimal, cleanup=minimal, as_pdb=as_pdb)
+        if self.has_flag("is_fractional", True):
+            log("Warning", "A fractional entity was about to be exported!")
+            log("Warning", "An orthogonal copy was made for you and exported instead! (only for atoms)")
+            orth = self.copy()._to_orthogonal()
+        else:
+            orth = self
+
+        self.paths["self"] = orth._export_structure(base_path, headers=not minimal, misc_fields=not minimal, cleanup=minimal, as_pdb=as_pdb)
         if not as_pdb:
             self.set_flag("exported", True)
             self.paths["data"] = self._export_data(base_path)
@@ -188,9 +197,14 @@ class BIEntity(object):
 
 
     @classmethod
-    def from_atoms(cls, atoms, code=None, **kwargs):
+    def from_atoms(cls, atoms, code=None, share=True, **kwargs):
         self = cls(**kwargs)
-        self._atoms = atoms
+        if share:
+            self._atoms = atoms
+        else:
+            self._atoms = [a.copy() for a in atoms]
+        if code is None and kwargs.get("parent", None) is not None:
+            code = kwargs["parent"].code()
         if code is not None:
             self.data["info"]["code"] = clean_string(code).upper()
             self.data["info"]["code"] = code
@@ -228,6 +242,7 @@ class BIEntity(object):
         self.data["info"]["code"] = clean_string(code).upper()
         self.paths["top_folder"] = self.code()
         self.set_name(self.code())
+        self.set_flag("fractional", False)
         return self
 
 
@@ -237,7 +252,10 @@ class BIEntity(object):
         pass
 
 
-
+    def all_atoms(self):
+        if self._atoms is None:
+            self._all_atoms()
+        return self._atoms
 
     def _all_atoms(self, filepath=None, force=False, is_pdb=False):
         from .atom import BIAtom
@@ -385,6 +403,15 @@ class BIEntity(object):
         self._operations = dictio_space_groups[space_group_key]
         return self._operations
 
+    def operations(self):
+        if self._operations is None:
+            self._get_operations()
+        return self._operations
+
+    def symops(self):
+        if self._operations is None:
+            self._get_operations()
+        return self._operations["symops"].keys()
 
     def params(self):
         if self._parameters is None:
@@ -393,11 +420,6 @@ class BIEntity(object):
 
 
     def _calculate_parameters(self) -> dict:
-        """
-        Calculate parameters from crystal card.
-        :param card: Crystal card
-        :return: Parameters dictionary
-        """
         if self._card is None:
             self._get_crystal_card()
 
@@ -427,6 +449,55 @@ class BIEntity(object):
 
         self._parameters = parameters
         return self._parameters
+
+    def copy(self):
+        from copy import deepcopy
+        new = self.__class__.from_atoms(self.all_atoms(), parent=self, share=False)
+        new.data = deepcopy(self.data)
+        new.flags = deepcopy(self.flags)
+        new.set_flag("is_copy", True)
+        return new
+
+    def _displace(self):
+        pass
+
+    def _to_fractional(self):
+        if self.has_flag("is_fractional", True):
+            raise AlreadyFractional(self)
+        for a in self.all_atoms():
+            a.to_frac(self.params())
+        self.set_flag("is_fractional", True)
+
+    def _to_orthogonal(self):
+        if self.has_flag("is_fractional", False):
+            raise AlreadyOrthogonal(self)
+        for a in self.all_atoms():
+            a.to_orth(self.params())
+        self.set_flag("is_fractional", False)
+
+
+
+    def _symmetry_operation(self, symop):
+        if self.has_flag("is_fractional", False):
+            self._to_fractional()
+
+
+
+
+
+    def symmetry(self, symop, in_place=False):
+        if not in_place:
+            self = self.copy()
+
+        self._symmetry_operation(symop)
+
+
+
+
+
+
+
+
 
 
 

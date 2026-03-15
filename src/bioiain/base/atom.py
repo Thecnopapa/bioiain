@@ -62,6 +62,7 @@ class BIAtom(object):
         self.occupancy = float(data["occupancy"])
         self.b = float(data["B_iso_or_equiv"])
         self.coord = (self.x, self.y, self.z)
+        self.is_fractional = False
 
         #DISORDER
         if "label_alt_id" not in data:
@@ -86,7 +87,7 @@ class BIAtom(object):
             if self.favourite:
                 r = "\n<bi.{} id={}.{} b={} occupancy={} (disordred)>".format(self.__class__.__name__, self.id, self.alt_id, self.b, self.occupancy)
                 for datm in self.doppelgangers:
-                    r += "\n - <bi.{} id={}.{} b={} occupancy={} (disordered)>".format(self.__class__.__name__, self.id, self.alt_id, self.b, self.occupancy)
+                    r += "\n - <bi.{} id={}.{} b={} occupancy={} (disordered)>".format(self.__class__.__name__, datm.id, datm.alt_id, datm.b, datm.occupancy)
                 return r
             else:
                 return "<bi.{} id={}.{} b={} occupancy={} (disordred/not-favourite)>".format(self.__class__.__name__, self.id, self.alt_id, self.b, self.occupancy)
@@ -209,6 +210,55 @@ class BIAtom(object):
         string+=charge # 79-80
 
         return string
+
+
+    def copy(self):
+        from copy import deepcopy
+        new = deepcopy(self)
+        return new
+
+    def to_frac(self, params):
+        if self.is_fractional:
+            log("Warining", f"Atom: {self} is already fractional")
+            raise AlreadyFractional(self)
+
+        self._orth_coords = self.coord
+        x, y, z = self.coord
+
+        nx = (x * params["vvy"]) + (y * params["vvz"]) + (z * params["uuz"])
+        ny = (y * params["uuy"]) + (z * params["vv"])
+        nz = z * params["uu"]
+
+        self.x = nx
+        self.y = ny
+        self.z = nz
+        self.coord = (self.x, self.y, self.z)
+        self.is_fractional = True
+
+        return self
+
+    def to_orth(self, params):
+        if not self.is_fractional:
+            log("Warining", f"Atom: {self} is already orthogonal")
+            raise AlreadyOrthogonal(self)
+
+
+        self._frac_coords = self.coord
+
+        t1, t2, t3 = self.coord
+
+        tz = t3 / params["uu"]
+        ty = (t2 - tz * params["vv"]) / params["uuy"]
+        tx = (t1 - ty * params["vvz"] - tz * params["uuz"]) / params["vvy"]
+
+        self.x = tx
+        self.y = ty
+        self.z = tz
+        self.coord = (self.x, self.y, self.z)
+        self.is_fractional = False
+
+        return self
+
 
 
     def _mmcif_dict(self, include_misc=True):

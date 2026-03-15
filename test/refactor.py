@@ -14,3 +14,7 @@ print(struc)
 
 print(struc.params())
 print(struc._get_operations())
+
+
+struc._to_fractional()
+struc.export()

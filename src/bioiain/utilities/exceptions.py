@@ -51,3 +51,15 @@ class ModelNotFound(Exception):
 
 class NoCaFound(Exception):
 	pass
+
+
+
+#Crystal related
+class FractionalConversionError(Exception):
+	pass
+
+class AlreadyFractional(FractionalConversionError):
+	pass
+
+class AlreadyOrthogonal(FractionalConversionError):
+	pass
