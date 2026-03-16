@@ -491,6 +491,20 @@ class BIEntity(object):
         self._parameters = parameters
         return self._parameters
 
+    def fragment(self, in_place=False):
+        from ..aleph.fragments import FragmentedStructure
+        if isinstance(self, FragmentedStructure):
+            if not in_place:
+                frag = self.copy()
+            else:
+                frag = self
+        else:
+            frag = FragmentedStructure.from_atoms(self.all_atoms(), parent=self, share=in_place)
+
+        frag.fragment_with_aleph()
+        return frag
+
+
     def copy(self):
         from copy import deepcopy
         new = self.__class__.from_atoms(self.all_atoms(), parent=self, share=False)

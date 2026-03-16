@@ -161,7 +161,8 @@ class FragmentedStructure(BIStructure):
         for fragment in self.fragments():
             for a in fragment.all_atoms():
                 a.set_bfactor(a.get_misc("fragment"))
-            script.load(fragment.export(), fragment.name())
+            script.load(fragment.export(), "frag_"+fragment.name())
+        script.group("frag_", "fragments")
         script.spectrum("(all)")
         script.orient()
         script.write_script()
