@@ -30,6 +30,34 @@ from .base_model import BaseModel as CustomModel # Compatibility
 
 
 
+class Despair(BaseModel):
+    def __init__(self, *args, hidden_dims=[10, 10], num_classes=20, dropout=0, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.data["num_classes"] = num_classes
+        self.data["hidden_dims"] = hidden_dims
+        self.data["dropout"] = dropout
+
+
+        self.layers["default"] = {
+            "l1": nn.Linear(self.data["in_shape"][0], hidden_dims[0]),
+            "drop1": nn.Dropout(dropout),
+            "relu1": nn.LeakyReLU(),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "drop2": nn.Dropout(dropout),
+            "relu2": nn.LeakyReLU(),
+            "l3": nn.Linear(hidden_dims[1], num_classes),
+            "softmax": nn.Softmax(dim=0)
+        }
+
+        self.criterions["default"] = ClusterLoss()
+
+
+
+
+
+
+
 
 
 

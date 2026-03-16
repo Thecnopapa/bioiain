@@ -27,13 +27,14 @@ from .losses import *
 
 class BaseModel(nn.Module):
     def __init__(
-            self, 
-            name:str, 
-            in_shape:list|tuple, 
-            lr:float=0.001, 
-            batch_size:int=0, 
-            folder:str="./models", 
-            inference:bool=False, 
+            self,
+            name:str,
+            in_shape:list|tuple,
+            lr:float=0.001,
+            batch_size:int=0,
+            folder:str="./models",
+            inference:bool=False,
+            dry=False,
             **kwargs):
 
         super().__init__()
@@ -47,6 +48,7 @@ class BaseModel(nn.Module):
         self.data["batch_size"] = batch_size
         self.mode = "default"
         self.writer = None
+        self.dry = dry
         self.mounted = False
         self.data["in_shape"] = in_shape
         self.inference = inference
@@ -170,7 +172,10 @@ class BaseModel(nn.Module):
 
 
     def _create_writer(self):
-        self.writer = SummaryWriter(log_dir=f"runs/{self.__class__.__name__}/{str(self)}_{datetime.datetime.now().strftime("%m-%d_%H-%M-%S")}")
+        if self.dry:
+            self.writer = SummaryWriter(log_dir="/tmp/bioiain/trash")
+        else:
+            self.writer = SummaryWriter(log_dir=f"runs/{self.__class__.__name__}/{str(self)}_{datetime.datetime.now().strftime("%m-%d_%H-%M-%S")}")
 
 
     def reset_loss(self):
@@ -181,6 +186,8 @@ class BaseModel(nn.Module):
 
 
     def send_run(self, *args, **kwargs):
+        if self.dry:
+            return
         if self.writer is not None:
             try:
                 folder = platform.node()
@@ -275,7 +282,7 @@ class BaseModel(nn.Module):
             if not path.endswith(".model.pt"):
                 model_path = path + f".{name}.model.pt"
             else:
-               model_path = model_path.replace(".model.pt", f".{name}.model.pt") 
+               model_path = model_path.replace(".model.pt", f".{name}.model.pt")
             if temp:
                 model_path = model_path.replace(".model.pt", ".temp.model.pt")
             if name == "default":

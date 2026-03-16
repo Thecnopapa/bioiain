@@ -33,26 +33,26 @@ class customLRS(torch.optim.lr_scheduler.LRScheduler):
     def step(self, running_loss=None):
         print("LRS: stepping...")
         print("Current loss:", running_loss)
-        
+
         if running_loss is None:
             return self.o_lrs
-        
+
         if len(self.loss_list) == 0:
             self.loss_list.append(running_loss)
         print("Previous loss", self.loss_list[-1])
         self.lrs = []
         for p, olr in zip(self.optimizer.param_groups, self.o_lrs):
-            if self.use_original: 
+            if self.use_original:
                 old_log = math.log(olr, 10)
                 new_log = old_log - ((1-running_loss)*4) + 2
-            else: 
+            else:
                 old_log = math.log(p["lr"], 10)
                 delta = self.loss_list[-1] / running_loss
                 new_log = old_log - delta + 1 # -0.5
 
 
             print("OLD_LOG", old_log)
-            
+
             print("NEW_LOG", new_log)
             new_lr = 10 ** new_log
             print("NEW_LR", new_lr)
@@ -69,6 +69,15 @@ class customLRS(torch.optim.lr_scheduler.LRScheduler):
 class CustomLoss(object):
     pass
 
+
+
+
+class ClusterLoss(CustomLoss):
+    def __init__(self, weights=None):
+        pass
+
+    def __call__(self, o, item):
+        return 0
 
 
 
@@ -98,7 +107,7 @@ class CustomWeighted(CustomLoss):
         true_tensor = item.lt
 
         loss = self.CEL(o, true_tensor)
-        
+
         pred_index = torch.max(o, dim=0)[1]
 
         if self.weight is not None:

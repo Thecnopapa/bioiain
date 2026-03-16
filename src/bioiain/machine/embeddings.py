@@ -32,12 +32,22 @@ class Embedding(object):
         self.path = os.path.join(self.subfolder, f"{self.name}.embedding.pt")
         os.makedirs(self.subfolder, exist_ok=True)
         self.length = 0
-        self.iter_dim = 1
+        self.iter_dim = 0
+        self.exists = os.path.exists(self.path)
+        if not self.exists:
+            self.generate_embedding(**kwargs)
+        else:
+            self.from_file(self.path)
 
 
     def __repr__(self):
-        return f"<bi.{self.__class__.__name__}:{self.name} N={self.length} at: {self.path}"
+        return f"<bi.{self.__class__.__name__}:{self.name} N={self.length} at: {self.path}>"
 
+
+    def embedding(self, **kwargs):
+        if not self.exists:
+            self.generate_embedding(**kwargs)
+        return self
 
     def from_file(self, path, iter_dim=0):
         tensor = torch.load(path)
@@ -46,6 +56,7 @@ class Embedding(object):
         self.folder = os.path.dirname(path)
         self.length = tensor.shape[iter_dim]
         self.iter_dim = iter_dim
+        self.exists = True
 
 
     def get_tensor(self):
@@ -72,16 +83,18 @@ class PerResidueEmbedding(Embedding):
 class CVEmbedding(PerResidueEmbedding):
     def __init__(self, *args, **kwargs):
         super().__init__(self, *args, **kwargs)
-        self.entity = self.entity.fragment()
-        self.cvectors = self.entity.cvectors()
-        self.cvmatrix = self.entity.cvmatrix()
+
 
 
     def generate_embedding(self, *args, modulo_norm=2.3, **kwargs):
 
+        frag = self.entity.fragment()
+        cvectors = frag.cvectors()
+        cvmatrix = frag.cvmatrix()
+
         e = []
         seq = ""
-        for cv in self.cvectors:
+        for cv in cvectors:
             i = cv
             j = cv.closest
             i_j = cv.closest_vp
@@ -102,6 +115,7 @@ class CVEmbedding(PerResidueEmbedding):
         print(e, e.shape, len(seq))
         self.sequence = seq
         self.length = len(self.sequence)
+        self.exists = True
         return self.path
 
 
