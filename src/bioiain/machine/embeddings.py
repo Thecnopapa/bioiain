@@ -1,11 +1,11 @@
 import os, json
 
 
-from ..utilities.logging import log, stop_logging, resume_logging
+from ..utilities.logging import log
 from ..utilities.parallel import avail_cpus
+from ..utilities.sequences import d3to1 ,d3toint
 
 import torch
-from torch.utils.data import Dataset
 
 
 device = "cpu"
@@ -27,9 +27,10 @@ class Embedding(object):
         self.name=name
         if folder is None:
             folder = "./embeddings"
-        self.folder =folder
-        os.makedirs(self.folder, exist_ok=True)
-        self.path = None
+        self.folder = os.path.join(folder, self.__class__.__name__+"s")
+        self.subfolder = os.path.join(self.folder, self.name)
+        self.path = os.path.join(self.subfolder, f"{self.name}.embedding.pt")
+        os.makedirs(self.subfolder, exist_ok=True)
         self.length = 0
         self.iter_dim = 1
 
@@ -43,7 +44,7 @@ class Embedding(object):
         self.name = path.split(".")[0]
         self.path = path
         self.folder = os.path.dirname(path)
-        self.length = tensor.shape[length_dim]
+        self.length = tensor.shape[iter_dim]
         self.iter_dim = iter_dim
 
 
@@ -60,15 +61,50 @@ class Embedding(object):
 class PerResidueEmbedding(Embedding):
     def __init__(self, *args, entity=None, **kwargs):
         assert entity is not None
-        super().__init__(self, *args, name=entity.get_name(), **kwargs)
+        super().__init__(self, *args, name=entity.name(), **kwargs)
         self.entity = entity
-        self.sequence = self._get_sequence()
         self.subfolder = os.path.join(self.folder, self.name)
 
+        self.sequence = self.entity.sequence()
 
-    def _get_sequence(self, force=False):
-        self.sequence = self.entity.get_sequence(force=force)
-        return self.sequence
+
+
+class CVEmbedding(PerResidueEmbedding):
+    def __init__(self, *args, **kwargs):
+        super().__init__(self, *args, **kwargs)
+        self.entity = self.entity.fragment()
+        self.cvectors = self.entity.cvectors()
+        self.cvmatrix = self.entity.cvmatrix()
+
+
+    def generate_embedding(self, *args, modulo_norm=2.3, **kwargs):
+
+        e = []
+        seq = ""
+        for cv in self.cvectors:
+            i = cv
+            j = cv.closest
+            i_j = cv.closest_vp
+
+            len_i = i.d / modulo_norm
+            len_j = j.d / modulo_norm
+            len_i_j = i_j.d
+            angle_i_j = i_j.a
+
+            ri = d3toint[cv.resname]
+            rn = d3to1[cv.resname]
+            seq += rn
+
+            e.append([len_i, len_j, angle_i_j, len_i_j, ri])
+
+        e = torch.Tensor(e)
+        torch.save(e, self.path)
+        print(e, e.shape, len(seq))
+        self.sequence = seq
+        self.length = len(self.sequence)
+        return self.path
+
+
 
 
 

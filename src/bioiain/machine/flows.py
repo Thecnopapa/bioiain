@@ -2,10 +2,7 @@ import os, sys, json, importlib, datetime
 from ..utilities.logging import *
 from .datasets import *
 from .embeddings import *
-from ..symmetries.elements import Monomer
-from ..symmetries.interactions import PredictedMonomerContacts
 from ..visualisation.pymol import PymolScript
-from ..biopython.imports import loadPDB
 import numpy as np
 from ..machine import models
 

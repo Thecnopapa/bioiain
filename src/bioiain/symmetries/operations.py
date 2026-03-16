@@ -1,5 +1,5 @@
 
-from .space_groups import dictio_space_groups
+from ..utilities.space_groups import dictio_space_groups
 import Bio.PDB as bp
 import numpy as np
 from ..utilities import vector

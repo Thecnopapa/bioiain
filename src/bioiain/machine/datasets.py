@@ -87,7 +87,6 @@ class EmbeddingDataset(Dataset):
             mapped = False,
             label_key = "label_path",
             deleted_indexes = 0,
-            padding = 0,
         )
         self.mode="normal"
         os.makedirs(self.data["folder"], exist_ok=True)
@@ -107,7 +106,7 @@ class EmbeddingDataset(Dataset):
 
 
     def __len__(self):
-        if self.mode == "normal": 
+        if self.mode == "normal":
             return self.data["length"] - self.data["deleted_indexes"]
         elif self.mode == "test": return self.splitted["test_length"]
         elif self.mode == "train": return self.splitted["train_length"]
@@ -206,7 +205,7 @@ class EmbeddingDataset(Dataset):
 
     def map(self, single_lab=False, label_to_index:dict|None=None, reuse=True) -> dict:
         log(1, "Mapping dataset...")
-        
+
         if self.data["mapped"] and (self.data.get("mapped_label", None) == self.data["label_key"]) and reuse:
             return self.data["label_to_index"]
 
@@ -253,6 +252,7 @@ class EmbeddingDataset(Dataset):
         #print(embedding.path)
         self.embeddings[key] = {
             "key": key,
+            "n": len(self.embeddings),
             "start": len(self),
             "end": len(self)+embedding.length,
             "embedding_path": embedding.path,
@@ -262,10 +262,7 @@ class EmbeddingDataset(Dataset):
             "deleted": False,
 
         }
-        if embedding.keep_padding:
-            self.embeddings[key]["padding"]= embedding.padding,
-        else:
-            self.embeddings[key]["padding"] = 0
+
         self.data["length"] += embedding.length
         if fasta and hasattr(embedding, "sequence"):
             self._add_to_fasta(key, embedding.sequence)
@@ -423,8 +420,6 @@ class EmbeddingDataset(Dataset):
         if key is None:
             key = len(self.embeddings) - 1
 
-        if self.embeddings[key]["padding"] > 0:
-            label = ">"*self.embeddings[key]["padding"] + label + "<"*self.embeddings[key]["padding"]
         folder = os.path.dirname(self.embeddings[key]["embedding_path"])
         fname = f"{var_name}.label.txt"
 
@@ -440,7 +435,7 @@ class EmbeddingDataset(Dataset):
         return key
 
 
-    def add_label_from_list(self, label, key=None, var_name="label_path", paddings=(None, None)):
+    def add_label_from_list(self, label, key=None, var_name="label_path"):
         if key is None:
             key = len(self.embeddings) - 1
         folder = os.path.dirname(self.embeddings[key]["embedding_path"])
@@ -454,11 +449,6 @@ class EmbeddingDataset(Dataset):
                 labels.append(":".join([str(ll) for ll in l]))
             else:
                 labels.append(str(l))
-
-
-        if self.embeddings[key]["padding"] > 0:
-            label = paddings[0]*self.embeddings[key]["padding"] + label + paddings[1]*self.embeddings[key]["padding"]
-
 
         with open(path, "w") as f:
             f.write(",".join(labels))

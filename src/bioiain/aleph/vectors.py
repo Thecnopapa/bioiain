@@ -22,6 +22,7 @@ class CVector(object):
 
         self.chain = res2.chain
         self.resnum = res2.resnum
+        self.resname = res2.resname
         self.fragment = res2.fragment
 
         self.id = (self.resnum, self.chain)
