@@ -1,5 +1,6 @@
 import os, json
 
+
 from ..utilities.exceptions import *
 from .atom import BIAtom
 
@@ -42,7 +43,6 @@ class BIResidue(object):
         if self.ca is None:
             log("error", "Trying to initialise residue with no CA")
             raise NoCaFound()
-
 
         self.fragment = self.ca.get_misc("fragment", None)
 

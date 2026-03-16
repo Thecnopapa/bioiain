@@ -176,7 +176,12 @@ class BIEntity(object):
             atoms = atoms_by_res
             if as_residues:
 
-                atoms = [BIResidue(resatms) for resatms in atoms.values()]
+                atoms = []
+                for resatms in atoms_by_res.values():
+                    try:
+                        atoms.append(BIResidue(resatms))
+                    except NoCaFound:
+                        continue
 
         return atoms
 
@@ -286,7 +291,6 @@ class BIEntity(object):
             self.headers["symmetry"] = mmcif("_symmetry")
             self.data["symmetry"]["in_asu"] = True
             self._calculate_crystal()
-            print(self.headers)
             atoms = [BIAtom(a) for a in atoms]
 
             self._atoms = atoms

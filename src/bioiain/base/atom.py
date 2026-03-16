@@ -42,8 +42,8 @@ class BIAtom(object):
         #ATOM
         self.atomnum = int(data["id"])
         self.type = data["group_PDB"] # ATOM / HETATM
-        self.element = data["type_symbol"] #C
-        self.name = data["label_atom_id"] # CA
+        self.element = data["type_symbol"].strip() #C
+        self.name = data["label_atom_id"].strip() # CA
         #RES
         self.resname = data["label_comp_id"]
         self.resseq = data["label_seq_id"] # Auto
