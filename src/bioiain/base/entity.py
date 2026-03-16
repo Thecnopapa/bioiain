@@ -561,13 +561,17 @@ class BIEntity(object):
         self._mates = mates
         return self._mates
 
-    def show(self):
-        from ..visualisation.pymol import PymolScript
-        script = PymolScript(self.name())
+    def show(self, execute=True, script=None):
+        if script is None:
+            from ..visualisation.pymol import PymolScript
+            script = PymolScript(self.name())
         script.load(self.export(), self.name())
         script.spectrum(self.name())
         script.orient()
-        script.execute()
+        script.write_script()
+        if execute:
+            script.execute()
+        return script
 
 
 

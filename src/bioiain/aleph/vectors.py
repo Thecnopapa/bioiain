@@ -31,6 +31,9 @@ class CVector(object):
         self.start = None
         self.end = None
 
+        self.closest = None
+        self.closest_vp = None
+
         self.calculate()
 
 
@@ -200,7 +203,8 @@ class CVMatrix(object):
                     continue
 
 
-            cv.closest = target
+            cv.closest = target[1]
+            cv.closest_vp = target[2]
             #print("closest to", cv, "is", cv.closest)
             if target[1] is None:
                 raise Exception("AAAAA")

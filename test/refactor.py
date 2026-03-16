@@ -15,4 +15,4 @@ entity = entity.fragment_with_aleph()
 
 entity.export()
 
-entity.show_fragments()
+entity.show_cvectors()

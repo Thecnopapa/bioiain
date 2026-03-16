@@ -40,6 +40,7 @@ class FragmentedStructure(BIStructure):
         super().__init__(*args, **kwargs)
         self.paths["sub_folder"] = "fragments"
         self._cvectors = None
+        self._cvmatrix = None
         self._fragments = None
 
 
@@ -116,7 +117,10 @@ class FragmentedStructure(BIStructure):
             self.fragment_with_aleph()
         return self._fragments
 
-
+    def cvectors(self):
+        if self._cvectors is None:
+            self._calculate_cvectors()
+        return self._cvectors
 
     def _calculate_cvectors(self):
         print("CALCULATING cvectors")
@@ -134,27 +138,48 @@ class FragmentedStructure(BIStructure):
         self._cvectors = cvector_list
         return cvector_list
 
-    def map_cvectors(self):
-        if self._cvectors is None:
-            self._cvectors = self._calculate_cvectors()
-        matrix = CVMatrix(self._cvectors)
-        return matrix
+    def _map_cvectors(self):
+        matrix = CVMatrix(self.cvectors())
+        matrix.calculate_neighbours()
+        self._cvmatrix = matrix
+        return self._cvmatrix
+
+    def cvmatrix(self):
+        if self._cvmatrix is None:
+            self._map_cvectors()
+        return self._cvmatrix
 
     def show(self):
         for a in self.all_atoms():
             a.set_bfactor(a.get_misc("fragment"))
         super().show()
 
-    def show_fragments(self):
-        from ..visualisation.pymol import PymolScript
-        script = PymolScript(self.name())
+    def show_fragments(self, execute=True, script=None):
+        if script is None:
+            from ..visualisation.pymol import PymolScript
+            script = PymolScript(self.name())
         for fragment in self.fragments():
             for a in fragment.all_atoms():
                 a.set_bfactor(a.get_misc("fragment"))
             script.load(fragment.export(), fragment.name())
         script.spectrum("(all)")
         script.orient()
-        script.execute()
+        script.write_script()
+        if execute:
+            script.execute()
+        return script
+
+    def show_cvectors(self, execute=True, script=None):
+        script = self.show_fragments(execute=False, script=script)
+        self.cvmatrix()
+        for cv in self.cvectors():
+            script.line("cvectors", coord1=cv.start, coord2=cv.end)
+            script.line("neighbours", coord1=cv.start, coord2=cv.closest.start)
+        script.write_script()
+        if execute:
+            script.execute()
+        return script
+
 
 
 

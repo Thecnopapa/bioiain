@@ -328,7 +328,7 @@ class PymolScript(object):
     def line(self, name="line", sele1=None, sele2=None, coord1=(0,0,0), coord2=(0,0,0), show_distance=False, **kwargs):
         fun = "distance"
         if sele1 is None:
-            sele2 = "tmp1"
+            sele1 = "tmp1"
             self.pseudoatom(sele1, coord=coord1, **kwargs)
         if sele2 is None:
             sele2 = "tmp2"
