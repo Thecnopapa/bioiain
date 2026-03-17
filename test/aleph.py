@@ -38,15 +38,30 @@ for file in os.listdir(folder):
 
 dataset.save()
 epochs = 100
-model = Despair(name="test", in_shape=dataset[0].t.shape, dry=True)
+model = Despair(name="test", in_shape=dataset.get(0).t.shape)
 
 
-for n in range(len(dataset)):
-    item = dataset[n]
-    print(item)
-    out = model(item.t)
-    print(out)
 
+for n in range(epochs):
+    log("start", "EPOCH", n)
+    log("title", "EPOCH", n)
+    model.cluster_latent_space(dataset)
+    model.plot_current_state()
+
+    for item in dataset:
+        latent = model(item.t, to_latent=True)
+        new_latent = model.get_closest_latent(latent)
+        out = model(new_latent, from_latent=True)
+
+        print(f"LOSS: {model.loss(out, item).item():7.2f} {model.running_loss["default"]/model.running_loss["total"]:7.3f}", end="\r")
+
+
+    model.plot_current_state()
+    model.save()
+    model.add_epoch()
+
+
+log("end", "DONE")
 
 
 

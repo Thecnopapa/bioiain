@@ -37,20 +37,86 @@ class Despair(BaseModel):
         self.data["num_classes"] = num_classes
         self.data["hidden_dims"] = hidden_dims
         self.data["dropout"] = dropout
+        self._current_state = None
+        self.set_mode("autoencoder")
 
 
-        self.layers["default"] = {
-            "l1": nn.Linear(self.data["in_shape"][0], hidden_dims[0]),
-            "drop1": nn.Dropout(dropout),
-            "relu1": nn.LeakyReLU(),
-            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
-            "drop2": nn.Dropout(dropout),
-            "relu2": nn.LeakyReLU(),
-            "l3": nn.Linear(hidden_dims[1], num_classes),
-            "softmax": nn.Softmax(dim=0)
+        self.layers["encoder"] = {
+            "en_l1": nn.Linear(self.data["in_shape"][0], hidden_dims[0]),
+            "en_relu1": nn.ReLU(),
+            "en_l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
         }
 
-        self.criterions["default"] = ClusterLoss()
+        self.layers["decoder"] = {
+            "de_l2": nn.Linear(hidden_dims[1], hidden_dims[0]),
+            "de_relu1": nn.ReLU(),
+            "de_l1": nn.Linear(hidden_dims[0], self.data["in_shape"][0]),
+
+
+        }
+
+        self.optimisers.pop("default")
+        self.optimisers["autoencoder"] = {
+            "class": torch.optim.Adam,
+            "layer_set": ["encoder", "decoder"]
+        }
+
+
+    def forward(self, x, to_latent=False, from_latent=False):
+        if not from_latent:
+            x = super().forward(x, submodel_name="encoder")
+        if not to_latent:
+            x = super().forward(x, submodel_name="decoder")
+        return x
+
+
+    def latent_generator(self, dataset):
+        with torch.no_grad():
+            for n, item in enumerate(dataset):
+                latent = self.forward(item.t, to_latent=True)
+                yield latent.detach().numpy()
+
+
+    def get_closest_latent(self, x, as_token=False):
+
+        token = self._current_state.predict(x.detach().numpy().reshape(1, -1).astype(float))
+        if as_token:
+            return token
+        latent = torch.Tensor(self._current_state.cluster_centers_[token])
+        return latent
+
+
+
+    def cluster_latent_space(self, dataset):
+        from sklearn.cluster import KMeans
+
+        algorithm = KMeans(n_clusters=20)
+        with torch.no_grad():
+            algorithm.fit(list(self.latent_generator(dataset)))
+        
+        self._current_state = algorithm
+
+
+    def plot_current_state(self):
+        from ..visualisation.plots import fig2D
+        from sklearn.decomposition import PCA
+
+        pca = PCA(n_components=2)
+        state = pca.fit_transform(self._current_state.cluster_centers_.copy())
+
+        fig, ax = fig2D()
+
+        for n, s in enumerate(state):
+            ax.scatter(*s)
+            ax.text(*s, n)
+        os.makedirs("./latents", exist_ok=True)
+        fig.savefig(f"./latents/{self}_E{self.data["epoch"]}.png")
+
+
+
+
+
+
 
 
 

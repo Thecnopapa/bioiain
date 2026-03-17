@@ -103,7 +103,7 @@ def log(level:int|str=1, *args, **kwargs):
                 raise kwargs.get("error")
 
             elif kwargs.get("raise_exception", False):
-                raise Exception(" ".join(args))
+                raise Exception(" ".join([str(a) for a in args]))
             else:
                 print("\033[91m")
                 print("ERROR: ", end="")
@@ -145,7 +145,7 @@ start_time = None
 def tprint(*strings:str, head:int=10, style:str="#", end:str="\n", sep:str=" ", reset_timer=True, print_timer=False):  # Print section title
     global start_time
     width = shutil.get_terminal_size()[0] -2
-    string = " ".join(strings)
+    string = " ".join([str(s) for s in strings])
     timer = ""
     if print_timer and start_time is not None:
         timer = "{}{}{}".format(sep, datetime.timedelta(seconds =time.time() - start_time), sep)

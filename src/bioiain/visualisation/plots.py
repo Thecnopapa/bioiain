@@ -33,6 +33,11 @@ except:
 
 
 
+def fig2D():
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.set_aspect('equal')
+    return [fig, ax]
 
 
 

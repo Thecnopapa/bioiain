@@ -43,6 +43,8 @@ class Embedding(object):
     def embedding(self, force=False, **kwargs):
         if not self.exists or force:
             self.generate_embedding(**kwargs)
+        else:
+            self.from_file(self.path)
         return self
 
     def from_file(self, path, iter_dim=0):
