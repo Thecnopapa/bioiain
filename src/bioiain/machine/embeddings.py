@@ -57,7 +57,7 @@ class Embedding(object):
         self.exists = True
 
 
-    def get_tensor(self):
+    def tensor(self):
         tensor = torch.load(self.path)
         return tensor
 
@@ -84,7 +84,7 @@ class CVEmbedding(PerResidueEmbedding):
 
 
 
-    def generate_embedding(self, *args, modulo_norm=2.3, **kwargs):
+    def generate_embedding(self, *args, modulo_norm=2.4, max_dist=10, **kwargs):
 
         frag = self.entity.fragment()
         cvectors = frag.cvectors()
@@ -99,8 +99,8 @@ class CVEmbedding(PerResidueEmbedding):
 
             len_i = i.d / modulo_norm
             len_j = j.d / modulo_norm
-            len_i_j = i_j.d
-            angle_i_j = i_j.a
+            len_i_j = min(1, i_j.d/max_dist)
+            angle_i_j = i_j.a / 180
 
             ri = d3toint[cv.resname]
             rn = d3to1[cv.resname]
@@ -110,7 +110,7 @@ class CVEmbedding(PerResidueEmbedding):
 
         e = torch.Tensor(e)
         torch.save(e, self.path)
-        print(e, e.shape, len(seq))
+        #print(e, e.shape, len(seq))
         self.sequence = seq
         self.length = len(self.sequence)
         self.exists = True

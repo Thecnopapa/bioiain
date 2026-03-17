@@ -105,6 +105,10 @@ class Despair(BaseModel):
         pca = PCA(n_components=2)
         state = pca.fit_transform(self._current_state.cluster_centers_.copy())
 
+        print("Component:")
+        for n, c in enumerate(pca.components_):
+            print(f" -PC{n+1}: {c}")
+
         fig, ax = fig2D()
 
         for n, s in enumerate(state):

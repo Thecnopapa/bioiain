@@ -16,7 +16,7 @@ from src.bioiain.machine import *
 
 
 from src.bioiain.biopython.imports import *
-folder = downloadPDB( list_name="aleph", pdb_list=["1M2Z", "3HBB", "6F63", "5LXN", "3brf"], data_dir="./data" )
+folder = downloadPDB( list_name="aleph", pdb_list=["1M2Z", "3HBB", "6F63", "5LXN", "3brf", "6e52", "7t2y"], data_dir="./data" )
 
 
 
@@ -31,6 +31,10 @@ for file in os.listdir(folder):
     entity = BIEntity.from_file(path)
 
     embedding = CVEmbedding(entity=entity).embedding(force="--force" in sys.argv)
+    if "7T2Y" in file:
+        [print(r, e) for r, e in zip(entity.residues(), embedding.tensor())]
+        #entity.fragment().show_cvectors()
+
     print(embedding)
     dataset.add(embedding, key=entity.name())
     print(dataset)

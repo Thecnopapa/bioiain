@@ -39,6 +39,7 @@ class FragmentedStructure(BIStructure):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.paths["sub_folder"] = "fragments"
+        self.data["fragments"] = {}
         self._cvectors = None
         self._cvmatrix = None
         self._fragments = None
@@ -49,12 +50,18 @@ class FragmentedStructure(BIStructure):
         from .core.ALEPH import annotate_pdb_model_with_aleph
         self.export(minimal=True)
         print("### ALEPH start ###")
+        self.data["fragments"]["weight"] = "distance_avg"
+        self.data["fragments"]["threshold_ah"] = 0.50
+        self.data["fragments"]["threshold_bs"] = 0.30
+        self.data["fragments"]["peptide_length"] = 3
+
+
         graph, _, _, _, _ = annotate_pdb_model_with_aleph(
             self.paths["minimal"],
-            weight="distance_avg",
-            strictness_ah=0.45,
-            strictness_bs=0.20,
-            peptide_length=3,
+            weight=self.data["fragments"]["weight"],
+            strictness_ah=self.data["fragments"]["threshold_ah"],
+            strictness_bs=self.data["fragments"]["threshold_bs"],
+            peptide_length=self.data["fragments"]["peptide_length"],
             write_pdb=False,
         )
         print("### ALEPH end ###")
@@ -107,6 +114,7 @@ class FragmentedStructure(BIStructure):
         for a in self.all_atoms():
             if a.get_misc("fragment", None) is None:
                 self.remove_atom(a)
+        self.data["fragments"]["n_fragments"] = len(self._fragments)
         self.export()
         #print(self.all_atoms())
 
@@ -115,6 +123,7 @@ class FragmentedStructure(BIStructure):
     def fragments(self):
         if self._fragments is None:
             self.fragment_with_aleph()
+
         return self._fragments
 
     def cvectors(self):
