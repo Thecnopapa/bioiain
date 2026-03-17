@@ -71,6 +71,7 @@ class Despair(BaseModel):
 
 
     def latent_generator(self, dataset):
+        print("generating latent embeddings")
         with torch.no_grad():
             for n, item in enumerate(dataset):
                 latent = self.forward(item.t, to_latent=True)
@@ -97,7 +98,7 @@ class Despair(BaseModel):
         self._current_state = algorithm
 
 
-    def plot_current_state(self):
+    def plot_current_state(self, dataset=None):
         from ..visualisation.plots import fig2D
         from sklearn.decomposition import PCA
 
@@ -107,8 +108,18 @@ class Despair(BaseModel):
         fig, ax = fig2D()
 
         for n, s in enumerate(state):
-            ax.scatter(*s)
+            ax.scatter(*s, color=f"C{n}")
             ax.text(*s, n)
+
+        if dataset is not None:
+            transformed = pca.transform(list(self.latent_generator(dataset)))
+
+            for n, (e, l) in enumerate(zip(transformed, self._current_state.labels_)):
+                #token = self.get_closest_latent(e, as_token=True)
+                ax.scatter(*e, color=f"C{l}")
+
+
+
         os.makedirs("./latents", exist_ok=True)
         fig.savefig(f"./latents/{self}_E{self.data["epoch"]}.png")
 

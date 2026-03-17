@@ -46,7 +46,7 @@ for n in range(epochs):
     log("start", "EPOCH", n)
     log("title", "EPOCH", n)
     model.cluster_latent_space(dataset)
-    model.plot_current_state()
+    model.plot_current_state(dataset=dataset)
 
     for item in dataset:
         latent = model(item.t, to_latent=True)
@@ -56,7 +56,7 @@ for n in range(epochs):
         print(f"LOSS: {model.loss(out, item).item():7.2f} {model.running_loss["default"]/model.running_loss["total"]:7.3f}", end="\r")
 
 
-    model.plot_current_state()
+    model.plot_current_state(dataset=dataset)
     model.save()
     model.add_epoch()
 
