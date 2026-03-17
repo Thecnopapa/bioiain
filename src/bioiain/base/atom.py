@@ -44,6 +44,10 @@ class BIAtom(object):
         self.type = data["group_PDB"] # ATOM / HETATM
         self.element = data["type_symbol"].strip() #C
         self.name = data["label_atom_id"].strip() # CA
+        self.prime = False
+        if "'" in self.name:
+            self.prime = True
+            self.name = self.name.replace("'", "")
         #RES
         self.resname = data["label_comp_id"]
         self.resseq = data["label_seq_id"] # Auto
@@ -332,7 +336,8 @@ class BIAtom(object):
             if self.resseq is None: data["label_seq_id"] = "."
             else: data["label_seq_id"] = f"{self.resseq:4d}"
             data["type_symbol"] = f"{self.element:3s}"
-            data["label_atom_id"] = f"{self.name:3s}"
+            if self.prime: data["label_atom_id"] = f"\"{self.name:3s}'\""
+            else: data["label_atom_id"] = f"{self.name:3s}"
             data["label_comp_id"] =f"{self.resname:4s}"
             data["auth_seq_id"] = f"{self.resnum:4d}"
             data["auth_asym_id"] = f"{self.chain:2s}"

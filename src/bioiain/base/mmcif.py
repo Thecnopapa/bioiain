@@ -444,6 +444,8 @@ def should_be_quoted(value):
         return True
     if value.startswith("'") and value.endswith("'"):
         return False
+    if "'" in value:
+        return True
     if value.startswith("<") or value.endswith(">"):
         return True
 

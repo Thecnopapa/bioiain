@@ -179,7 +179,9 @@ class BIEntity(object):
                 atoms = []
                 for resatms in atoms_by_res.values():
                     try:
-                        atoms.append(BIResidue(resatms))
+                        r = BIResidue(resatms)
+                        if r.is_residue:
+                            atoms.append(r)
                     except NoCaFound:
                         continue
 

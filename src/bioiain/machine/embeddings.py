@@ -26,7 +26,7 @@ class Embedding(object):
         assert name is not None
         self.name=name
         if folder is None:
-            folder = "./embeddings"
+            folder = "./bioiain/embeddings"
         self.folder = os.path.join(folder, self.__class__.__name__+"s")
         self.subfolder = os.path.join(self.folder, self.name)
         self.path = os.path.join(self.subfolder, f"{self.name}.embedding.pt")
@@ -34,10 +34,6 @@ class Embedding(object):
         self.length = 0
         self.iter_dim = 0
         self.exists = os.path.exists(self.path)
-        if not self.exists:
-            self.generate_embedding(**kwargs)
-        else:
-            self.from_file(self.path)
 
 
     def __repr__(self):

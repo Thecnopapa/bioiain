@@ -14,6 +14,7 @@ from ..utilities.exceptions import *
 class BIResidue(object):
     child_class = BIAtom
     def __init__(self, atoms):
+        log("waning", "using deprected residue")
         if type(atoms) == dict:
             atoms = atoms.values()
         self.atoms = atoms
