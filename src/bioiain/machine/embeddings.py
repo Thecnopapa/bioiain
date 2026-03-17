@@ -40,8 +40,8 @@ class Embedding(object):
         return f"<bi.{self.__class__.__name__}:{self.name} N={self.length} at: {self.path}>"
 
 
-    def embedding(self, **kwargs):
-        if not self.exists:
+    def embedding(self, force=False, **kwargs):
+        if not self.exists or force:
             self.generate_embedding(**kwargs)
         return self
 
@@ -104,7 +104,7 @@ class CVEmbedding(PerResidueEmbedding):
             rn = d3to1[cv.resname]
             seq += rn
 
-            e.append([len_i, len_j, angle_i_j, len_i_j, ri])
+            e.append([len_i, len_j, angle_i_j, len_i_j])
 
         e = torch.Tensor(e)
         torch.save(e, self.path)

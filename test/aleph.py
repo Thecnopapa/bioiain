@@ -23,15 +23,14 @@ folder = downloadPDB( list_name="aleph", pdb_list=["1M2Z", "3HBB", "6F63", "5LXN
 dataset = EmbeddingDataset(name="aleph_test")
 
 for file in os.listdir(folder):
-    if "3BRF" not in file:
-        continue
+
     log("header", file)
     log("title", file)
 
     path = os.path.join(folder, file)
     entity = BIEntity.from_file(path)
 
-    embedding = CVEmbedding(entity=entity).embedding()
+    embedding = CVEmbedding(entity=entity).embedding(force="--force" in sys.argv)
     print(embedding)
     dataset.add(embedding, key=entity.name())
     print(dataset)
@@ -39,7 +38,7 @@ for file in os.listdir(folder):
 
 dataset.save()
 epochs = 100
-model = Despair(name="test", in_shape=(5,), dry=True)
+model = Despair(name="test", in_shape=dataset[0].t.shape, dry=True)
 
 
 for n in range(len(dataset)):
