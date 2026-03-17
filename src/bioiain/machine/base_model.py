@@ -126,17 +126,17 @@ class BaseModel(nn.Module):
         if not self.inference:
             for o, op_data in self.optimisers.items():
                 if type(self.optimisers[o]["layer_set"]) is str:
-                    print("single layer")
+                    #print("single layer")
                     params = self.submodels[self.optimisers[o]["layer_set"]].parameters()
                 elif self.optimisers[o]["layer_set"] is None:
-                    print("default_layer")
+                    #print("default_layer")
                     params = self.submodels[self.optimisers[o]["default"]].parameters()
                 else:
-                    print("multiple latyers")
+                    #print("multiple latyers")
                     params = []
                     for layer_set in self.optimisers[o]["layer_set"]:
                         params.extend([p for p in self.submodels[layer_set].parameters()])
-                print(params)
+                #print(params)
                 self.optimisers[o] = self.optimisers[o]["class"](params, **self.optimisers[o].get("kwargs", {}))
                 if op_data.get("LRS", None) is not None:
                     self.schedulers[o] = op_data["LRS"](optimiser=self.optimisers[o], **op_data.get("LRS_kwargs", {}))

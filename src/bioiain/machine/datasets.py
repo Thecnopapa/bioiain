@@ -333,7 +333,15 @@ class EmbeddingDataset(Dataset):
             rel_key = key - e["start"]
             break
 
-        assert rel_key is not None
+        try:
+            assert rel_key is not None
+        except AssertionError:
+            print(f"key: {key}")
+            print(f"rel_key: {rel_key}")
+            print(f"embedding_path: {embedding_path}")
+            print(f"label_path: {label_path}")
+            raise
+
 
         #print("REL_KEY:", rel_key)
 

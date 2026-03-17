@@ -39,6 +39,7 @@ class Despair(BaseModel):
         self.data["dropout"] = dropout
         self._current_state = None
         self.set_mode("autoencoder")
+        self.data["estimator"] = None
 
 
         self.layers["encoder"] = {
@@ -94,13 +95,15 @@ class Despair(BaseModel):
         algorithm = KMeans(n_clusters=20)
         with torch.no_grad():
             algorithm.fit(list(self.latent_generator(dataset)))
-        
+
         self._current_state = algorithm
+        self.data["estimator"] = self._current_state.get_params(deep=True)
 
 
     def plot_current_state(self, dataset=None):
         from ..visualisation.plots import fig2D
         from sklearn.decomposition import PCA
+        from PIL import Image
 
         pca = PCA(n_components=2)
         state = pca.fit_transform(self._current_state.cluster_centers_.copy())
@@ -125,9 +128,20 @@ class Despair(BaseModel):
 
 
         os.makedirs("./latents", exist_ok=True)
-        fig.savefig(f"./latents/{self}_E{self.data["epoch"]}.png")
+        fig_path = f"./latents/{self}_E{self.data["epoch"]}.png"
+        fig.savefig(fig_path)
+        img = Image.open(fig_path)
+        img = torchvision.transforms.v2.functional.pil_to_tensor(img)
+        if self.writer is not None:
+            self.writer.add_image(f"latent", img, self.data["epoch"])
 
+    def predict_tokens(self, embeddings):
+        from sklearn.cluster import KMeans
 
+        estimator = KMeans()
+        estimator.set_params(self.data["estimator"])
+        preds = estimator.predict(embeddings)
+        return preds
 
 
 

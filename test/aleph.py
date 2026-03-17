@@ -22,51 +22,76 @@ folder = downloadPDB( list_name="aleph", pdb_list=["1M2Z", "3HBB", "6F63", "5LXN
 
 dataset = EmbeddingDataset(name="aleph_test")
 
-for file in os.listdir(folder):
+if not "--rebuild" in sys.argv and not "--force" in sys.argv:
+    dataset.load()
+else:
+    for file in os.listdir(folder):
 
-    log("header", file)
-    log("title", file)
+        log("header", file)
+        log("title", file)
 
-    path = os.path.join(folder, file)
-    entity = BIEntity.from_file(path)
+        path = os.path.join(folder, file)
+        entity = BIEntity.from_file(path)
 
-    embedding = CVEmbedding(entity=entity).embedding(force="--force" in sys.argv)
-    if "7T2Y" in file:
-        [print(r, e) for r, e in zip(entity.residues(), embedding.tensor())]
-        #entity.fragment().show_cvectors()
+        embedding = CVEmbedding(entity=entity).embedding(force="--force" in sys.argv)
+        if "7T2Y" in file:
+            [print(r, e) for r, e in zip(entity.residues(), embedding.tensor())]
+            #entity.fragment().show_cvectors()
 
-    print(embedding)
-    dataset.add(embedding, key=entity.name())
-    print(dataset)
-
-
-dataset.save()
-epochs = 100
-model = Despair(name="test", in_shape=dataset.get(0).t.shape)
+        print(embedding)
+        dataset.add(embedding, key=entity.name())
+        print(dataset)
 
 
-
-for n in range(epochs):
-    log("start", "EPOCH", n)
-    log("title", "EPOCH", n)
-    model.cluster_latent_space(dataset)
-    model.plot_current_state(dataset=dataset)
-
-    for item in dataset:
-        latent = model(item.t, to_latent=True)
-        new_latent = model.get_closest_latent(latent)
-        out = model(new_latent, from_latent=True)
-
-        print(f"LOSS: {model.loss(out, item).item():7.2f} {model.running_loss["default"]/model.running_loss["total"]:7.3f}", end="\r")
+    dataset.save()
 
 
-    model.plot_current_state(dataset=dataset)
-    model.save()
-    model.add_epoch()
+if "-t" in sys.argv:
+
+    epochs = 100
+
+    model = Despair(name="test", in_shape=dataset.get(0).t.shape)
+
+
+    for n in range(epochs):
+        log("start", "EPOCH", n)
+        log("title", "EPOCH", n)
+        model.cluster_latent_space(dataset)
+        model.plot_current_state(dataset=dataset)
+
+        for item in dataset:
+            latent = model(item.t, to_latent=True)
+            new_latent = model.get_closest_latent(latent)
+            out = model(new_latent, from_latent=True)
+
+            print(f"LOSS: {model.loss(out, item).item():7.2f} {model.running_loss["default"]/model.running_loss["total"]:7.3f}", end="\r")
+
+
+        model.plot_current_state(dataset=dataset)
+        model.write_loss()
+        model.save()
+        model.add_epoch()
+
+
+
+if "-p" in sys.argv:
+
+    filepath = sys.argv[sys.argv.index("--file") + 1]
+    modelpath = sys.argv[sys.argv.index("--model") + 1]
+
+    model = Despair(name="test", in_shape=dataset.get(0).t.shape, inference=True)
+    model.load(modelpath)
+    entity = BIEntity.from_file(filepath, code="pred", force=True)
+    embedding = CVEmbedding(entity=entity).embedding(force=True)
+    out = model(embedding, to_latent=True)
+    preds = model.predict_tokens(embedding)
+    print(preds)
+
+
+
 
 
 log("end", "DONE")
-
 
 
 
