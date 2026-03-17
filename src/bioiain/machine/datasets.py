@@ -1,4 +1,4 @@
-import os, json
+import os, json, time
 from copy import deepcopy
 
 
@@ -96,6 +96,7 @@ class EmbeddingDataset(Dataset):
             "test": None,
             "train": None,
         }
+        self._lock = False
 
 
     def __repr__(self):
@@ -246,6 +247,12 @@ class EmbeddingDataset(Dataset):
 
 
     def add(self, embedding, key:str|int|None=None, label_path=None, fasta=False):
+
+        while self._lock:
+            print("Awaiting for lock")
+            time.sleep(1)
+        self._lock = True
+
         if key is None:
             key = len(self.embeddings)
         #print("ADDING:", embedding)
@@ -268,6 +275,7 @@ class EmbeddingDataset(Dataset):
             self._add_to_fasta(key, embedding.sequence)
 
         self.data["mapped"] = False
+        self._lock = False
         return key
 
 

@@ -31,7 +31,7 @@ from .base_model import BaseModel as CustomModel # Compatibility
 
 
 class Despair(BaseModel):
-    def __init__(self, *args, hidden_dims=[10, 10], num_classes=20, dropout=0, **kwargs):
+    def __init__(self, *args, hidden_dims=[50, 50], num_classes=20, dropout=0, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.data["num_classes"] = num_classes
@@ -39,7 +39,7 @@ class Despair(BaseModel):
         self.data["dropout"] = dropout
         self._current_state = None
         self.set_mode("autoencoder")
-        self.data["estimator"] = None
+        self.data["tokens"] = None
 
 
         self.layers["encoder"] = {
@@ -73,10 +73,10 @@ class Despair(BaseModel):
 
     def latent_generator(self, dataset):
         print("generating latent embeddings")
-        with torch.no_grad():
-            for n, item in enumerate(dataset):
-                latent = self.forward(item.t, to_latent=True)
-                yield latent.detach().numpy()
+
+        for n, item in enumerate(dataset):
+            latent = self.forward(item.t, to_latent=True)
+            yield latent.detach().numpy()
 
 
     def get_closest_latent(self, x, as_token=False):
@@ -89,23 +89,27 @@ class Despair(BaseModel):
 
 
 
-    def cluster_latent_space(self, dataset):
+    def cluster_latent_space(self, dataset, seed=6):
         from sklearn.cluster import KMeans
+        import pickle
 
-        algorithm = KMeans(n_clusters=20)
+        algorithm = KMeans(n_clusters=20, random_state=seed)
         with torch.no_grad():
             algorithm.fit(list(self.latent_generator(dataset)))
 
         self._current_state = algorithm
-        self.data["estimator"] = self._current_state.get_params(deep=True)
+        self.data["tokens"] = self._current_state.cluster_centers_.copy().tolist()
 
+        estimator_path = os.path.join(self.data["folder"], self.get_fname()+ ".estimator.pkl")
+        pickle.dump(algorithm, open(estimator_path, "wb"))
+        self.data["estimator_path"] = estimator_path
 
-    def plot_current_state(self, dataset=None):
+    def plot_current_state(self, dataset=None, seed=6):
         from ..visualisation.plots import fig2D
         from sklearn.decomposition import PCA
         from PIL import Image
 
-        pca = PCA(n_components=2)
+        pca = PCA(n_components=2, random_state=seed)
         state = pca.fit_transform(self._current_state.cluster_centers_.copy())
 
         print("Component:")
@@ -119,28 +123,31 @@ class Despair(BaseModel):
             ax.text(*s, n)
 
         if dataset is not None:
-            transformed = pca.transform(list(self.latent_generator(dataset)))
+            with torch.no_grad():
+                transformed = pca.transform(list(self.latent_generator(dataset)))
 
             for n, (e, l) in enumerate(zip(transformed, self._current_state.labels_)):
                 #token = self.get_closest_latent(e, as_token=True)
                 ax.scatter(*e, color=f"C{l}")
 
 
-
-        os.makedirs("./latents", exist_ok=True)
-        fig_path = f"./latents/{self}_E{self.data["epoch"]}.png"
+        fig_dir = os.path.join(self.data["folder"], "latents")
+        os.makedirs(fig_dir, exist_ok=True)
+        fig_path = os.path.join(fig_dir, f"{self}_E{self.data["epoch"]}.png")
         fig.savefig(fig_path)
+        print("saving to:", fig_path)
         img = Image.open(fig_path)
         img = torchvision.transforms.v2.functional.pil_to_tensor(img)
         if self.writer is not None:
-            self.writer.add_image(f"latent", img, self.data["epoch"])
+            self.writer.add_image(f"latent", img, global_step=self.data["epoch"])
+        del img
 
-    def predict_tokens(self, embeddings):
-        from sklearn.cluster import KMeans
+    def predict_tokens(self, latents):
+        import pickle
 
-        estimator = KMeans()
-        estimator.set_params(self.data["estimator"])
-        preds = estimator.predict(embeddings)
+        estimator = pickle.load(open(self.data["estimator_path"], "rb"))
+
+        preds = estimator.predict(latents)
         return preds
 
 

@@ -41,7 +41,7 @@ class BaseModel(nn.Module):
         self.data = {}
         self.data["dataname"] = name
 
-        self.data["folder"] = folder
+        self.data["folder"] = os.path.join(folder, self.__class__.__name__)
         self.data["epoch"] = None
         self.data["path"] = False
         self.data["model"] = self.__class__.__name__
@@ -183,7 +183,7 @@ class BaseModel(nn.Module):
 
 
     def _create_writer(self):
-        if self.dry:
+        if self.dry or self.inference:
             self.writer = SummaryWriter(log_dir="/tmp/bioiain/trash")
         else:
             self.writer = SummaryWriter(log_dir=f"runs/{self.__class__.__name__}/{str(self)}_{datetime.datetime.now().strftime("%m-%d_%H-%M-%S")}")

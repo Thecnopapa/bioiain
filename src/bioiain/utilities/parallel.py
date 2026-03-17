@@ -67,13 +67,10 @@ def mem_log():
 
 
 
-def split_iterable(iterable, n_parts:int|str="auto"):
+def split_iterable(iterable, n_parts:int|str="auto") -> list:
 
     if n_parts == "auto":
-        if use_max:
-            n_parts = cpu_count
-        else:
-            n_parts = cpu_count - 1
+        n_parts = avail_cpus
     elif n_parts == "max":
         n_parts = cpu_count
     elif n_parts == "double":
@@ -264,8 +261,8 @@ class ThreadPool(object):
 
 
     class Thread(threading.Thread):
-        def __init__(self, *args, ret=None, **kwargs):
-            super().__init__(*args, **kwargs)
+        def __init__(self, *args, target=None, ret=None, **kwargs):
+            super().__init__(target=target, args=args, kwargs=kwargs)
             self.ret = ret
 
             self.error = False
@@ -310,7 +307,7 @@ class ThreadPool(object):
 
 
     def add(self, fun, *args, **kwargs):
-        t = self.Thread(target=fun, *args, context=self.context, **kwargs)
+        t = self.Thread(*args, target=fun, **kwargs)
         self.threads[len(self.threads)] = {"thread": t, "fun": fun, "status": "pending", "ret":t.ret, "name":None}
         return t
 
