@@ -87,6 +87,8 @@ class CVEmbedding(PerResidueEmbedding):
     def generate_embedding(self, *args, modulo_norm=2.4, max_dist=10, **kwargs):
 
         frag = self.entity.fragment()
+        if frag.data["fragments"]["n_fragments"] <= 1:
+            return None
         cvectors = frag.cvectors()
         cvmatrix = frag.cvmatrix()
 
