@@ -36,7 +36,7 @@ if "--lr" in sys.argv:
 
 log(1, f"Learning rate: {LR}")
 
-dataset = EmbeddingDataset(name="aleph_test")
+dataset = EmbeddingDataset(name=f"{DATA_NAME}_tokens")
 
 if not "--rebuild" in sys.argv and not "--force" in sys.argv:
     dataset.load()
