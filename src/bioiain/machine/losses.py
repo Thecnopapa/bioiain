@@ -72,12 +72,23 @@ class CustomLoss(object):
 
 
 
-class ClusterLoss(CustomLoss):
+class VQLoss(CustomLoss):
     def __init__(self, weights=None):
-        pass
+        self.CEL = nn.MSELoss()
 
-    def __call__(self, o, item):
-        return 0
+    def encoder_loss(self, o, tensor):
+        loss = self.CEL(o, tensor)
+        return loss
+
+    def decoder_loss(self, o, tensor):
+        loss = self.CEL(o, tensor)
+        return loss
+
+    def __call__(self, e_loss, d_loss):
+
+        loss = e_loss + d_loss
+
+        return loss
 
 
 

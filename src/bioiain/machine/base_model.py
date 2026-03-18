@@ -514,11 +514,12 @@ class BaseModel(nn.Module):
 
         for n, criterion in enumerate(criterions):
             if criterion not in self.criterions: criterions[n] = "default"; criterion = "default"
-            if isinstance(self.criterions[criterion], CustomLoss):
+            if isinstance(self.criterions[criterion], CustomLoss) or not isinstance(item, Item):
                 losses.append(self.criterions[criterion](output, item))
 
+
             elif hasattr(item, "lt"):
-                #print("LT", item.lt)
+                print("LT", item.lt)
                 losses.append(self.criterions[criterion](output, item.lt))
             elif item.l is not None:
                 #print("L", item.l)
@@ -551,15 +552,17 @@ class BaseModel(nn.Module):
         self.running_loss["total"] += 1
         #print(criterions)
         for l, c in zip(losses, criterions):
+            if not c in self.running_loss:
+                self.running_loss[c] = 0
             self.running_loss[c] += l.item()
 
         return loss
 
 
-    def _backpropagate(self, loss:torch.Tensor|None=None, zero_optims:str|None="mode", step="mode", force=False):
+    def _backpropagate(self, loss:torch.Tensor|None=None, zero_optims:str|None="mode", step="mode", force=False, retain_graph=False):
         if self.data["batch_size"] == 0:
             assert loss is not None
-            loss.backward()
+            loss.backward(retain_graph=retain_graph)
             self.step(step)
             self.zero_grad(zero_optims)
         else:
@@ -569,7 +572,7 @@ class BaseModel(nn.Module):
                 batch_loss = torch.mean(torch.stack(self.batch_loss["current_list"]))
                 print(f"Backpropagating ({batch_loss:5.4f})   ", end="\r")
 
-                batch_loss.backward()
+                batch_loss.backward(retain_graph=retain_graph)
 
                 self.batch_loss["n_batches"] += 1
                 self.batch_loss["cumulative"] += batch_loss.item()
@@ -584,12 +587,12 @@ class BaseModel(nn.Module):
 
 
 
-    def loss(self, output:torch.Tensor|None=None, item:Item|None=None, criterion_name:str="mode", backwards:bool=True, zero_optims:str|None="mode", step="mode", force_backpropagation=False) -> torch.Tensor|float:
+    def loss(self, output:torch.Tensor|None=None, item:Item|None=None, criterion_name:str="mode", backwards:bool=True, zero_optims:str|None="mode", step="mode", force_backpropagation=False, retain_graph=False) -> torch.Tensor|float:
 
         if (output is not None) and (item is not None):
             loss = self._calculate_loss(output, item, criterion_name=criterion_name)
         else: loss = None
-        loss = self._backpropagate(loss=loss, zero_optims=zero_optims, step=step, force=force_backpropagation)
+        loss = self._backpropagate(loss=loss, zero_optims=zero_optims, step=step, force=force_backpropagation, retain_graph=retain_graph)
 
         return loss
 
@@ -625,20 +628,21 @@ class BaseModel(nn.Module):
             for optimizer in self.optimisers.values():
                 optimizer.step()
         else:
+            #[[print(p, pp.grad) for pp in p.parameters()] for p in self.submodels.values()]
             self.optimisers[optimizer_name].step()
         return True
 
 
-    def zero_grad(self, optimizer_name:str|None="mode") -> bool:
+    def zero_grad(self, optimizer_name:str|None="mode", set_to_none=True) -> bool:
         if optimizer_name is None: return False
         if optimizer_name == "mode": optimizer_name = self.mode
         if optimizer_name not in self.optimisers: optimizer_name = "default"
 
         if optimizer_name == "all":
             for optimizer in self.optimisers.values():
-                optimizer.zero_grad()
+                optimizer.zero_grad(set_to_none=set_to_none)
         else:
-            self.optimisers[optimizer_name].zero_grad()
+            self.optimisers[optimizer_name].zero_grad(set_to_none=set_to_none)
         return True
 
 

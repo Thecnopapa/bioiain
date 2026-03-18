@@ -80,28 +80,43 @@ if "-t" in sys.argv:
     epochs = 100
     print(dataset)
 
-    model = Despair(name=DATA_NAME, in_shape=dataset.get(0).t.shape, batch_size=1, lr=LR)
+    model = Despair(name=DATA_NAME, in_shape=dataset.get(0).t.shape, batch_size=0, lr=LR)
     model.add_text("data", model.json())
 
     for n in range(epochs):
         log("start", "EPOCH", n)
         log("title", "EPOCH", n)
+        model.set_mode("autoencoder")
         model.cluster_latent_space(dataset)
         model.plot_current_state(dataset=dataset)
 
-        for item in dataset:
-            latent = model(item.t, to_latent=True)
-            token_latent = model.get_closest_latent(latent)
-            latent_diff = torch.sub(latent, token_latent)
-            new_latent = torch.sub(latent, latent_diff)
-            #print("latent", latent)
-            #print("token latent", token_latent)
-            #print("latent diff", latent_diff)
-            #print("new latent", new_latent)
+        n_items = len(dataset)
+        for i, item in enumerate(dataset):
 
+            latent = model(item.t, to_latent=True)
+            #print("latent", latent)
+            token_latent, score = model.get_closest_latent(latent)
+            #print("token latent", token_latent)
+
+            #print("score", score)
+            encoder_loss = model.criterions["autoencoder"].encoder_loss(token_latent, latent)
+
+            #print("encoder_loss", encoder_loss)
+
+            latent_diff = torch.sub(latent, token_latent)
+            #print("latent diff", latent_diff)
+            new_latent = torch.sub(latent, latent_diff)
+            #print("new latent", new_latent)
             out = model(new_latent, from_latent=True)
-            loss = model.loss(out, item, zero_optims="autoencoder", step="autoencoder")
-            print(f"LOSS: {loss.item():7.3f} {model.running_loss["default"]/model.running_loss["total"]:7.3f}", end="\r")
+
+            decoder_loss = model.criterions["autoencoder"].decoder_loss(out, item.t)
+
+            loss = model.loss(encoder_loss, decoder_loss)
+
+
+
+            
+            print(f"{i}/{n_items} LOSS: {loss.item():7.3f} ({encoder_loss.item():7.3f}/{decoder_loss.item():7.3f}) av:{model.running_loss[model.mode]/model.running_loss["total"]:7.3f}", end="\r")
 
         model.write_loss()
         model.save()

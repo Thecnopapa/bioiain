@@ -61,6 +61,16 @@ class Despair(BaseModel):
             "class": torch.optim.Adam,
             "layer_set": ["encoder", "decoder"]
         }
+        self.optimisers["encoder"] = {
+            "class": torch.optim.Adam,
+            "layer_set": ["encoder"]
+        }
+        self.optimisers["decoder"] = {
+            "class": torch.optim.Adam,
+            "layer_set": ["decoder"]
+        }
+
+        self.criterions["autoencoder"] = VQLoss()
 
 
     def forward(self, x, to_latent=False, from_latent=False):
@@ -72,7 +82,7 @@ class Despair(BaseModel):
 
 
     def latent_generator(self, dataset):
-        print("generating latent embeddings")
+        log(2, "Generating latent embeddings...")
         n_items = len(dataset)
         for n, item in enumerate(dataset):  
             print(f"{n}/{n_items}", end="\r")
@@ -83,14 +93,16 @@ class Despair(BaseModel):
     def get_closest_latent(self, x, as_token=False):
 
         token = self._current_state.predict(x.detach().numpy().reshape(1, -1).astype(float))
+        score = self._current_state.score(x.detach().numpy().reshape(1, -1).astype(float))
         if as_token:
-            return token
-        latent = torch.Tensor(self._current_state.cluster_centers_[token])
-        return latent
+            return token, score
+        latent = torch.tensor(self._current_state.cluster_centers_[token], requires_grad=True).float()
+        return latent, score
 
 
 
     def cluster_latent_space(self, dataset, seed=6):
+        log(1, "CLustering latent space...")
         from sklearn.cluster import KMeans
         import pickle
 
@@ -106,6 +118,7 @@ class Despair(BaseModel):
         self.data["estimator_path"] = estimator_path
 
     def plot_current_state(self, dataset=None, seed=6):
+        log(1, "Plotting current state...")
         from ..visualisation.plots import fig2D
         from sklearn.decomposition import PCA
         from PIL import Image
@@ -113,9 +126,9 @@ class Despair(BaseModel):
         pca = PCA(n_components=2, random_state=seed)
         state = pca.fit_transform(self._current_state.cluster_centers_.copy())
 
-        print("Component:")
+        log(2, "PCA components:")
         for n, c in enumerate(pca.components_):
-            print(f" -PC{n+1}: {c}")
+            log(3, f"PC{n+1}: {c}")
 
         fig, ax = fig2D()
 
