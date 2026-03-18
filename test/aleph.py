@@ -93,6 +93,7 @@ if "-t" in sys.argv:
         n_items = len(dataset)
         for i, item in enumerate(dataset):
 
+            item.to(DEVICE)
             latent = model(item.t, to_latent=True)
             #print("latent", latent)
             token_latent, score = model.get_closest_latent(latent)
@@ -107,7 +108,7 @@ if "-t" in sys.argv:
             #print("latent diff", latent_diff)
             new_latent = torch.sub(latent, latent_diff)
             #print("new latent", new_latent)
-            out = model(new_latent, from_latent=True)
+            out = model(new_latent.to(DEVICE), from_latent=True)
 
             decoder_loss = model.criterions["autoencoder"].decoder_loss(out, item.t)
 
@@ -115,7 +116,7 @@ if "-t" in sys.argv:
 
 
 
-            
+
             print(f"{i}/{n_items} LOSS: {loss.item():7.3f} ({encoder_loss.item():7.3f}/{decoder_loss.item():7.3f}) av:{model.running_loss[model.mode]/model.running_loss["total"]:7.3f}", end="\r")
 
         model.write_loss()

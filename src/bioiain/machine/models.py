@@ -74,6 +74,7 @@ class Despair(BaseModel):
 
 
     def forward(self, x, to_latent=False, from_latent=False):
+        x = x.to(DEVICE)
         if not from_latent:
             x = super().forward(x, submodel_name="encoder")
         if not to_latent:
@@ -84,7 +85,7 @@ class Despair(BaseModel):
     def latent_generator(self, dataset):
         log(2, "Generating latent embeddings...")
         n_items = len(dataset)
-        for n, item in enumerate(dataset):  
+        for n, item in enumerate(dataset):
             print(f"{n}/{n_items}", end="\r")
             latent = self.forward(item.t, to_latent=True)
             yield latent.detach().numpy()
@@ -96,7 +97,7 @@ class Despair(BaseModel):
         score = self._current_state.score(x.detach().numpy().reshape(1, -1).astype(float))
         if as_token:
             return token, score
-        latent = torch.tensor(self._current_state.cluster_centers_[token], requires_grad=True).float()
+        latent = torch.tensor(self._current_state.cluster_centers_[token], requires_grad=True).float().to(DEVICE)
         return latent, score
 
 
@@ -178,7 +179,7 @@ class Despair(BaseModel):
         from ..visualisation.plots import fig2D
         from ..utilities.maths import rotate2D
         print("Drawing token:", token_id)
-        
+
 
         tokens = self.estimator().cluster_centers_
         token = torch.Tensor(tokens[token_id])
@@ -207,7 +208,7 @@ class Despair(BaseModel):
         fig, ax = fig2D()
 
         ax.quiver(cv1_start, cv1_end)
-        ax.quiver(cv2_start, cv2_end) 
+        ax.quiver(cv2_start, cv2_end)
 
         ax.set_title(f"Token: {reconstructed}")
 
