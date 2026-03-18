@@ -71,6 +71,8 @@ class Despair(BaseModel):
         }
 
         self.criterions["autoencoder"] = VQLoss()
+        self.running_loss["encoder"] = 0
+        self.running_loss["decoder"] = 0
 
 
     def forward(self, x, to_latent=False, from_latent=False):
@@ -151,11 +153,12 @@ class Despair(BaseModel):
         fig_path = os.path.join(fig_dir, f"{self}_E{self.data["epoch"]}.png")
         fig.savefig(fig_path)
         print("saving to:", fig_path)
-        img = Image.open(fig_path)
-        img = torchvision.transforms.v2.functional.pil_to_tensor(img)
+
         if self.writer is not None:
+            img = Image.open(fig_path)
+            img = torchvision.transforms.v2.functional.pil_to_tensor(img)
             self.writer.add_image(f"latent", img, global_step=self.data["epoch"])
-        del img
+            del img
         if tokens:
             self.draw_all_tokens()
 
@@ -171,14 +174,36 @@ class Despair(BaseModel):
 
 
     def draw_all_tokens(self, show=False, save=True):
-        for n in range(20):
-            self.draw_token(n, show=show, save=save)
+        from ..visualisation.plots import grid2D
+        from PIL import Image
+
+        fig, axes = grid2D(5, 4)
+
+        print(axes)
 
 
-    def draw_token(self, token_id, show=False, save=False):
+        for n, ax in enumerate(axes):
+            print(n, ax)
+            self.draw_token(n, ax=ax)
+
+        if show:
+            fig.show()
+        if save:
+            save_path = os.path.join(self.data["folder"], "tokens", f"tokens.png")
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
+            fig.savefig(save_path)
+
+            if self.writer is not None:
+                img = Image.open(save_path)
+                img = torchvision.transforms.v2.functional.pil_to_tensor(img)
+                self.writer.add_image(f"tokens", img, global_step=self.data["epoch"])
+                del img
+
+    def draw_token(self, token_id, show=False, save=False, fig=None, ax=None):
         from ..visualisation.plots import fig2D
         from ..utilities.maths import rotate2D
         print("Drawing token:", token_id)
+        print("ax:", ax)
 
 
         tokens = self.estimator().cluster_centers_
@@ -197,30 +222,43 @@ class Despair(BaseModel):
 
         cv1_start = (0,0)
 
-        cv1_end = (i_length, 0)
+        cv1_end = (0, i_length)
 
-        cv2_start = (0,i_j_length)
+        cv2_start = (i_j_length, 0)
 
-        cv2_end = rotate2D(cv2_start, (j_length,i_j_length), i_j_angle)
-
-
-
-        fig, ax = fig2D()
-
-        ax.quiver(cv1_start, cv1_end)
-        ax.quiver(cv2_start, cv2_end)
-
-        ax.set_title(f"Token: {reconstructed}")
+        cv2_end = rotate2D(cv2_start, (i_j_length, j_length), i_j_angle)
 
 
 
-        if show:
-            fig.show()
-        if save:
-            save_path = os.path.join(self.data["folder"], "tokens", f"token_{token_id}.png")
-            os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
-            fig.savefig(save_path)
+        if ax is None:
+            fig, ax = fig2D()
+        ax.scatter(*cv1_start)
+        ax.scatter(*cv1_end)
+        ax.plot(*zip(cv1_start, cv1_end))
+        ax.text(*cv1_start, "i")
+
+        ax.text(i_j_length/2, 0, f"{i_j_length:3.1}")
+
+        ax.scatter(*cv2_start)
+        ax.scatter(*cv2_end)
+        ax.plot(*zip(cv2_start, cv2_end))
+        ax.text(*cv1_start, "j")
+
+        #ax.quiver(cv1_start, cv1_end)
+        #ax.quiver(cv2_start, cv2_end)
+
+        ax.set_title(f"Token: i:{i_length:3.2f} j:{j_length:3.2f} d:{i_j_length:3.1f} a:{i_j_angle:3.1f}")
+
+
+        if fig is not None:
+            if show:
+                fig.show()
+            if save:
+                save_path = os.path.join(self.data["folder"], "tokens", f"token_{token_id}.png")
+                os.makedirs(os.path.dirname(save_path), exist_ok=True)
+
+                fig.savefig(save_path)
 
 
 

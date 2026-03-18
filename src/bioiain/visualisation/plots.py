@@ -31,13 +31,21 @@ except:
 
 
 
+def grid2D(rows, columns, height=5, width=5, as_grid=False):
+    fig, grid_axes = plt.subplots(rows, columns, figsize=(columns*width, rows*height))
+    if as_grid:
+        return fig, grid_axes
+    axes = []
+    for row in grid_axes:
+        axes.extend(row)
 
+    return fig, axes
 
 def fig2D():
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.set_aspect('equal')
-    return [fig, ax]
+    return fig, ax
 
 
 

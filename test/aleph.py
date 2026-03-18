@@ -36,11 +36,11 @@ if "--lr" in sys.argv:
 
 log(1, f"Learning rate: {LR}")
 
-dataset = EmbeddingDataset(name=f"{DATA_NAME}_tokens")
+dataset = EmbeddingDataset(name=f"tokens_{DATA_NAME}")
 
-if not "--rebuild" in sys.argv and not "--force" in sys.argv:
+if not "--rebuild" in sys.argv and not "--force":
     dataset.load()
-else:
+if len(dataset) == 0:
     parts = split_iterable(os.listdir(DATA_FOLDER))
     pool = ThreadPool()
 
@@ -100,7 +100,8 @@ if "-t" in sys.argv:
             #print("token latent", token_latent)
 
             #print("score", score)
-            encoder_loss = model.criterions["autoencoder"].encoder_loss(token_latent, latent)
+            encoder_loss = model.criterions["autoencoder"].encoder_loss(token_latent, latent, commitment=0.25)
+            model.running_loss["encoder"] += encoder_loss
 
             #print("encoder_loss", encoder_loss)
 
@@ -111,6 +112,8 @@ if "-t" in sys.argv:
             out = model(new_latent.to(DEVICE), from_latent=True)
 
             decoder_loss = model.criterions["autoencoder"].decoder_loss(out, item.t)
+            model.running_loss["decoder"] += decoder_loss
+
 
             loss = model.loss(encoder_loss, decoder_loss)
 
@@ -122,6 +125,7 @@ if "-t" in sys.argv:
         model.write_loss()
         #model.draw_all_tokens()
         model.save()
+        model.send_run(host="iainvisa.com", key=os.environ.get("IAINVISA_FILE_KEY", None), epoch=n)
         model.add_epoch()
 
 
