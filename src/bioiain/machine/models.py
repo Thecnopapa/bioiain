@@ -236,14 +236,14 @@ class Despair(BaseModel):
         ax.scatter(*cv1_start)
         ax.scatter(*cv1_end)
         ax.plot(*zip(cv1_start, cv1_end))
-        ax.text(*cv1_start, "i")
+        ax.text(*cv1_start, "I")
 
         ax.text(i_j_length/2, 0, f"{i_j_length:3.1}")
 
         ax.scatter(*cv2_start)
         ax.scatter(*cv2_end)
         ax.plot(*zip(cv2_start, cv2_end))
-        ax.text(*cv1_start, "j")
+        ax.text(*cv2_start, "J")
 
         #ax.quiver(cv1_start, cv1_end)
         #ax.quiver(cv2_start, cv2_end)
