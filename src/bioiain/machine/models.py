@@ -31,7 +31,7 @@ from .base_model import BaseModel as CustomModel # Compatibility
 
 
 class Despair(BaseModel):
-    def __init__(self, *args, hidden_dims=[50, 50], num_classes=20, dropout=0, **kwargs):
+    def __init__(self, *args, hidden_dims=[50, 10], num_classes=20, dropout=0, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.data["num_classes"] = num_classes
@@ -73,8 +73,9 @@ class Despair(BaseModel):
 
     def latent_generator(self, dataset):
         print("generating latent embeddings")
-
-        for n, item in enumerate(dataset):
+        n_items = len(dataset)
+        for n, item in enumerate(dataset):  
+            print(f"{n}/{n_items}", end="\r")
             latent = self.forward(item.t, to_latent=True)
             yield latent.detach().numpy()
 

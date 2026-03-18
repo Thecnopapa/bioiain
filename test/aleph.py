@@ -91,7 +91,14 @@ if "-t" in sys.argv:
 
         for item in dataset:
             latent = model(item.t, to_latent=True)
-            new_latent = model.get_closest_latent(latent)
+            token_latent = model.get_closest_latent(latent)
+            latent_diff = torch.sub(latent, token_latent)
+            new_latent = torch.sub(latent, latent_diff)
+            #print("latent", latent)
+            #print("token latent", token_latent)
+            #print("latent diff", latent_diff)
+            #print("new latent", new_latent)
+
             out = model(new_latent, from_latent=True)
             loss = model.loss(out, item, zero_optims="autoencoder", step="autoencoder")
             print(f"LOSS: {loss.item():7.3f} {model.running_loss["default"]/model.running_loss["total"]:7.3f}", end="\r")
