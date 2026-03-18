@@ -171,3 +171,23 @@ def square_matrix(triangular_matrix):
     if str(U.dtype).startswith("<U"):
         return U + U.T
     return U + U.T - np.diag(np.diag(U))
+
+
+
+
+
+def rotate2D(origin, point, angle, to_radians=True):
+    """
+    Rotate a point counterclockwise by a given angle around a given origin.
+    The angle should be given in radians.
+    """
+
+    if to_radians:
+        angle = math.radians(angle)
+
+    ox, oy = origin
+    px, py = point
+
+    qx = ox + math.cos(angle) * (px - ox) - math.sin(angle) * (py - oy)
+    qy = oy + math.sin(angle) * (px - ox) + math.cos(angle) * (py - oy)
+    return qx, qy

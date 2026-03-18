@@ -119,13 +119,17 @@ if "-t" in sys.argv:
             print(f"{i}/{n_items} LOSS: {loss.item():7.3f} ({encoder_loss.item():7.3f}/{decoder_loss.item():7.3f}) av:{model.running_loss[model.mode]/model.running_loss["total"]:7.3f}", end="\r")
 
         model.write_loss()
+        #model.draw_all_tokens()
         model.save()
         model.add_epoch()
 
 
 
+
+
 if "-p" in sys.argv:
     with torch.no_grad():
+
         filepath = sys.argv[sys.argv.index("--file") + 1]
         modelpath = sys.argv[sys.argv.index("--model") + 1]
 

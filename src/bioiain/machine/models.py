@@ -117,7 +117,7 @@ class Despair(BaseModel):
         pickle.dump(algorithm, open(estimator_path, "wb"))
         self.data["estimator_path"] = estimator_path
 
-    def plot_current_state(self, dataset=None, seed=6):
+    def plot_current_state(self, dataset=None, seed=6, tokens=True):
         log(1, "Plotting current state...")
         from ..visualisation.plots import fig2D
         from sklearn.decomposition import PCA
@@ -155,14 +155,72 @@ class Despair(BaseModel):
         if self.writer is not None:
             self.writer.add_image(f"latent", img, global_step=self.data["epoch"])
         del img
+        if tokens:
+            self.draw_all_tokens()
 
     def predict_tokens(self, latents):
-        import pickle
-
-        estimator = pickle.load(open(self.data["estimator_path"], "rb"))
-
-        preds = estimator.predict(latents)
+        preds = self.estimator.predict(latents)
         return preds
+
+    def estimator(self):
+        import pickle
+        estimator = pickle.load(open(self.data["estimator_path"], "rb"))
+        return estimator
+
+
+
+    def draw_all_tokens(self, show=False, save=True):
+        for n in range(20):
+            self.draw_token(n, show=show, save=save)
+
+
+    def draw_token(self, token_id, show=False, save=False):
+        from ..visualisation.plots import fig2D
+        from ..utilities.maths import rotate2D
+        print("Drawing token:", token_id)
+        
+
+        tokens = self.estimator().cluster_centers_
+        token = torch.Tensor(tokens[token_id])
+
+        with torch.no_grad():
+            reconstructed = self(token, from_latent=True)
+            reconstructed = [i.item() for i in reconstructed]
+            i_length, j_length, i_j_angle, i_j_length = reconstructed
+
+        i_length = i_length *2.4
+        j_length = j_length *2.4
+        i_j_angle = i_j_angle*180
+        i_j_length = i_j_length*10
+
+
+        cv1_start = (0,0)
+
+        cv1_end = (i_length, 0)
+
+        cv2_start = (0,i_j_length)
+
+        cv2_end = rotate2D(cv2_start, (j_length,i_j_length), i_j_angle)
+
+
+
+        fig, ax = fig2D()
+
+        ax.quiver(cv1_start, cv1_end)
+        ax.quiver(cv2_start, cv2_end) 
+
+        ax.set_title(f"Token: {reconstructed}")
+
+
+
+        if show:
+            fig.show()
+        if save:
+            save_path = os.path.join(self.data["folder"], "tokens", f"token_{token_id}.png")
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
+
+            fig.savefig(save_path)
+
 
 
 
