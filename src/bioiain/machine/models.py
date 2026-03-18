@@ -88,13 +88,13 @@ class Despair(BaseModel):
         for n, item in enumerate(dataset):
             print(f"{n}/{n_items}", end="\r")
             latent = self.forward(item.t, to_latent=True)
-            yield latent.detach().numpy()
+            yield latent.detach().cpu().numpy()
 
 
     def get_closest_latent(self, x, as_token=False):
 
-        token = self._current_state.predict(x.detach().numpy().reshape(1, -1).astype(float))
-        score = self._current_state.score(x.detach().numpy().reshape(1, -1).astype(float))
+        token = self._current_state.predict(x.detach().cpu().numpy().reshape(1, -1).astype(float))
+        score = self._current_state.score(x.detach().cpu().numpy().reshape(1, -1).astype(float))
         if as_token:
             return token, score
         latent = torch.tensor(self._current_state.cluster_centers_[token], requires_grad=True).float().to(DEVICE)
