@@ -88,7 +88,12 @@ if "-t" in sys.argv:
         log("title", "EPOCH", n)
         model.set_mode("autoencoder")
         model.cluster_latent_space(dataset)
-        model.plot_current_state(dataset=dataset)
+        if "--no-plot" in sys.argv or len(dataset) > 10000:
+            model.draw_all_tokens()
+        else:
+            model.plot_current_state(dataset=dataset)
+
+
 
         n_items = len(dataset)
         for i, item in enumerate(dataset):
