@@ -99,7 +99,7 @@ class BaseModel(nn.Module):
         try: loss = self.running_loss[self.mode]
         except KeyError: loss = self.running_loss['default']
 
-        return f"<bi.CustomModel: {self.data['name']}\n - MODE: {self.mode}\n - class: {self.__class__.__name__}\n - optimiser: {optim.__class__.__name__}\n - criterion: {crit.__class__.__name__}\n - current epoch: {self.data['epoch']}\n - running loss: {loss}\n - layers: {[f'{k}({v.__class__.__name__})' for k, v in layers.items()]}\n>\n"
+        return f"<bi.{self.__class__.__name__}: {self.data['name']}\n - MODE: {self.mode}\n - optimiser: {optim.__class__.__name__}\n - criterion: {crit.__class__.__name__}\n - current epoch: {self.data['epoch']}\n - running loss: {loss}\n - layers: {[f'{k}({v.__class__.__name__})' for k, v in layers.items()]}>\n"
 
 
     def json(self):
@@ -227,7 +227,7 @@ class BaseModel(nn.Module):
             if total == 0: continue
             else: av_loss = rl / total
             if self.writer is not None:
-                log(2, f"Regular loss ({c})", av_loss)
+                log(2, f"Loss ({c}):", av_loss)
                 self.writer.add_scalar(f"loss/{c}", float(av_loss), self.data["epoch"])
             av_losses[c] = av_loss
 

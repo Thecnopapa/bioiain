@@ -84,11 +84,48 @@ class Despair(BaseModel):
         return x
 
 
+    def train(self, item, i=None, n_items=None):
+
+        item.to(DEVICE)
+        latent = self(item.t, to_latent=True)
+        #print("latent", latent)
+        token_latent, score = self.get_closest_latent(latent)
+        #print("token latent", token_latent)
+
+        print("\nscore", score)
+        encoder_loss = self.criterions["autoencoder"].encoder_loss(token_latent, latent, commitment=0.25)
+        self.running_loss["encoder"] += encoder_loss
+
+        #print("encoder_loss", encoder_loss)
+
+        latent_diff = torch.sub(latent, token_latent)
+        #print("latent diff", latent_diff)
+        new_latent = torch.sub(latent, latent_diff)
+        #print("new latent", new_latent)
+        out = self(new_latent.to(DEVICE), from_latent=True)
+
+        decoder_loss = self.criterions["autoencoder"].decoder_loss(out, item.t)
+        self.running_loss["decoder"] += decoder_loss
+
+
+        loss = self.loss(encoder_loss, decoder_loss)
+
+        if i is not None and n_items is not None:
+
+            print(f"{i}/{n_items} LOSS: {loss.item():7.3f} ({encoder_loss.item():7.3f}/{decoder_loss.item():7.3f}) av:{self.running_loss[self.mode]/self.running_loss["total"]:7.3f}", end="\r")
+
+
+        return loss
+
+
+
+
+
     def latent_generator(self, dataset):
         log(2, "Generating latent embeddings...")
         n_items = len(dataset)
         for n, item in enumerate(dataset):
-            print(f"{n}/{n_items}", end="\r")
+            print(f"{n+1}/{n_items}", end="\r")
             latent = self.forward(item.t, to_latent=True)
             yield latent.detach().cpu().numpy()
 
@@ -184,6 +221,7 @@ class Despair(BaseModel):
 
 
     def draw_all_tokens(self, show=False, save=True):
+        log(1,"Drawing all tokens...")
         from ..visualisation.plots import grid2D
         from PIL import Image
 
@@ -212,8 +250,8 @@ class Despair(BaseModel):
     def draw_token(self, token_id, show=False, save=False, fig=None, ax=None):
         from ..visualisation.plots import fig2D
         from ..utilities.maths import rotate2D
-        print("Drawing token:", token_id)
-        print("ax:", ax)
+        log(2,"Drawing token:", token_id)
+        #print("ax:", ax)
 
 
         tokens = self.estimator().cluster_centers_
