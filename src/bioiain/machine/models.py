@@ -31,7 +31,7 @@ from .base_model import BaseModel as CustomModel # Compatibility
 
 
 class Despair(BaseModel):
-    def __init__(self, *args, hidden_dims=[50, 10], num_classes=20, dropout=0, **kwargs):
+    def __init__(self, *args, hidden_dims=[10, 2], num_classes=20, dropout=0, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.data["num_classes"] = num_classes
@@ -126,14 +126,21 @@ class Despair(BaseModel):
         from sklearn.decomposition import PCA
         from PIL import Image
 
-        pca = PCA(n_components=2, random_state=seed)
-        state = pca.fit_transform(self._current_state.cluster_centers_.copy())
 
-        log(2, "PCA components:")
-        for n, c in enumerate(pca.components_):
-            log(3, f"PC{n+1}: {c}")
 
         fig, ax = fig2D()
+
+
+        if self.data["hidden_dims"][-1] > 2:
+            pca = PCA(n_components=2, random_state=seed)
+            state = pca.fit_transform(self._current_state.cluster_centers_.copy())
+
+            log(2, "PCA components:")
+            for n, c in enumerate(pca.components_):
+                log(3, f"PC{n+1}: {c}")
+
+        else:
+            state = self._current_state.cluster_centers_.copy()
 
         for n, s in enumerate(state):
             ax.scatter(*s, color=f"C{n}")
@@ -141,7 +148,10 @@ class Despair(BaseModel):
 
         if dataset is not None:
             with torch.no_grad():
-                transformed = pca.transform(list(self.latent_generator(dataset)))
+                if self.data["hidden_dims"][-1] > 2:
+                    transformed = pca.transform(list(self.latent_generator(dataset)))
+                else:
+                    transformed = self.latent_generator(dataset)
 
             for n, (e, l) in enumerate(zip(transformed, self._current_state.labels_)):
                 #token = self.get_closest_latent(e, as_token=True)
@@ -179,11 +189,11 @@ class Despair(BaseModel):
 
         fig, axes = grid2D(5, 4)
 
-        print(axes)
+        #print(axes)
 
 
         for n, ax in enumerate(axes):
-            print(n, ax)
+            #print(n, ax)
             self.draw_token(n, ax=ax)
 
         if show:
