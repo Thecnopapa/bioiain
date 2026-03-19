@@ -74,26 +74,43 @@ class CustomLoss(object):
 
 class VQLoss(CustomLoss):
     def __init__(self, weights=None):
-        self.CEL = nn.MSELoss()
+        self.MSE = nn.MSELoss()
+        self.CSL = nn.CosineEmbeddingLoss(margin=0.)
 
     def encoder_loss_vq_vae(self, o, tensor, commitment=0.25):
-        loss = self.CEL(o, tensor)
+        loss = self.MSE(o, tensor)
         loss = loss * (1 + commitment)
         return loss
 
     def encoder_loss(self, l, token, origin, commitment=0.25):
-        l_t_loss = self.CEL(l, token)
-        o_t_loss = self.CEL(origin, token)
-        o_l_loss = self.CEL(origin, l)
+        #print()
+        #print("L", l)
+        #print("T", token)
+        #print("O", origin)
+        t_l = l - token
+        o_t = token - origin
+        o_l = l - origin
+        y = torch.Tensor([-1])[0]
+
+        #print("TL", t_l)
+        #print("OT", o_t)
+        #print("OL", o_l)
+        #print("Y", y)
+
+        loss = self.CSL(t_l, o_l, y)
+        #print(loss)
+        #print("LOSS", l_t.item(), "-", (o_l-o_t).item())
 
 
-        loss = l_t_loss-(o_l_loss-o_t_loss)
+        #loss = l_t_loss-(o_l_loss-o_t_loss)
+        #print(loss)
+
 
         loss = loss * (1 + commitment)
         return loss
 
     def decoder_loss(self, o, tensor):
-        loss = self.CEL(o, tensor)
+        loss = self.MSE(o, tensor)
         return loss
 
     def __call__(self, e_loss, d_loss):

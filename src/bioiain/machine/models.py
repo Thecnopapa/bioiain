@@ -134,7 +134,9 @@ class Despair(BaseModel):
 
         target = x.detach().cpu().numpy().reshape(1, -1).astype(float)
         token_id = self._current_state.predict(target)
-        token_latent = self._current_state.cluster_centers_[token_id]
+
+        token_latent = self._current_state.cluster_centers_[token_id][0]
+        #print("TOKEN LATENT" ,token_latent)
 
         origin = multidimensional_com(self._current_state.cluster_centers_)
 
@@ -209,7 +211,7 @@ class Despair(BaseModel):
 
         fig_dir = os.path.join(self.data["folder"], "latents")
         os.makedirs(fig_dir, exist_ok=True)
-        fig_path = os.path.join(fig_dir, f"{self}_E{self.data["epoch"]}.png")
+        fig_path = os.path.join(fig_dir, f"latent_{self}_E{self.data["epoch"]}.png")
         fig.savefig(fig_path)
         print("saving to:", fig_path)
 
@@ -249,7 +251,7 @@ class Despair(BaseModel):
         if show:
             fig.show()
         if save:
-            save_path = os.path.join(self.data["folder"], "tokens", f"tokens.png")
+            save_path = os.path.join(self.data["folder"], "tokens", f"tokens_{self}_E{self.data["epoch"]}.png")
             os.makedirs(os.path.dirname(save_path), exist_ok=True)
             fig.savefig(save_path)
 
