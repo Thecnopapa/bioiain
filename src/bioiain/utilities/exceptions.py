@@ -63,3 +63,8 @@ class AlreadyFractional(FractionalConversionError):
 
 class AlreadyOrthogonal(FractionalConversionError):
 	pass
+
+#ALEPH related
+
+class ALEPHError(Exception):
+	pass

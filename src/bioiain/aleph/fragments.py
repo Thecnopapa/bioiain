@@ -4,9 +4,7 @@ import numpy as np
 from . import CVMatrix
 from ..base import BIStructure, BIChain, BIResidue
 from ..utilities import *
-
-
-
+from ..utilities.exceptions import *
 
 
 class Fragment(BIChain):
@@ -49,22 +47,27 @@ class FragmentedStructure(BIStructure):
     def fragment_with_aleph(self):
         from .core.ALEPH import annotate_pdb_model_with_aleph
         self.export(minimal=True)
-        print("### ALEPH start ###")
         self.data["fragments"]["weight"] = "distance_avg"
         self.data["fragments"]["threshold_ah"] = 0.50
         self.data["fragments"]["threshold_bs"] = 0.30
         self.data["fragments"]["peptide_length"] = 3
 
+        try:
+            print("### ALEPH start ###")
 
-        graph, _, _, _, _ = annotate_pdb_model_with_aleph(
-            self.paths["minimal"],
-            weight=self.data["fragments"]["weight"],
-            strictness_ah=self.data["fragments"]["threshold_ah"],
-            strictness_bs=self.data["fragments"]["threshold_bs"],
-            peptide_length=self.data["fragments"]["peptide_length"],
-            write_pdb=False,
-        )
-        print("### ALEPH end ###")
+            graph, _, _, _, _ = annotate_pdb_model_with_aleph(
+                self.paths["minimal"],
+                weight=self.data["fragments"]["weight"],
+                strictness_ah=self.data["fragments"]["threshold_ah"],
+                strictness_bs=self.data["fragments"]["threshold_bs"],
+                peptide_length=self.data["fragments"]["peptide_length"],
+                write_pdb=False,
+            )
+            print("### ALEPH end ###")
+        except Exception as e:
+            print("### ALEPH failed ###")
+            log("warning", e)
+            raise ALEPHError(e)
 
         log(1, "Fragmented:", self.paths["minimal"],)
 

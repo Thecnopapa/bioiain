@@ -4,6 +4,7 @@ import os, json
 from ..utilities.logging import log
 from ..utilities.parallel import avail_cpus
 from ..utilities.sequences import d3to1 ,d3toint
+from ..utilities.exceptions import *
 
 import torch
 
@@ -86,7 +87,11 @@ class CVEmbedding(PerResidueEmbedding):
 
     def generate_embedding(self, *args, modulo_norm=2.4, max_dist=10, **kwargs):
 
-        frag = self.entity.fragment()
+        try:
+            frag = self.entity.fragment()
+        except ALEPHError:
+            return None
+
         if frag.data["fragments"]["n_fragments"] <= 1:
             return None
         cvectors = frag.cvectors()
