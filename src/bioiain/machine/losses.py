@@ -76,8 +76,17 @@ class VQLoss(CustomLoss):
     def __init__(self, weights=None):
         self.CEL = nn.MSELoss()
 
-    def encoder_loss(self, o, tensor, commitment=0.25):
+    def encoder_loss_vq_vae(self, o, tensor, commitment=0.25):
         loss = self.CEL(o, tensor)
+        loss = loss * (1 + commitment)
+        return loss
+
+    def encoder_loss(self, o, tensor, origin, commitment=0.25):
+        t_loss = self.CEL(o, tensor)
+        o_loss = self.CEL(o, tensor)
+
+        loss = o_loss-t_loss
+
         loss = loss * (1 + commitment)
         return loss
 

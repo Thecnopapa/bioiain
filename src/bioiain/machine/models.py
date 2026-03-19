@@ -89,11 +89,11 @@ class Despair(BaseModel):
         item.to(DEVICE)
         latent = self(item.t, to_latent=True)
         #print("latent", latent)
-        token_latent, score = self.get_closest_latent(latent)
+        latent, token_latent, origin_latent = self.get_closest_latent(latent)
         #print("token latent", token_latent)
 
         print("\nscore", score)
-        encoder_loss = self.criterions["autoencoder"].encoder_loss(token_latent, latent, commitment=0.25)
+        encoder_loss = self.criterions["autoencoder"].encoder_loss(latent, token_latent, origin_latent, commitment=0)
         self.running_loss["encoder"] += encoder_loss
 
         #print("encoder_loss", encoder_loss)
@@ -130,14 +130,27 @@ class Despair(BaseModel):
             yield latent.detach().cpu().numpy()
 
 
-    def get_closest_latent(self, x, as_token=False):
+    def get_closest_latent(self, x, only_id=False):
+        from ..utilities.maths import multidimensional_com, multidimensional_distance
 
-        token = self._current_state.predict(x.detach().cpu().numpy().reshape(1, -1).astype(float))
-        score = self._current_state.score(x.detach().cpu().numpy().reshape(1, -1).astype(float))
-        if as_token:
-            return token, score
-        latent = torch.tensor(self._current_state.cluster_centers_[token], requires_grad=True).float().to(DEVICE)
-        return latent, score
+        target = x.detach().cpu().numpy().reshape(1, -1).astype(float)
+        token_id = self._current_state.predict(target)
+        token_latent = self._current_state.cluster_centers_[token_id]
+
+        origin = multidimensional_com(self._current_state.cluster_centers_)
+
+        distance_from_origin = multidimensional_distance(origin, target)
+        distance_from_token = multidimensional_distance(target, token_latent)
+
+
+
+        if only_id:
+            return token_id, distance_from_token, distance_from_origin
+
+        latent = torch.tensor(token_latent, requires_grad=True).float().to(DEVICE)
+        origin = torch.tensor(origin, requires_grad=True).float().to(DEVICE)
+
+        return x, latent , origin
 
 
 
@@ -191,7 +204,7 @@ class Despair(BaseModel):
                     transformed = self.latent_generator(dataset)
 
             for n, (e, l) in enumerate(zip(transformed, self._current_state.labels_)):
-                #token = self.get_closest_latent(e, as_token=True)
+                #token = self.get_closest_latent(e, only_id=True)
                 ax.scatter(*e, color=f"C{l}")
 
 

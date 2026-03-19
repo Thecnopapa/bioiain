@@ -3,6 +3,23 @@ import math
 from types import GeneratorType
 
 
+
+
+def multidimensional_com(points):
+    points = np.array(points)
+    com = sum(points) / len(points)
+    return com
+
+
+def multidimensional_distance(point1, point2):
+    p1 = np.array(point1)
+    p2 = np.array(point2)
+
+    d = math.sqrt((p1-p2)**2)
+    return d
+
+
+
 def find_com(atoms:list|GeneratorType|np.ndarray) -> list[float]:
     """
     Find the center of mass of a list of atoms. All atoms weight the same.
