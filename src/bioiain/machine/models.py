@@ -92,7 +92,6 @@ class Despair(BaseModel):
         latent, token_latent, origin_latent = self.get_closest_latent(latent)
         #print("token latent", token_latent)
 
-        print("\nscore", score)
         encoder_loss = self.criterions["autoencoder"].encoder_loss(latent, token_latent, origin_latent, commitment=0)
         self.running_loss["encoder"] += encoder_loss
 

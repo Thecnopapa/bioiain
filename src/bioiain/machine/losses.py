@@ -81,11 +81,13 @@ class VQLoss(CustomLoss):
         loss = loss * (1 + commitment)
         return loss
 
-    def encoder_loss(self, o, tensor, origin, commitment=0.25):
-        t_loss = self.CEL(o, tensor)
-        o_loss = self.CEL(o, tensor)
+    def encoder_loss(self, l, token, origin, commitment=0.25):
+        l_t_loss = self.CEL(l, token)
+        o_t_loss = self.CEL(origin, token)
+        o_l_loss = self.CEL(origin, l)
 
-        loss = o_loss-t_loss
+
+        loss = l_t_loss-(o_l_loss-o_t_loss)
 
         loss = loss * (1 + commitment)
         return loss

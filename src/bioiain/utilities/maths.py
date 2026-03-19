@@ -15,7 +15,7 @@ def multidimensional_distance(point1, point2):
     p1 = np.array(point1)
     p2 = np.array(point2)
 
-    d = math.sqrt((p1-p2)**2)
+    d = np.sqrt((p1-p2)**2)
     return d
 
 
