@@ -162,7 +162,11 @@ class Despair(BaseModel):
 
         algorithm = KMeans(n_clusters=20, random_state=seed)
         with torch.no_grad():
-            algorithm.fit(list(self.latent_generator(dataset)))
+            a = np.array(list(self.latent_generator(dataset))).astype(float)
+            log(2, "Fitting...")
+            algorithm.fit(a)
+            tracemalloc_top()
+            del a
 
         self._current_state = algorithm
         self.data["tokens"] = self._current_state.cluster_centers_.copy().tolist()
@@ -213,6 +217,7 @@ class Despair(BaseModel):
         os.makedirs(fig_dir, exist_ok=True)
         fig_path = os.path.join(fig_dir, f"latent_{self}_E{self.data["epoch"]}.png")
         fig.savefig(fig_path)
+        fig.close()
         print("saving to:", fig_path)
 
         if self.writer is not None:
@@ -254,6 +259,7 @@ class Despair(BaseModel):
             save_path = os.path.join(self.data["folder"], "tokens", f"tokens_{self}_E{self.data["epoch"]}.png")
             os.makedirs(os.path.dirname(save_path), exist_ok=True)
             fig.savefig(save_path)
+            fig.close()
 
             if self.writer is not None:
                 img = Image.open(save_path)
@@ -321,6 +327,7 @@ class Despair(BaseModel):
                 os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
                 fig.savefig(save_path)
+            fig.close()
 
 
 

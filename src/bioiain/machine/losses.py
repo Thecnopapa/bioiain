@@ -13,6 +13,7 @@ from .datasets import Item
 from . import DEVICE
 
 from ..utilities.exceptions import *
+from ..utilities.maths import *
 
 
 
@@ -87,26 +88,30 @@ class VQLoss(CustomLoss):
         #print("L", l)
         #print("T", token)
         #print("O", origin)
-        t_l = l - token
-        o_t = token - origin
-        o_l = l - origin
+        t_l = torch_distance(l, token)
+        o_t = torch_distance(token, origin)
+        o_l = torch_distance(l, origin)
         y = torch.Tensor([-1])[0]
+        z = torch.zeros(1)
 
         #print("TL", t_l)
         #print("OT", o_t)
         #print("OL", o_l)
         #print("Y", y)
 
-        loss = self.CSL(t_l, o_l, y)
+        #loss = self.CSL(t_l, o_l, y)
         #print(loss)
         #print("LOSS", l_t.item(), "-", (o_l-o_t).item())
 
 
-        #loss = l_t_loss-(o_l_loss-o_t_loss)
+        #loss = t_l-(o_l-o_t)
+        loss = (t_l-o_l+o_t) / t_l
+
+        
+
+
+        loss = torch.max(z, loss * (1 + commitment))
         #print(loss)
-
-
-        loss = loss * (1 + commitment)
         return loss
 
     def decoder_loss(self, o, tensor):

@@ -6,7 +6,8 @@ sys.path.append('..')
 from src.bioiain.utilities import *
 log("start", "aleph.py")
 
-
+from src.bioiain.utilities.logging import *
+tracemalloc_start()
 
 
 from src.bioiain.aleph import *
@@ -77,6 +78,19 @@ if len(dataset) == 0:
 
 if "-t" in sys.argv:
 
+    import torch, random
+    import  numpy as np
+
+    torch.set_num_threads(avail_cpus)
+    log(1, f"Torch using {avail_cpus} threads")
+    
+    seed = 6
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
     epochs = 100
     print(dataset)
 
@@ -100,6 +114,9 @@ if "-t" in sys.argv:
         for i, item in enumerate(dataset):
 
             loss = model.train(item, i, n_items)
+
+            if 1 % 100000 == 0:
+                logging.tracemalloc_top()
 
 
 

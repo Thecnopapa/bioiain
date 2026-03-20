@@ -4,6 +4,7 @@ import warnings
 import time, datetime
 import math
 import requests
+import tracemalloc
 
 
 
@@ -256,3 +257,19 @@ def send_tensorboard_run(host, folder, run, file, key, epoch=0, protocol="https"
             print(resp)
             raise Exception(f"Error [{resp.status_code}] uploading file to: {url}")
     return resp
+
+
+
+
+
+
+def tracemalloc_start():
+    tracemalloc.start()
+
+def tracemalloc_top(top=15):
+    snapshot = tracemalloc.take_snapshot()
+    top_stats = snapshot.statistics('lineno')
+
+    log("header", f"Tracemalloc top {top}")
+    for stat in top_stats[:top]:
+        log(1, stat)

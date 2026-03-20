@@ -15,9 +15,23 @@ def multidimensional_distance(point1, point2):
     p1 = np.array(point1)
     p2 = np.array(point2)
 
-    d = np.sqrt((p1-p2)**2)
+    d = np.sqrt((p1-p2)**2 - (2*p1*p2))
     return d
 
+
+def torch_distance(tensor1, tensor2):
+    import torch
+    d = torch.sqrt(torch.sum((tensor2 - tensor1)**2))
+    return d
+
+
+
+
+def torch_hypotenuse(tensor):
+    import torch
+    a, b = torch.split(tensor, 1, dim=0)
+    c = torch.sqrt(a**2 + b**2 - 2*a*b)
+    return c       
 
 
 def find_com(atoms:list|GeneratorType|np.ndarray) -> list[float]:
