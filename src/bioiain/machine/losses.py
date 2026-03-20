@@ -84,6 +84,8 @@ class VQLoss(CustomLoss):
         return loss
 
     def encoder_loss(self, l, token, origin, commitment=0.25):
+        token = token.to(DEVICE)
+        origin = origin.to(DEVICE)
         #print()
         #print("L", l)
         #print("T", token)
@@ -92,7 +94,7 @@ class VQLoss(CustomLoss):
         o_t = torch_distance(token, origin)
         o_l = torch_distance(l, origin)
         y = torch.Tensor([-1])[0]
-        z = torch.zeros(1)
+        z = torch.zeros(1).to(DEVICE)
 
         #print("TL", t_l)
         #print("OT", o_t)
