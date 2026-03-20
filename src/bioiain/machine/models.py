@@ -271,7 +271,7 @@ class Despair(BaseModel):
     def draw_token(self, token_id, show=False, save=False, fig=None, ax=None):
         from ..visualisation.plots import fig2D
         from ..utilities.maths import rotate2D
-        log(2,"Drawing token:", token_id)
+        log(2,"Drawing token:", token_id, end="\r")
         #print("ax:", ax)
 
 
