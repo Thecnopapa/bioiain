@@ -217,7 +217,7 @@ class Despair(BaseModel):
         os.makedirs(fig_dir, exist_ok=True)
         fig_path = os.path.join(fig_dir, f"latent_{self}_E{self.data["epoch"]}.png")
         fig.savefig(fig_path)
-        fig.close()
+        plt.close(fig)
         print("saving to:", fig_path)
 
         if self.writer is not None:
@@ -259,7 +259,7 @@ class Despair(BaseModel):
             save_path = os.path.join(self.data["folder"], "tokens", f"tokens_{self}_E{self.data["epoch"]}.png")
             os.makedirs(os.path.dirname(save_path), exist_ok=True)
             fig.savefig(save_path)
-            fig.close()
+            plt.close(fig)
 
             if self.writer is not None:
                 img = Image.open(save_path)
@@ -327,7 +327,7 @@ class Despair(BaseModel):
                 os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
                 fig.savefig(save_path)
-            fig.close()
+            plt.close(fig)
 
 
 
