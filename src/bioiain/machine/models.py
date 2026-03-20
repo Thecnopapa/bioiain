@@ -93,7 +93,7 @@ class Despair(BaseModel):
         #print("token latent", token_latent)
 
         encoder_loss = self.criterions["autoencoder"].encoder_loss(latent, token_latent, origin_latent, commitment=0)
-        self.running_loss["encoder"] += encoder_loss
+        self.running_loss["encoder"] += encoder_loss.item()
 
         #print("encoder_loss", encoder_loss)
 
@@ -104,7 +104,7 @@ class Despair(BaseModel):
         out = self(new_latent.to(DEVICE), from_latent=True)
 
         decoder_loss = self.criterions["autoencoder"].decoder_loss(out, item.t)
-        self.running_loss["decoder"] += decoder_loss
+        self.running_loss["decoder"] += decoder_loss.item()
 
 
         loss = self.loss(encoder_loss, decoder_loss)
