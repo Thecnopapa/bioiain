@@ -26,6 +26,7 @@ from .losses import *
 from .base_model import BaseModel
 from .base_model import BaseModel as CustomModel # Compatibility
 
+import matplotlib.pyplot as plt
 
 
 
