@@ -42,7 +42,7 @@ class BaseModel(nn.Module):
         self.data["dataname"] = name
 
         self.data["folder"] = os.path.join(folder, self.__class__.__name__)
-        self.data["epoch"] = None
+        self.data["epoch"] = 0
         self.data["path"] = False
         self.data["model"] = self.__class__.__name__
         self.data["batch_size"] = batch_size
@@ -116,7 +116,7 @@ class BaseModel(nn.Module):
 
 
     def mount(self):
-        self._mount_submodels
+        self._mount_submodels()
         return self
 
     def _mount_submodels(self):
@@ -158,8 +158,9 @@ class BaseModel(nn.Module):
         return self.submodels.keys()
 
 
-    def set_mode(self, mode:str):
-        print(f"Model mode: {self.mode} -> {mode}")
+    def set_mode(self, mode:str, quiet=False):
+        if not quiet:
+            print(f"Model mode: {self.mode} -> {mode}")
         self.mode = mode
         return self.mode
 
@@ -169,6 +170,9 @@ class BaseModel(nn.Module):
 
 
     def forward(self, x, submodel_name="mode"):
+        return self._forward(x, submodel_name)
+
+    def _forward(self, x, submodel_name="mode"):
         if not self.mounted:
             self._mount_submodels()
         if submodel_name is None: return None

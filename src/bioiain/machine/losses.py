@@ -109,7 +109,7 @@ class VQLoss(CustomLoss):
         #loss = t_l-(o_l-o_t)
         loss = (t_l-o_l+o_t) / t_l
 
-        
+
 
 
         loss = torch.max(z, loss * (1 + commitment))
@@ -121,9 +121,7 @@ class VQLoss(CustomLoss):
         return loss
 
     def __call__(self, e_loss, d_loss):
-
         loss = e_loss + d_loss
-
         return loss
 
 

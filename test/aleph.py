@@ -102,30 +102,42 @@ if "-t" in sys.argv:
     model = MODEL_CLASS(name=DATA_NAME, in_shape=dataset.get(0).t.shape, batch_size=0, lr=LR)
     model.add_text("data", model.json())
 
+    model.set_mode("autoencoder")
+    model.mount()
+    model.plot_latent_space(dataset=dataset)
+    exit()
+
+
+
     for n in range(epochs):
         log("start", "EPOCH", n)
         log("title", "EPOCH", n)
         model.set_mode("autoencoder")
-        model.cluster_latent_space(dataset)
-        if "--no-plot" in sys.argv or len(dataset) > 10000:
-            model.plot_current_state(dataset=None)
-            model.draw_all_tokens()
-        else:
-            model.plot_current_state(dataset=dataset)
+        # model.cluster_latent_space(dataset)
+        # if "--no-plot" in sys.argv or len(dataset) > 10000:
+        #     model.plot_current_state(dataset=None)
+        #     model.draw_all_tokens()
+        # else:
+        #     model.plot_current_state(dataset=dataset)
 
 
 
         n_items = len(dataset)
         for i, item in enumerate(dataset):
 
-            loss = model.train(item, i, n_items)
+            loss, encoder_loss, decoder_loss = model(item.t)
+
+            #loss = model.train(item, i, n_items)
+
+            print(f"{i}/{n_items} LOSS: {loss.item():7.3f} ({encoder_loss.item():7.3f}/{decoder_loss.item():7.3f}) av:{model.running_loss[model.mode]/model.running_loss["total"]:7.3f}", end="\r")
+
 
             if 1 % 100000 == 0:
                 logging.tracemalloc_top()
 
 
 
-        model.write_loss()
+        #model.write_loss()
         #model.draw_all_tokens()
         model.save()
         if not "--local" in sys.argv:

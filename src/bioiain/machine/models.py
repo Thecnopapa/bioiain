@@ -25,6 +25,7 @@ from ..utilities.exceptions import *
 from .losses import *
 from .base_model import BaseModel
 from .base_model import BaseModel as CustomModel # Compatibility
+from .layers import *
 
 import matplotlib.pyplot as plt
 
@@ -344,12 +345,132 @@ class DespairLess(Despair):
 
 
 
+class Hope(DespairLess):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.layers["codebook"] = {
+            "codebook": Codebook(20, self.data["hidden_dims"][-1])
+        }
+
+        self.layers["autoencoder"] = {
+            **self.layers["encoder"],
+            **self.layers["codebook"],
+            **self.layers["decoder"],
+        }
+        self.codebook_index = list(self.layers["autoencoder"].keys()).index("codebook")
+        self.MSE = nn.MSELoss()
+
+        self.optimisers["autoencoder"] = {
+            "class": torch.optim.Adam,
+            "layer_set": ["autoencoder"]
+        }
+
+
+    def _predict(self, x):
+        x = self._encode(x)
+        self.set_mode("codebook", quiet=True)
+        z = self._forward(x)
+        index = int(self.submodels["autoencoder"][self.codebook_index].last_index[0].detach().cpu().numpy())
+        score = float(self.submodels["autoencoder"][self.codebook_index].last_loss.detach().cpu().numpy())
+        return index, score, z, x
+
+
+    def _encode(self, x):
+        self.set_mode("encoder", quiet=True)
+        x = x.to(DEVICE)
+        z = self._forward(x)
+        return z
+
+    def _decode(self, x):
+        self.set_mode("decoder", quiet=True)
+        x = x.to(DEVICE)
+        z = self._forward(x)
+        zn = torch.clamp(z, min=0, max=1)
+        return zn
+
+    def forward(self, x):
+        #print("FORWARD")
+        x = x.to(DEVICE)
+        z = self._forward(x)
+        zn = torch.clamp(z, min=0, max=1)
+
+        #print(self.submodels["autoencoder"])
+        encoding_loss = self.submodels["autoencoder"][self.codebook_index].last_loss
+        decoding_loss = self.MSE(x, zn)
+        self.running_loss["encoder"] += encoding_loss.item()
+        self.running_loss["decoder"] += decoding_loss.item()
+        #print("encoding loss:", encoding_loss)
+        #print("decoding loss:", decoding_loss)
+        loss = self.loss(encoding_loss, decoding_loss)
+        #print("loss:", loss)
+
+        return loss, encoding_loss, decoding_loss
+
+    def plot_latent_space(self, dataset=None, seed=6):
+        log(1, "Plotting current state...")
+        from ..visualisation.plots import fig2D
+        from sklearn.decomposition import PCA
+        from PIL import Image
+
+        fig, ax = fig2D()
+
+        codebook = self.submodels["autoencoder"][self.codebook_index]
+
+        latent = np.array(list(zip(*codebook.codebook.weight.t().detach().cpu().numpy())))
+        print("Latent:")
+        print(latent)
+        print("##")
+
+
+        if codebook.latent_dims > 2:
+            log(2, "Performing PCA on latent...")
+            pca = PCA(n_components=2, random_state=seed)
+            latent = pca.fit_transform(latent)
+
+            log(3, "PCA components:")
+            for n, c in enumerate(pca.components_):
+                log(4, f"PC{n+1}: {c}")
+
+            print(latent)
+
+        for n, s in enumerate(latent):
+            ax.scatter(*s, color=f"C{n}")
+            ax.text(*s, n)
+
+        if dataset is not None:
+            with torch.no_grad():
+                log(2, "Plotting dataset..." )
+                for n, item in enumerate(dataset):
+                    log(3, f"{n+1}/{item}", end="\r")
+                    #token = self.get_closest_latent(e, only_id=True)
+                    token, _, _, point = self._predict(item.t)
+                    point = point.detach().cpu().numpy()
+                    if codebook.latent_dims > 2:
+                        point = pca.transform(point)
+
+                    ax.scatter(*point, color=f"C{token}")
+
+        fig_dir = os.path.join(self.data["folder"], "latents")
+        os.makedirs(fig_dir, exist_ok=True)
+        fig_path = os.path.join(fig_dir, f"latent_{self}_E{self.data["epoch"]}.png")
+        fig.savefig(fig_path)
+        plt.close(fig)
+        print("saving to:", fig_path)
+
+        if self.writer is not None:
+            img = Image.open(fig_path)
+            img = torchvision.transforms.v2.functional.pil_to_tensor(img)
+            self.writer.add_image(f"latent", img, global_step=self.data["epoch"])
+            del img
 
 
 
 
 
 
+
+########################################################################################################################
 
 
 class Golden(BaseModel):
