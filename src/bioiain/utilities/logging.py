@@ -26,7 +26,7 @@ class Log(object):
     def list(self):
         return [l for l in self.files.values()]
 
-    def dict():
+    def dict(self):
         return self.files
 
     def __add__(self, s):

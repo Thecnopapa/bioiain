@@ -34,8 +34,13 @@ else:
 LR = 0.0001
 if "--lr" in sys.argv:
     LR = float(sys.argv[sys.argv.index("--lr") + 1])
-
 log(1, f"Learning rate: {LR}")
+
+MODEL_NAME = "Despair"
+if "--model" in sys.argv:
+    MODEL_NAME = sys.argv[sys.argv.index("--model") + 1]
+MODEL_CLASS = getattr(models, MODEL_NAME)
+log(1, f"Model: {MODEL_CLASS}")
 
 dataset = EmbeddingDataset(name=f"tokens_{DATA_NAME}")
 
@@ -83,7 +88,7 @@ if "-t" in sys.argv:
 
     torch.set_num_threads(avail_cpus)
     log(1, f"Torch using {avail_cpus} threads")
-    
+
     seed = 6
     random.seed(seed)
     np.random.seed(seed)
@@ -94,7 +99,7 @@ if "-t" in sys.argv:
     epochs = 100
     print(dataset)
 
-    model = Despair(name=DATA_NAME, in_shape=dataset.get(0).t.shape, batch_size=0, lr=LR)
+    model = MODEL_CLASS(name=DATA_NAME, in_shape=dataset.get(0).t.shape, batch_size=0, lr=LR)
     model.add_text("data", model.json())
 
     for n in range(epochs):

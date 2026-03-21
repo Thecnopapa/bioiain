@@ -332,14 +332,14 @@ class Despair(BaseModel):
 
 
 
-class DespairLess(Despair)
-    def __init__(*args, **kwargs):
+class DespairLess(Despair):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.layers["encoder"] = {
-            nn.Linear(self.data["in_shape"][0], self.data["hidden_dims"][-1])
+            "en_linear": nn.Linear(self.data["in_shape"][0], self.data["hidden_dims"][-1])
         }
         self.layers["decoder"] = {
-            nn.Linear(self.data["hidden_dims"][-1], self.data["in_shape"][0])
+            "de_linear": nn.Linear(self.data["hidden_dims"][-1], self.data["in_shape"][0])
         }
 
 
