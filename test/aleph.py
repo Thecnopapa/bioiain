@@ -112,9 +112,10 @@ if "-t" in sys.argv:
 
         if "--no-plot" in sys.argv or len(dataset) > 10000:
             model.plot_latent_space(dataset=None)
-            #model.draw_all_tokens()
+
         else:
             model.plot_latent_space(dataset=dataset)
+        model.plot_tokens()
 
 
 

@@ -451,7 +451,6 @@ class Hope(DespairLess):
                         point = point.detach().cpu().numpy()
                         if codebook.latent_dims > 2:
                             point = pca.transform(point)
-
                         ax.scatter(*point, color=f"C{token}")
 
             fig_dir = os.path.join(self.data["folder"], "latents")
@@ -468,10 +467,60 @@ class Hope(DespairLess):
                 del img
 
 
+    def plot_tokens(self):
+        with torch.no_grad():
+            log(1, "Plotting Tokens...")
+            from ..visualisation.plots import grid2D
+            from PIL import Image
 
 
+            fig, axes = grid2D(5, 4)
 
+            tokens = self.submodels["autoencoder"][self.codebook_index].codebook.weight.detach().cpu()#.numpy().tolist()
+            #print("TOKENS")
+            #print(len(tokens))
+            #print(tokens)
+            for n, (ax, token) in enumerate(zip(axes, tokens)):
+                #print(token)
+                i_length, j_length, i_j_angle, i_j_length = self._decode(torch.Tensor(token))
 
+                i_length = i_length * 2.4
+                j_length = j_length * 2.4
+                i_j_angle = i_j_angle * 180
+                i_j_length = i_j_length * 10
+
+                cv1_start = (0, 0)
+
+                cv1_end = (0, i_length)
+
+                cv2_start = (i_j_length, 0)
+
+                cv2_end = rotate2D(cv2_start, (i_j_length, j_length), i_j_angle)
+
+                ax.scatter(*cv1_start)
+                ax.scatter(*cv1_end)
+                ax.plot(*zip(cv1_start, cv1_end))
+                ax.text(*cv1_start, "I")
+
+                ax.text(i_j_length / 2, 0, f"{i_j_angle:3.1f}°")
+
+                ax.scatter(*cv2_start)
+                ax.scatter(*cv2_end)
+                ax.plot(*zip(cv2_start, cv2_end))
+                ax.text(*cv2_start, "J")
+
+                ax.set_title(f"Token {n}: i:{i_length:3.2f} j:{j_length:3.2f} d:{i_j_length:3.1f} a:{i_j_angle:3.1f}°")
+
+            save_path = os.path.join(self.data["folder"], "tokens", f"tokens_{self}_E{self.data["epoch"]}.png")
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
+            fig.savefig(save_path)
+            plt.close(fig)
+
+            if self.writer is not None:
+                img = Image.open(save_path)
+                img = torchvision.transforms.v2.functional.pil_to_tensor(img)
+                self.writer.add_image(f"tokens", img, global_step=self.data["epoch"])
+                del img
 
 ########################################################################################################################
 
