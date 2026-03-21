@@ -495,10 +495,12 @@ class EmbeddingDataset(Dataset):
 
 
     def load(self, folder=None, missing_ok=True, load_split=False):
+        log(1, "Loading dataset...")
         if folder is None:
             assert self.data["folder"] is not None
             folder = self.data["folder"]
         path = os.path.join(folder, self.data["fname"])
+        log(2, "Dataset_path:", path)
         if not os.path.exists(path) and missing_ok:
             log("warning", f"Dataset data not found at: {path}")
             return self

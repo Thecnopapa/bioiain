@@ -44,8 +44,9 @@ log(1, f"Model: {MODEL_CLASS}")
 
 dataset = EmbeddingDataset(name=f"tokens_{DATA_NAME}")
 
-if not "--rebuild" in sys.argv and not "--force":
+if not ("--rebuild" in sys.argv or "--force" in sys.argv):
     dataset.load()
+print(dataset)
 if len(dataset) == 0:
     parts = split_iterable(os.listdir(DATA_FOLDER))
     pool = ThreadPool()
