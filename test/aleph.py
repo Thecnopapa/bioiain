@@ -104,21 +104,17 @@ if "-t" in sys.argv:
 
     model.set_mode("autoencoder")
     model.mount()
-    model.plot_latent_space(dataset=dataset)
-    exit()
-
-
 
     for n in range(epochs):
         log("start", "EPOCH", n)
         log("title", "EPOCH", n)
         model.set_mode("autoencoder")
-        # model.cluster_latent_space(dataset)
-        # if "--no-plot" in sys.argv or len(dataset) > 10000:
-        #     model.plot_current_state(dataset=None)
-        #     model.draw_all_tokens()
-        # else:
-        #     model.plot_current_state(dataset=dataset)
+
+        if "--no-plot" in sys.argv or len(dataset) > 10000:
+            model.plot_latent_space(dataset=None)
+            #model.draw_all_tokens()
+        else:
+            model.plot_latent_space(dataset=dataset)
 
 
 

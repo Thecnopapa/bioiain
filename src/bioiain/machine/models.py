@@ -391,6 +391,8 @@ class Hope(DespairLess):
 
     def forward(self, x):
         #print("FORWARD")
+        self.set_mode("autoencoder")
+
         x = x.to(DEVICE)
         z = self._forward(x)
         zn = torch.clamp(z, min=0, max=1)
@@ -408,61 +410,62 @@ class Hope(DespairLess):
         return loss, encoding_loss, decoding_loss
 
     def plot_latent_space(self, dataset=None, seed=6):
-        log(1, "Plotting current state...")
-        from ..visualisation.plots import fig2D
-        from sklearn.decomposition import PCA
-        from PIL import Image
+        with torch.no_grad():
+            log(1, "Plotting current state...")
+            from ..visualisation.plots import fig2D
+            from sklearn.decomposition import PCA
+            from PIL import Image
 
-        fig, ax = fig2D()
+            fig, ax = fig2D()
 
-        codebook = self.submodels["autoencoder"][self.codebook_index]
+            codebook = self.submodels["autoencoder"][self.codebook_index]
 
-        latent = np.array(list(zip(*codebook.codebook.weight.t().detach().cpu().numpy())))
-        print("Latent:")
-        print(latent)
-        print("##")
+            latent = np.array(list(zip(*codebook.codebook.weight.t().detach().cpu().numpy())))
+            #print("Latent:")
+            #print(latent)
+            #print("##")
 
 
-        if codebook.latent_dims > 2:
-            log(2, "Performing PCA on latent...")
-            pca = PCA(n_components=2, random_state=seed)
-            latent = pca.fit_transform(latent)
+            if codebook.latent_dims > 2:
+                log(2, "Performing PCA on latent...")
+                pca = PCA(n_components=2, random_state=seed)
+                latent = pca.fit_transform(latent)
 
-            log(3, "PCA components:")
-            for n, c in enumerate(pca.components_):
-                log(4, f"PC{n+1}: {c}")
+                log(3, "PCA components:")
+                for n, c in enumerate(pca.components_):
+                    log(4, f"PC{n+1}: {c}")
 
-            print(latent)
+                #print(latent)
 
-        for n, s in enumerate(latent):
-            ax.scatter(*s, color=f"C{n}")
-            ax.text(*s, n)
+            for n, s in enumerate(latent):
+                ax.scatter(*s, color=f"C{n}")
+                ax.text(*s, n)
 
-        if dataset is not None:
-            with torch.no_grad():
-                log(2, "Plotting dataset..." )
-                for n, item in enumerate(dataset):
-                    log(3, f"{n+1}/{item}", end="\r")
-                    #token = self.get_closest_latent(e, only_id=True)
-                    token, _, _, point = self._predict(item.t)
-                    point = point.detach().cpu().numpy()
-                    if codebook.latent_dims > 2:
-                        point = pca.transform(point)
+            if dataset is not None:
 
-                    ax.scatter(*point, color=f"C{token}")
+                    log(2, "Plotting dataset..." )
+                    for n, item in enumerate(dataset):
+                        log(3, f"{n+1}/{len(dataset)}", end="\r")
+                        #token = self.get_closest_latent(e, only_id=True)
+                        token, _, _, point = self._predict(item.t)
+                        point = point.detach().cpu().numpy()
+                        if codebook.latent_dims > 2:
+                            point = pca.transform(point)
 
-        fig_dir = os.path.join(self.data["folder"], "latents")
-        os.makedirs(fig_dir, exist_ok=True)
-        fig_path = os.path.join(fig_dir, f"latent_{self}_E{self.data["epoch"]}.png")
-        fig.savefig(fig_path)
-        plt.close(fig)
-        print("saving to:", fig_path)
+                        ax.scatter(*point, color=f"C{token}")
 
-        if self.writer is not None:
-            img = Image.open(fig_path)
-            img = torchvision.transforms.v2.functional.pil_to_tensor(img)
-            self.writer.add_image(f"latent", img, global_step=self.data["epoch"])
-            del img
+            fig_dir = os.path.join(self.data["folder"], "latents")
+            os.makedirs(fig_dir, exist_ok=True)
+            fig_path = os.path.join(fig_dir, f"latent_{self}_E{self.data["epoch"]}.png")
+            fig.savefig(fig_path)
+            plt.close(fig)
+            log(1, "Saving to: open", fig_path)
+
+            if self.writer is not None:
+                img = Image.open(fig_path)
+                img = torchvision.transforms.v2.functional.pil_to_tensor(img)
+                self.writer.add_image(f"latent", img, global_step=self.data["epoch"])
+                del img
 
 
 

@@ -243,7 +243,7 @@ upload-gcloud(){
   cd $FOLDER_PATH | exit 0
   python3 -m build
   python3 -m twine upload --repository-url  https://europe-west1-python.pkg.dev/iainvisa/python/ dist/* --verbose
-  rm dist/* 
+  rm dist/*
 
 }
 
@@ -263,7 +263,7 @@ update_all(){
     pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ bioiain[conda] -U
 }
 board(){
-  tensorboard --logdir=runs &
+  tensorboard --logdir=. &
 }
 
 profile(){

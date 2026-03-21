@@ -158,9 +158,14 @@ class BaseModel(nn.Module):
         return self.submodels.keys()
 
 
-    def set_mode(self, mode:str, quiet=False):
+    def set_mode(self, mode:str, quiet=None):
+        if quiet is None:
+            if self.mode == mode:
+                quiet=True
+            else:
+                quiet = False
         if not quiet:
-            print(f"Model mode: {self.mode} -> {mode}")
+            log(1, f"Model mode: {self.mode} -> {mode}")
         self.mode = mode
         return self.mode
 
@@ -208,7 +213,7 @@ class BaseModel(nn.Module):
                 folder = platform.node()
                 #print(self.writer.__dict__)
                 run_name = os.path.basename(self.writer.log_dir)
-                print(run_name)
+                log(1, "Run name:", run_name)
                 file = os.path.join(self.writer.log_dir, os.listdir(self.writer.log_dir)[-1])
                 self.writer.flush()
                 return send_tensorboard_run(*args, folder=folder, run=run_name, file=file, **kwargs)
