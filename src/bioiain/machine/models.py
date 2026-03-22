@@ -399,7 +399,7 @@ class Hope(DespairLess):
 
         #print(self.submodels["autoencoder"])
         encoding_loss = self.submodels["autoencoder"][self.codebook_index].last_loss
-        decoding_loss = self.MSE(x, zn)
+        decoding_loss = self.MSE(x, z)
         self.running_loss["encoder"] += encoding_loss.item()
         self.running_loss["decoder"] += decoding_loss.item()
         #print("encoding loss:", encoding_loss)
