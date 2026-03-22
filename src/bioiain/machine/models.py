@@ -450,7 +450,9 @@ class Hope(DespairLess):
                         token, _, _, point = self._predict(item.t)
                         point = point.detach().cpu().numpy()
                         if codebook.latent_dims > 2:
-                            point = pca.transform(point.reshape(1, -1))
+                            #print(point)
+                            point = pca.transform(point.reshape(1, -1))[0]
+                            #print(point)
                         ax.scatter(*point, color=f"C{token}")
 
             fig_dir = os.path.join(self.data["folder"], "latents")
