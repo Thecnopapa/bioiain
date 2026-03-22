@@ -524,7 +524,7 @@ class Hope(DespairLess):
 
 class HopeFull(Hope):
     def __init__(self, *args, hidden_dims=None, **kwargs):
-        super().__init__(*args, hidden_dims=(50,), **kwargs)
+        super().__init__(*args, hidden_dims=(50,50), **kwargs)
 
 
 ########################################################################################################################
