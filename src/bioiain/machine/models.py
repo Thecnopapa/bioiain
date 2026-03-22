@@ -522,6 +522,11 @@ class Hope(DespairLess):
                 self.writer.add_image(f"tokens", img, global_step=self.data["epoch"])
                 del img
 
+class HopeFull(Hope):
+    def __init__(self, *args, hidden_dims=None, **kwargs):
+        super().__init__(*args, hidden_dims=(50,), **kwargs)
+
+
 ########################################################################################################################
 
 
