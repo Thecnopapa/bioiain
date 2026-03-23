@@ -13,7 +13,7 @@ class Fragment(BIChain):
 
     def __init__(self, *args, fragment_id=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.paths["sub_folder"] = "fragments"
+        self.paths["sub_folder"] = "fragmented/fragments"
 
 
     @classmethod
@@ -36,7 +36,7 @@ class FragmentedStructure(BIStructure):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.paths["sub_folder"] = "fragments"
+        self.paths["sub_folder"] = "fragmented"
         self.data["fragments"] = {}
         self._cvectors = None
         self._cvmatrix = None
@@ -129,26 +129,7 @@ class FragmentedStructure(BIStructure):
 
         return self._fragments
 
-    def cvectors(self):
-        if self._cvectors is None:
-            self._calculate_cvectors()
-        return self._cvectors
 
-    def _calculate_cvectors(self):
-        print("CALCULATING cvectors")
-        from ..aleph.vectors import CVector
-        residues = self.residues()
-        n_res = len(residues)
-        cvector_list = []
-        for n, res in enumerate(residues):
-            if n == 0 or n == n_res -1:
-                continue
-
-            cvector = CVector(residues[n-1], res, residues[n+1])
-            cvector_list.append(cvector)
-
-        self._cvectors = cvector_list
-        return cvector_list
 
     def _map_cvectors(self):
         matrix = CVMatrix(self.cvectors())

@@ -150,15 +150,35 @@ if "-p" in sys.argv:
     with torch.no_grad():
 
         filepath = sys.argv[sys.argv.index("--file") + 1]
-        modelpath = sys.argv[sys.argv.index("--model") + 1]
+        model_data_path = sys.argv[sys.argv.index("--md") + 1]
 
-        model = Despair(name="test", in_shape=dataset.get(0).t.shape, inference=True)
-        model.load(modelpath)
-        entity = BIEntity.from_file(filepath, code="pred", force=True)
+        data = json.load(open(model_data_path))
+        print("Model class (data):", data.get("model"))
+        model_class = getattr(models, data.get("model"))
+
+        model = model_class(name="test", in_shape=dataset.get(0).t.shape, inference=True)
+        model.load(model_data_path)
+        entity = BIEntity.from_file(filepath, code="pred", force=True, export_folder="./bioiain/predictions").fragment(in_place=True)
         embedding = CVEmbedding(entity=entity).embedding(force=True)
-        out = model(embedding.tensor(), to_latent=True)
-        preds = model.predict_tokens(out)
-        print(preds)
+        print(embedding)
+
+        residues = entity.residues()
+        cvectors = []
+        for frag in entity.fragments():
+            cvectors.extend(frag.cvectors())
+        entity.export()
+        preds = [model._predict(e) for e in embedding.tensor()]
+
+        for res in residues:
+            res.set_bfactor(0)
+
+        print(len(cvectors), len(preds))
+        assert len(cvectors) == len(preds)
+
+        for cv, pred in zip(cvectors, preds):
+            res = cv.res2
+            print(res, pred)
+            res.set_bfactor(pred)
 
 
 

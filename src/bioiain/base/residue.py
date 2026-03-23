@@ -73,6 +73,11 @@ class BIResidue(object):
         for atom in self.atoms:
             atom.set_misc(key, value)
 
+    def set_bfactor(self, bfactor):
+        for a in self.atoms:
+            a.set_bfactor(bfactor)
+        return self
+
 class BINucleoutide(object):
     child_class = BIAtom
     def __init__(self, atoms):

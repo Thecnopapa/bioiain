@@ -132,7 +132,26 @@ class BIEntity(object):
     def residues(self, force=False, chain=None, **kwargs):
         return self.atoms(ca_only=False, as_residues=True, force=force, chain=chain, **kwargs)
 
+    def cvectors(self):
+        if self._cvectors is None:
+            self._calculate_cvectors()
+        return self._cvectors
 
+    def _calculate_cvectors(self):
+        print("CALCULATING cvectors")
+        from ..aleph.vectors import CVector
+        residues = self.residues()
+        n_res = len(residues)
+        cvector_list = []
+        for n, res in enumerate(residues):
+            if n == 0 or n == n_res -1:
+                continue
+
+            cvector = CVector(residues[n-1], res, residues[n+1])
+            cvector_list.append(cvector)
+
+        self._cvectors = cvector_list
+        return cvector_list
 
 
     def atoms(self, ca_only=False, hetatm=False, force=False, group_by_residue=False, disordered=False, as_residues=False, chain=None, group_by_chain=False, as_chains=False, **kwargs):
@@ -316,6 +335,7 @@ class BIEntity(object):
             raise
         os.makedirs(base_folder, exist_ok=True)
         base_path = os.path.join(base_folder, fname)
+        log(2, f"Exporting: {self} to {base_path}")
         if self.has_flag("is_fractional", True):
             log("Warning", "A fractional entity was about to be exported!")
             log("Warning", "An orthogonal copy was made for you and exported instead! (only for atoms)")
@@ -505,7 +525,7 @@ class BIEntity(object):
             else:
                 frag = self
         else:
-            frag = FragmentedStructure.from_atoms(self.all_atoms(), parent=self, share=in_place)
+            frag = FragmentedStructure.from_atoms(self.all_atoms(), parent=self, share=in_place, export_folder=self.paths["export_folder"])
 
         frag.fragment_with_aleph()
         return frag
