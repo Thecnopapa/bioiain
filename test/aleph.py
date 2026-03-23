@@ -15,7 +15,18 @@ from src.bioiain.base import *
 from src.bioiain.machine import *
 from src.bioiain.utilities.parallel import *
 
+import torch, random
+import  numpy as np
 
+torch.set_num_threads(avail_cpus)
+log(1, f"Torch using {avail_cpus} threads")
+
+seed = 6
+random.seed(seed)
+np.random.seed(seed)
+torch.manual_seed(seed)
+torch.cuda.manual_seed(seed)
+torch.cuda.manual_seed_all(seed)
 
 from src.bioiain.biopython.imports import *
 if "monomers" in sys.argv:
@@ -31,71 +42,60 @@ else:
     DATA_FOLDER = downloadPDB( list_name="aleph", pdb_list=["1M2Z", "3HBB", "6F63", "5LXN", "3brf", "6e52", "7t2y"], data_dir="./data" )
     DATA_NAME = "aleph"
 
-LR = 0.0001
-if "--lr" in sys.argv:
-    LR = float(sys.argv[sys.argv.index("--lr") + 1])
-log(1, f"Learning rate: {LR}")
+if "-p" not in sys.argv:
+    LR = 0.0001
+    if "--lr" in sys.argv:
+        LR = float(sys.argv[sys.argv.index("--lr") + 1])
+    log(1, f"Learning rate: {LR}")
 
-MODEL_NAME = "Despair"
-if "--model" in sys.argv:
-    MODEL_NAME = sys.argv[sys.argv.index("--model") + 1]
-MODEL_CLASS = getattr(models, MODEL_NAME)
-log(1, f"Model: {MODEL_CLASS}")
+    MODEL_NAME = "Despair"
+    if "--model" in sys.argv:
+        MODEL_NAME = sys.argv[sys.argv.index("--model") + 1]
+    MODEL_CLASS = getattr(models, MODEL_NAME)
+    log(1, f"Model: {MODEL_CLASS}")
 
-dataset = EmbeddingDataset(name=f"tokens_{DATA_NAME}")
+    dataset = EmbeddingDataset(name=f"tokens_{DATA_NAME}")
 
-if not ("--rebuild" in sys.argv or "--force" in sys.argv):
-    dataset.load()
-print(dataset)
-if len(dataset) == 0:
-    parts = split_iterable(os.listdir(DATA_FOLDER))
-    pool = ThreadPool()
+    if not ("--rebuild" in sys.argv or "--force" in sys.argv):
+        dataset.load()
+    print(dataset)
+    if len(dataset) == 0:
+        parts = split_iterable(os.listdir(DATA_FOLDER))
+        pool = ThreadPool()
 
-    def generate_embeddings(file_list=None):
-        log("header", f"Generating embeddings... ({len(file_list)})")
-        for file in file_list:
-            log("header", file)
-            log("title", file)
+        def generate_embeddings(file_list=None):
+            log("header", f"Generating embeddings... ({len(file_list)})")
+            for file in file_list:
+                log("header", file)
+                log("title", file)
 
-            path = os.path.join(DATA_FOLDER, file)
-            entity = BIEntity.from_file(path)
+                path = os.path.join(DATA_FOLDER, file)
+                entity = BIEntity.from_file(path)
 
-            embedding = CVEmbedding(entity=entity).embedding(force="--force" in sys.argv)
+                embedding = CVEmbedding(entity=entity).embedding(force="--force" in sys.argv)
 
-            if embedding is None:
-                log("warning", "No embedding for file:", file)
-                continue
-            if "7T2Y" in file:
-                [print(r, e) for r, e in zip(entity.residues(), embedding.tensor())]
-                # entity.fragment().show_cvectors()
+                if embedding is None:
+                    log("warning", "No embedding for file:", file)
+                    continue
+                if "7T2Y" in file:
+                    [print(r, e) for r, e in zip(entity.residues(), embedding.tensor())]
+                    # entity.fragment().show_cvectors()
 
-            print(embedding)
-            dataset.add(embedding, key=entity.name())
-            print(dataset)
-
-
-    for part in parts:
-        pool.add(generate_embeddings, file_list=part)
-    pool.start(wait=True)
+                print(embedding)
+                dataset.add(embedding, key=entity.name())
+                print(dataset)
 
 
-    dataset.save()
+        for part in parts:
+            pool.add(generate_embeddings, file_list=part)
+        pool.start(wait=True)
+
+
+        dataset.save()
 
 
 if "-t" in sys.argv:
 
-    import torch, random
-    import  numpy as np
-
-    torch.set_num_threads(avail_cpus)
-    log(1, f"Torch using {avail_cpus} threads")
-
-    seed = 6
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
 
     epochs = 100
     print(dataset)
@@ -149,6 +149,7 @@ if "-t" in sys.argv:
 if "-p" in sys.argv:
     with torch.no_grad():
         from src.bioiain.visualisation.pymol import PymolScript
+        from src.bioiain.visualisation.plots import mpl_colours
 
         filepath = sys.argv[sys.argv.index("--file") + 1]
         model_data_path = sys.argv[sys.argv.index("--md") + 1]
@@ -157,7 +158,7 @@ if "-p" in sys.argv:
         print("Model class (data):", data.get("model"))
         model_class = getattr(models, data.get("model"))
 
-        model = model_class(name="test", in_shape=dataset.get(0).t.shape, inference=True)
+        model = model_class(name="test", in_shape=data.get("in_shape"), inference=True)
         model.load(model_data_path)
 
 
@@ -176,7 +177,7 @@ if "-p" in sys.argv:
 
         print(len(residues), len(cvectors))
 
-        preds = [model._predict(e)[0] for e in embedding.tensor()]
+        preds = [model._predict(e) for e in embedding.tensor()]
 
         for res in residues:
             res.set_bfactor(0)
@@ -186,15 +187,18 @@ if "-p" in sys.argv:
 
         for cv, pred in zip(cvectors, preds): 
             res = cv.res2
-            print(res, pred)
-            res.set_bfactor(pred)
+            #print(res, pred[0])
+            res.set_bfactor(pred[0])
 
         entity.export()
 
         script = PymolScript(name=f"{entity.name()}_prediction_pml_session", folder="./bioiain/predictions")
         script.load(entity.path(minimal=True), entity.name())
-        script.spectrum("(all)")
+        script.spectrum("(all)", color="_".join(mpl_colours)+"_"+"_".join(mpl_colours), minimum=0, maximum=19)
         script.write_script()
+
+        model.plot_latent_space(plot_preds=preds, show=True, fig_dir="./bioiain/predictions")
+
         script.execute()
 
 

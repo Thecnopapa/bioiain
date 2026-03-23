@@ -343,14 +343,20 @@ class BaseModel(nn.Module):
         if is_tmp:
             base_path = base_path.replace(".temp", "")
 
-        print("BASE", base_path)
+        log(2, "base_path", base_path)
+        if not self.mounted:
+            self.mount()
 
         for name, submodel in self.submodels.items():
+            log(2, "Loading submodel:", name)
             model_path = f"{base_path}.{name}"
             if is_tmp:
                 model_path += ".temp"
             model_path += ".model.pt"
-            submodel.load_state_dict(torch.load(model_path, weights_only=weights_only, map_location=torch.device("cpu")))
+            if not os.path.exists(model_path):
+                log("warning", f"Weights fo submodel {name} not found: {model_path}")
+            else:
+                submodel.load_state_dict(torch.load(model_path, weights_only=weights_only, map_location=torch.device("cpu")))
         return self
 
 

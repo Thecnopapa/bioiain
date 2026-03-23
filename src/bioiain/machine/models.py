@@ -409,7 +409,7 @@ class Hope(DespairLess):
 
         return loss, encoding_loss, decoding_loss
 
-    def plot_latent_space(self, dataset=None, seed=6):
+    def plot_latent_space(self, dataset=None, seed=6, fig_dir=None, show=False, plot_preds=None):
         with torch.no_grad():
             log(1, "Plotting current state...")
             from ..visualisation.plots import fig2D
@@ -442,25 +442,34 @@ class Hope(DespairLess):
                 ax.text(*s, n)
 
             if dataset is not None:
+                log(2, "Plotting dataset..." )
+                for n, item in enumerate(dataset):
+                    log(3, f"{n+1}/{len(dataset)}", end="\r")
+                    #token = self.get_closest_latent(e, only_id=True)
+                    token, _, _, point = self._predict(item.t)
+                    point = point.detach().cpu().numpy()
+                    if codebook.latent_dims > 2:
+                        #print(point)
+                        point = pca.transform(point.reshape(1, -1))[0]
+                        #print(point)
+                    ax.scatter(*point, color=f"C{token}")
 
-                    log(2, "Plotting dataset..." )
-                    for n, item in enumerate(dataset):
-                        log(3, f"{n+1}/{len(dataset)}", end="\r")
-                        #token = self.get_closest_latent(e, only_id=True)
-                        token, _, _, point = self._predict(item.t)
-                        point = point.detach().cpu().numpy()
-                        if codebook.latent_dims > 2:
-                            #print(point)
-                            point = pca.transform(point.reshape(1, -1))[0]
-                            #print(point)
-                        ax.scatter(*point, color=f"C{token}")
+            if plot_preds is not None:
+                log(2, "Plotting predictions..." )
+                for token, _, _, point in plot_preds:
+                    ax.scatter(*point, color=f"C{token}")
 
-            fig_dir = os.path.join(self.data["folder"], "latents")
+
+            if fig_dir is None:
+                fig_dir = os.path.join(self.data["folder"], "latents")
             os.makedirs(fig_dir, exist_ok=True)
             fig_path = os.path.join(fig_dir, f"latent_{self}_E{self.data["epoch"]}.png")
             fig.savefig(fig_path)
+            if show:
+                fig.show()
             plt.close(fig)
             log(1, "Saving to: open", fig_path)
+
 
             if self.writer is not None:
                 img = Image.open(fig_path)

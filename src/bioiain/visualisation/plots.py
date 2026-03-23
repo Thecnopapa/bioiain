@@ -18,7 +18,12 @@ from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sb
 
-mpl_colours = 'blue', 'orange', 'green', 'red', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan'
+mpl_colours = ('blue', 'orange', 'green', 'red', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan')
+pymol_colours = ('green', 'cyan', 'red', 'yellow', 'violet','blue',
+               'salmon', 'lime', 'pink', 'slate', 'magenta', 'orange', 'marine',
+               'olive', 'purple', 'teal', 'forest', 'firebrick', 'chocolate',
+               'wheat', 'white', 'grey')
+
 
 try:
     mpl.use('QtAgg')
