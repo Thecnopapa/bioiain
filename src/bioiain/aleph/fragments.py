@@ -38,14 +38,17 @@ class FragmentedStructure(BIStructure):
         super().__init__(*args, **kwargs)
         self.paths["sub_folder"] = "fragmented"
         self.data["fragments"] = {}
-        self._cvectors = None
         self._cvmatrix = None
         self._fragments = None
 
 
 
-    def fragment_with_aleph(self):
+    def fragment_with_aleph(self, force=False, export=False):
         from .core.ALEPH import annotate_pdb_model_with_aleph
+
+        if (self._fragments is not None) and not force:
+            return self._fragments
+
         self.export(minimal=True)
         self.data["fragments"]["weight"] = "distance_avg"
         self.data["fragments"]["threshold_ah"] = 0.50
@@ -108,20 +111,22 @@ class FragmentedStructure(BIStructure):
             if len(chain) > 0:
                 chain = chain[0]
                 fragment = Fragment.from_atoms(fatoms, code=self.code(), chain_id=chain, fragment_id=n, parent=self)
-                fragment.export()
+                if export:
+                    fragment.export()
                 fragments.append(fragment)
             else:
                 log("warning", f"fragment {n}: no residues")
-        self._atoms = atoms
+        #self._atoms = atoms
         self._fragments = fragments
-        for a in self.all_atoms():
-            if a.get_misc("fragment", None) is None:
-                self.remove_atom(a)
+        #for a in self.all_atoms():
+            #if a.get_misc("fragment", None) is None:
+                #self.remove_atom(a)
         self.data["fragments"]["n_fragments"] = len(self._fragments)
-        self.export()
+        if export:
+            self.export()
         #print(self.all_atoms())
 
-        return self
+        return self._fragments
 
     def fragments(self):
         if self._fragments is None:

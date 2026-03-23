@@ -245,7 +245,7 @@ class PymolScript(object):
         sele = self._to_str(sele)
         return self.add(fun, self._to_str(representation), sele, **kwargs)
 
-    def load_entity(self, entity:BiopythonOverlayClass, name:str|None=None, overwrite:bool=True) -> Command:
+    def load_entity(self, entity, name:str|None=None, overwrite:bool=True) -> Command:
         """
         Adds command to load file from entity. Entity is exported to t/mp/bioiain/pymol as of the cwd.
         :param entity:

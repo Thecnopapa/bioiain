@@ -47,6 +47,9 @@ class BIEntity(object):
         }
         self.exporting = ["data", "paths", "flags"]
 
+        #CVectors
+        self._cvectors = None
+
         # Children
         self._chains = None
         self._residues = None
@@ -87,10 +90,16 @@ class BIEntity(object):
         else:
             self.data["info"]["name"] = name
 
-    def path(self):
-        if self.paths.get("self", None) is None:
-            self.export()
-        return self.paths["self"]
+    def path(self, minimal=False):
+        if not minimal:
+            if self.paths.get("self", None) is None:
+                self.export()
+            return self.paths["self"]
+        else:
+            if self.paths.get("minimal", None) is None:
+                self.export(minimal=True)
+            return self.paths["minimal"]
+        
 
     def code(self):
         return self.data["info"]["code"]
@@ -517,7 +526,7 @@ class BIEntity(object):
         self._parameters = parameters
         return self._parameters
 
-    def fragment(self, in_place=False):
+    def fragment(self, in_place=False, force=False):
         from ..aleph.fragments import FragmentedStructure
         if isinstance(self, FragmentedStructure):
             if not in_place:
@@ -527,7 +536,8 @@ class BIEntity(object):
         else:
             frag = FragmentedStructure.from_atoms(self.all_atoms(), parent=self, share=in_place, export_folder=self.paths["export_folder"])
 
-        frag.fragment_with_aleph()
+
+        frag.fragment_with_aleph(force=force)
         return frag
 
 

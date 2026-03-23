@@ -148,6 +148,7 @@ if "-t" in sys.argv:
 
 if "-p" in sys.argv:
     with torch.no_grad():
+        from src.bioiain.visualisation.pymol import PymolScript
 
         filepath = sys.argv[sys.argv.index("--file") + 1]
         model_data_path = sys.argv[sys.argv.index("--md") + 1]
@@ -158,16 +159,24 @@ if "-p" in sys.argv:
 
         model = model_class(name="test", in_shape=dataset.get(0).t.shape, inference=True)
         model.load(model_data_path)
-        entity = BIEntity.from_file(filepath, code="pred", force=True, export_folder="./bioiain/predictions").fragment(in_place=True)
+
+
+        entity = BIEntity.from_file(filepath, code="pred", force=True, export_folder="./bioiain/predictions")
+        entity.export()
+        print(entity)
+        print(len(entity.residues()))
+
         embedding = CVEmbedding(entity=entity).embedding(force=True)
         print(embedding)
-
+        
+        entity = embedding.entity
+        print(entity)
         residues = entity.residues()
-        cvectors = []
-        for frag in entity.fragments():
-            cvectors.extend(frag.cvectors())
-        entity.export()
-        preds = [model._predict(e) for e in embedding.tensor()]
+        cvectors = entity.cvectors()
+
+        print(len(residues), len(cvectors))
+
+        preds = [model._predict(e)[0] for e in embedding.tensor()]
 
         for res in residues:
             res.set_bfactor(0)
@@ -175,10 +184,18 @@ if "-p" in sys.argv:
         print(len(cvectors), len(preds))
         assert len(cvectors) == len(preds)
 
-        for cv, pred in zip(cvectors, preds):
+        for cv, pred in zip(cvectors, preds): 
             res = cv.res2
             print(res, pred)
             res.set_bfactor(pred)
+
+        entity.export()
+
+        script = PymolScript(name=f"{entity.name()}_prediction_pml_session", folder="./bioiain/predictions")
+        script.load(entity.path(minimal=True), entity.name())
+        script.spectrum("(all)")
+        script.write_script()
+        script.execute()
 
 
 
