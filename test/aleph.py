@@ -151,6 +151,8 @@ if "-p" in sys.argv:
         from src.bioiain.visualisation.pymol import PymolScript
         from src.bioiain.visualisation.plots import mpl_colours
 
+
+
         filepath = sys.argv[sys.argv.index("--file") + 1]
         model_data_path = sys.argv[sys.argv.index("--md") + 1]
 
@@ -158,11 +160,17 @@ if "-p" in sys.argv:
         print("Model class (data):", data.get("model"))
         model_class = getattr(models, data.get("model"))
 
-        model = model_class(name="test", in_shape=data.get("in_shape"), inference=True)
+        model = model_class(name="inference", in_shape=data.get("in_shape"), inference=True)
         model.load(model_data_path)
 
+        name = os.path.basename(filepath).split(".")[0]
 
-        entity = BIEntity.from_file(filepath, code="pred", force=True, export_folder="./bioiain/predictions")
+        prediction_name = name +"_"+ datetime.datetime.now().strftime('_%y-%m-%d_%H-%M-%S')
+        prediction_folder = f"./bioiain/predictions/f{prediction_name}"
+        os.makedirs(prediction_folder, exist_ok=True)
+
+        entity = BIEntity.from_file(filepath, code=name, force=True, export_folder=prediction_folder)
+
         entity.export()
         print(entity)
         print(len(entity.residues()))
@@ -192,12 +200,12 @@ if "-p" in sys.argv:
 
         entity.export()
 
-        script = PymolScript(name=f"{entity.name()}_prediction_pml_session", folder="./bioiain/predictions")
+        script = PymolScript(name=f"{name}_prediction", folder=prediction_folder)
         script.load(entity.path(minimal=True), entity.name())
         script.spectrum("(all)", color="_".join(mpl_colours)+"_"+"_".join(mpl_colours), minimum=0, maximum=19)
         script.write_script()
 
-        model.plot_latent_space(plot_preds=preds, show=True, fig_dir="./bioiain/predictions")
+        model.plot_latent_space(plot_preds=preds, show=True, fig_dir=prediction_folder)
 
         script.execute()
 

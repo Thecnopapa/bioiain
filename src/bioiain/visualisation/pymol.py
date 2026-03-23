@@ -103,7 +103,10 @@ class PymolScript(object):
             self.cmd = c
             return self.cmd
 
-    def write_script(self, filename:str=None) -> str:
+    def write_script(self, *args, **kwargs) -> str:
+        return self.save(*args, **kwargs)
+
+    def save(self, filename:str=None) -> str:
         """
         Writes the stored commands to a file. The file can be executed from the terminal or run as a PyMol script.
         :param filename: (optional) Path to the file to write to. Uses script name and current wd as default.
@@ -111,7 +114,7 @@ class PymolScript(object):
         """
         if filename is None:
             filename = self.name
-        filepath = os.path.join(self.subfolder, filename+".pml")
+        filepath = os.path.join(self.subfolder, filename+".script.pml")
         with open(filepath, "w") as f:
             f.write(f"#!{self.pymol_path}\n\n")
             #f.write("import {} as bi\n\n\n".format(self._bioiain))
