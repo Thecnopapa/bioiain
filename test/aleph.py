@@ -166,7 +166,7 @@ if "-p" in sys.argv:
         name = os.path.basename(filepath).split(".")[0]
 
         prediction_name = name +"_"+ datetime.datetime.now().strftime('_%y-%m-%d_%H-%M-%S')
-        prediction_folder = f"./bioiain/predictions/f{prediction_name}"
+        prediction_folder = f"./bioiain/predictions/{prediction_name}"
         os.makedirs(prediction_folder, exist_ok=True)
 
         entity = BIEntity.from_file(filepath, code=name, force=True, export_folder=prediction_folder)
