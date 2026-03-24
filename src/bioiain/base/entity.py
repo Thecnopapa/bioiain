@@ -1,6 +1,6 @@
 import os, json
 from ..utilities import *
-from ..utilities import clean_string, d3to1
+from ..utilities import clean_string
 from ..utilities.exceptions import *
 from .mmcif import *
 import numpy as np
@@ -125,7 +125,7 @@ class BIEntity(object):
 
     def sequence(self, force=False):
         if self.get_sequence() is None or force:
-            seq = "".join([d3to1[r.resname] for r in self.residues()])
+            seq = "".join([r.rn1 for r in self.residues()])
             self.data["sequences"]["aa"] = seq
         return self.get_sequence()
 
@@ -138,8 +138,17 @@ class BIEntity(object):
     def chains(self):
         return self.atoms(as_chains=True, hetatm=True)
 
-    def residues(self, force=False, chain=None, **kwargs):
-        return self.atoms(ca_only=False, as_residues=True, force=force, chain=chain, **kwargs)
+    def residues(self):
+        return self.atoms(ca_only=False, residues=True)
+
+    def waters(self):
+        return self.atoms(ca_only=False, water=True)
+
+    def dna(self):
+        return self.atoms(ca_only=False, dna=True)
+
+    def ligands(self):
+        return self.atoms(ca_only=False, ligands=True)
 
     def cvectors(self):
         if self._cvectors is None:
@@ -163,9 +172,32 @@ class BIEntity(object):
         return cvector_list
 
 
-    def atoms(self, ca_only=False, hetatm=False, force=False, group_by_residue=False, disordered=False, as_residues=False, chain=None, group_by_chain=False, as_chains=False, **kwargs):
+    def atoms(self, ca_only=False, hetatm=False, ligands=False, residues=False, dna=False, water=False, force=False, group_by_residue=False, disordered=False, as_residues=False, chain=None, group_by_chain=False, as_chains=False, **kwargs):
         from .atom import _fix_disordered
-        from .residue import BIResidue
+        from .residue import build_res
+
+        target_entities = []
+        if as_residues:
+            residues = True
+
+        if residues:
+            target_entities.append("residue")
+
+        if dna:
+            target_entities.append("dna")
+
+
+        if water or ligands:
+            hetatm = True
+            ca_only = False
+
+        if water:
+            target_entities.append("water")
+
+        if ligands:
+            target_entities.append("ligand")
+
+
         atoms = self.all_atoms()
 
         if not disordered:
@@ -182,36 +214,33 @@ class BIEntity(object):
             from .chain import BIChain
             chain_list = {}
             for atom in atoms:
-                if atom.chain in chain_list.keys():
-                    chain_list[atom.chain].append(atom)
+                if atom.complex in chain_list.keys():
+                    chain_list[atom.complex].append(atom)
                 else:
-                    chain_list[atom.chain] = [atom]
+                    chain_list[atom.complex] = [atom]
             if as_chains:
                 for ch, atms in chain_list.items():
                     chain_list[ch] = BIChain().from_atoms(atms, self.code(), ch, parent=self)
                 chain_list = [ch for ch in chain_list.values()]
             return chain_list
 
-        if group_by_residue or as_residues:
+        if group_by_residue or len(target_entities) > 0:
             atoms_by_res = {}
             for atom in atoms:
-                if atom.id[1:] in atoms_by_res:
-                    atoms_by_res[atom.id[1:]].append(atom)
+                if atom.id2[1:] in atoms_by_res:
+                    atoms_by_res[atom.id2[1:]].append(atom)
                 else:
-                    atoms_by_res[atom.id[1:]] = [atom]
+                    atoms_by_res[atom.id2[1:]] = [atom]
 
-
-            atoms = atoms_by_res
-            if as_residues:
-
-                atoms = []
+            if len(target_entities) > 0:
+                entities = []
                 for resatms in atoms_by_res.values():
-                    try:
-                        r = BIResidue(resatms)
-                        if r.is_residue:
-                            atoms.append(r)
-                    except NoCaFound:
-                        continue
+                    e = build_res(resatms)
+                    if e.type in target_entities:
+                        entities.append(e)
+                return entities
+
+            return atoms_by_res
 
         return atoms
 

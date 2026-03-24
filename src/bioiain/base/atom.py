@@ -23,13 +23,19 @@ class BIAtom(object):
             "label_atom_id",
             "label_comp_id",
             "label_seq_id",
-            "auth_asym_id",
+            "label_asym_id",
+            "label_entity_id",
+            "auth_atom_id",
+            "auth_comp_id",
             "auth_seq_id",
+            "auth_asym_id",
             "Cartn_x",
             "Cartn_y",
             "Cartn_z",
             "occupancy",
             "B_iso_or_equiv",
+            "pdbx_PDB_model_num",
+
         ]
 
 
@@ -43,23 +49,32 @@ class BIAtom(object):
         self.atomnum = int(data["id"])
         self.type = data["group_PDB"] # ATOM / HETATM
         self.element = data["type_symbol"].strip() #C
-        self.name = data["label_atom_id"].strip() # CA
+        self.name = data["label_atom_id"].strip() # CA (Auto)
+        self.name2 = data["auth_atom_id"].strip() # CA (Given)
         self.prime = False
         if "'" in self.name:
             self.prime = True
-            self.name = self.name.replace("'", "")
+            self.name = self.name.replace("'", "").strip()
+            self.name2 = self.name2.replace("'", "").strip()
+
         #RES
-        self.resname = data["label_comp_id"]
+        self.resname = data["label_comp_id"] # Auto
+        self.resname2 = data["auth_comp_id"] # Given
         self.resseq = data["label_seq_id"] # Auto
         if self.resseq is not None: self.resseq = int(self.resseq)
         self.resnum = data["auth_seq_id"] # Given
         if self.resnum is not None: self.resnum = int(self.resnum)
+
         #CHAIN
-        self.chain = data["auth_asym_id"]
+        self.chain = data["label_asym_id"] # Auto
+        self.complex = data["auth_asym_id"] # Given
+        self.entity = int(data["label_entity_id"])
+        self.model = int(data["pdbx_PDB_model_num"])
 
         #PROPERTIES
-        self.id = (self.name,  self.resnum, self.chain)
-        self.id2 = (self.name,  self.resseq, self.chain)
+        self.id = (self.name,  self.resnum, self.complex) # Ambiguous (label)
+        self.id2 = (self.name,  self.resseq, self.chain) # Not ambiguous (auth)
+        self.id3 = (self.atomnum, self.type, self.element, self.name, self.resseq, self.chain, self.model) # Unique
         self.x = float(data["Cartn_x"])
         self.y = float(data["Cartn_y"])
         self.z = float(data["Cartn_z"])
@@ -98,7 +113,7 @@ class BIAtom(object):
             else:
                 return "<bi.{} id={}.{} b={} occupancy={} (disordred/not-favourite)>".format(self.__class__.__name__, self.id, self.alt_id, self.b, self.occupancy)
         else:
-            return "<bi.{} id={}> b={}".format(self.__class__.__name__, self.id, self.b)
+            return "<bi.{} id={} b={}>".format(self.__class__.__name__, self.id, self.b)
 
     def __repr__(self):
         if self.disordered:
@@ -107,7 +122,7 @@ class BIAtom(object):
             else:
                 return "<bi.{} id={}.{} b={} occupancy={} (disordred/not-favourite)>".format(self.__class__.__name__, self.id, self.alt_id, self.b, self.occupancy)
         else:
-            return "<bi.{} id={}> b={}".format(self.__class__.__name__, self.id, self.b)
+            return "<bi.{} id={} b={}>".format(self.__class__.__name__, self.id, self.b)
 
     def __str__(self):
         return repr(self)
@@ -322,8 +337,11 @@ class BIAtom(object):
             self.to_orth(params)
         return self
 
-
-
+    @staticmethod
+    def _none_point(val):
+        if val is None:
+            return "."
+        return str(val)
 
     def _mmcif_dict(self, include_misc=True):
 
@@ -331,16 +349,30 @@ class BIAtom(object):
             data = {}
             data["group_PDB"] = f"{self.type:6s}"
             data["id"] = f"{self.atomnum:4d}"
-            if self.alt_id is None: data["label_alt_id"] = "."
-            else: data["label_alt_id"] = f"{self.alt_id}"
-            if self.resseq is None: data["label_seq_id"] = "."
-            else: data["label_seq_id"] = f"{self.resseq:4d}"
-            data["type_symbol"] = f"{self.element:3s}"
-            if self.prime: data["label_atom_id"] = f"\"{self.name:3s}'\""
-            else: data["label_atom_id"] = f"{self.name:3s}"
-            data["label_comp_id"] =f"{self.resname:4s}"
-            data["auth_seq_id"] = f"{self.resnum:4d}"
-            data["auth_asym_id"] = f"{self.chain:2s}"
+
+
+            data["label_alt_id"] = f"{self._none_point(self.alt_id):>1s}"
+            data["type_symbol"] = f"{self._none_point(self.element):<2s}"
+
+
+
+
+            if self.prime and not self.name.endswith("'"): data["label_atom_id"] = f"\"{self.name:>2s}'\""
+            else: data["label_atom_id"] = f"{self._none_point(self.name):<5s}"
+
+            data["label_comp_id"] =f"{self._none_point(self.resname):<3s}"
+            data["label_seq_id"] = f"{self._none_point(self.resseq):>3s}"
+            data["label_asym_id"] = f"{self._none_point(self.complex):1s}"
+            data["label_entity_id"] = f"{self._none_point(self.entity):1s}"
+
+            if self.prime and not self.name2.endswith("'"): data["auth_atom_id"] = f"\"{self._none_point(self.name2):>2s}'\""
+            else: data["auth_atom_id"] = f"{self._none_point(self.name2):<5s}"
+
+            data["auth_comp_id"] =f"{self._none_point(self.resname2):<3s}"
+            data["auth_seq_id"] = f"{self._none_point(self.resnum):>3s}"
+            data["auth_asym_id"] = f"{self._none_point(self.chain):1s}"
+
+            data["pdbx_PDB_model_num"] = f"{self._none_point(self.model):>2s}"
             data["Cartn_x"] = f"{self.x:7.3f}"
             data["Cartn_y"] = f"{self.y:7.3f}"
             data["Cartn_z"] = f"{self.z:7.3f}"
@@ -356,8 +388,7 @@ class BIAtom(object):
 
         if include_misc:
             for k, v in self.misc.items():
-                if v is None: v = "."
-                data[k] = f"{v}"
+                data[k] = f"{self._none_point(v):>3s}"
 
 
         return data

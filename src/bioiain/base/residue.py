@@ -1,13 +1,41 @@
 import os, json
 
+from ..utilities import *
 
 from ..utilities.exceptions import *
 from .atom import BIAtom
+from .ligand import Ligand, Water
+from ..utilities import clean_string, d3to1
+
+
+
+
+
+def build_res(atoms):
+    for a in atoms:
+        if a.type == "HETATM":
+            if a.resname == "HOH":
+                return Water(atoms)
+            else:
+                return Ligand(atoms)
+        elif a.type == "ATOM":
+            if len(a.resname) == 2:
+                return BINucleoutide(atoms)
+            else:
+                return BIResidue(atoms)
+        else:
+            log("warning", "No matching class for atom:", a)
+            raise NoMatchingClass()
+
+
+
+
 
 
 
 class BIResidue(object):
     child_class = BIAtom
+    type="residue"
     def __init__(self, atoms):
         if type(atoms) == dict:
             atoms = atoms.values()
@@ -19,16 +47,18 @@ class BIResidue(object):
         self.n = None
         self.resnum = None
         self.resname = None
+        self.rn1 = None
         self.resseq = None
         self.chain = None
         self.fragment = None
         self.is_residue = True
 
+
             
 
         for a in self.atoms:
             if len(a.resname) == 2:
-                #log("Warning", "Nucleotide detected!, initialising BINucleotide instead")
+                log("Warning", "(DEPRECATED use to initialise a nucleotide. Use build res instead")
                 self.__class__ = BINucleoutide
                 self.__init__(self.atoms)
                 break
@@ -59,6 +89,11 @@ class BIResidue(object):
 
             self.resnum = self.ca.resnum
             self.resname = self.ca.resname
+            try:
+                self.rn1 = d3to1[self.resname]
+            except:
+                self.rn1 = "X"
+
             self.resseq = self.ca.resseq
             self.chain = self.ca.chain
             if self.fragment is None:
@@ -80,6 +115,7 @@ class BIResidue(object):
 
 class BINucleoutide(object):
     child_class = BIAtom
+    type="dna"
     def __init__(self, atoms):
         if type(atoms) == dict:
             atoms = atoms.values()

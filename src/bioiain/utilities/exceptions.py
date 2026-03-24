@@ -48,8 +48,10 @@ class ModelNotFound(Exception):
 	pass
 
 #Residue related
-
 class NoCaFound(Exception):
+	pass
+	
+class NoMatchingClass(Exception):
 	pass
 
 
