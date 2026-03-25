@@ -332,10 +332,10 @@ class PymolScript(object):
         fun = "distance"
         if sele1 is None:
             sele1 = "tmp1"
-            self.pseudoatom(sele1, coord=coord1, **kwargs)
+            self.pseudoatom(sele1, coord=[float(c) for c in coord1], **kwargs)
         if sele2 is None:
             sele2 = "tmp2"
-            self.pseudoatom(sele2, coord=coord2, **kwargs)
+            self.pseudoatom(sele2, coord=[float(c) for c in coord2], **kwargs)
         args = [self._to_str(name), self._to_str(sele1), self._to_str(sele2)]
 
         r = self.add(fun, *args, **kwargs)

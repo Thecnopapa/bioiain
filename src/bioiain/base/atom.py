@@ -2,6 +2,7 @@ import os, json
 
 from ..utilities.exceptions import *
 from ..utilities import *
+import numpy as np
 
 
 class BIAtom(object):
@@ -269,17 +270,30 @@ class BIAtom(object):
         new = deepcopy(self)
         return new
 
+    @staticmethod
+    def _to_frac(coord, params):
+        x, y, z = coord
+        nx = (x * params["vvy"]) + (y * params["vvz"]) + (z * params["uuz"])
+        ny = (y * params["uuy"]) + (z * params["vv"])
+        nz = z * params["uu"]
+        return nx, ny, nz
+
+    @staticmethod
+    def _to_orth(coord, params):
+        t1, t2, t3 = coord
+        tz = t3 / params["uu"]
+        ty = (t2 - tz * params["vv"]) / params["uuy"]
+        tx = (t1 - ty * params["vvz"] - tz * params["uuz"]) / params["vvy"]
+        return tx, ty, tz
+
     def to_frac(self, params):
         if self.is_fractional:
             log("Warining", f"Atom: {self} is already fractional")
             raise AlreadyFractional(self)
 
         self._orth_coords = self.coord
-        x, y, z = self.coord
 
-        nx = (x * params["vvy"]) + (y * params["vvz"]) + (z * params["uuz"])
-        ny = (y * params["uuy"]) + (z * params["vv"])
-        nz = z * params["uu"]
+        nx, ny, nz = self._to_frac(self.coord, params)
 
         self.x = nx
         self.y = ny
@@ -297,11 +311,7 @@ class BIAtom(object):
 
         self._frac_coords = self.coord
 
-        t1, t2, t3 = self.coord
-
-        tz = t3 / params["uu"]
-        ty = (t2 - tz * params["vv"]) / params["uuy"]
-        tx = (t1 - ty * params["vvz"] - tz * params["uuz"]) / params["vvy"]
+        tx, ty, tz = self._to_orth(self.coord, params)
 
         self.x = tx
         self.y = ty
@@ -311,8 +321,40 @@ class BIAtom(object):
 
         return self
 
-    def _symop(self, symop, params):
-        from ..utilities.space_groups import dictio_space_groups
+    def at(self, symop, params, center=None):
+
+        if not self.is_fractional:
+            self.to_frac(params)
+            was_orth = True
+        else:
+            was_orth = False
+
+
+        p1 = np.array(self._symop(symop, params))
+        if center is None:
+            center = p1
+        
+        p2 = np.array((np.array(center) + ((((np.array(self.coord)+ 0.5) - np.array(center)) % 1) - 0.5)))
+
+
+        same = sum(abs(p1 - p2)) <= 0.00001
+
+        if was_orth:
+            self.to_orth(params)
+            p1 = self._to_orth(p1, params)
+            if not same:
+                p2 = self._to_orth(p2, params)
+
+        #p1 = tuple([float(c) for c in p1])
+        if same:
+            return p1, 
+
+        #p2 = tuple([float(c) for c in p2])
+        return p1, p2
+
+
+
+    def _symop(self, symop, params, keep=False):
         if not self.is_fractional:
             self.to_frac(params)
             was_orth = True
@@ -328,14 +370,20 @@ class BIAtom(object):
         ny = (rot[1][0] * x) + (rot[1][1] * y) + (rot[1][2] * z) + tra[1]
         nz = (rot[2][0] * x) + (rot[2][1] * y) + (rot[2][2] * z) + tra[2]
 
-        self.x = nx
-        self.y = ny
-        self.z = nz
-        self.coord = (self.x, self.y, self.z)
+        coord = (nx, ny, nz)
+
+        if keep:
+            self.x = nx
+            self.y = ny
+            self.z = nz
+            self.coord = (self.x, self.y, self.z)
 
         if was_orth:
             self.to_orth(params)
-        return self
+
+        if keep:
+            return self
+        return coord
 
     @staticmethod
     def _none_point(val):

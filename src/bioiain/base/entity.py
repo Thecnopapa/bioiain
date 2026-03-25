@@ -531,10 +531,12 @@ class BIEntity(object):
             self._get_operations()
         return self._operations
 
-    def symops(self, n=None):
+    def symops(self, n=None, as_dict=False):
         if self._operations is None:
             self._get_operations()
         if n is None:
+            if as_dict:
+                return self._operations["symops"]
             return self._operations["symops"].keys()
         else:
             return self._operations["symops"][n]
