@@ -13,8 +13,10 @@ from src.bioiain.base import *
 
 
 
-
-entity = BIEntity.from_file("./1M2Z.cif", export_folder="./a")
+try:
+	entity = FragmentedStructure.recover_from_id("1M2Z", export_folder="./a")
+except:
+	entity = BIEntity.from_file("./1M2Z.cif", export_folder="./a")
 
 log("header", "ligands")
 
@@ -23,6 +25,10 @@ for ligand in entity.ligands():
 	for a in ligand.atoms:
 		#log(2, a)
 		pass
+
+
+entity = entity.fragment()
+print(entity.cvmatrix())
 
 entity.export()
 

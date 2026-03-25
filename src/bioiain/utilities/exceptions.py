@@ -26,11 +26,14 @@ class StructureLoadException(Exception):
 
 class StructureRecoverException(StructureLoadException):
 	pass
+class StructureNotFound(StructureRecoverException):
+	pass
 
 class AlreadyLoaded(StructureLoadException):
 	pass
 class UnknownFormat(StructureLoadException):
 	pass
+
 
 # CCP4 related
 class CCP4Error(Exception):

@@ -171,7 +171,7 @@ class CVMatrix(object):
             target = (99999., None)
             for n2, vp in enumerate(self.matrix[n1]):
 
-                if n2 == n1:
+                if n2 == n1 or abs(n1-n2) <=1 :
                     continue
                 if vp is None:
                     vp = self.matrix[n2][n1]

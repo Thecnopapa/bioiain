@@ -433,15 +433,21 @@ class BIEntity(object):
         path = os.path.join(placeholder.paths["export_folder"], code, placeholder.paths["sub_folder"])
         if full_name is not None:
             path = os.path.join(path, full_name)
-        elif endswith is not None:
+        else:
             for file in os.listdir(path):
-                ext = path.split(".")[-1]
-                if ext == placeholder.extension:
-                    if file.split(".")[0].endswith(endswith):
-                        path = os.path.join(path, file)
-                        break
+                ext = file.split(".")[-1] 
+                if ext != "json":
+                    continue
+                extension= file.split(".")[-2]
+                if extension != placeholder.extension:
+                    continue
+                if endswith is not None:
+                    if not file.split(".")[0].endswith(endswith):
+                        continue
+                path = os.path.join(path, file)
+                return cls.recover_from_path(path)
 
-        return cls.recover_from_path(path)
+        raise StructureNotFound(path)
 
 
 
@@ -450,7 +456,7 @@ class BIEntity(object):
     def recover_from_path(cls, path):
 
         if path.endswith(".json"):
-            data_path = None
+            data_path = path
             cif_path = data_path.replace(".json", ".cif")
         elif path.endswith(".cif"):
             cif_path = path

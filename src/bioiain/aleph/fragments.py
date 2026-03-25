@@ -44,11 +44,17 @@ class FragmentedStructure(BIStructure):
 
 
     def fragment_with_aleph(self, force=False, export=False):
-        from .core.ALEPH import annotate_pdb_model_with_aleph
-
+        log(1, "Fragmenting structure with ALEPH...")
         if (self._fragments is not None) and not force:
+            log(2, "Fragments already generated!")
             return self._fragments
 
+        if (self.path() is not None) and self.has_flag("fragmented") and not force:
+            if os.path.exists(self.path()):
+                log(2, "Recovering previously fragmented file...")
+                return self.from_file(self.path())
+
+        from .core.ALEPH import annotate_pdb_model_with_aleph
         self.export(minimal=True)
         self.data["fragments"]["weight"] = "distance_avg"
         self.data["fragments"]["threshold_ah"] = 0.50
@@ -118,10 +124,14 @@ class FragmentedStructure(BIStructure):
                 log("warning", f"fragment {n}: no residues")
         #self._atoms = atoms
         self._fragments = fragments
-        #for a in self.all_atoms():
-            #if a.get_misc("fragment", None) is None:
-                #self.remove_atom(a)
+
+        for a in self.all_atoms():
+            if a.get_misc("fragment", None) is None:
+                a.set_misc("fragment", None)
+                pass
+
         self.data["fragments"]["n_fragments"] = len(self._fragments)
+        self.set_flag("fragmented", True)
         if export:
             self.export()
         #print(self.all_atoms())
@@ -129,6 +139,22 @@ class FragmentedStructure(BIStructure):
         return self._fragments
 
     def fragments(self):
+        if self.has_flag("fragmented", True):
+            atoms_by_fragment = {}
+            for a in self.all_atoms():
+                f = a.get_misc("fragment", ".")
+                if f == ".":
+                    continue
+                if int(f) not in atoms_by_fragment:
+                    atoms_by_fragment[int(f)] = []
+                atoms_by_fragment[int(f)].append(a)
+            fragments = []
+            for n, fatoms in atoms_by_fragment.items():
+                fragment = Fragment.from_atoms(fatoms, code=self.code(), chain_id=chain, fragment_id=n, parent=self)
+                fragments.append(fragment)
+            if len(fragments) > 0:
+                self._fragments = fragments
+
         if self._fragments is None:
             self.fragment_with_aleph()
 
