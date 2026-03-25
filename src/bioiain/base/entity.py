@@ -368,6 +368,8 @@ class BIEntity(object):
         if target_folder is None:
             target_folder = self.paths["export_folder"]
             custom_folder = True
+        else:
+            custom_folder = False
 
         fname = f"{self.name()}.{self.extension}"
         if minimal:
