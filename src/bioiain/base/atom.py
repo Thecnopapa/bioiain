@@ -362,7 +362,7 @@ class BIAtom(object):
 
             data["label_comp_id"] =f"{self._none_point(self.resname):<3s}"
             data["label_seq_id"] = f"{self._none_point(self.resseq):>3s}"
-            data["label_asym_id"] = f"{self._none_point(self.complex):1s}"
+            data["label_asym_id"] = f"{self._none_point(self.chain):1s}"
             data["label_entity_id"] = f"{self._none_point(self.entity):1s}"
 
             if self.prime and not self.name2.endswith("'"): data["auth_atom_id"] = f"\"{self._none_point(self.name2):>2s}'\""
@@ -370,7 +370,7 @@ class BIAtom(object):
 
             data["auth_comp_id"] =f"{self._none_point(self.resname2):<3s}"
             data["auth_seq_id"] = f"{self._none_point(self.resnum):>3s}"
-            data["auth_asym_id"] = f"{self._none_point(self.chain):1s}"
+            data["auth_asym_id"] = f"{self._none_point(self.complex):1s}"
 
             data["pdbx_PDB_model_num"] = f"{self._none_point(self.model):>2s}"
             data["Cartn_x"] = f"{self.x:7.3f}"

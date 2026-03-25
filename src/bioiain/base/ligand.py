@@ -46,4 +46,4 @@ class Ligand(object):
 
 
 	def __repr__(self):
-		return f"<bi.{self.__class__.__name__} id={self.id}>"
+		return f"<bi.{self.__class__.__name__} id={self.id2}({self.complex})>"

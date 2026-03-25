@@ -16,7 +16,10 @@ from src.bioiain.base import *
 try:
 	entity = FragmentedStructure.recover_from_id("1M2Z", export_folder="./a")
 except:
-	entity = BIEntity.from_file("./1M2Z.cif", export_folder="./a")
+	raise
+	entity = FragmentedStructure.from_file("./1M2Z.cif", export_folder="./a")
+
+
 
 log("header", "ligands")
 

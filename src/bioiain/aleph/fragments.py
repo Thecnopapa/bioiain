@@ -14,11 +14,16 @@ class Fragment(BIChain):
     def __init__(self, *args, fragment_id=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.paths["sub_folder"] = "fragmented/fragments"
+        self.data["info"]["fragment_id"] = fragment_id
+
+    def id(self):
+        return (self.data["info"]["fragment_id"], self.data["info"]["chain_id"])
 
 
     @classmethod
     def from_atoms(cls, atoms, code=None, chain_id=None, fragment_id=None, **kwargs):
         self = super().from_atoms(atoms, code, chain_id, **kwargs)
+        self.paths["sub_folder"] = "fragmented/fragments"
         self.data["info"]["fragment_id"] = f"F{fragment_id}"
         self.set_name(fragment_id, append=True)
         for a in self.atoms():
@@ -43,8 +48,8 @@ class FragmentedStructure(BIStructure):
 
 
 
-    def fragment_with_aleph(self, force=False, export=False):
-        log(1, "Fragmenting structure with ALEPH...")
+    def _fragment_with_aleph(self, force=False, export=False, **kwargs):
+        log(2, "Fragmenting structure with ALEPH...")
         if (self._fragments is not None) and not force:
             log(2, "Fragments already generated!")
             return self._fragments
@@ -52,10 +57,10 @@ class FragmentedStructure(BIStructure):
         if (self.path() is not None) and self.has_flag("fragmented") and not force:
             if os.path.exists(self.path()):
                 log(2, "Recovering previously fragmented file...")
-                return self.from_file(self.path())
+                return self.from_file(self.path(), export_folder=self.paths["export_folder"])
 
         from .core.ALEPH import annotate_pdb_model_with_aleph
-        self.export(minimal=True)
+        target_path = self.export(minimal=True, target_folder="/tmp/bioiain/trash")
         self.data["fragments"]["weight"] = "distance_avg"
         self.data["fragments"]["threshold_ah"] = 0.50
         self.data["fragments"]["threshold_bs"] = 0.30
@@ -65,7 +70,7 @@ class FragmentedStructure(BIStructure):
             print("### ALEPH start ###")
 
             graph, _, _, _, _ = annotate_pdb_model_with_aleph(
-                self.paths["minimal"],
+                target_path,
                 weight=self.data["fragments"]["weight"],
                 strictness_ah=self.data["fragments"]["threshold_ah"],
                 strictness_bs=self.data["fragments"]["threshold_bs"],
@@ -97,18 +102,17 @@ class FragmentedStructure(BIStructure):
                     _, model, chain, full_id = fres
                     resname = None
                 for res in reslist.copy():
-                    if res.resname == resname and res.chain == chain and res.resnum == full_id[1]:
+                    if res.resname == resname and res.complex == chain and res.resnum == full_id[1]:
                         #print(res, fres)
                         target_res.append(res)
                         reslist.remove(res)
                         continue
                 del res
             del fres
-            log(2, f"fragment {n}: {len(target_res)}")
+            
             if len(target_res) == 0:
                 log("warning", f"fragment {n}: no residues")
                 break
-
             fatoms = []
             for res in target_res:
                 fatoms.extend(res.atoms)
@@ -119,6 +123,7 @@ class FragmentedStructure(BIStructure):
                 fragment = Fragment.from_atoms(fatoms, code=self.code(), chain_id=chain, fragment_id=n, parent=self)
                 if export:
                     fragment.export()
+                log(2, f"fragment {n}: {fragment}")
                 fragments.append(fragment)
             else:
                 log("warning", f"fragment {n}: no residues")
@@ -138,25 +143,33 @@ class FragmentedStructure(BIStructure):
 
         return self._fragments
 
-    def fragments(self):
-        if self.has_flag("fragmented", True):
-            atoms_by_fragment = {}
-            for a in self.all_atoms():
-                f = a.get_misc("fragment", ".")
-                if f == ".":
-                    continue
-                if int(f) not in atoms_by_fragment:
-                    atoms_by_fragment[int(f)] = []
-                atoms_by_fragment[int(f)].append(a)
-            fragments = []
-            for n, fatoms in atoms_by_fragment.items():
-                fragment = Fragment.from_atoms(fatoms, code=self.code(), chain_id=chain, fragment_id=n, parent=self)
-                fragments.append(fragment)
-            if len(fragments) > 0:
-                self._fragments = fragments
+    def fragments(self, force=False):
+        log(1, "Fragmenting structure...")
+        if self._fragments is None and not force:
+            if self.has_flag("fragmented", True):
+                log(2, f"Recovering fragments from cif...")
+                atoms_by_fragment = {}
+                for a in self.all_atoms():
+                    f = a.get_misc("fragment", None)
+                    if f is None or f == ".":
+                        continue
+                    if int(f) not in atoms_by_fragment:
+                        atoms_by_fragment[int(f)] = []
+                    atoms_by_fragment[int(f)].append(a)
+                fragments = []
+                for n, fatoms in atoms_by_fragment.items():
+                    chain = list(set([r.chain for r in fatoms]))[0]
+                    fragment = Fragment.from_atoms(fatoms, code=self.code(), chain_id=chain, fragment_id=n, parent=self)
+                    log(2, f"fragment {n}: {fragment}")
 
-        if self._fragments is None:
-            self.fragment_with_aleph()
+                    fragments.append(fragment)
+                if len(fragments) > 0:
+                    self._fragments = fragments
+
+        if self._fragments is None or force:
+            log(2, "Recalculating fragments...")
+            self._fragment_with_aleph()
+
 
         return self._fragments
 

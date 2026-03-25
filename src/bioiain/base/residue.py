@@ -50,6 +50,7 @@ class BIResidue(object):
         self.rn1 = None
         self.resseq = None
         self.chain = None
+        self.complex = None
         self.fragment = None
         self.is_residue = True
 
@@ -96,6 +97,7 @@ class BIResidue(object):
 
             self.resseq = self.ca.resseq
             self.chain = self.ca.chain
+            self.complex = self.ca.complex
             if self.fragment is None:
                 self.id = ( self.resname, self.resnum, self.resseq, self.chain)
             else:

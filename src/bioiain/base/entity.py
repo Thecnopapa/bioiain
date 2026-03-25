@@ -61,13 +61,16 @@ class BIEntity(object):
         self._parameters = None
         self._operations = None
 
-        if use_tmp:
-            self.paths["export_folder"] = os.path.join(self.tmp_folder, self.paths["export_folder"] )
-
         if parent is not None:
+            self.paths["export_folder"] = parent.paths["export_folder"]
             self.paths["parent"] = parent.paths["self"]
             self.data["info"]["parent"] = repr(parent)
             self.headers = parent.headers
+
+        if use_tmp:
+            self.paths["export_folder"] = os.path.join(self.tmp_folder, self.paths["export_folder"] )
+
+
 
 
     def __repr__(self):
@@ -360,14 +363,17 @@ class BIEntity(object):
             self.headers["symmetry"]["space_group_name_H-M"] = f"\'{self.headers["symmetry"]["space_group_name_H-M"]}\'"
 
 
-    def export(self, minimal=False, cleanup=False, as_pdb=False):
+    def export(self, minimal=False, cleanup=False, as_pdb=False, target_folder=None):
 
+        if target_folder is None:
+            target_folder = self.paths["export_folder"]
+            custom_folder = True
 
         fname = f"{self.name()}.{self.extension}"
         if minimal:
             fname += ".minimal"
         try:
-            base_folder = os.path.join(self.paths["export_folder"], self.paths.get("top_folder", self.code()), self.paths["sub_folder"])
+            base_folder = os.path.join(target_folder, self.paths.get("top_folder", self.code()), self.paths["sub_folder"])
         except TypeError:
             print(self.paths)
             raise
@@ -382,13 +388,18 @@ class BIEntity(object):
             orth = self
 
         if minimal:
-            self.paths["minimal"] = orth._export_structure(base_path, headers=False, misc_fields=True, cleanup=True, as_pdb=as_pdb)
+            minimal_path= orth._export_structure(base_path, headers=False, misc_fields=True, cleanup=True, as_pdb=as_pdb)
+            if not custom_folder:
+                self.paths["minimal"] = minimal_path
+            return minimal_path
         else:
-            self.paths["self"] = orth._export_structure(base_path, headers=True, misc_fields=True, cleanup=cleanup, as_pdb=as_pdb)
-            if not as_pdb:
-                self.set_flag("exported", True)
-                self.paths["data"] = self._export_data(base_path)
-            return self.paths["self"]
+            path = orth._export_structure(base_path, headers=True, misc_fields=True, cleanup=cleanup, as_pdb=as_pdb)
+            if not custom_folder:
+                self.paths["self"] = path
+                if not as_pdb:
+                    self.set_flag("exported", True)
+                    self.paths["data"] = self._export_data(base_path)
+            return path
 
     def _export_data(self, filepath, mode="w") -> str:
         if filepath.endswith(".cif"):
@@ -434,6 +445,8 @@ class BIEntity(object):
         if full_name is not None:
             path = os.path.join(path, full_name)
         else:
+            if not os.path.exists(path):
+                raise StructureNotFound(path)
             for file in os.listdir(path):
                 ext = file.split(".")[-1] 
                 if ext != "json":
@@ -445,7 +458,7 @@ class BIEntity(object):
                     if not file.split(".")[0].endswith(endswith):
                         continue
                 path = os.path.join(path, file)
-                return cls.recover_from_path(path)
+                return cls.recover_from_path(path, **kwargs)
 
         raise StructureNotFound(path)
 
@@ -453,7 +466,7 @@ class BIEntity(object):
 
 
     @classmethod
-    def recover_from_path(cls, path):
+    def recover_from_path(cls, path, **kwargs):
 
         if path.endswith(".json"):
             data_path = path
@@ -467,10 +480,10 @@ class BIEntity(object):
 
         raw = None
         if os.path.exists(cif_path):
-            self = cls.from_file(cif_path)
+            self = cls.from_file(cif_path, **kwargs)
         elif os.path.exists(data_path):
             raw = json.load(open(path, "r"))
-            self = cls.from_file(raw["paths"]["self"])
+            self = cls.from_file(raw["paths"]["self"], **kwargs)
         else:
             raise FileNotFoundError(path, cif_path, data_path)
 
@@ -572,7 +585,7 @@ class BIEntity(object):
             frag = FragmentedStructure.from_atoms(self.all_atoms(), parent=self, share=in_place, export_folder=self.paths["export_folder"])
 
 
-        frag.fragment_with_aleph(force=force)
+        frag.fragments(force=force)
         return frag
 
 
