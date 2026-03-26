@@ -163,6 +163,10 @@ class BIAtom(object):
             t.b = float(bfactor)
         return self.b
 
+    def set_coord(self, coord):
+        for t in self:
+            t.coord = float(coord)
+        return self.b
 
 
     def set_misc(self, label, value):
@@ -321,69 +325,107 @@ class BIAtom(object):
 
         return self
 
-    def at(self, symop, params, center=None):
+    def at(self, symop, params, centre=None, centre_is_frac=False):
+        from copy import deepcopy
 
         if not self.is_fractional:
-            self.to_frac(params)
+            p1 = np.array(self._to_frac(self.coord, params))
+            p2 = np.array(self._to_frac(self.coord, params))
             was_orth = True
         else:
             was_orth = False
+            p1 = np.array(self.coord)
+            p2 = np.array(self.coord)
+
+        if centre is None:
+            if self.is_fractional:
+                centre = np.array(self.coord)
+            else:
+                centre = np.array(self._to_frac(self.coord, params))
+        else:
+            if centre_is_frac:
+                centre = np.array(centre)
+            else:
+                centre = np.array(self._to_frac(centre, params))
+                
 
 
-        p1 = np.array(self._symop(symop, params))
-        if center is None:
-            center = p1
-        
-        p2 = np.array((np.array(center) + ((((np.array(self.coord)+ 0.5) - np.array(center)) % 1) - 0.5)))
+        #print(self.coord)
+        print("P1", p1)
+        print("P2", p2)
+
+        p1s = np.array(self._symop(p1, symop, params))
+        p2s = np.array(self._symop(p2, symop, params)) + 99.5
+        print("P1s", p1s)
+        print("P2s", p2s)
 
 
-        same = sum(abs(p1 - p2)) <= 0.00001
+
+        print("centre", centre)
+        delta = ( ( p2s - np.array(centre) ) % 1 ) - 0.5
+        print("delta", delta)
+        new = np.array(centre) + delta
+        print("P1s after", p1s)
+        print("P2s after", p2s)
+        print("new", new)
+        print(new - p2s)
+        position = (new - p2s + 99.5)
+        print("position", position)
+        for p in position:
+            assert p % 1 == 0
+        position = tuple([int(p) for p in position])
+
+
+
+        #same = sum(abs(p1 - p2)) <= 0.0000001
+        #print("same", same)
+        same = False
 
         if was_orth:
-            self.to_orth(params)
-            p1 = self._to_orth(p1, params)
+            p1s = self._to_orth(p1s, params)
             if not same:
-                p2 = self._to_orth(p2, params)
+                new = self._to_orth(new, params)
 
         #p1 = tuple([float(c) for c in p1])
         if same:
-            return p1, 
+            return p1s
 
         #p2 = tuple([float(c) for c in p2])
-        return p1, p2
+        return p1s, new
 
 
-
-    def _symop(self, symop, params, keep=False):
+    def symop(self, symop, params):
         if not self.is_fractional:
             self.to_frac(params)
             was_orth = True
         else:
             was_orth = False
+
+        nx, ny, nz = self._symop(self.coord, params)
+
+        self.x = nx
+        self.y = ny
+        self.z = nz
+        self.coord = (self.x, self.y, self.z)
+        if was_orth:
+            self.to_orth(params)
+
+        return self
+
+
+    def _symop(self, coord, symop, params):
 
         rot = symop["rot"]
         tra = symop["tra"]
 
-        x, y, z = self.coord
+        x, y, z = coord
 
         nx = (rot[0][0] * x) + (rot[0][1] * y) + (rot[0][2] * z) + tra[0]
         ny = (rot[1][0] * x) + (rot[1][1] * y) + (rot[1][2] * z) + tra[1]
         nz = (rot[2][0] * x) + (rot[2][1] * y) + (rot[2][2] * z) + tra[2]
 
-        coord = (nx, ny, nz)
+        return nx, ny, nz
 
-        if keep:
-            self.x = nx
-            self.y = ny
-            self.z = nz
-            self.coord = (self.x, self.y, self.z)
-
-        if was_orth:
-            self.to_orth(params)
-
-        if keep:
-            return self
-        return coord
 
     @staticmethod
     def _none_point(val):

@@ -44,9 +44,9 @@ def find_com(atoms:list|GeneratorType|np.ndarray) -> list[float]:
     x = 0
     y = 0
     z = 0
-    from ..biopython.base import BiopythonOverlayClass
-    if isinstance(atoms, BiopythonOverlayClass):
-        atoms = atoms.get_atoms()
+    from ..base import BIEntity
+    if isinstance(atoms, BIEntity):
+        atoms = atoms.atoms()
 
     if isinstance(atoms, GeneratorType):
         atoms = list(atoms)

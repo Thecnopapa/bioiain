@@ -25,22 +25,26 @@ for file in os.listdir(folder):
 
     script = PymolScript()
     script.load(path, entity.name())
+    com = entity.com()
 
     for a in entity.atoms():
         #print(entity.symops())
         if a.name != "CA":
             continue
         for opn, symop in entity.symops(as_dict=True).items():
-            #print("OPN", opn)
-            if opn != 2:
+            print("OPN", opn)
+            print(symop)
+            if opn == 1:
                 continue
-            symcoords = a.at(symop, entity.params())
-            for symcoord in symcoords:
-                script.line(name=f"op{opn}", coord1=a.coord, coord2=symcoord)
+
+            symcoords = a.at(symop, entity.params(), centre=com)
+            for n, symcoord in enumerate(symcoords):
+                script.line(name=f"op{opn}_{n}", coord1=a.coord, coord2=symcoord)
 
     for opn in entity.symops():
-        script.group(f"op{opn}")
+        script.group(f"op{opn}_0")
+        script.group(f"op{opn}_1")
 
-    script.execute()
+    print("pymol", script.write_script())
 
 

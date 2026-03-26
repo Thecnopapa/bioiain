@@ -323,6 +323,11 @@ class BIEntity(object):
         pass
 
 
+    def com(self):
+        from ..utilities.maths import find_com
+        return find_com(self)
+
+
     def all_atoms(self):
         if self._atoms is None:
             self._all_atoms()
@@ -632,7 +637,7 @@ class BIEntity(object):
             self._to_fractional()
 
         for a in self.all_atoms():
-            a._symop(self.symops(symop), self.params())
+            a.symop(self.symops(symop), self.params())
 
         if was_orth:
             self._to_orthogonal()
