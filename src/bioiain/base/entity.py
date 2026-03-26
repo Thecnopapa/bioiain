@@ -47,6 +47,9 @@ class BIEntity(object):
         }
         self.exporting = ["data", "paths", "flags"]
 
+        #Properties
+        self._com = None
+
         #CVectors
         self._cvectors = None
 
@@ -323,9 +326,11 @@ class BIEntity(object):
         pass
 
 
-    def com(self):
+    def com(self, force=False):
         from ..utilities.maths import find_com
-        return find_com(self)
+        if self._com is None or force:
+            self._com = find_com(self)
+        return self._com
 
 
     def all_atoms(self):
@@ -536,13 +541,11 @@ class BIEntity(object):
             self._get_operations()
         return self._operations
 
-    def symops(self, n=None, as_dict=False):
+    def symops(self, n=None):
         if self._operations is None:
             self._get_operations()
         if n is None:
-            if as_dict:
                 return self._operations["symops"]
-            return self._operations["symops"].keys()
         else:
             return self._operations["symops"][n]
 
@@ -663,7 +666,7 @@ class BIEntity(object):
 
     def mates(self):
         mates = []
-        for symop in self.symops():
+        for symop in self.symops().keys():
             mates.append(self.symmetry(symop))
         self._mates = mates
         return self._mates

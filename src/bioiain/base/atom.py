@@ -85,6 +85,8 @@ class BIAtom(object):
 
         #CRYSTAL
         self.is_fractional = False
+        self._last_centre = None
+        self._sym_coords = {}
 
         #DISORDER
         if "label_alt_id" not in data:
@@ -325,6 +327,22 @@ class BIAtom(object):
 
         return self
 
+    def all(self, symops, params, centre=None, force=False):
+        all_coords = {}
+
+        if self._last_centre == centre and not force:
+            for opn, symop in symops.items():
+                if opn in self._sym_coords.keys():
+                    all_coords[opn] = self._sym_coords[opn]
+                else:
+                    all_coords[opn] = self.at(symop, params, centre=centre)[0]
+        else:
+            for opn, symop in symops.items():
+                all_coords[opn] = self.at(symop, params, centre=centre)[0]
+        return all_coords
+
+
+
     def at(self, symop, params, centre=None, centre_is_frac=False):
         from copy import deepcopy
 
@@ -349,49 +367,38 @@ class BIAtom(object):
                 centre = np.array(self._to_frac(centre, params))
                 
 
-
         #print(self.coord)
-        print("P1", p1)
-        print("P2", p2)
+        #print("P1", p1)
+        #print("P2", p2)
 
         p1s = np.array(self._symop(p1, symop, params))
         p2s = np.array(self._symop(p2, symop, params)) + 99.5
-        print("P1s", p1s)
-        print("P2s", p2s)
+        #print("P1s", p1s)
+        #print("P2s", p2s)
 
 
 
-        print("centre", centre)
+        #print("centre", centre)
         delta = ( ( p2s - np.array(centre) ) % 1 ) - 0.5
-        print("delta", delta)
+        #print("delta", delta)
         new = np.array(centre) + delta
-        print("P1s after", p1s)
-        print("P2s after", p2s)
-        print("new", new)
-        print(new - p2s)
+        #print("P1s after", p1s)
+        #print("P2s after", p2s)
+        #print("new", new)
+        #print(new - p2s)
         position = (new - p2s + 99.5)
-        print("position", position)
+        #print("position", position)
         for p in position:
             assert p % 1 == 0
         position = tuple([int(p) for p in position])
 
 
-
-        #same = sum(abs(p1 - p2)) <= 0.0000001
-        #print("same", same)
-        same = False
-
         if was_orth:
             p1s = self._to_orth(p1s, params)
-            if not same:
-                new = self._to_orth(new, params)
 
-        #p1 = tuple([float(c) for c in p1])
-        if same:
-            return p1s
+            new = self._to_orth(new, params)
 
-        #p2 = tuple([float(c) for c in p2])
-        return p1s, new
+        return new, p1s
 
 
     def symop(self, symop, params):
