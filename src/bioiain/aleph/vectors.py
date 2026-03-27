@@ -181,7 +181,7 @@ class CVMatrix(object):
 
         for n1, cv in enumerate(self.vectors):
 
-            target = (99999., None, None)
+            target = (99999., None, None, None)
             for n2, vp in enumerate(self.matrix[n1]):
 
                 if n2 == n1 or abs(n1-n2) <=1 :
@@ -215,12 +215,13 @@ class CVMatrix(object):
 
                 #print(cv, t)
                 if vp.d < target[0]:
-                    target = (vp.d, t, vp)
+                    target = (vp.d, t, vp, vp.opn_of_v2)
                     continue
 
             #print(target)
             cv.closest = target[1]
             cv.closest_vp = target[2]
+            cv.closest_opn = target[3]
             #print("closest to", cv, "is", cv.closest)
             if target[1] is None:
                 raise Exception("AAAAA")

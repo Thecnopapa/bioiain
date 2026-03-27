@@ -213,7 +213,10 @@ class FragmentedStructure(BIStructure):
         self.cvmatrix()
         for cv in self.cvectors():
             script.line("cvectors", coord1=cv.start.coord, coord2=cv.end.coord)
-            script.line("neighbours", coord1=cv.start.coord, coord2=cv.closest.start.coord)
+            if cv.closest_opn == 1 or cv.closest_opn is None:
+                script.line("neighbours", coord1=cv.start.coord, coord2=cv.closest.start.coord)
+            else:
+                script.line("neighbours", coord1=cv.start.coord, coord2=cv.closest.start.at(self.symops(cv.closest_opn), self.params(), self.com())[0])
         script.write_script()
         if execute:
             script.execute()
