@@ -1,7 +1,6 @@
 import os, json
 import numpy as np
 
-from . import CVMatrix
 from ..base import BIStructure, BIChain, BIResidue
 from ..utilities import *
 from ..utilities.exceptions import *
@@ -176,6 +175,7 @@ class FragmentedStructure(BIStructure):
 
 
     def _map_cvectors(self):
+        from . import CVMatrix
         matrix = CVMatrix(self.cvectors())
         matrix.calculate_neighbours()
         self._cvmatrix = matrix

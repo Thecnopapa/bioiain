@@ -21,28 +21,20 @@ for file in os.listdir(folder):
     log("header", file)
     log("title", file)
     path = os.path.join(folder,  file)
-    entity = BIEntity.from_file(path)
+    entity = FragmentedStructure.from_file(path)
+
 
     script = PymolScript()
     script.load(path, entity.name())
 
-    for a in entity.atoms():
-        #print(entity.symops())
-        if a.name != "CA":
-            continue
 
-        symcoords = a.all(symops = entity.symops(), params=entity.params(), centre=entity.com())
 
-        for opn, symcoord in symcoords.items():
-            if opn == 1:
-                continue
-            script.line(name=f"op{opn}", coord1=a.coord, coord2=symcoord)
 
-    for opn in entity.symops():
-        script.group(f"op{opn}")
+    matrix = entity.cvmatrix()
+    matrix.save_fig()
+    entity.show_cvectors(execute=True)
 
-    script.symmetries(entity.name())
-    script.group()
-    print("pymol", script.execute())
+
+
 
 

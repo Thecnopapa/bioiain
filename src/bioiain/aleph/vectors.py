@@ -5,7 +5,7 @@ from ..utilities.logging import log
 from ..utilities.exceptions import *
 from ..utilities.maths import *
 from ..visualisation.plots import plot_heatmap
-
+from ..base.atom import PseudoAtom
 
 
 
@@ -14,7 +14,7 @@ from ..visualisation.plots import plot_heatmap
 
 
 class CVector(object):
-    def __init__(self, res1, res2, res3):
+    def __init__(self, res1, res2, res3, params=None, symops=None, entity_centre=None):
         self.res1 = res1
         self.res2 = res2
         self.res3 = res3
@@ -35,6 +35,10 @@ class CVector(object):
         self.closest = None
         self.closest_vp = None
 
+        self.params = params
+        self.symops = symops
+        self.entity_centre = entity_centre
+
         self.calculate()
 
 
@@ -52,11 +56,10 @@ class CVector(object):
 
     def calculate(self):
 
-        self.start = find_com([r.ca for r in self.residues])
-        self.end = find_com([r.o for r in self.residues])
+        self.start =  PseudoAtom(find_com([r.ca for r in self.residues]))
+        self.end = PseudoAtom(find_com([r.o for r in self.residues]))
 
-        self.v = vector(self.start, self.end)
-
+        self.v = vector(self.start.coord, self.end.coord)
 
         self.d = length(self.v)
 
@@ -73,6 +76,7 @@ class CVPair(object):
     def __init__(self, cvec1, cvec2):
         self.v1 = cvec1
         self.v2 = cvec2
+        self.opn_of_v2 = None
 
         self.chain1 = self.v1.chain
         self.chain2 = self.v2.chain
@@ -101,9 +105,15 @@ class CVPair(object):
 
     def calculate(self):
 
-
-        self.v = vector(self.v1.start, self.v2.start)
-        self.d = length(self.v)
+        if self.v2.params is not None and self.v2.symops is not None:
+            coord, d, opn = self.v2.start.closest(self.v1.start.coord, symops=self.v2.symops, params=self.v2.params, centre=self.v2.entity_centre)
+            self.v = vector(self.v1.start.coord, coord)
+            self.d = d
+            self.opn_of_v2 = opn
+        else:
+            self.v = vector(self.v1.start.coord, self.v2.start.coord)
+            self.d = length(self.v)
+        #print(self.v, self.d)
         self.a = angle_between_vectors(self.v1.v, self.v2.v)
         self.t1 = angle_between_vectors(self.v1.v, self.v)
         self.t2 = angle_between_vectors(self.v2.v, self.v)
@@ -152,7 +162,7 @@ class CVMatrix(object):
         t = self.map(attribute)
 
 
-    def save_fig(self, attribute="d", save_folder="./cvmaps"):
+    def save_fig(self, attribute="d", save_folder="./bioiian/cvmaps"):
         os.makedirs(save_folder, exist_ok=True)
         filename = os.path.join(save_folder, f"{attribute}.png")
         plot_heatmap(self.square(attribute), filename=filename)
@@ -168,7 +178,7 @@ class CVMatrix(object):
 
         for n1, cv in enumerate(self.vectors):
 
-            target = (99999., None)
+            target = (99999., None, None)
             for n2, vp in enumerate(self.matrix[n1]):
 
                 if n2 == n1 or abs(n1-n2) <=1 :
@@ -203,7 +213,7 @@ class CVMatrix(object):
                     target = (vp.d, t, vp)
                     continue
 
-
+            print(target)
             cv.closest = target[1]
             cv.closest_vp = target[2]
             #print("closest to", cv, "is", cv.closest)
