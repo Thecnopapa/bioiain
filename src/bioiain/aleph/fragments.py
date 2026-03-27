@@ -183,6 +183,7 @@ class FragmentedStructure(BIStructure):
 
     def cvmatrix(self):
         if self._cvmatrix is None:
+            print("MAPPING cvmatrix")
             self._map_cvectors()
         return self._cvmatrix
 
@@ -211,8 +212,8 @@ class FragmentedStructure(BIStructure):
         script = self.show_fragments(execute=False, script=script)
         self.cvmatrix()
         for cv in self.cvectors():
-            script.line("cvectors", coord1=cv.start, coord2=cv.end)
-            script.line("neighbours", coord1=cv.start, coord2=cv.closest.start)
+            script.line("cvectors", coord1=cv.start.coord, coord2=cv.end.coord)
+            script.line("neighbours", coord1=cv.start.coord, coord2=cv.closest.start.coord)
         script.write_script()
         if execute:
             script.execute()

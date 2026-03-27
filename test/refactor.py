@@ -21,7 +21,7 @@ for file in os.listdir(folder):
     log("header", file)
     log("title", file)
     path = os.path.join(folder,  file)
-    entity = FragmentedStructure.from_file(path)
+    entity = FragmentedStructure.from_file(path).fragment()
 
 
     script = PymolScript()
@@ -31,6 +31,7 @@ for file in os.listdir(folder):
 
 
     matrix = entity.cvmatrix()
+    print(matrix)
     matrix.save_fig()
     entity.show_cvectors(execute=True)
 

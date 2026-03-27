@@ -132,8 +132,11 @@ class CVMatrix(object):
 
     def calculate(self):
         self.matrix = []
+        print("CALCULATING matrix...")
         for n, v1 in enumerate(self.vectors):
             self.matrix.append([])
+            print(f"{n} / {len(self.vectors)}", end="\r")
+
             for v2 in self.vectors:
                 if v1 == v2:
                     pair = None
@@ -162,7 +165,7 @@ class CVMatrix(object):
         t = self.map(attribute)
 
 
-    def save_fig(self, attribute="d", save_folder="./bioiian/cvmaps"):
+    def save_fig(self, attribute="d", save_folder="./bioiain/cvmaps"):
         os.makedirs(save_folder, exist_ok=True)
         filename = os.path.join(save_folder, f"{attribute}.png")
         plot_heatmap(self.square(attribute), filename=filename)
@@ -172,7 +175,7 @@ class CVMatrix(object):
         plot_heatmap(self.square(attribute), show=True)
 
     def calculate_neighbours(self, use_fragments=True):
-
+        print("MAPPING neighbours")
         print("n vectors", len(self.vectors))
         print("m shape", len(self.matrix))
 
@@ -183,15 +186,17 @@ class CVMatrix(object):
 
                 if n2 == n1 or abs(n1-n2) <=1 :
                     continue
+                print(f"{n1+1} / {n2+2} / {len(self.vectors)}", end="\r")
+
                 if vp is None:
                     vp = self.matrix[n2][n1]
                     #if vp is None:
                     #    continue
-
+                #print(vp, vp.d)
                 #print(vp.chain1, vp.chain2)
 
-                if use_fragments:
-                    #print(vp.fragment1, vp.fragment2)
+                if use_fragments and (vp.fragment1 is not None and vp.fragment2 is not None):
+                    print(vp.fragment1, vp.fragment2)
                     if vp.fragment1 == vp.fragment2:
                         continue
                 else:
@@ -207,13 +212,13 @@ class CVMatrix(object):
                     t = vp.v1
                 else:
                     continue
-                #print(cv, t)
 
+                #print(cv, t)
                 if vp.d < target[0]:
                     target = (vp.d, t, vp)
                     continue
 
-            print(target)
+            #print(target)
             cv.closest = target[1]
             cv.closest_vp = target[2]
             #print("closest to", cv, "is", cv.closest)

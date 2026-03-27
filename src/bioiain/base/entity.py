@@ -170,7 +170,7 @@ class BIEntity(object):
         for n, res in enumerate(residues):
             if n == 0 or n == n_res -1:
                 continue
-            print(f"{n:4d}/{len(residues):4d}", end="\r")
+            print(f"{n:4d}/{len(residues)-2:4d}", end="\r")
             cvector = CVector(residues[n-1], res, residues[n+1], params=self.params(), symops=self.symops(), entity_centre=self.com())
             cvector_list.append(cvector)
 
