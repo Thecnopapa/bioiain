@@ -117,18 +117,19 @@ class PseudoAtom(object):
 
         return self
 
-    def closest(self, target, symops, params, centre=None, first_only=True):
-        #For orth only so far
-        if not self.is_fractional:
-            distances_all = {opn:(v,length(vector(v, target))) for opn, v in self.all(symops, params, centre).items()}
-            sorted_all = {k: v for k, v in sorted(distances_all.items(), key=lambda x: x[1][1])}
-        else:
-            raise NotImplementedError()
+    def closest(self, target, symops, params, centre=None, first_only=True, force=False):
 
-        #print([(k, d[1]) for k, d in sorted_all.items()])
+        if not self.is_fractional:
+            len_fn = length
+        else:
+            len_fn = flength
+
+        distances_all = {opn:(v,len_fn(vector(v, target), params=params), pos) for opn, (v, pos) in self.all(symops, params, centre, force=force).items()}
+        sorted_all = {k: v for k, v in sorted(distances_all.items(), key=lambda x: x[1][1])}
+        #print([(k, d, pos ) for k, (v, d, pos) in sorted_all.items()])
         if first_only:
-            for opn, (v, d) in sorted_all.items():
-                return v, d, opn
+            for opn, (v, d, pos) in sorted_all.items():
+                return v, d, opn, pos
         return sorted_all
 
 
@@ -140,24 +141,20 @@ class PseudoAtom(object):
                 if opn in self._sym_coords.keys():
                     all_coords[opn] = self._sym_coords[opn]
                 else:
-                    all_coords[opn] = self.at(symop, params, centre=centre)[0]
+                    all_coords[opn] = self.at(symop, params, centre=centre)
         else:
             for opn, symop in symops.items():
-                all_coords[opn] = self.at(symop, params, centre=centre)[0]
-                self._all_is_frac == self.is_fractional
+                all_coords[opn] = self.at(symop, params, centre=centre)
+                self._all_is_frac = self.is_fractional
         return all_coords
 
 
     def at(self, symop, params, centre=None, centre_is_frac=False):
-        from copy import deepcopy
-
         if not self.is_fractional:
-            p1 = np.array(self._to_frac(self.coord, params))
             p2 = np.array(self._to_frac(self.coord, params))
             was_orth = True
         else:
             was_orth = False
-            p1 = np.array(self.coord)
             p2 = np.array(self.coord)
 
         if centre is None:
@@ -170,44 +167,26 @@ class PseudoAtom(object):
                 centre = np.array(centre)
             else:
                 centre = np.array(self._to_frac(centre, params))
-                
 
-        #print(self.coord)
-        #print("P1", p1)
-        #print("P2", p2)
-
-        p1s = np.array(self._symop(p1, symop, params))
-        p2s = np.array(self._symop(p2, symop, params)) + 99.5
-        #print("P1s", p1s)
-        #print("P2s", p2s)
-
-
-
-        #print("centre", centre)
+        p2s = np.array(self._symop(p2, symop)) + 99.5
         delta = ( ( p2s - np.array(centre) ) % 1 ) - 0.5
-        #print("delta", delta)
         new = np.array(centre) + delta
-        #print("P1s after", p1s)
-        #print("P2s after", p2s)
-        #print("new", new)
-        #print(new - p2s)
+
         position = (new - p2s + 99.5)
-        #print("position", position)
         for p in position:
             assert p % 1 == 0
         position = tuple([int(p) for p in position])
-
+        if position == (0,0,0):
+            position = None
 
         if was_orth:
-            p1s = self._to_orth(p1s, params)
-
             new = self._to_orth(new, params)
 
-        return new, p1s
+        return new, position
 
 
-
-    def _symop(self, coord, symop, params):
+    @staticmethod
+    def _symop(coord, symop, position=None):
 
         rot = symop["rot"]
         tra = symop["tra"]
@@ -218,18 +197,23 @@ class PseudoAtom(object):
         ny = (rot[1][0] * x) + (rot[1][1] * y) + (rot[1][2] * z) + tra[1]
         nz = (rot[2][0] * x) + (rot[2][1] * y) + (rot[2][2] * z) + tra[2]
 
+        if position is not None:
+            nx += position[0]
+            ny += position[1]
+            nz += position[2]
+
         return nx, ny, nz
 
 
 
-    def symop(self, symop, params):
+    def symop(self, symop, params, position=None):
         if not self.is_fractional:
             self.to_frac(params)
             was_orth = True
         else:
             was_orth = False
 
-        nx, ny, nz = self._symop(self.coord, params)
+        nx, ny, nz = self._symop(self.coord, symop, position=position)
 
         self.x = nx
         self.y = ny

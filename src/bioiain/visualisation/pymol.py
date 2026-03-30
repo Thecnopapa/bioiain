@@ -1,4 +1,6 @@
 import os, sys, subprocess
+
+from ..base.atom import PseudoAtom
 from ..utilities.logging import log
 from ..utilities import *
 from ..biopython.base import BiopythonOverlayClass
@@ -128,7 +130,7 @@ class PymolScript(object):
         return self.path
 
 
-    def execute(self, quiet=False, pymol_path=None, full_screen=False):
+    def execute(self, quiet=True, pymol_path=None, full_screen=False):
         """
         Executes the script on the current thread. Not sure if it is blocking or not.
         """
@@ -142,7 +144,7 @@ class PymolScript(object):
             cmd.extend(["-x", "-e"])
 
         if quiet:
-            cmd.extend(["-q"])
+            cmd.extend(["-qQ"])
 
         cmd.extend(["-l", self.path])
 
@@ -241,7 +243,8 @@ class PymolScript(object):
 
     def show(self, sele="(all)", representation="cartoon", **kwargs):
         fun = "show"
-        return self.add(fun, representation, sele, **kwargs)
+        sele = self._to_str(sele)
+        return self.add(fun, self._to_str(representation), sele, **kwargs)
 
     def hide(self, sele="(all)", representation="everything", **kwargs):
         fun = "hide"
@@ -330,6 +333,10 @@ class PymolScript(object):
 
     def line(self, name="line", sele1=None, sele2=None, coord1=(0,0,0), coord2=(0,0,0), show_distance=False, **kwargs):
         fun = "distance"
+        if isinstance(coord1, PseudoAtom):
+            coord1 = coord1.coord
+        if isinstance(coord2, PseudoAtom):
+            coord2 = coord2.coord
         if sele1 is None:
             sele1 = "tmp1"
             self.pseudoatom(sele1, coord=[float(c) for c in coord1], **kwargs)

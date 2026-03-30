@@ -77,6 +77,7 @@ class CVPair(object):
         self.v1 = cvec1
         self.v2 = cvec2
         self.opn_of_v2 = None
+        self.pos_of_v2 = None
 
         self.chain1 = self.v1.chain
         self.chain2 = self.v2.chain
@@ -105,14 +106,22 @@ class CVPair(object):
 
     def calculate(self):
 
+
+
         if self.v2.params is not None and self.v2.symops is not None:
-            coord, d, opn = self.v2.start.closest(self.v1.start.coord, symops=self.v2.symops, params=self.v2.params, centre=self.v2.entity_centre)
-            self.v = vector(self.v1.start.coord, coord)
+            self.v1.start.to_frac(self.v2.params)
+            self.v2.start.to_frac(self.v2.params)
+            coord, d, opn, pos = self.v2.start.closest(self.v1.start.coord, symops=self.v2.symops, params=self.v2.params, centre=self.v2.entity_centre)
+
             self.d = d
             self.opn_of_v2 = opn
+            self.pos_of_v2 = pos
+            self.v1.start.to_orth(self.v2.params)
+            self.v2.start.to_orth(self.v2.params)
+            self.v = vector(self.v1.start.coord, coord)
         else:
             self.v = vector(self.v1.start.coord, self.v2.start.coord)
-            self.d = length(self.v)
+            self.d = flength(self.v)
         #print(self.v, self.d)
         self.a = angle_between_vectors(self.v1.v, self.v2.v)
         self.t1 = angle_between_vectors(self.v1.v, self.v)
@@ -163,6 +172,7 @@ class CVMatrix(object):
 
     def triangle(self, attribute="d"):
         t = self.map(attribute)
+        return t
 
 
     def save_fig(self, attribute="d", save_folder="./bioiain/cvmaps"):
@@ -181,22 +191,24 @@ class CVMatrix(object):
 
         for n1, cv in enumerate(self.vectors):
 
-            target = (99999., None, None, None)
+            target = (99999., None, None, None, None)
             for n2, vp in enumerate(self.matrix[n1]):
-
-                if n2 == n1 or abs(n1-n2) <=1 :
-                    continue
-                print(f"{n1+1} / {n2+2} / {len(self.vectors)}", end="\r")
 
                 if vp is None:
                     vp = self.matrix[n2][n1]
+
+                if n2 == n1 or (vp.chain1 == vp.chain2 and vp.opn_of_v2 is not None and vp.pos_of_v2 is not None and abs(vp.resnum1-vp.resnum2) <=2 ) :
+                    continue
+                print(f"{n1+1} / {n2+1} / {len(self.vectors)}", end="\r")
+
+
                     #if vp is None:
                     #    continue
                 #print(vp, vp.d)
                 #print(vp.chain1, vp.chain2)
 
-                if use_fragments and (vp.fragment1 is not None and vp.fragment2 is not None):
-                    print(vp.fragment1, vp.fragment2)
+                if use_fragments:
+                    #print(vp.fragment1, vp.fragment2)
                     if vp.fragment1 == vp.fragment2:
                         continue
                 else:
@@ -215,13 +227,14 @@ class CVMatrix(object):
 
                 #print(cv, t)
                 if vp.d < target[0]:
-                    target = (vp.d, t, vp, vp.opn_of_v2)
+                    target = (vp.d, t, vp, vp.opn_of_v2, vp.pos_of_v2)
                     continue
 
             #print(target)
             cv.closest = target[1]
             cv.closest_vp = target[2]
             cv.closest_opn = target[3]
+            cv.closest_pos = target[4]
             #print("closest to", cv, "is", cv.closest)
             if target[1] is None:
                 raise Exception("AAAAA")

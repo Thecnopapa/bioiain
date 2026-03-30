@@ -105,7 +105,34 @@ def d2(p0:list, p1:list, root=False) -> float:
         return (p0[0] - p1[0]) ** 2 + (p0[1] - p1[1]) ** 2 + (p0[2] - p1[2]) ** 2
 
 
-def length(v:list) -> float:
+def flength(v, params, root=False, **kwargs) -> float:
+    """
+    Calculate the square distance in orthogonal space between two coordinates in fractional space.
+    Optionally returns the root square distance.
+    :param coord1: First coordinate.
+    :param coord2: Second coordinate.
+    :param params: Crystal parameters.
+    :param root: Whether to return the root square distance.
+    :return: Orthogonal square distance (or root square distance).
+    """
+    deltaX, deltaY, deltaZ = v
+
+    a = params["A"]
+    b = params["B"]
+    c = params["C"]
+    c_a = params["c_a"]
+    c_b = params["c_b"]
+    c_g = params["c_g"]
+
+    d2 = (a**2)*(deltaX**2) + (b**2)*(deltaY**2) + (c**2)*(deltaZ**2) +2*b*c*c_a*deltaY*deltaZ +2*a*c*c_b*deltaX*deltaZ +2*a*b*c_g*deltaX*deltaY
+    if root:
+        return np.sqrt(*d2)
+    else:
+        return d2
+
+
+
+def length(v:list, **kwargs) -> float:
     """
     Calculates the length of a vector in space of 2 or 3 dimensions.
     :param v: Vector, can be generated using vector()

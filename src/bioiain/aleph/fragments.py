@@ -209,19 +209,29 @@ class FragmentedStructure(BIStructure):
         return script
 
     def show_cvectors(self, execute=True, script=None):
+
         script = self.show_fragments(execute=False, script=script)
         self.cvmatrix()
         for cv in self.cvectors():
             script.line("cvectors", coord1=cv.start.coord, coord2=cv.end.coord)
+            #if cv.fragment is None:
+            #    continue
             if cv.closest_opn == 1 or cv.closest_opn is None:
                 script.line("neighbours", coord1=cv.start.coord, coord2=cv.closest.start.coord)
             else:
-                script.line("neighbours", coord1=cv.start.coord, coord2=cv.closest.start.at(self.symops(cv.closest_opn), self.params(), self.com())[0])
-                script.line("cvectors_sym", coord1=cv.closest.start.at(self.symops(cv.closest_opn), self.params(), self.com())[0], coord2=cv.closest.end.at(self.symops(cv.closest_opn), self.params(), self.com())[0])
+                symstart = cv.closest.start.copy().to_frac(self.params()).symop(self.symops(cv.closest_opn), self.params(), position=cv.closest_pos).to_orth(self.params())
+                symend = cv.closest.end.copy().to_frac(self.params()).symop(self.symops(cv.closest_opn), self.params(), position=cv.closest_pos).to_orth(self.params())
+                script.line("neighbours", coord1=cv.start.coord, coord2=symstart)
+                script.line("cvectors_sym", coord1=symstart, coord2=symend)
 
         script.color("neighbours", "orange")
         script.color("cvectors", "cyan")
         script.color("cvectors_sym", "green")
+        print(self.export())
+        script.load(self.path(), self.name())
+        script.color(self.name(), "white")
+        script.hide(self.name())
+        script.show(self.name(), "ribbon")
         script.write_script()
         if execute:
             script.execute()
