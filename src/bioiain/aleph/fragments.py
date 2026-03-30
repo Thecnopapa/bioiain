@@ -217,6 +217,11 @@ class FragmentedStructure(BIStructure):
                 script.line("neighbours", coord1=cv.start.coord, coord2=cv.closest.start.coord)
             else:
                 script.line("neighbours", coord1=cv.start.coord, coord2=cv.closest.start.at(self.symops(cv.closest_opn), self.params(), self.com())[0])
+                script.line("cvectors_sym", coord1=cv.closest.start.at(self.symops(cv.closest_opn), self.params(), self.com())[0], coord2=cv.closest.end.at(self.symops(cv.closest_opn), self.params(), self.com())[0])
+
+        script.color("neighbours", "orange")
+        script.color("cvectors", "cyan")
+        script.color("cvectors_sym", "green")
         script.write_script()
         if execute:
             script.execute()
