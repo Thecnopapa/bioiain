@@ -14,7 +14,7 @@ from .atom import BIAtom
 class Water(object):
 	child_class = BIAtom
 	type = "water"
-	def __init__(self, atoms):
+	def __init__(self, atoms, **kwargs):
 		self.atoms = atoms
 
 		for a in self.atoms:
@@ -31,7 +31,7 @@ class Water(object):
 class Ligand(object):
 	child_class = BIAtom
 	type = "ligand"
-	def __init__(self, atoms):
+	def __init__(self, atoms, parent=None, **kwargs):
 		self.atoms = atoms
 
 		self.name = self.atoms[0].resname
@@ -47,14 +47,27 @@ class Ligand(object):
 
 		self._com = None
 
-		self._determine_relevance()
+		if parent is not None:
+			self._determine_relevance(entity=parent)
 
 
-	def _determine_relevance(self):
-		if self.name == "DEX":
+	def _determine_relevance(self, entity=None):
+		#if self.name == "DEX":
+		#	self.relevant = True
+		if entity is None:
 			self.relevant = True
+		else:
+			sa = self._calculate_sasa(entity=entity)
+			print("SA", sa)
 
 		return self.relevant
+
+	def _calculate_sasa(self, entity=None):
+		from ..tools.SASA import SASA
+		sasa = SASA()
+		print(sasa.compute(entity=entity, targets=self.atoms))
+		print(sasa)
+		exit()
 
 
 

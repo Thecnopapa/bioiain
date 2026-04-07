@@ -11,21 +11,22 @@ from ..utilities import clean_string, d3to1
 
 
 
-def build_res(atoms):
+def build_res(atoms, **kwargs):
     for a in atoms:
         if a.type == "HETATM":
             if a.resname == "HOH":
-                return Water(atoms)
+                return Water(atoms, **kwargs)
             else:
-                return Ligand(atoms)
+                return Ligand(atoms, **kwargs)
         elif a.type == "ATOM":
             if len(a.resname) == 2:
-                return BINucleoutide(atoms)
+                return BINucleoutide(atoms, **kwargs)
             else:
-                return BIResidue(atoms)
+                return BIResidue(atoms, **kwargs)
         else:
             log("warning", "No matching class for atom:", a)
             raise NoMatchingClass()
+    return None
 
 
 
@@ -36,7 +37,7 @@ def build_res(atoms):
 class BIResidue(object):
     child_class = BIAtom
     type="residue"
-    def __init__(self, atoms):
+    def __init__(self, atoms, **kwargs):
         if type(atoms) == dict:
             atoms = atoms.values()
         self.atoms = atoms
@@ -118,7 +119,7 @@ class BIResidue(object):
 class BINucleoutide(object):
     child_class = BIAtom
     type="dna"
-    def __init__(self, atoms):
+    def __init__(self, atoms, **kwargs):
         if type(atoms) == dict:
             atoms = atoms.values()
         self.atoms = atoms

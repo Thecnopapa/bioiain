@@ -224,6 +224,8 @@ class BIEntity(object):
             atoms = [a for a in atoms if a.type == "ATOM"]
         if ca_only:
             atoms = [a for a in atoms if a.name == "CA"]
+        if not water:
+            atoms = [a for a in atoms if a.name != "HOH"]
         if chain is not None:
             atoms = [a for a in atoms if a.chain == chain]
 
@@ -252,7 +254,7 @@ class BIEntity(object):
             if len(target_entities) > 0:
                 entities = []
                 for resatms in atoms_by_res.values():
-                    e = build_res(resatms)
+                    e = build_res(resatms, parent=self)
                     if e.type in target_entities:
                         entities.append(e)
                 return entities
