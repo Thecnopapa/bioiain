@@ -43,7 +43,7 @@ class Ligand(object):
 		self.id = (self.name, self.complex)
 		self.id2 = (self.name, self.chain)
 
-		self.relevant = False
+		self.relevant = True
 
 		self._com = None
 
@@ -53,7 +53,7 @@ class Ligand(object):
 
 	def _determine_relevance(self, entity=None):
 		#if self.name == "DEX":
-		#	self.relevant = True
+		self.relevant = False
 		if entity is None:
 			self.relevant = True
 		else:

@@ -3,6 +3,7 @@ import os, sys, math, json
 import numpy as np
 from sklearn.neighbors import KDTree
 
+from ..base import PseudoAtom
 from ..utilities import log
 
 atomic_radii = {
@@ -100,6 +101,9 @@ class SASA(object):
 
         for i, target in enumerate(targets):
             # exposed_points = ptset.copy()
+
+            if isinstance(target, PseudoAtom):
+                target = target.coord
 
             i_radii = radii[i]
             s_on_i = (np.array(self._sphere, copy=True) * i_radii) + target
