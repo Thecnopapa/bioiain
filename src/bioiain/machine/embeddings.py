@@ -84,19 +84,7 @@ class CVEmbedding(PerResidueEmbedding):
         super().__init__(self, *args, **kwargs)
 
 
-
-    def generate_embedding(self, *args, modulo_norm=2.4, max_dist=10, **kwargs):
-
-        try:
-            frag = self.entity.fragment()
-        except ALEPHError:
-            return None
-
-        if frag.data["fragments"]["n_fragments"] <= 1:
-            return None
-        cvectors = frag.cvectors()
-        cvmatrix = frag.cvmatrix()
-
+    def _cvectors_to_embedding(self, cvectors, modulo_norm, max_dist, **kwargs):
         e = []
         seq = ""
         for cv in cvectors:
@@ -114,7 +102,21 @@ class CVEmbedding(PerResidueEmbedding):
             seq += rn
 
             e.append([len_i, len_j, angle_i_j, len_i_j])
+        return e, seq
 
+    def generate_embedding(self, *args, modulo_norm=2.4, max_dist=10, **kwargs):
+
+        try:
+            frag = self.entity.fragment()
+        except ALEPHError:
+            return None
+
+        if frag.data["fragments"]["n_fragments"] <= 1:
+            return None
+        cvectors = frag.cvectors()
+        cvmatrix = frag.cvmatrix() # Not used but calculates closest neighbours
+
+        e, seq = self._cvectors_to_embedding(cvectors, **kwargs)
         e = torch.Tensor(e)
         torch.save(e, self.path)
         #print(e, e.shape, len(seq))
@@ -122,6 +124,34 @@ class CVEmbedding(PerResidueEmbedding):
         self.length = len(self.sequence)
         self.exists = True
         return self.path
+
+
+class CVEmbeddingV1(CVEmbedding):
+
+    def _cvectors_to_embedding(self, cvectors, modulo_norm, max_dist, **kwargs):
+        e = []
+        seq = ""
+        for cv in cvectors:
+            i = cv
+            j = cv.closest
+            i_j = cv.closest_vp
+
+            dl = cv.dist_to_lig
+
+            len_i = i.d / modulo_norm
+            len_j = j.d / modulo_norm
+            len_i_j = min(1, i_j.d/max_dist)
+            angle_i_j = i_j.a / 180
+
+            dl = min(1, dl/max_dist)
+
+
+            ri = d3toint[cv.resname]
+            rn = d3to1[cv.resname]
+            seq += rn
+
+            e.append([len_i, len_j, angle_i_j, len_i_j, dl])
+        return e, seq
 
 
 

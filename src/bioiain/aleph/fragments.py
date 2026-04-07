@@ -174,17 +174,19 @@ class FragmentedStructure(BIStructure):
 
 
 
-    def _map_cvectors(self):
+    def _map_cvectors(self, with_ligands=True):
         from . import CVMatrix
         matrix = CVMatrix(self.cvectors())
         matrix.calculate_neighbours()
+        if with_ligands:
+            matrix.map_ligands(self)
         self._cvmatrix = matrix
         return self._cvmatrix
 
-    def cvmatrix(self):
+    def cvmatrix(self, **kwargs):
         if self._cvmatrix is None:
             print("MAPPING cvmatrix")
-            self._map_cvectors()
+            self._map_cvectors(**kwargs)
         return self._cvmatrix
 
     def show(self):

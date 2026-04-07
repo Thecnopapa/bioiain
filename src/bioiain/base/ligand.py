@@ -42,8 +42,13 @@ class Ligand(object):
 		self.id = (self.name, self.complex)
 		self.id2 = (self.name, self.chain)
 
+		self._com = None
 
-
+	def com(self, force=False):
+		if self._com is None or force:
+			from ..utilities.maths import find_com
+			self._com = find_com(self.atoms)
+		return self._com
 
 	def __repr__(self):
 		return f"<bi.{self.__class__.__name__} id={self.id2}({self.complex})>"

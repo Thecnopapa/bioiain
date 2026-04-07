@@ -42,6 +42,16 @@ else:
     DATA_FOLDER = downloadPDB( list_name="aleph", pdb_list=["1M2Z", "3HBB", "6F63", "5LXN", "3brf", "6e52", "7t2y"], data_dir="./data" )
     DATA_NAME = "aleph"
 
+
+
+if "--v1" in sys.argv or True:
+    V1 = True
+    DATA_NAME += "_v1"
+else:
+    V0 = True
+
+log(1, "DATA NAME:", DATA_NAME)
+
 if "-p" not in sys.argv:
     LR = 0.0001
     if "--lr" in sys.argv:
@@ -53,6 +63,7 @@ if "-p" not in sys.argv:
         MODEL_NAME = sys.argv[sys.argv.index("--model") + 1]
     MODEL_CLASS = getattr(models, MODEL_NAME)
     log(1, f"Model: {MODEL_CLASS}")
+
 
     dataset = EmbeddingDataset(name=f"tokens_{DATA_NAME}")
 
@@ -71,8 +82,10 @@ if "-p" not in sys.argv:
 
                 path = os.path.join(DATA_FOLDER, file)
                 entity = BIEntity.from_file(path)
-
-                embedding = CVEmbedding(entity=entity).embedding(force="--force" in sys.argv)
+                if V1:
+                    embedding = CVEmbeddingV1(entity=entity).embedding(force="--force" in sys.argv)
+                else:
+                    embedding = CVEmbedding(entity=entity).embedding(force="--force" in sys.argv)
 
                 if embedding is None:
                     log("warning", "No embedding for file:", file)

@@ -184,6 +184,22 @@ class CVMatrix(object):
     def show(self, attribute="d"):
         plot_heatmap(self.square(attribute), show=True)
 
+    def map_ligands(self, entity):
+        ligands = entity.ligands()
+        if len(ligands) == 0:
+            log("warning", f"No ligands found in {entity.name()}")
+            return None
+
+        for cv in self.vectors:
+            distances = [length(vector(cv.start, l.com())) for l in ligands]
+            print(distances)
+            cv.dist_to_lig = distances.index(min(distances))
+            cv.closest_lig = ligands[distances.index(cv.dist_to_lig)]
+
+        return self
+
+
+
     def calculate_neighbours(self, use_fragments=True):
         print("MAPPING neighbours")
         print("n vectors", len(self.vectors))
@@ -238,6 +254,8 @@ class CVMatrix(object):
             #print("closest to", cv, "is", cv.closest)
             if target[1] is None:
                 raise Exception("AAAAA")
+
+        return self
 
 
 
