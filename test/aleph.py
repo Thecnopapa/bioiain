@@ -71,7 +71,10 @@ if "-p" not in sys.argv:
         dataset.load()
     print(dataset)
     if len(dataset) == 0:
-        parts = split_iterable(os.listdir(DATA_FOLDER))
+        if "--no-split" in sys.argv:
+            parts = [os.listdir(DATA_FOLDER)]
+        else:
+            parts = split_iterable(os.listdir(DATA_FOLDER))
         pool = ThreadPool()
 
         def generate_embeddings(file_list=None):

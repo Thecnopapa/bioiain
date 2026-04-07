@@ -162,7 +162,7 @@ class BIEntity(object):
         return self._cvectors
 
     def _calculate_cvectors(self):
-        print("CALCULATING cvectors")
+        log(1, "Calculating CVectors for:", self.name())
         from ..aleph.vectors import CVector
         residues = self.residues()
         n_res = len(residues)
@@ -173,7 +173,7 @@ class BIEntity(object):
             print(f"{n:4d}/{len(residues)-2:4d}", end="\r")
             cvector = CVector(residues[n-1], res, residues[n+1], params=self.params(), symops=self.symops(), entity_centre=self.com())
             cvector_list.append(cvector)
-
+        log(2, f"n CVectors: {len(cvector_list)}")
         self._cvectors = cvector_list
         return cvector_list
 

@@ -1,6 +1,7 @@
 import os, sys, subprocess
 
 from ..base.atom import PseudoAtom
+from ..utilities import relative_path
 from ..utilities.logging import log
 from ..utilities import *
 from ..biopython.base import BiopythonOverlayClass
@@ -219,7 +220,10 @@ class PymolScript(object):
         :return: Generated Command object -> Unknown.
         """
         fun = "load"
-        args = f"'{os.path.abspath(path)}'", f"'{name}'"
+
+        path = relative_path(path, self.subfolder)
+
+        args = f"'{path}'", f"'{name}'"
         return self.add(fun, *args, **kwargs)
 
     def delete(self, sele="(all)", **kwargs) -> Command:

@@ -88,6 +88,8 @@ class CVPair(object):
         self.fragment1 = self.v1.fragment
         self.fragment2 = self.v2.fragment
 
+        self.closest_lig = None
+        self.dist_to_lig = None
 
         self.v = None
         self.d = None
@@ -141,7 +143,8 @@ class CVMatrix(object):
 
     def calculate(self):
         self.matrix = []
-        print("CALCULATING matrix...")
+        log(2, "Calculating matrix...")
+
         for n, v1 in enumerate(self.vectors):
             self.matrix.append([])
             print(f"{n} / {len(self.vectors)}", end="\r")
@@ -158,10 +161,12 @@ class CVMatrix(object):
             zeros = [None] * extension
             self.matrix[n] = zeros + self.matrix[n]
 
-
+        log(3, "n vectors", len(self.vectors))
+        log(3 , "m length", len(self.matrix))
         return self
 
     def map(self, attribute):
+        log(2, f"Mapping CVMatrix (attr={attribute})")
         return (lambda m: np.array([np.array([getattr(x, attribute) if x is not None else 0 for x in l]) for l in m ]))(self.matrix)
 
     def square(self, attribute):
@@ -185,25 +190,29 @@ class CVMatrix(object):
         plot_heatmap(self.square(attribute), show=True)
 
     def map_ligands(self, entity):
+        log(2, "Mapping ligands...")
         ligands = entity.ligands()
         if len(ligands) == 0:
             log("warning", f"No ligands found in {entity.name()}")
-            return None
+            for cv in self.vectors:
+                cv.dist_to_lig = 99
+                cv.closest_lig = None
+            return self
 
         for cv in self.vectors:
             distances = [length(vector(cv.start, l.com())) for l in ligands]
             print(distances)
             cv.dist_to_lig = distances.index(min(distances))
-            cv.closest_lig = ligands[distances.index(cv.dist_to_lig)]
+            cv.closest_lig = ligands[cv.dist_to_lig]
+            print(f"closest lig: {cv.closest_lig} at {cv.dist_to_lig:4.2f}A")
 
         return self
 
 
 
     def calculate_neighbours(self, use_fragments=True):
-        print("MAPPING neighbours")
-        print("n vectors", len(self.vectors))
-        print("m shape", len(self.matrix))
+        log(2, "Calculating neighbours for:", self)
+
 
         for n1, cv in enumerate(self.vectors):
 

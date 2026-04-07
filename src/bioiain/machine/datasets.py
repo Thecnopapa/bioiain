@@ -1,7 +1,7 @@
 import os, json, time
 from copy import deepcopy
 
-
+from ..utilities import relative_path
 from ..utilities.logging import log
 from ..utilities.exceptions import *
 from typing import Any
@@ -74,7 +74,7 @@ class Item(object):
 
 
 class EmbeddingDataset(Dataset):
-    def __init__(self,*args,  name, folder="./datasets", **kwargs):
+    def __init__(self,*args,  name, folder="./bioiain/datasets", **kwargs):
         fname = f"{name}.dataset.json"
         path = os.path.join(folder, fname)
         self.data = dict(
@@ -262,8 +262,8 @@ class EmbeddingDataset(Dataset):
             "n": len(self.embeddings),
             "start": len(self),
             "end": len(self)+embedding.length,
-            "embedding_path": embedding.path,
-            "label_path": label_path,
+            "embedding_path": relative_path(embedding.path),
+            "label_path": relative_path(label_path),
             "length": embedding.length,
             "iter_dim": embedding.iter_dim,
             "deleted": False,
@@ -311,11 +311,6 @@ class EmbeddingDataset(Dataset):
         #print("GET:", key)
         iter_dim = 0
         rel_key = None
-
-        if self.mode == "normal": data = self.embeddings
-        elif self.mode == "test": data = self.splitted["test"]
-        elif self.mode == "train": data = self.splitted["train"]
-        else: raise Exception(f"Unknown mode: {self.mode}")
 
         if self.mode == "normal": emb_list = self.embeddings
         elif self.mode == "test": emb_list = self.splitted["test"]

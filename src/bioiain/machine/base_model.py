@@ -32,7 +32,7 @@ class BaseModel(nn.Module):
             in_shape:list|tuple,
             lr:float=0.001,
             batch_size:int=0,
-            folder:str="./models",
+            folder:str="./bioiain/models",
             inference:bool=False,
             dry=False,
             **kwargs):

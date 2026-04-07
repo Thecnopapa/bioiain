@@ -116,7 +116,7 @@ class CVEmbedding(PerResidueEmbedding):
         cvectors = frag.cvectors()
         cvmatrix = frag.cvmatrix() # Not used but calculates closest neighbours
 
-        e, seq = self._cvectors_to_embedding(cvectors, **kwargs)
+        e, seq = self._cvectors_to_embedding(cvectors,modulo_norm=2.4, max_dist=10, **kwargs)
         e = torch.Tensor(e)
         torch.save(e, self.path)
         #print(e, e.shape, len(seq))

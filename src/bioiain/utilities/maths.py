@@ -4,7 +4,6 @@ from types import GeneratorType
 
 
 
-
 def multidimensional_com(points):
     points = np.array(points)
     com = sum(points) / len(points)
@@ -79,6 +78,12 @@ def vector(b:list, e:list) -> list[float]|None:
     :param e: Second set of coordinates (end point).
     :return: Vector (e - b)
     """
+    from ..base import  PseudoAtom
+    if isinstance(b, PseudoAtom):
+        b = b.coord
+    if isinstance(e, PseudoAtom):
+        e = e.coord
+
     assert len(b) == len(e)
     if len(b) == 3:
         x, y, z = b

@@ -82,7 +82,7 @@ class FragmentedStructure(BIStructure):
             log("warning", e)
             raise ALEPHError(e)
 
-        log(1, "Fragmented:", self.paths["minimal"],)
+        log(1, "Fragmented:", target_path)
 
 
 
@@ -97,12 +97,17 @@ class FragmentedStructure(BIStructure):
                 try:
                     _, model, chain, full_id, resname = fres
                 except:
-                    log("warning", fres)
+                    #log("warning", fres)
                     _, model, chain, full_id = fres
                     resname = None
                 for res in reslist.copy():
-                    if res.resname == resname and res.complex == chain and res.resnum == full_id[1]:
-                        #print(res, fres)
+                    if res.complex == chain and res.resnum == full_id[1]:
+                        if res.resname != resname:
+                            if resname is not None:
+                                raise Exception(f"res.resname({res.resname}) != resname({resname})\nfres:{fres}\nres: {res}")
+                            else:
+                                #log("warning", f"res.resname({res.resname}) != resname({resname})\nfres:{fres}\nres: {res}")
+                                pass
                         target_res.append(res)
                         reslist.remove(res)
                         continue
@@ -175,6 +180,7 @@ class FragmentedStructure(BIStructure):
 
 
     def _map_cvectors(self, with_ligands=True):
+        log(1, "Generating CVMatrix for:", self.name())
         from . import CVMatrix
         matrix = CVMatrix(self.cvectors())
         matrix.calculate_neighbours()
@@ -185,7 +191,6 @@ class FragmentedStructure(BIStructure):
 
     def cvmatrix(self, **kwargs):
         if self._cvmatrix is None:
-            print("MAPPING cvmatrix")
             self._map_cvectors(**kwargs)
         return self._cvmatrix
 

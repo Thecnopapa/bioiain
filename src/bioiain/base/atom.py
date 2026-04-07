@@ -367,7 +367,10 @@ class BIAtom(PseudoAtom):
             else:
                 self.i = None
                 raise StopIteration
-
+        if self.doppelgangers is None:
+            print(self)
+            print(self.print_full())
+            raise Exception()
         if self.i > len(self.doppelgangers):
             self.i = None
             raise StopIteration
