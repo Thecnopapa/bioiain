@@ -105,7 +105,18 @@ class BIEntity(object):
             if self.paths.get("minimal", None) is None:
                 self.export(minimal=True)
             return self.paths["minimal"]
-        
+
+    def folder(self):
+
+        folders = []
+        if self.paths["export_folder"] is not None:
+            folders.append(self.paths["export_folder"])
+        if self.paths["top_folder"] is not None:
+            folders.append(self.paths["top_folder"])
+        if self.paths["sub_folder"] is not None:
+            folders.append(self.paths["sub_folder"])
+
+        return os.path.join(*folders)
 
     def code(self):
         return self.data["info"]["code"]

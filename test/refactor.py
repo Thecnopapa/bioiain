@@ -24,16 +24,14 @@ for file in os.listdir(folder):
     entity = FragmentedStructure.from_file(path).fragment()
 
 
-    script = PymolScript()
-    script.load(path, entity.name())
-
-
+    #script = PymolScript()
+    #script.load(path, entity.name())
 
 
     matrix = entity.cvmatrix()
-    print(matrix)
-    matrix.save_fig()
-    entity.show_cvectors(execute=True)
+    #print(matrix)
+    #matrix.save_fig()
+    #entity.show_cvectors(execute=True)
 
 
 

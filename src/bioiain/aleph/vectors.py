@@ -127,18 +127,18 @@ class CVPair(object):
             self.v = vector(self.v1.start.coord, self.v2.start.coord)
             self.d = flength(self.v)
 
-        try:
-            self.dlig = min([d for d in (self.v1.dist_to_lig, self.v2.dist_to_lig) if d is not None])
-        except:
-            pass
+
         #print(self.v, self.d)
         self.a = angle_between_vectors(self.v1.v, self.v2.v)
         self.t1 = angle_between_vectors(self.v1.v, self.v)
         self.t2 = angle_between_vectors(self.v2.v, self.v)
         return self
 
-
-
+    def map_lig(self):
+        try:
+            self.dlig = min([d for d in (self.v1.dist_to_lig, self.v2.dist_to_lig) if d is not None])
+        except:
+            raise
 
 class CVMatrix(object):
     def __init__(self, cvector_list):
@@ -208,10 +208,17 @@ class CVMatrix(object):
 
         for cv in self.vectors:
             distances = [length(vector(cv.start, l.com())) for l in ligands]
-            print(distances)
-            cv.dist_to_lig = distances.index(min(distances))
-            cv.closest_lig = ligands[cv.dist_to_lig]
-            print(f"closest lig: {cv.closest_lig} at {cv.dist_to_lig:4.2f}A")
+            #print(distances)
+            cv.dist_to_lig = min(distances)
+            cv.closest_lig = ligands[distances.index(cv.dist_to_lig)]
+            log(1, f"Closest lig ({cv}): {cv.closest_lig} at {cv.dist_to_lig:4.2f}A")
+
+        for row in self.matrix:
+            for vp in row:
+                if vp is None:
+                    continue
+                vp.map_lig()
+
 
         return self
 
