@@ -35,6 +35,9 @@ class CVector(object):
         self.closest = None
         self.closest_vp = None
 
+        self.closest_lig = None
+        self.dist_to_lig = None
+
         self.params = params
         self.symops = symops
         self.entity_centre = entity_centre
@@ -88,8 +91,7 @@ class CVPair(object):
         self.fragment1 = self.v1.fragment
         self.fragment2 = self.v2.fragment
 
-        self.closest_lig = None
-        self.dist_to_lig = None
+        self.dlig = None
 
         self.v = None
         self.d = None
@@ -124,6 +126,11 @@ class CVPair(object):
         else:
             self.v = vector(self.v1.start.coord, self.v2.start.coord)
             self.d = flength(self.v)
+
+        try:
+            self.dlig = min([d for d in (self.v1.dist_to_lig, self.v2.dist_to_lig) if d is not None])
+        except:
+            pass
         #print(self.v, self.d)
         self.a = angle_between_vectors(self.v1.v, self.v2.v)
         self.t1 = angle_between_vectors(self.v1.v, self.v)
@@ -167,7 +174,7 @@ class CVMatrix(object):
 
     def map(self, attribute):
         log(2, f"Mapping CVMatrix (attr={attribute})")
-        return (lambda m: np.array([np.array([getattr(x, attribute) if x is not None else 0 for x in l]) for l in m ]))(self.matrix)
+        return (lambda m: np.array([np.array([getattr(x, attribute) if x is not None and getattr(x, attribute) is not None else 0 for x in l]) for l in m ]))(self.matrix)
 
     def square(self, attribute):
 

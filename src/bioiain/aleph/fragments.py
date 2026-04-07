@@ -184,8 +184,11 @@ class FragmentedStructure(BIStructure):
         from . import CVMatrix
         matrix = CVMatrix(self.cvectors())
         matrix.calculate_neighbours()
+        matrix.save_fig(attribute="d", save_folder=os.path.join(self.paths["export_folder"], "cvmaps"))
         if with_ligands:
             matrix.map_ligands(self)
+            matrix.save_fig(attribute="dlig", save_folder=os.path.join(self.paths["export_folder"], "cvmaps"))
+
         self._cvmatrix = matrix
         return self._cvmatrix
 
