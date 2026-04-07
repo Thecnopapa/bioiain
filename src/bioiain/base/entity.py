@@ -164,8 +164,8 @@ class BIEntity(object):
     def dna(self):
         return self.atoms(ca_only=False, dna=True)
 
-    def ligands(self):
-        return self.atoms(ca_only=False, ligands=True)
+    def ligands(self, relevant_only=True):
+        return [l for l in self.atoms(ca_only=False, ligands=True) if l.relevant]
 
     def cvectors(self):
         if self._cvectors is None:
