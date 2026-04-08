@@ -83,8 +83,13 @@ def split_iterable(iterable, n_parts:int|str="auto") -> list:
     l = len(iterable)
     log("header", "Splitting iterable of length:", l)
     log(1, "Number of parts:", n_parts,)
-    part_size = l//n_parts
-    last_part_size = l%n_parts
+    if l <= n_parts:
+        n = l
+        part_size = 1
+        last_part_size = 0
+    else:
+        part_size = l//n_parts
+        last_part_size = l%n_parts
     log(1, "Size of parts:", part_size, f"({last_part_size})" )
     print(part_size, last_part_size)
     out = []

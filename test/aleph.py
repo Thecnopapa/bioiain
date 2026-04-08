@@ -46,10 +46,10 @@ V0 = False
 V1 = False
 V2 = False
 
-if "--v1" in sys.argv or True:
+if "--v1" in sys.argv:
     V1 = True
     DATA_NAME += "_v1"
-elif "--v2" in sys.argv or True:
+elif "--v2" in sys.argv:
     V2 = True
     DATA_NAME += "_v2"
 else:
