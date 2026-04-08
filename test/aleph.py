@@ -63,7 +63,7 @@ if "-p" not in sys.argv:
         LR = float(sys.argv[sys.argv.index("--lr") + 1])
     log(1, f"Learning rate: {LR}")
 
-    MODEL_NAME = "Despair"
+    MODEL_NAME = "Hope"
     if "--model" in sys.argv:
         MODEL_NAME = sys.argv[sys.argv.index("--model") + 1]
     MODEL_CLASS = getattr(models, MODEL_NAME)

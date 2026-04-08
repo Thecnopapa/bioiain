@@ -493,7 +493,8 @@ class Hope(DespairLess):
             #print(tokens)
             for n, (ax, token) in enumerate(zip(axes, tokens)):
                 #print(token)
-                i_length, j_length, i_j_angle, i_j_length = self._decode(torch.Tensor(token)).detach().cpu().numpy()
+                dec = self._decode(torch.Tensor(token)).detach().cpu().numpy()
+                i_length, j_length, i_j_angle, i_j_length = dec[0], dec[1], dec[2], dec[3]
 
                 i_length = i_length * 2.4
                 j_length = j_length * 2.4
