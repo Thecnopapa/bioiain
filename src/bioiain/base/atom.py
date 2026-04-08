@@ -293,8 +293,8 @@ class BIAtom(PseudoAtom):
         self.model = int(data["pdbx_PDB_model_num"])
 
         #PROPERTIES
-        self.id = (self.name,  self.resnum, self.complex) # Ambiguous (label)
-        self.id2 = (self.name,  self.resseq, self.chain) # Not ambiguous (auth)
+        self.id = (self.name,  self.resnum, self.complex) # Ambiguous (author)
+        self.id2 = (self.name,  self.resseq, self.chain) # Not ambiguous (label)
         self.id3 = (self.atomnum, self.type, self.element, self.name, self.resseq, self.chain, self.model) # Unique
         x = float(data["Cartn_x"])
         y = float(data["Cartn_y"])
@@ -351,7 +351,7 @@ class BIAtom(PseudoAtom):
 
 
     def __iter__(self):
-        if not self.disordered:
+        if not self.disordered or self.doppelgangers is None:
             self.i = 0
             #raise AtomDisorderException("Trying to iterate over a non-disordered atom")
             return self
@@ -360,17 +360,14 @@ class BIAtom(PseudoAtom):
             return self
 
     def __next__(self):
-        if not self.disordered:
+        if not self.disordered or self.doppelgangers is None:
             if self.i == 0:
                 self.i += 1
                 return self
             else:
                 self.i = None
                 raise StopIteration
-        if self.doppelgangers is None:
-            print(self)
-            print(self.print_full())
-            raise Exception()
+
         if self.i > len(self.doppelgangers):
             self.i = None
             raise StopIteration

@@ -131,10 +131,10 @@ class CVEmbeddingV1(CVEmbedding):
     def _cvectors_to_embedding(self, cvectors, modulo_norm, max_dist, **kwargs):
         e, seq = super()._cvectors_to_embedding(cvectors, modulo_norm, max_dist, **kwargs)
 
-        for e, cv in zip(e, cvectors):
+        for emb, cv in zip(e, cvectors):
             dl = cv.dist_to_lig
             dl = min(1, dl / max_dist)
-            e += dl
+            emb.append(dl)
 
         return e, seq
 
@@ -145,12 +145,12 @@ class CVEmbeddingV2(CVEmbeddingV1):
 
         e, seq = super()._cvectors_to_embedding(cvectors, modulo_norm, max_dist, **kwargs)
 
-        for e, cv in zip(e, cvectors):
+        for emb, cv in zip(e, cvectors):
             if cv.chain != cv.closest.chain or cv.closest_opn is not None:
                 is_contact = True
             else:
                 is_contact = False
-            e += int(is_contact)
+            emb.append(int(is_contact))
         return e, seq
 
 
