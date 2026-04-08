@@ -3,7 +3,6 @@ import os, sys, math, json
 import numpy as np
 from sklearn.neighbors import KDTree
 
-from ..base import PseudoAtom
 from ..utilities import log
 
 atomic_radii = {
@@ -68,6 +67,7 @@ class SASA(object):
         return coords
 
     def compute(self, entity, targets=None, save_sasas=None, **kwargs):
+        from ..base import PseudoAtom
         print("Computing ASA...")
 
 
@@ -84,10 +84,10 @@ class SASA(object):
 
         radii = np.array(radii_list, dtype=np.float64)
 
+
         radii += self.ball_radius
         twice_maxradii = np.max(radii) * 2
 
-        asa_array = np.zeros((n_atoms, 1), dtype=np.int64)
         # ptset = set(range(self.n_points))
 
         # print(ptset)
@@ -99,6 +99,16 @@ class SASA(object):
         elif save_sasas is None:
             save_sasas = False
 
+        asa_array = np.zeros((len(targets), 1), dtype=np.int64)
+        target_radii = []
+        for a in targets:
+            if a in self.radii_dict:
+                target_radii.append(self.radii_dict[a.element])
+            else:
+                target_radii.append(self.radii_dict["other"])
+        target_radii = np.array(target_radii, dtype=np.float64)
+
+
         for i, target in enumerate(targets):
             # exposed_points = ptset.copy()
 
@@ -106,28 +116,28 @@ class SASA(object):
                 target = target.coord
 
             i_radii = radii[i]
-            s_on_i = (np.array(self._sphere, copy=True) * i_radii) + target
+            s_on_i = (np.array(self._sphere, copy=True) * i_radii) + np.array(target)
 
-            sphere_kdt = KDT(s_on_i, leaf_size=10)
+            sphere_kdt = KDT(s_on_i, leaf_size=10, quiet=True)
 
             i_neighbours = kdt.of(coords=s_on_i, radius=twice_maxradii, distances=False, unique=True)
 
             # print(i, len(i_neighbours))
             neighbour_radii = np.array([radii_list[j] for j in i_neighbours])
-            neighbour_coords = np.array([target for j in i_neighbours])
+            neighbour_coords = np.array([kdt.coords[j] for j in i_neighbours])
 
             overlap_indexes = sphere_kdt.of(neighbour_coords, radius=neighbour_radii, unique=True)
 
             # print(i, len(overlap_indexes))
 
             asa_array[i] = self.n_points - len(overlap_indexes)
+            #print(asa_array[i], self.n_points, len(overlap_indexes), self.n_points - len(overlap_indexes))
 
-        f = radii * radii * (4 * np.pi / self.n_points)
+
+        f = target_radii * target_radii * (4 * np.pi / self.n_points)
         asa_array = asa_array * f[:, np.newaxis]
-        # print(asa_array)
 
         if save_sasas:
-            from ..base import PseudoAtom
             for atom, asa in zip(targets, asa_array):
                 if isinstance(atom, PseudoAtom):
                     atom.set_misc("SASA", float(asa[0]))
@@ -135,10 +145,13 @@ class SASA(object):
 
 
 class KDT(object):
-    def __init__(self, coords_or_entity, leaf_size=10, **kwargs):
-        log(1, "Building KDT...")
+    def __init__(self, coords_or_entity, leaf_size=10, quiet=False, **kwargs):
+        if not quiet:
+            log(1, "Building KDT...")
         from ..base import BIEntity
         if isinstance(coords_or_entity, BIEntity):
+            if not quiet:
+                log(2, f"Entity: {coords_or_entity.name()}")
             atoms = coords_or_entity.atoms(hetatm=True, water=False)
             coords = np.array([a.coord for a in atoms], dtype=np.float64)
         else:
