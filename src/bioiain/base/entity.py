@@ -13,9 +13,10 @@ class BIEntity(object):
     level = "structure"
     tmp_folder = "/tmp"
 
-    def __init__(self, export_folder="./bioiain/exports", parent=None, use_tmp=False, **kwargs):
+    def __init__(self, export_folder=None, parent=None, use_tmp=False, **kwargs):
         from . import BIAtom, BIResidue, BIChain
-
+        if export_folder is None:
+            export_folder = os.path.join(SUBDIR_NAME, "exports")
         self.children = []
         self.paths = {
             "self": None, # This entity cif path

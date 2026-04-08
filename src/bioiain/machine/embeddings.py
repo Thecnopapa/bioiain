@@ -1,7 +1,6 @@
 import os, json
 
-
-from ..utilities.logging import log
+from ..utilities import *
 from ..utilities.parallel import avail_cpus
 from ..utilities.sequences import d3to1 ,d3toint
 from ..utilities.exceptions import *
@@ -27,7 +26,7 @@ class Embedding(object):
         assert name is not None
         self.name=name
         if folder is None:
-            folder = "./bioiain/embeddings"
+            folder = os.path.join(SUBDIR_NAME, "embeddings")
         self.folder = os.path.join(folder, self.__class__.__name__+"s")
         self.subfolder = os.path.join(self.folder, self.name)
         self.path = os.path.join(self.subfolder, f"{self.name}.embedding.pt")
@@ -226,9 +225,9 @@ class SaProtEmbedding(PerResidueEmbedding):
     def _get_foldseek(self, force=False, use_temp=True):
         #print("GETTING_FOLDSEEK")
         if use_temp:
-            out_path = f"/tmp/bioiain/foldseek/{self.name}.foldseek.tsv"
+            out_path =os.path.join(TEMP_FOLDER, f"foldseek/{self.name}.foldseek.tsv")
         else:
-            out_path = f"./foldseek/{self.name}.foldseek.tsv"
+            out_path = os.path.join(SUBDIR_NAME, f"foldseek/{self.name}.foldseek.tsv")
 
         #print(not os.path.exists(out_path), force)
         if (not os.path.exists(out_path)) or force:

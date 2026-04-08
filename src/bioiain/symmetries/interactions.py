@@ -4,7 +4,7 @@ from ..visualisation import pymol, PymolScript
 from ..visualisation.plots import *
 
 from .operations import coord_operation_entity, entity_to_frac, entity_to_orth
-from ..utilities.logging import log
+from ..utilities import *
 from ..utilities.exceptions import SequenceMissmatchException
 from ..symmetries.elements import Monomer
 
@@ -14,7 +14,7 @@ class InteractionProfile:
     def __init__(self, monomer, save_folder=None, threshold=None, export=True, force=False):
         self.monomer = monomer
         if save_folder is None:
-            save_folder = "/tmp/bioiain/interactions"
+            save_folder = os.path.join(TEMP_FOLDER, "interactions")
         self.save_folder = save_folder
         if threshold is None:
             threshold = self.monomer.data["crystal"]["contact_threshold"]
@@ -125,7 +125,7 @@ class InteractionProfile:
         similar_ids = [self.monomer.get_name()]
         similar_ids.extend(msa.get_similar(self.monomer.get_name(), similarity=similarity))
         #print(similar_ids)
-        tmp_fasta = f"/tmp/bioiain/alignments/tmp_alignment.fasta"
+        tmp_fasta = os.path.join(TEMP_FOLDER, "/alignments/tmp_alignment.fasta")
         open(tmp_fasta, "w").close()
         os.makedirs(os.path.dirname(tmp_fasta), exist_ok=True)
         simlabels = {}

@@ -6,8 +6,7 @@ import math
 import requests
 import tracemalloc
 
-
-
+from .. import SUBDIR_NAME, TEMP_FOLDER, WD, FD
 
 
 class Log(object):
@@ -15,8 +14,8 @@ class Log(object):
         self.stdout = None
         self.stderr = None
         self.folder = "./logs"
-        self.files = {"default": "bioiain/default.log",
-                      "debug": "bioiain/debug.log"}
+        self.files = {"default": os.path.join(SUBDIR_NAME,"default.log"),
+                      "debug": os.path.join(SUBDIR_NAME, "debug.log")}
         self.logging = True
         self.terminal = True
 

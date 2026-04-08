@@ -8,7 +8,7 @@ def relative_path(path, relative_to=None):
     if path is None:
         return None
     if relative_to is None:
-        relative_to = os.getcwd()
+        relative_to = os.abspath(os.getcwd())
     path = os.path.abspath(path)
     relative_to = os.path.abspath(relative_to)
     #print(os.path.commonpath([path, relative_to]))

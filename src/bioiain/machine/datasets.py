@@ -1,8 +1,7 @@
 import os, json, time
 from copy import deepcopy
-
+from ..utilities import *
 from ..utilities import relative_path
-from ..utilities.logging import log
 from ..utilities.exceptions import *
 from typing import Any
 
@@ -74,7 +73,9 @@ class Item(object):
 
 
 class EmbeddingDataset(Dataset):
-    def __init__(self,*args,  name, folder="./bioiain/datasets", **kwargs):
+    def __init__(self,*args,  name, folder=None, **kwargs):
+        if folder is None:
+            folder = os.path.join(SUBDIR_NAME, "datasets")
         fname = f"{name}.dataset.json"
         path = os.path.join(folder, fname)
         self.data = dict(

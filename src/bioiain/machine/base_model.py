@@ -19,7 +19,7 @@ from torch.utils.tensorboard import SummaryWriter
 import datetime
 import psutil
 from . import DEVICE
-
+from ..utilities import *
 from ..utilities.exceptions import *
 from .losses import *
 
@@ -32,7 +32,7 @@ class BaseModel(nn.Module):
             in_shape:list|tuple,
             lr:float=0.001,
             batch_size:int=0,
-            folder:str="./bioiain/models",
+            folder:str=os.path.join(SUBDIR_NAME, "models"),
             inference:bool=False,
             dry=False,
             **kwargs):
@@ -193,7 +193,7 @@ class BaseModel(nn.Module):
 
     def _create_writer(self):
         if self.dry or self.inference:
-            self.writer = SummaryWriter(log_dir="/tmp/bioiain/trash")
+            self.writer = SummaryWriter(log_dir=os.path.join(TEMP_FOLDER, "trash"))
         else:
             self.writer = SummaryWriter(log_dir=f"runs/{self.__class__.__name__}/{str(self)}_{datetime.datetime.now().strftime("%m-%d_%H-%M-%S")}")
 

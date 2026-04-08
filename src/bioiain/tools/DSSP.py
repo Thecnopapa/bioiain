@@ -1,5 +1,5 @@
 import os, sys, subprocess, json
-from ..utilities.logging import log
+from ..utilities import *
 from ..utilities.sequences import d3to1
 
 def ss_to_index(ss):
@@ -51,8 +51,9 @@ def index_to_ss(ss):
 
 
 class DSSP:
-    def __init__(self, dssp_cmd="dssp", folder="/tmp/bioiain/dssp", force=False):
-
+    def __init__(self, dssp_cmd="dssp", folder=None, force=False):
+        if folder is None:
+            folder = os.path.join(TEMP_FOLDER, "dssp")
         self.dssp_cmd = dssp_cmd
         self.folder = folder
         os.makedirs(self.folder, exist_ok=True)

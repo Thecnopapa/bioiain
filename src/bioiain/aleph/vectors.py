@@ -1,6 +1,7 @@
 import os, json
 import numpy as np
 
+from .. import SUBDIR_NAME
 from ..utilities.logging import log
 from ..utilities.exceptions import *
 from ..utilities.maths import *
@@ -189,7 +190,9 @@ class CVMatrix(object):
         return t
 
 
-    def save_fig(self, attribute="d", save_folder="./bioiain/cvmaps"):
+    def save_fig(self, attribute="d", save_folder=None):
+        if save_folder is None:
+            save_folder = os.path.join(SUBDIR_NAME, "cvmaps")
         os.makedirs(save_folder, exist_ok=True)
         filename = os.path.join(save_folder, f"{attribute}.png")
         plot_heatmap(self.square(attribute), filename=filename)

@@ -2,6 +2,7 @@ import os, sys, json, subprocess
 
 
 from .logging import log
+from .. import TEMP_FOLDER, SUBDIR_NAME
 
 
 d3to1 = {'CYS': 'C', 'ASP': 'D', 'SER': 'S', 'GLN': 'Q', 'LYS': 'K',
@@ -142,7 +143,7 @@ class MSA(object):
         log(2, f"Calculating MSA of: {fasta_path}")
         fname = f"{name}_{matrix}.ms.alignment.fasta"
         if out_folder is None:
-            out_folder = "/tmp/bioiain/alignments"
+            out_folder = os.path.join(TEMP_FOLDER, "alignments")
         os.makedirs(out_folder, exist_ok=True)
         out_path = os.path.join(out_folder, fname)
         if os.path.exists(out_path) and not force:

@@ -3,6 +3,7 @@ import Bio.PDB as bp
 from .base import BiopythonOverlayClass
 from src.bioiain.base.entity import BIEntity
 from .residue import Residue, DResidue
+from .. import TEMP_FOLDER
 from ..utilities.sequences import d3to1
 from ..utilities.logging import log
 
@@ -134,7 +135,7 @@ class Chain(bp.Chain.Chain, BiopythonOverlayClass):
 
         for atom in self.atoms():
             atom.set_bfactor(atom.get_misc("SASA"))
-        path = self.export(folder="/tmp/bioiain/exports", structure=True, data=False, include_misc=True)
+        path = self.export(folder=os.path.join(TEMP_FOLDER, "exports"), structure=True, data=False, include_misc=True)
 
         threshold = kwargs.get("threshold", 50)
         script = PymolScript()

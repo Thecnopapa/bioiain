@@ -116,7 +116,7 @@ def display_monomer_labels(monomer_id, dataset, label_name, script=None, use_tem
 
     folder = "./visualisations"
     if use_temp:
-        folder = "/tmp/bioiain/visualisations"
+        folder = os.path.join(TEMP_FOLDER, "visualisations")
 
     dataset.use_label(label_name)
     dataset.map()

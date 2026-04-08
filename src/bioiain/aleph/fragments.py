@@ -59,7 +59,7 @@ class FragmentedStructure(BIStructure):
                 return self.from_file(self.path(), export_folder=self.paths["export_folder"])
 
         from .core.ALEPH import annotate_pdb_model_with_aleph
-        target_path = self.export(minimal=True, target_folder="/tmp/bioiain/trash")
+        target_path = self.export(minimal=True, target_folder=os.path.join(TEMP_FOLDER, "trash"))
         self.data["fragments"]["weight"] = "distance_avg"
         self.data["fragments"]["threshold_ah"] = 0.50
         self.data["fragments"]["threshold_bs"] = 0.30
