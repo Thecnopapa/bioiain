@@ -199,7 +199,9 @@ class ThreadPool(object):
                 t["status"] = "done"
                 ok += 1
         log("header", f"Threadpool: Finished {ok + errors} tasks ({errors} errors), returning:")
-        [log(1, f"{k}:", r) for k, r in self.returns.items()]
+        for k, t in running_threads.items():
+            log(1, f"{k} ({t['status']}): {t['ret']}")
+
         pools.remove(self)
         return self.returns.values()
 
