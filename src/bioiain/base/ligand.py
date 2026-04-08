@@ -59,7 +59,7 @@ class Ligand(object):
 			sa = self._calculate_sasa(entity=entity)
 			if sa < relevance_threshold:
 				self.relevant = True
-			print("SASA", sa, "LIGAND:", self)
+			#print("SASA", sa, "LIGAND:", self)
 
 
 		return self.relevant
@@ -67,7 +67,7 @@ class Ligand(object):
 	def _calculate_sasa(self, entity=None):
 		from ..tools.SASA import SASA
 		sasa = SASA()
-		sasas = sasa.compute(entity=entity, targets=self.atoms)
+		sasas = sasa.compute(entity=entity, targets=self.atoms, quiet=True)
 		assert len(sasas) == len(self.atoms)
 
 		av_sasa = sum(sasas) / len(sasas)

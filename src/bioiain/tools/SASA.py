@@ -66,12 +66,17 @@ class SASA(object):
 
         return coords
 
-    def compute(self, entity, targets=None, save_sasas=None, **kwargs):
+    def compute(self, entity, targets=None, save_sasas=None, force=False, quiet=False, **kwargs):
         from ..base import PseudoAtom
-        print("Computing ASA...")
+        if not quiet:
+            log(2, "Computing ASA...")
 
-
-        kdt = KDT(entity, **kwargs)
+        if hasattr(entity, "_kdtree") and not force:
+            if not quiet:
+                log(3, "Recovering saved KDTree")
+            kdt = entity._kdtree
+        else:
+            kdt = KDT(entity, quiet=quiet, **kwargs)
 
         radii_list = []
         n_atoms = 0
@@ -145,13 +150,16 @@ class SASA(object):
 
 
 class KDT(object):
-    def __init__(self, coords_or_entity, leaf_size=10, quiet=False, **kwargs):
+    def __init__(self, coords_or_entity, leaf_size=10, quiet=False, force=False, **kwargs):
         if not quiet:
-            log(1, "Building KDT...")
+            log(3, "Building KDT...")
         from ..base import BIEntity
         if isinstance(coords_or_entity, BIEntity):
             if not quiet:
-                log(2, f"Entity: {coords_or_entity.name()}")
+                log(4, f"Entity: {coords_or_entity.name()}")
+
+
+            coords_or_entity._kdtree = self
             atoms = coords_or_entity.atoms(hetatm=True, water=False)
             coords = np.array([a.coord for a in atoms], dtype=np.float64)
         else:
