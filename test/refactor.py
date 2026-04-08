@@ -23,7 +23,6 @@ for file in os.listdir(folder):
     path = os.path.join(folder,  file)
     entity = FragmentedStructure.from_file(path).fragment()
     print(entity.ligands())
-    exit()
 
     #script = PymolScript()
     #script.load(path, entity.name())

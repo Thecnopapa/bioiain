@@ -129,30 +129,29 @@ class CVEmbedding(PerResidueEmbedding):
 class CVEmbeddingV1(CVEmbedding):
 
     def _cvectors_to_embedding(self, cvectors, modulo_norm, max_dist, **kwargs):
-        e = []
-        seq = ""
-        for cv in cvectors:
-            i = cv
-            j = cv.closest
-            i_j = cv.closest_vp
+        e, seq = super()._cvectors_to_embedding(cvectors, modulo_norm, max_dist, **kwargs)
 
+        for e, cv in zip(e, cvectors):
             dl = cv.dist_to_lig
+            dl = min(1, dl / max_dist)
+            e += dl
 
-            len_i = i.d / modulo_norm
-            len_j = j.d / modulo_norm
-            len_i_j = min(1, i_j.d/max_dist)
-            angle_i_j = i_j.a / 180
-
-            dl = min(1, dl/max_dist)
-
-
-            ri = d3toint[cv.resname]
-            rn = d3to1[cv.resname]
-            seq += rn
-
-            e.append([len_i, len_j, angle_i_j, len_i_j, dl])
         return e, seq
 
+
+class CVEmbeddingV2(CVEmbeddingV1):
+
+    def _cvectors_to_embedding(self, cvectors, modulo_norm, max_dist, **kwargs):
+
+        e, seq = super()._cvectors_to_embedding(cvectors, modulo_norm, max_dist, **kwargs)
+
+        for e, cv in zip(e, cvectors):
+            if cv.chain != cv.closest.chain or cv.closest_opn is not None:
+                is_contact = True
+            else:
+                is_contact = False
+            e += int(is_contact)
+        return e, seq
 
 
 

@@ -49,6 +49,7 @@ class BIEntity(object):
 
         #Properties
         self._com = None
+        self._kdtree = None
 
         #CVectors
         self._cvectors = None

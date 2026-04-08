@@ -34,6 +34,8 @@ class CVector(object):
 
         self.closest = None
         self.closest_vp = None
+        self.closest_opn = None
+        self.closest_pos = None
 
         self.closest_lig = None
         self.dist_to_lig = None
@@ -211,7 +213,7 @@ class CVMatrix(object):
             #print(distances)
             cv.dist_to_lig = min(distances)
             cv.closest_lig = ligands[distances.index(cv.dist_to_lig)]
-            log(1, f"Closest lig ({cv}): {cv.closest_lig} at {cv.dist_to_lig:4.2f}A")
+            #log(1, f"Closest lig ({cv}): {cv.closest_lig} at {cv.dist_to_lig:4.2f}A")
 
         for row in self.matrix:
             for vp in row:

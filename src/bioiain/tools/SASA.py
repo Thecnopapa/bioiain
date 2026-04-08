@@ -71,7 +71,7 @@ class SASA(object):
         if not quiet:
             log(2, "Computing ASA...")
 
-        if hasattr(entity, "_kdtree") and not force:
+        if getattr(entity, "_kdtree", None) is not None and not force:
             if not quiet:
                 log(3, "Recovering saved KDTree")
             kdt = entity._kdtree
@@ -157,7 +157,6 @@ class KDT(object):
         if isinstance(coords_or_entity, BIEntity):
             if not quiet:
                 log(4, f"Entity: {coords_or_entity.name()}")
-
 
             coords_or_entity._kdtree = self
             atoms = coords_or_entity.atoms(hetatm=True, water=False)

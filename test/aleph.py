@@ -42,11 +42,16 @@ else:
     DATA_FOLDER = downloadPDB( list_name="aleph", pdb_list=["1M2Z", "3HBB", "6F63", "5LXN", "3brf", "6e52", "7t2y"], data_dir="./data" )
     DATA_NAME = "aleph"
 
-
+V0 = False
+V1 = False
+V2 = False
 
 if "--v1" in sys.argv or True:
     V1 = True
     DATA_NAME += "_v1"
+elif "--v2" in sys.argv or True:
+    V2 = True
+    DATA_NAME += "_v2"
 else:
     V0 = True
 
@@ -87,6 +92,8 @@ if "-p" not in sys.argv:
                 entity = BIEntity.from_file(path)
                 if V1:
                     embedding = CVEmbeddingV1(entity=entity).embedding(force="--force" in sys.argv)
+                elif V2:
+                    embedding = CVEmbeddingV2(entity=entity).embedding(force="--force" in sys.argv)
                 else:
                     embedding = CVEmbedding(entity=entity).embedding(force="--force" in sys.argv)
 
