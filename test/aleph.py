@@ -83,7 +83,7 @@ if "-p" not in sys.argv:
         if "--no-split" in sys.argv:
             parts = [os.listdir(DATA_FOLDER)]
         else:
-            parts = split_iterable(os.listdir(DATA_FOLDER))
+            parts = split_iterable(os.listdir(DATA_FOLDER), n_parts=4)
         pool = ThreadPool()
 
         def generate_embeddings(file_list=None):
@@ -211,13 +211,10 @@ if "-p" in sys.argv:
 
         print(len(residues), len(cvectors))
 
-        preds = [model._predict(e) for e in embedding.tensor()]
-
-        print(len(cvectors), len(preds))
-        assert len(cvectors) == len(preds)
 
         script = PymolScript(name=f"{name}_prediction", folder=prediction_folder)
         script.load(entity.path(minimal=False), entity.name())
+        script.spectrum(entity.name(), color="blue_yellow_red")
 
         paths_emb = []
         t = embedding.tensor()
@@ -230,7 +227,16 @@ if "-p" in sys.argv:
             paths_emb.append(entity.export(sufix=f"EMB{i}"))
             script.load(paths_emb[-1])
 
-        script.spectrum("*EMB*", color="_".join(mpl_colours)+"_"+"_".join(mpl_colours), minimum=0, maximum=1)
+        script.spectrum("*EMB*", color="blue_yellow_red", minimum=0, maximum=1)
+        script.write_script()
+
+        preds = [model._predict(e) for e in embedding.tensor()]
+
+        print(len(cvectors), len(preds))
+        assert len(cvectors) == len(preds)
+
+
+
 
         for res in residues:
             res.set_bfactor(0)

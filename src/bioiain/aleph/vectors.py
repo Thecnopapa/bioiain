@@ -24,12 +24,14 @@ class CVector(object):
         self.chain = res2.chain
         self.resnum = res2.resnum
         self.resname = res2.resname
+        self.resseq = res2.resseq
         self.fragment = res2.fragment
 
         self.id = (self.resnum, self.chain)
 
 
         self.d = None
+        self.v = None
         self.start = None
         self.end = None
 
@@ -46,6 +48,33 @@ class CVector(object):
         self.entity_centre = entity_centre
 
         self.calculate()
+
+
+    def _mmcif_dict(self):
+        d =  dict(
+            chain=self.chain,
+            fragment=self.fragment,
+            resseq=self.resseq,
+            resname=self.resname,
+            resnum=self.resnum,
+            d=f"{self.d:8.3f}",
+            start_x=f"{self.start.coord[0]:8.3f}", start_y=f"{self.start.coord[1]:8.3f}", start_z=f"{self.start.coord[2]:8.3f}",
+            end_x=f"{self.end.coord[0]:8.3f}", end_y=f"{self.end.coord[1]:8.3f}", end_z=f"{self.end.coord[2]:8.3f}",
+            closest_resseq=self.closest.resseq if self.closest is not None else None,
+            closest_resnum=self.closest.resnum if self.closest is not None else None,
+            closest_chain=self.closest.chain if self.closest is not None else None,
+            closest_fragment=self.closest.fragment if self.closest is not None else None,
+            closest_pos=self.closest_pos,
+            closest_opn=self.closest_opn,
+            closest_lig_name=self.closest_lig.name if self.closest_lig is not None else None,
+            closest_lig_chain=self.closest_lig.chain if self.closest_lig is not None else None,
+            dist_to_lig=f"{self.dist_to_lig:8.3f}",
+        )
+        for k, v in d.items():
+            if v is None:
+                d[k] = "."
+            d[k] = str(d[k])
+        return d
 
 
     def __repr__(self):

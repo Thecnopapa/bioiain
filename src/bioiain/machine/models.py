@@ -457,7 +457,7 @@ class Hope(DespairLess):
             if plot_preds is not None:
                 log(2, "Plotting predictions..." )
                 for token, _, _, point in plot_preds:
-                    ax.scatter(*point, color=f"C{token}")
+                    ax.scatter(*point.detach().cpu().numpy(), color=f"C{token}")
 
 
             if fig_dir is None:

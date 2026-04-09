@@ -29,9 +29,10 @@ for file in os.listdir(folder):
 
 
     matrix = entity.cvmatrix()
+    entity.export(target_folder = "trash")
     #print(matrix)
     #matrix.save_fig()
-    #entity.show_cvectors(execute=True)
+    entity.show_cvectors(execute=True)
 
 
 

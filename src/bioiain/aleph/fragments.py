@@ -90,7 +90,7 @@ class FragmentedStructure(BIStructure):
         fragmented_ids = graph.vs
         atoms = []
         for n, fraglist in enumerate(fragmented_ids):
-            single_atom_ratio = (0, 0)
+            single_atom_ratio = [0, 0]
             cvs = fraglist["reslist"]
             reslist = self.residues()
             target_res= []

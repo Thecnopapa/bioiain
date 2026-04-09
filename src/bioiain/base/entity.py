@@ -448,7 +448,7 @@ class BIEntity(object):
         return filepath
 
 
-    def _export_structure(self, filepath:str, atoms:list=None, headers:bool=None, misc_fields:bool=True, cleanup=False, as_pdb=False) -> str:
+    def _export_structure(self, filepath:str, atoms:list=None, headers:bool=None, misc_fields:bool=True, cleanup=False, as_pdb=False, cvectors=True, cvmatrix=True) -> str:
         mode = "w"
         if atoms is None:
             if cleanup:
@@ -471,6 +471,10 @@ class BIEntity(object):
                 for k, d in self.headers.items():
                     write_dict(d, file_path=filepath, label=k, mode=mode, name=self.name())
                     mode = "a"
+
+            if cvectors and self._cvectors is not None:
+                write_dict_list(self._cvectors, file_path=filepath, label="aleph_cvectors", mode=mode, name=self.name())
+                mode = "a"
 
             return write_atoms(atoms, filepath, name=self.name(), include_misc=misc_fields, mode=mode)
 

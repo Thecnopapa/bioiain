@@ -44,21 +44,21 @@ class PymolScript(object):
     :param name: Name of the script. Will de set as a filename. Default is ".temp_pymol_script".
     :return: PymolScript Object.
     """
-    def __init__(self, name="temp_pymol_script", folder:str="./pml", tmp_folder=None, pymol_path = "pymol", use_temp=True):
+    def __init__(self, name="temp_pymol_script", folder:str="./pml", tmp_folder=None, pymol_path = "pymol", use_temp=False):
         self.pymol_path = pymol_path
         self._bioiain = "bioiain"
         self.name = name
         self.folder = folder
         if tmp_folder is None:
-            tmp_folder = os.path.join(TEMP_FOLDER, "pml")
+            tmp_folder = os.path.join(TEMP_FOLDER, self.folder )
         self.tmp_folder=tmp_folder
         os.makedirs(self.folder, exist_ok=True)
         os.makedirs(self.tmp_folder, exist_ok=True)
         self.use_temp = use_temp
         if use_temp:
-            self.subfolder = self.folder
+            self.subfolder =  os.path.join(tmp_folder, self.folder, self.name)
         else:
-            self.subfolder = os.path.join(folder, self.name)
+            self.subfolder = os.path.join(self.folder, self.name)
 
         os.makedirs(self.subfolder, exist_ok=True)
         self.input = {}
@@ -122,6 +122,9 @@ class PymolScript(object):
         filepath = os.path.join(self.subfolder, filename+".script.pml")
         with open(filepath, "w") as f:
             f.write(f"#!{self.pymol_path}\n\n")
+            #f.write("import os\n")
+            #f.write(f"os.chdir({self.folder})")
+
             #f.write("import {} as bi\n\n\n".format(self._bioiain))
             for cmd in self.commands:
                 f.write(repr(cmd)+"\n")
@@ -154,7 +157,7 @@ class PymolScript(object):
 
         logging.log("debug", "$ " + " ".join(cmd))
         try:
-            subprocess.run(cmd)
+            subprocess.run(cmd, cwd=self.subfolder)
         except KeyboardInterrupt:
             logging.log("debug", "\nClosing Pymol...")
         except Exception as e:
@@ -270,13 +273,11 @@ class PymolScript(object):
             name = entity.data["info"]["name"]
         if not overwrite:
             n = 1
-            while name+".pdb" in os.listdir(self.tmp_folder):
+            while name+".pdb" in os.listdir(self.subfolder):
                 name = "{}_{}".format(entity.data["info"]["name"], n)
                 n += 1
-        if self.use_temp:
-            folder = self.tmp_folder
-        else:
-            folder = self.subfolder
+
+        folder = self.subfolder
         path = entity.export(folder, name, data=True)[0]
         return self.load(path, name)
 

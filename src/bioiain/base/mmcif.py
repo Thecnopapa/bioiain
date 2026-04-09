@@ -2,7 +2,7 @@ import os, json, requests
 
 from ..utilities import *
 
-
+from ..utilities.strings import *
 
 def downloadPDB(data_dir:str, list_name:str, pdb_list:list=None, file_path:str = None, file_format="cif",
                 overwrite:bool=False) -> str:
@@ -369,8 +369,6 @@ def write_pdb_atoms(atoms, file_path, mode="w", end=True):
 
 
 
-
-
 def write_atoms(atoms, file_path, name=None, include_misc=True, preserve_ids=False,
                 mode="w", key="_atom_site") -> str:
 
@@ -412,6 +410,7 @@ def write_dict(data, label, file_path, name=None, mode="w"):
         file_path += ".cif"
     if not label.startswith("_"):
         label = "_" + label
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
     try:
         with open(file_path, mode) as f:
             if mode == "w" and name is not None:
@@ -431,9 +430,63 @@ def write_dict(data, label, file_path, name=None, mode="w"):
         os.remove(file_path)
         raise e
 
-def write_list(data, label, file_path, name=None, mode="w"):
-    pass
+def write_dict_list(data, label, file_path, name=None, mode="w", **kwargs):
 
+    if len(data) == 0:
+        return file_path
+    if not file_path.endswith(".cif"):
+        file_path += ".cif"
+    if not label.startswith("_"):
+        label = "_" + label
+
+
+    keys = ["n"]
+
+    if type(data) is dict:
+        data = data.values()
+    else:
+        assert type(data) in (list, tuple)
+
+    get_dict=False
+
+    if type(data[0]) is not dict:
+        get_dict=True
+
+    if get_dict:
+        keys.extend(data[0]._mmcif_dict(**kwargs).keys())
+    else:
+        keys.extend(data[0].keys())
+
+
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    try:
+        with open(file_path, mode) as f:
+            if mode == "w" and name is not None:
+                f.write(f"data_{name}\n")
+            f.write("#\n")
+            f.write("loop_\n")
+
+            for k in keys:
+                f.write(f"{label}.{k}\n")
+
+            for n, d in enumerate(data):
+                if get_dict:
+                    d = d._mmcif_dict(**kwargs)
+
+                    f.write(f"{n}  "+"  ".join([quote_if_necessary(v) for v in d.values()]) + "\n")
+
+        return file_path
+    except Exception as e:
+        log("error", f"Dict writing to mmcif failed, deleting corrupted file: {file_path}")
+        os.remove(file_path)
+        raise e
+
+
+def quote_if_necessary(value):
+    if should_be_quoted(value):
+        return f"'{value}'"
+    else:
+        return str(value)
 
 
 def should_be_quoted(value):
