@@ -110,7 +110,8 @@ class CVEmbedding(PerResidueEmbedding):
     def generate_embedding(self, *args, modulo_norm=2.4, max_dist=10, **kwargs):
 
         try:
-            frag = self.entity.fragment()
+            self.entity = self.entity.fragment()
+            frag = self.entity
         except ALEPHError:
             return None
 

@@ -185,6 +185,8 @@ class BIEntity(object):
                 continue
             print(f"{n:4d}/{len(residues)-2:4d}", end="\r")
             cvector = CVector(residues[n-1], res, residues[n+1], params=self.params(), symops=self.symops(), entity_centre=self.com())
+            if cvector.trash:
+                continue
             cvector_list.append(cvector)
         log(2, f"n CVectors: {len(cvector_list)}")
         self._cvectors = cvector_list

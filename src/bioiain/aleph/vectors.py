@@ -28,6 +28,9 @@ class CVector(object):
         self.fragment = res2.fragment
 
         self.id = (self.resnum, self.chain)
+        self.across_chains = False
+        self.is_gap = False
+        self.trash = False
 
 
         self.d = None
@@ -64,7 +67,7 @@ class CVector(object):
             closest_resnum=self.closest.resnum if self.closest is not None else None,
             closest_chain=self.closest.chain if self.closest is not None else None,
             closest_fragment=self.closest.fragment if self.closest is not None else None,
-            closest_pos=self.closest_pos,
+            closest_pos="_".join([str(p) for p in self.closest_pos]) if self.closest_pos is not None else None,
             closest_opn=self.closest_opn,
             closest_lig_name=self.closest_lig.name if self.closest_lig is not None else None,
             closest_lig_chain=self.closest_lig.chain if self.closest_lig is not None else None,
@@ -97,6 +100,14 @@ class CVector(object):
         self.v = vector(self.start.coord, self.end.coord)
 
         self.d = length(self.v)
+
+        if len({self.res1.chain, self.res2.chain, self.res3.chain}) > 1:
+            self.across_chains = True
+            self.trash = True
+
+        if abs(self.res1.resnum - self.res2.resnum) != 1 or abs(self.res2.resnum - self.res3.resnum) != 1:
+            self.is_gap = True
+            self.trash = True
 
 
         return self

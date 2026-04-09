@@ -235,7 +235,11 @@ class FragmentedStructure(BIStructure):
         script = self.show_fragments(execute=False, script=script)
         self.cvmatrix()
         for cv in self.cvectors():
-            script.line("cvectors", coord1=cv.start.coord, coord2=cv.end.coord)
+            if cv.is_gap:
+                script.line("gap_cvectors", coord1=cv.start.coord, coord2=cv.end.coord)
+            else:
+                script.line("cvectors", coord1=cv.start.coord, coord2=cv.end.coord)
+
             #if cv.fragment is None:
             #    continue
             if cv.closest_opn == 1 or cv.closest_opn is None:
@@ -248,6 +252,7 @@ class FragmentedStructure(BIStructure):
 
         script.color("neighbours", "orange")
         script.color("cvectors", "cyan")
+        script.color("gap_cvectors", "purple")
         script.color("cvectors_sym", "green")
         print(self.export())
         script.load(self.path(), self.name())

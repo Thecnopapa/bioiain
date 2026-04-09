@@ -214,6 +214,7 @@ if "-p" in sys.argv:
 
         script = PymolScript(name=f"{name}_prediction", folder=prediction_folder)
         script.load(entity.path(minimal=False), entity.name())
+        entity.show_cvectors(script=script)
         script.spectrum(entity.name(), color="blue_yellow_red")
 
         paths_emb = []
