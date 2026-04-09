@@ -34,6 +34,7 @@ class Embedding(object):
         self.length = 0
         self.iter_dim = 0
         self.exists = os.path.exists(self.path)
+        self.failed = False
 
 
     def __repr__(self):
@@ -42,7 +43,10 @@ class Embedding(object):
 
     def embedding(self, force=False, **kwargs):
         if not self.exists or force:
-            self.generate_embedding(**kwargs)
+            emb = self.generate_embedding(**kwargs)
+            if emb is None:
+                self.failed = True
+                return None
         else:
             self.from_file(self.path)
         return self
@@ -108,6 +112,9 @@ class CVEmbedding(PerResidueEmbedding):
         try:
             frag = self.entity.fragment()
         except ALEPHError:
+            return None
+
+        if self.entity.has_flag("missing_side_chains"):
             return None
 
         if frag.data["fragments"]["n_fragments"] <= 1:

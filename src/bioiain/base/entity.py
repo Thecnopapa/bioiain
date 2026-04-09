@@ -388,15 +388,24 @@ class BIEntity(object):
             self.headers["symmetry"]["space_group_name_H-M"] = f"\'{self.headers["symmetry"]["space_group_name_H-M"]}\'"
 
 
-    def export(self, minimal=False, cleanup=False, as_pdb=False, target_folder=None):
+    def export(self, minimal=False, cleanup=False, as_pdb=False, target_folder=None, sufix=None):
 
+        custom_folder = False
         if target_folder is None:
             target_folder = self.paths["export_folder"]
-            custom_folder = False
+
         else:
             custom_folder = True
 
-        fname = f"{self.name()}.{self.extension}"
+        fname = self.name()
+        if sufix is not None:
+            custom_folder = True
+            if sufix[0] in [".", "-", "_", "(",]:
+                fname += sufix
+            else:
+                fname += "_"+sufix
+
+        fname += f".{self.extension}"
         if minimal:
             fname += ".minimal"
         try:

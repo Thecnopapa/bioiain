@@ -35,6 +35,7 @@ class BaseModel(nn.Module):
             folder:str=os.path.join(SUBDIR_NAME, "models"),
             inference:bool=False,
             dry=False,
+            embedding_class=None,
             **kwargs):
 
         super().__init__()
@@ -45,6 +46,8 @@ class BaseModel(nn.Module):
         self.data["epoch"] = 0
         self.data["path"] = False
         self.data["model"] = self.__class__.__name__
+        self.data["embedding_class"] = embedding_class.__name__ if embedding_class is not None else None
+
         self.data["batch_size"] = batch_size
         self.mode = "default"
         self.writer = None

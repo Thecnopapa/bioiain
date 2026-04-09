@@ -213,7 +213,7 @@ class PymolScript(object):
         return self.add(fun, *args, is_cmd=False, **kwargs)
 
 
-    def load(self, path:str, name:str, **kwargs) -> Command:
+    def load(self, path:str, name:str=None, **kwargs) -> Command:
         """
         Adds command to load file from path.
         :param path: Path to file.
@@ -224,6 +224,8 @@ class PymolScript(object):
         fun = "load"
 
         path = relative_path(path, self.subfolder)
+        if name is None:
+            name = os.path.basename(path).split(".")[0]
 
         args = f"'{path}'", f"'{name}'"
         return self.add(fun, *args, **kwargs)

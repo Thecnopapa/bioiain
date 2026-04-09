@@ -90,6 +90,7 @@ class FragmentedStructure(BIStructure):
         fragmented_ids = graph.vs
         atoms = []
         for n, fraglist in enumerate(fragmented_ids):
+            single_atom_ratio = (0, 0)
             cvs = fraglist["reslist"]
             reslist = self.residues()
             target_res= []
@@ -108,6 +109,10 @@ class FragmentedStructure(BIStructure):
                             else:
                                 #log("warning", f"res.resname({res.resname}) != resname({resname})\nfres:{fres}\nres: {res}")
                                 pass
+                        if len(res.atoms) == 1:
+                            single_atom_ratio[0] += 1
+                        single_atom_ratio[1] += 1
+
                         target_res.append(res)
                         reslist.remove(res)
                         continue
@@ -128,9 +133,16 @@ class FragmentedStructure(BIStructure):
                 if export:
                     fragment.export()
                 log(2, f"fragment {n}: {fragment}")
+                if single_atom_ratio[0] / single_atom_ratio[1] > 0.5:
+                    log("Warning",
+                        f"Detected fragment with too many missing side chains ({single_atom_ratio[0] / single_atom_ratio[1]:3.1f}%)")
+                    fragment.set_flag("missing_side_chains", True)
+                    self.set_flag("missing_side_chains", True)
                 fragments.append(fragment)
             else:
                 log("warning", f"fragment {n}: no residues")
+
+
         #self._atoms = atoms
         self._fragments = fragments
 

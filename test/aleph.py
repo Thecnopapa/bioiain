@@ -49,10 +49,14 @@ V2 = False
 if "--v1" in sys.argv:
     V1 = True
     DATA_NAME += "_v1"
+    EMBEDDING_CLASS = CVEmbeddingV1
 elif "--v2" in sys.argv:
     V2 = True
     DATA_NAME += "_v2"
+    EMBEDDING_CLASS = CVEmbeddingV2
+
 else:
+    EMBEDDING_CLASS = CVEmbedding
     V0 = True
 
 log(1, "DATA NAME:", DATA_NAME)
@@ -90,12 +94,8 @@ if "-p" not in sys.argv:
 
                 path = os.path.join(DATA_FOLDER, file)
                 entity = BIEntity.from_file(path)
-                if V1:
-                    embedding = CVEmbeddingV1(entity=entity).embedding(force="--force" in sys.argv)
-                elif V2:
-                    embedding = CVEmbeddingV2(entity=entity).embedding(force="--force" in sys.argv)
-                else:
-                    embedding = CVEmbedding(entity=entity).embedding(force="--force" in sys.argv)
+
+                embedding = EMBEDDING_CLASS(entity=entity).embedding(force="--force" in sys.argv)
 
                 if embedding is None:
                     log("warning", "No embedding for file:", file)
@@ -123,7 +123,7 @@ if "-t" in sys.argv:
     epochs = 100
     print(dataset)
 
-    model = MODEL_CLASS(name=DATA_NAME, in_shape=dataset.get(0).t.shape, batch_size=0, lr=LR)
+    model = MODEL_CLASS(name=DATA_NAME, in_shape=dataset.get(0).t.shape, batch_size=0, lr=LR, embedding_class = EMBEDDING_CLASS)
     model.add_text("data", model.json())
 
     model.set_mode("autoencoder")
@@ -197,8 +197,11 @@ if "-p" in sys.argv:
         entity.export()
         print(entity)
         print(len(entity.residues()))
+        if model.data["embedding_class"] is not None:
+            if EMBEDDING_CLASS.__name__ == model.data["embedding_class"]:
+                log("warning", f"Embedding class ({EMBEDDING_CLASS.__name__}) does not match the model embedding class ({model.data['embedding_class']})")
 
-        embedding = CVEmbedding(entity=entity).embedding(force=True)
+        embedding = EMBEDDING_CLASS(entity=entity).embedding(force=True)
         print(embedding)
         
         entity = embedding.entity
@@ -210,22 +213,36 @@ if "-p" in sys.argv:
 
         preds = [model._predict(e) for e in embedding.tensor()]
 
-        for res in residues:
-            res.set_bfactor(0)
-
         print(len(cvectors), len(preds))
         assert len(cvectors) == len(preds)
 
+        script = PymolScript(name=f"{name}_prediction", folder=prediction_folder)
+        script.load(entity.path(minimal=False), entity.name())
+
+        paths_emb = []
+        t = embedding.tensor()
+        for i in range(t.shape[-1]):
+            for res in residues:
+                res.set_bfactor(0)
+            for cv, emb in zip(cvectors, t):
+                res = cv.res2
+                res.set_bfactor(emb[i])
+            paths_emb.append(entity.export(sufix=f"EMB{i}"))
+            script.load(paths_emb[-1])
+
+        script.spectrum("*EMB*", color="_".join(mpl_colours)+"_"+"_".join(mpl_colours), minimum=0, maximum=1)
+
+        for res in residues:
+            res.set_bfactor(0)
         for cv, pred in zip(cvectors, preds): 
             res = cv.res2
             #print(res, pred[0])
             res.set_bfactor(pred[0])
 
-        entity.export()
+        path_tok = entity.export(sufix="tokens")
+        script.load(path_tok)
 
-        script = PymolScript(name=f"{name}_prediction", folder=prediction_folder)
-        script.load(entity.path(minimal=True), entity.name())
-        script.spectrum("(all)", color="_".join(mpl_colours)+"_"+"_".join(mpl_colours), minimum=0, maximum=19)
+        script.spectrum("*tokens", color="_".join(mpl_colours)+"_"+"_".join(mpl_colours), minimum=0, maximum=19)
         script.write_script()
 
         model.plot_latent_space(plot_preds=preds, show=True, fig_dir=prediction_folder)
