@@ -274,6 +274,8 @@ if "-p" in sys.argv:
             script.group(f"TOK{tok:2d}_", f"Token_{tok}")
             for res in tok_res:
                 script.align(f"({res} and c. A)", f"({tok_res[0]} and c. A)")
+        script.hide("TOK*")
+        script.show("TOK*", "lines")
         script.spectrum("TOK*", color="_".join(mpl_colours) + "_" + "_".join(mpl_colours), minimum=0, maximum=19)
 
         script.write_script()
