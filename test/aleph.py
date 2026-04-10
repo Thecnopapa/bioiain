@@ -38,7 +38,7 @@ if "monomers" in sys.argv:
         DATA_FOLDER = "./data/cath-monomeric"
     DATA_NAME = "monomers"
 else:
-    DATA_FOLDER = downloadPDB( list_name="aleph", pdb_list=["1M2Z", "3HBB", "6F63", "5LXN", "3brf", "6e52", "7t2y"], data_dir="./data" )
+    DATA_FOLDER = downloadPDB( list_name="aleph", pdb_list=["1M2Z", "3HBB", "6F63", "5LXN", "3brf", "6e52", "7t2y", "3kg2"], data_dir="./data" )
     DATA_NAME = "aleph"
 
 V0 = False
@@ -198,9 +198,6 @@ if "-p" in sys.argv:
 
         script = PymolScript(name=f"{name}", folder=prediction_folder)
         script.load(entity.path(minimal=False), entity.name())
-        script.compile()
-        script.execute()
-        exit()
 
 
         print(entity)
@@ -248,11 +245,27 @@ if "-p" in sys.argv:
 
         for res in residues:
             res.set_bfactor(0)
+
+
+        tok_list = {}
         for cv, pred in zip(cvectors, preds): 
             res = cv.res2
             #print(res, pred[0])
-            res.set_bfactor(pred[0])
-            script.load(write_atoms(res.atoms, os.path.join(TEMP_FOLDER, "trash", f"{cv.chain}_{cv.resseq}")), f"{cv.chain}_{cv.resseq}")
+            t = pred[0]
+            res.set_bfactor(t)
+            rname = f"TOK{t}_{cv.chain}_{cv.resseq}"
+            if not t in tok_list:
+                tok_list[t] = [rname]
+            else:
+                tok_list[t].append(rname)
+            cv_atoms = [*cv.res1.atoms, *cv.res2.atoms, *cv.res3.atoms]
+            script.load(write_atoms(res.atoms, os.path.join(TEMP_FOLDER, "trash", rname)), rname)
+
+        for tok, tok_res in tok_list.items():
+            #script.group(f"TOK{tok}_")
+            for res in tok_res:
+                script.align(res, tok_res[0])
+        script.spectrum("TOK*", color="_".join(mpl_colours) + "_" + "_".join(mpl_colours), minimum=0, maximum=19)
 
         path_tok = entity.export(sufix="tokens")
         script.load(path_tok)
@@ -263,6 +276,7 @@ if "-p" in sys.argv:
         model.plot_latent_space(plot_preds=preds, show=True, fig_dir=prediction_folder)
 
         script.execute(compile=True)
+        script.execute()
 
 
 

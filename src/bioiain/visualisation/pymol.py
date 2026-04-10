@@ -139,7 +139,7 @@ class PymolScript(object):
     def compile(self, **kwargs):
         return self.execute(compile=True, **kwargs)
 
-    def execute(self, quiet=True, pymol_path=None, full_screen=False, compile=False, extra_options="-k"):
+    def execute(self, quiet=True, pymol_path=None, full_screen=False, compile=False, use_compiled=True, extra_options="-k"):
         """
         Executes the script on the current thread. Not sure if it is blocking or not.
         """
@@ -165,7 +165,10 @@ class PymolScript(object):
             cmd.extend(["-c"])
             cmd.extend(["-l", tmp_session_path])
         else:
-            cmd.extend(["-l", self.path])
+            if use_compiled:
+                cmd.extend(["-l", self.session_path])
+            else:
+                cmd.extend([self.path])
 
         logging.log("debug", "$ " + " ".join(cmd))
         try:
@@ -331,6 +334,21 @@ class PymolScript(object):
             name = prefix
         args = [self._to_str(name), sele]
         return self.add(fun, *args, **kwargs)
+
+    def align(self, moving:str, fixed:str, fun="align", **kwargs) -> Command:
+        sele_fixed = self._to_str(fixed)
+        sele_moving = self._to_str(moving)
+
+        args = [sele_moving, sele_fixed]
+        return self.add(fun, *args, **kwargs)
+
+    def merge(self, target:str, sele:str, state=-1, **kwargs) -> Command:
+        fun = "create"
+        sele_target= self._to_str(target)
+        sele = self._to_str(sele)
+
+        args = [sele_target, sele]
+        return self.add(fun, *args, state=state, **kwargs)
 
 
     def color(self, sele:str, color:str|int="black", **kwargs) -> Command:
