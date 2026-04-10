@@ -196,9 +196,11 @@ if "-p" in sys.argv:
 
         entity.export()
 
-        script = PymolScript(name=f"{name}_prediction", folder=prediction_folder)
+        script = PymolScript(name=f"{name}", folder=prediction_folder)
         script.load(entity.path(minimal=False), entity.name())
         script.compile()
+        script.execute()
+        exit()
 
 
         print(entity)

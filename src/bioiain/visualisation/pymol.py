@@ -1,4 +1,4 @@
-import os, sys, subprocess
+import os, sys, subprocess, shutil
 
 from ..base.atom import PseudoAtom
 from ..utilities import relative_path
@@ -121,6 +121,7 @@ class PymolScript(object):
         filepath = os.path.join(self.subfolder, filename+".script.pml")
         with open(filepath, "w") as f:
             f.write(f"#!{self.pymol_path}\n\n")
+            #f.write(f"try:\n\tcd os.path.dirname(sys.argv[1])\nexcept:\n\tpass\n")
             #f.write("import os\n")
             #f.write(f"os.chdir({self.folder})")
 
@@ -146,8 +147,7 @@ class PymolScript(object):
             self.write_script()
         if pymol_path is None:
             pymol_path = self.pymol_path
-        cd_change = f"cd {self.subfolder} &&"
-        cmd = [*cd_change.split(" "), pymol_path, extra_options]
+        cmd = [pymol_path, extra_options]
 
         if full_screen:
             cmd.extend(["-x", "-e"])
@@ -155,20 +155,28 @@ class PymolScript(object):
         if quiet:
             cmd.extend(["-qQ"])
 
-        cmd.extend(["-l", self.path])
-
+        tmp_session_path = None
         if compile:
             self.session_path = self.path.replace(".script.pml", ".session.pse")
-            cmd.extend(["-c", "-d", f"'save {self.session_path}'"])
-            log(1, f"PyMol Session compiled at: pymol {self.session_path}")
+            tmp_session_path = self.path.replace(".script.pml", ".compiler.pml")
+            shutil.copy(self.path, tmp_session_path)
+            with open(tmp_session_path, "a") as f:
+                f.write(f"\ncmd.save('{self.session_path}')")
+            cmd.extend(["-c"])
+            cmd.extend(["-l", tmp_session_path])
+        else:
+            cmd.extend(["-l", self.path])
 
         logging.log("debug", "$ " + " ".join(cmd))
         try:
             subprocess.run(cmd, cwd=self.subfolder)
+            if compile:
+                log(1, f"PyMol Session compiled at: pymol {self.session_path}")
+                os.remove(tmp_session_path)
         except KeyboardInterrupt:
             logging.log("debug", "\nClosing Pymol...")
         except Exception as e:
-            print(e)
+            log("error","(PYMOL)", e)
 
 
     def add(self, fun, *args, **kwargs) -> Command:
@@ -223,7 +231,7 @@ class PymolScript(object):
         return self.add(fun, *args, is_cmd=False, **kwargs)
 
 
-    def load(self, path:str, name:str=None, create=True, **kwargs) -> Command:
+    def load(self, path:str, name:str=None, create=False, **kwargs) -> Command:
         """
         Adds command to load file from path.
         :param path: Path to file.
