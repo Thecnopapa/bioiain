@@ -378,9 +378,11 @@ def write_atoms(atoms, file_path, name=None, include_misc=True, preserve_ids=Fal
     if not file_path.endswith(".cif"):
         file_path += ".cif"
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    if name is None:
+        name = os.path.basename(file_path).split(".")[0]
     try:
         with open(file_path, mode) as f:
-            if mode == "w" and name is not None:
+            if mode == "w":
                 f.write(f"data_{name}\n")
             f.write("#\n")
             f.write("loop_\n")

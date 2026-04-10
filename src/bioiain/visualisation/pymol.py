@@ -128,6 +128,7 @@ class PymolScript(object):
             for cmd in self.commands:
                 f.write(repr(cmd)+"\n")
         self.path = os.path.abspath(filepath)
+        log(1, f"PyMol Session saved at: pymol {self.path}")
         try:
             os.chmod(self.path, 0o755)
         except:
@@ -145,7 +146,8 @@ class PymolScript(object):
             self.write_script()
         if pymol_path is None:
             pymol_path = self.pymol_path
-        cmd = [pymol_path, extra_options]
+        cd_change = f"cd {self.subfolder} &&"
+        cmd = [*cd_change.split(" "), pymol_path, extra_options]
 
         if full_screen:
             cmd.extend(["-x", "-e"])
@@ -156,13 +158,9 @@ class PymolScript(object):
         cmd.extend(["-l", self.path])
 
         if compile:
-            compile_file = os.path.join(TEMP_FOLDER, "trash", "pymol_compile.pml")
-            self.session_path = self.path.replace("script.pml", "session.pse")
-            with open(compile_file, "w") as f:
-                f.write(f"\ncmd.save({self.session_path})\n)")
-
-            cmd.extend(["-c", "-L", compile_file])
-
+            self.session_path = self.path.replace(".script.pml", ".session.pse")
+            cmd.extend(["-c", "-d", f"'save {self.session_path}'"])
+            log(1, f"PyMol Session compiled at: pymol {self.session_path}")
 
         logging.log("debug", "$ " + " ".join(cmd))
         try:
@@ -225,7 +223,7 @@ class PymolScript(object):
         return self.add(fun, *args, is_cmd=False, **kwargs)
 
 
-    def load(self, path:str, name:str=None, **kwargs) -> Command:
+    def load(self, path:str, name:str=None, create=True, **kwargs) -> Command:
         """
         Adds command to load file from path.
         :param path: Path to file.
@@ -233,7 +231,10 @@ class PymolScript(object):
         :param kwargs:
         :return: Generated Command object -> Unknown.
         """
-        fun = "load"
+        if create:
+            fun = "create"
+        else:
+            fun = "load"
 
         path = relative_path(path, self.subfolder)
         if name is None:

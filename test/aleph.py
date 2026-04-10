@@ -195,6 +195,12 @@ if "-p" in sys.argv:
         entity = BIEntity.from_file(filepath, code=name, force=True, export_folder=prediction_folder)
 
         entity.export()
+
+        script = PymolScript(name=f"{name}_prediction", folder=prediction_folder)
+        script.load(entity.path(minimal=False), entity.name())
+        script.compile()
+
+
         print(entity)
         print(len(entity.residues()))
         if model.data["embedding_class"] is not None:
@@ -212,9 +218,8 @@ if "-p" in sys.argv:
         print(len(residues), len(cvectors))
 
 
-        script = PymolScript(name=f"{name}_prediction", folder=prediction_folder)
-        script.load(entity.path(minimal=False), entity.name())
-        entity.show_cvectors(script=script)
+
+        entity.show_cvectors(script=script, execute=False)
         script.spectrum(entity.name(), color="blue_yellow_red")
 
         paths_emb = []
@@ -255,7 +260,7 @@ if "-p" in sys.argv:
 
         model.plot_latent_space(plot_preds=preds, show=True, fig_dir=prediction_folder)
 
-        script.execute()
+        script.execute(compile=True)
 
 
 
