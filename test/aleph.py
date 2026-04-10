@@ -28,7 +28,6 @@ torch.manual_seed(seed)
 torch.cuda.manual_seed(seed)
 torch.cuda.manual_seed_all(seed)
 
-from src.bioiain.biopython.imports import *
 if "monomers" in sys.argv:
     if not "--no-download" in sys.argv:
         DATA_FOLDER = downloadPDB("./data", "cath-monomeric",
@@ -100,7 +99,7 @@ if "-p" not in sys.argv:
                 if embedding is None:
                     log("warning", "No embedding for file:", file)
                     continue
-                if "7T2Y" in file:
+                if "1M2Z" in file:
                     [print(r, e) for r, e in zip(entity.residues(), embedding.tensor())]
                     # entity.fragment().show_cvectors()
 
@@ -173,6 +172,7 @@ if "-p" in sys.argv:
     with torch.no_grad():
         from src.bioiain.visualisation.pymol import PymolScript
         from src.bioiain.visualisation.plots import mpl_colours
+        from src.bioiain.base.mmcif import write_atoms
 
 
 
@@ -245,6 +245,7 @@ if "-p" in sys.argv:
             res = cv.res2
             #print(res, pred[0])
             res.set_bfactor(pred[0])
+            script.load(write_atoms(res.atoms, os.path.join(TEMP_FOLDER, "trash", f"{cv.chain}_{cv.resseq}")), f"{cv.chain}_{cv.resseq}")
 
         path_tok = entity.export(sufix="tokens")
         script.load(path_tok)

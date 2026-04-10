@@ -4,7 +4,6 @@ from ..base.atom import PseudoAtom
 from ..utilities import relative_path
 from ..utilities.logging import log
 from ..utilities import *
-from ..biopython.base import BiopythonOverlayClass
 
 
 
@@ -15,7 +14,7 @@ pymol_colours = ['green', 'cyan', 'red', 'yellow', 'violet','blue',
 
 
 
-def quick_display(entity:BiopythonOverlayClass|list[BiopythonOverlayClass]) -> str:
+def quick_display(entity) -> str:
     """
     Displays entity or list of entities with PyMol. Exports entities to ./.temp and saves generated script in the same
     directory as quick_display.pml . Entities are named as N_[entity_id] following input order.
@@ -135,8 +134,10 @@ class PymolScript(object):
             log("warning", "Could not give exec permissions to script")
         return self.path
 
+    def compile(self, **kwargs):
+        return self.execute(compile=True, **kwargs)
 
-    def execute(self, quiet=True, pymol_path=None, full_screen=False):
+    def execute(self, quiet=True, pymol_path=None, full_screen=False, compile=False, extra_options="-k"):
         """
         Executes the script on the current thread. Not sure if it is blocking or not.
         """
@@ -144,7 +145,7 @@ class PymolScript(object):
             self.write_script()
         if pymol_path is None:
             pymol_path = self.pymol_path
-        cmd = [pymol_path]
+        cmd = [pymol_path, extra_options]
 
         if full_screen:
             cmd.extend(["-x", "-e"])
@@ -153,6 +154,14 @@ class PymolScript(object):
             cmd.extend(["-qQ"])
 
         cmd.extend(["-l", self.path])
+
+        if compile:
+            compile_file = os.path.join(TEMP_FOLDER, "trash", "pymol_compile.pml")
+            self.session_path = self.path.replace("script.pml", "session.pse")
+            with open(compile_file, "w") as f:
+                f.write(f"\ncmd.save({self.session_path})\n)")
+
+            cmd.extend(["-c", "-L", compile_file])
 
 
         logging.log("debug", "$ " + " ".join(cmd))

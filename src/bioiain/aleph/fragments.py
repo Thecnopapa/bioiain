@@ -60,6 +60,8 @@ class FragmentedStructure(BIStructure):
 
         from .core.ALEPH import annotate_pdb_model_with_aleph
         target_path = self.export(minimal=True, target_folder=os.path.join(TEMP_FOLDER, "trash"))
+        if target_path is None:
+            raise ALEPHError("Minimal cif could not be generated")
         self.data["fragments"]["weight"] = "distance_avg"
         self.data["fragments"]["threshold_ah"] = 0.50
         self.data["fragments"]["threshold_bs"] = 0.30

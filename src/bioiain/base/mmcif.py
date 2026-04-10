@@ -371,7 +371,8 @@ def write_pdb_atoms(atoms, file_path, mode="w", end=True):
 
 def write_atoms(atoms, file_path, name=None, include_misc=True, preserve_ids=False,
                 mode="w", key="_atom_site") -> str:
-
+    if len(atoms) == 0:
+        return None
     labels = atoms[0]._mmcif_dict( include_misc=include_misc).keys()
 
     if not file_path.endswith(".cif"):
