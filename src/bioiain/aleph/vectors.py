@@ -281,7 +281,7 @@ class CVMatrix(object):
                 if vp is None:
                     vp = self.matrix[n2][n1]
 
-                if n2 == n1 or (vp.chain1 == vp.chain2 and vp.opn_of_v2 is not None and vp.pos_of_v2 is not None and abs(vp.resnum1-vp.resnum2) <=2 ) :
+                if n2 == n1 or (vp.chain1 == vp.chain2 and vp.opn_of_v2 is not None and vp.pos_of_v2 is not None and abs(vp.resnum1-vp.resnum2) <=2) :
                     continue
                 print(f"{n1+1} / {n2+1} / {len(self.vectors)}", end="\r")
 

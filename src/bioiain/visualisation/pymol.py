@@ -64,6 +64,7 @@ class PymolScript(object):
         self.data = {}
         self.commands = []
         self.path = None
+        self.session_path = None
 
     class Command(object):
         """
@@ -165,10 +166,10 @@ class PymolScript(object):
             cmd.extend(["-c"])
             cmd.extend(["-l", tmp_session_path])
         else:
-            if use_compiled:
-                cmd.extend(["-l", self.session_path])
+            if use_compiled and self.session_path is not None:
+                cmd.extend([self.session_path])
             else:
-                cmd.extend([self.path])
+                cmd.extend(["-l", self.path])
 
         logging.log("debug", "$ " + " ".join(cmd))
         try:

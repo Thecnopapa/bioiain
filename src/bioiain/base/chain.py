@@ -27,7 +27,7 @@ class BIChain(BIEntity):
 
 
 
-    def set_chain_id(self, chain_id=None):
+    def set_chain_id(self, chain_id=None, complex=True):
         if chain_id is None:
             chain_id = self.find_id()
         chain_id = str(chain_id)
@@ -43,6 +43,11 @@ class BIChain(BIEntity):
         else:
             self.set_name(chain_id, append=True)
             self.set_flag("has_chain_id", True)
+
+        for a in self.all_atoms():
+            a.chain = chain_id
+            if complex:
+                a.complex = chain_id
         return self.id()
 
 
