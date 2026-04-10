@@ -261,14 +261,16 @@ if "-p" in sys.argv:
             cv_atoms = [*cv.res1.atoms, *cv.res2.atoms, *cv.res3.atoms]
             script.load(write_atoms(res.atoms, os.path.join(TEMP_FOLDER, "trash", rname)), rname)
 
+        path_tok = entity.export(sufix="tokens")
+        script.load(path_tok)
+
         for tok, tok_res in tok_list.items():
-            #script.group(f"TOK{tok}_")
+            script.group(f"TOK{tok}_")
             for res in tok_res:
                 script.align(res, tok_res[0])
         script.spectrum("TOK*", color="_".join(mpl_colours) + "_" + "_".join(mpl_colours), minimum=0, maximum=19)
 
-        path_tok = entity.export(sufix="tokens")
-        script.load(path_tok)
+
 
         script.spectrum("*tokens", color="_".join(mpl_colours)+"_"+"_".join(mpl_colours), minimum=0, maximum=19)
         script.write_script()
