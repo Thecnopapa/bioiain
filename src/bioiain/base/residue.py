@@ -28,7 +28,7 @@ def build_res(atoms, ignore_errors=True, **kwargs):
                 log("warning", "No matching class for atom:", a)
                 raise NoMatchingClass()
         except (NoCaFound, NoBackbone, NotImplementedError) as e:
-            log("warning", e.message)
+            log("warning", str(e))
             if ignore_errors:
                 return None
             else:

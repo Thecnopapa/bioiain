@@ -81,7 +81,7 @@ class BIEntity(object):
     def __repr__(self):
         if self.is_symmetry():
             return "<{}:{} id={} op={}>".format(self.__class__.__name__, self.code(), self.id(), self.op())
-        return "<{}:{} id={}>".format(self.__class__.__name__, self.code(), self.id())
+        return "<{}:{} id={} (len:{})>".format(self.__class__.__name__, self.code(), self.id(), len(self))
 
     def __str__(self):
         return repr(self)
