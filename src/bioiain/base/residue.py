@@ -27,8 +27,8 @@ def build_res(atoms, ignore_errors=True, **kwargs):
             else:
                 log("warning", "No matching class for atom:", a)
                 raise NoMatchingClass()
-        except (NoCaFound, NoBackbone) as e:
-            log("warning", e)
+        except (NoCaFound, NoBackbone, NotImplementedError) as e:
+            log("warning", e.message)
             if ignore_errors:
                 return None
             else:
@@ -61,6 +61,7 @@ class BIResidue(object):
         self.complex = None
         self.fragment = None
         self.is_residue = True
+        self.is_disordered = False
 
 
             
@@ -110,6 +111,11 @@ class BIResidue(object):
             self.chain = self.ca.chain
             self.entity = self.ca.entity
             self.complex = self.ca.complex
+
+            self.is_disordered = not self.ca.ins_code is None
+            if self.is_disordered:
+                raise NotImplementedError()
+
             if self.fragment is None:
                 self.id = ( self.resname, self.resnum, self.resseq, self.chain, self.complex , self.entity)
             else:

@@ -105,8 +105,14 @@ class FragmentedStructure(BIStructure):
                     resname = None
                 for res in reslist.copy():
                     if res.complex == chain and res.resnum == full_id[1]:
+                        if full_id[2].strip() != "":
+                            continue # Not implemented
+                            print(full_id, res.ca.ins_code)
+                            if full_id[2].strip() != res.ca.ins_code:
+                                continue
                         if res.resname != resname:
                             if resname is not None:
+                                print(res.resseq, res.resnum, res.complex, chain, full_id, res.entity)
                                 raise Exception(f"res.resname({res.resname}) != resname({resname})\nfres:{fres}\nres: {res}")
                             else:
                                 #log("warning", f"res.resname({res.resname}) != resname({resname})\nfres:{fres}\nres: {res}")

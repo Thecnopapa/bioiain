@@ -256,6 +256,7 @@ class BIAtom(PseudoAtom):
             "occupancy",
             "B_iso_or_equiv",
             "pdbx_PDB_model_num",
+            "pdbx_PDB_ins_code",
 
         ]
 
@@ -303,6 +304,7 @@ class BIAtom(PseudoAtom):
         super().__init__(coord)
         self.occupancy = float(data["occupancy"])
         self.b = float(data["B_iso_or_equiv"])
+        self.ins_code = data.get("pdbx_PDB_ins_code", None)
         
 
         
@@ -504,6 +506,7 @@ class BIAtom(PseudoAtom):
             data["Cartn_z"] = f"{self.z:7.3f}"
             data["occupancy"] = f"{self.occupancy:6.3f}"
             data["B_iso_or_equiv"] = f"{self.b:6.2f}"
+            data["pdbx_PDB_ins_code"] = f"{self._none_point(self.ins_code):>1s}"
 
 
         except Exception as e:

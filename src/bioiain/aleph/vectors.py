@@ -197,7 +197,7 @@ class CVMatrix(object):
 
         for n, v1 in enumerate(self.vectors):
             self.matrix.append([])
-            print(f"{n} / {len(self.vectors)}", end="\r")
+            print(f"{n:5d}/{len(self.vectors):5d}", end="\r")
 
             for v2 in self.vectors:
                 if v1 == v2:
