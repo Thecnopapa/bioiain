@@ -38,7 +38,7 @@ if "monomers" in sys.argv:
         DATA_FOLDER = "./data/cath-monomeric"
     DATA_NAME = "monomers"
 else:
-    DATA_FOLDER = downloadPDB( list_name="aleph", pdb_list=["1M2Z", "3HBB", "6F63", "5LXN", "3brf", "6e52", "7t2y", "3kg2", "2bis"], data_dir="./data" )
+    DATA_FOLDER = downloadPDB( list_name="aleph", pdb_list=["1M2Z", "3HBB", "6F63", "5LXN", "3brf", "6e52", "7t2y", "3kg2", "2GEJ", "2bis"], data_dir="./data" )
     DATA_NAME = "aleph"
 
 V0 = False
@@ -152,7 +152,7 @@ if "-t" in sys.argv:
             print(f"{i}/{n_items} LOSS: {loss.item():7.3f} ({encoder_loss.item():7.3f}/{decoder_loss.item():7.3f}) av:{model.running_loss[model.mode]/model.running_loss["total"]:7.3f}", end="\r")
 
 
-            if i+1 % 100000 == 0:
+            if (i+1) % 100000 == 0:
                 logging.tracemalloc_top()
 
 
@@ -160,7 +160,7 @@ if "-t" in sys.argv:
         #model.write_loss()
         #model.draw_all_tokens()
         model.save()
-        if not "--local" in sys.argv and n+1 % 10 == 0:
+        if not "--local" in sys.argv and ( (n+1) % 10 == 0 or (n+1)==epochs):
             model.send_run(host="iainvisa.com", key=os.environ.get("IAINVISA_FILE_KEY", None), epoch=n)
         model.add_epoch()
 

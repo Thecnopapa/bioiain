@@ -294,7 +294,7 @@ class BIAtom(PseudoAtom):
 
         #PROPERTIES
         self.id = (self.name,  self.resnum, self.complex) # Ambiguous (author)
-        self.id2 = (self.name,  self.resseq, self.chain) # Not ambiguous (label)
+        self.id2 = (self.name,  self.resseq, self.chain, self.entity) # Not ambiguous (label)
         self.id3 = (self.atomnum, self.type, self.element, self.name, self.resseq, self.chain, self.model) # Unique
         x = float(data["Cartn_x"])
         y = float(data["Cartn_y"])

@@ -27,7 +27,7 @@ class BIChain(BIEntity):
 
 
 
-    def set_chain_id(self, chain_id=None, complex=True):
+    def set_chain_id(self, chain_id=None, complex=False):
         if chain_id is None:
             chain_id = self.find_id()
         chain_id = str(chain_id)
@@ -53,18 +53,18 @@ class BIChain(BIEntity):
 
 
     @classmethod
-    def from_atoms(cls, atoms, code=None, chain_id=None, **kwargs):
+    def from_atoms(cls, atoms, code=None, chain_id=None, overwrite_complex=False, **kwargs):
         self = super().from_atoms(atoms, code, **kwargs)
         self._atoms = atoms
-        self.set_chain_id(chain_id)
+        self.set_chain_id(chain_id, complex=overwrite_complex)
         self.sequence()
         return self
 
     @classmethod
-    def from_file(cls,*args, chain_id=None, **kwargs):
+    def from_file(cls,*args, chain_id=None, overwrite_complex=False, **kwargs):
         self = super().from_file(*args, **kwargs)
         self._atoms = self.atoms(chain=chain_id, hetatm=True, disordered=True)
-        self.set_chain_id(chain_id)
+        self.set_chain_id(chain_id, complex=overwrite_complex)
         self.sequence()
         return self
 

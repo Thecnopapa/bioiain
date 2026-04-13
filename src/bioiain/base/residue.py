@@ -108,11 +108,12 @@ class BIResidue(object):
 
             self.resseq = self.ca.resseq
             self.chain = self.ca.chain
+            self.entity = self.ca.entity
             self.complex = self.ca.complex
             if self.fragment is None:
-                self.id = ( self.resname, self.resnum, self.resseq, self.chain)
+                self.id = ( self.resname, self.resnum, self.resseq, self.chain, self.complex , self.entity)
             else:
-                self.id = ( self.resname, self.resnum, self.resseq, self.chain, self.fragment)
+                self.id = ( self.resname, self.resnum, self.resseq, self.chain, self.entity, self.complex, self.fragment)
 
             if any([a is None for a in self.backbone]):
                 log("error", "Trying to initialise residue with no backbone")
