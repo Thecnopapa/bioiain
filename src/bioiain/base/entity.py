@@ -193,7 +193,7 @@ class BIEntity(object):
         return cvector_list
 
 
-    def atoms(self, ca_only=False, hetatm=False, ligands=False, residues=False, dna=False, water=False, force=False, group_by_residue=False, disordered=False, as_residues=False, chain=None, group_by_chain=False, as_chains=False, **kwargs):
+    def atoms(self, ca_only=False, hetatm=False, ligands=False, residues=False, dna=False, water=False, hydrogens=False, force=False, group_by_residue=False, disordered=False, as_residues=False, chain=None, group_by_chain=False, as_chains=False, **kwargs):
         from .atom import _fix_disordered
         from .residue import build_res
 
@@ -226,6 +226,8 @@ class BIEntity(object):
 
         if not hetatm:
             atoms = [a for a in atoms if a.type == "ATOM"]
+        if not hydrogens:
+            atoms = [a for a in atoms if a.element != "H"]
         if ca_only:
             atoms = [a for a in atoms if a.name == "CA"]
         if not water:
@@ -259,7 +261,7 @@ class BIEntity(object):
                 entities = []
                 for resatms in atoms_by_res.values():
                     e = build_res(resatms, parent=self)
-                    if e.type in target_entities:
+                    if getattr(e, "type", None) in target_entities:
                         entities.append(e)
                 return entities
 

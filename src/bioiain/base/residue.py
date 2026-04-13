@@ -11,21 +11,28 @@ from ..utilities import clean_string, d3to1
 
 
 
-def build_res(atoms, **kwargs):
+def build_res(atoms, ignore_errors=True, **kwargs):
     for a in atoms:
-        if a.type == "HETATM":
-            if a.resname == "HOH":
-                return Water(atoms, **kwargs)
+        try:
+            if a.type == "HETATM":
+                if a.resname == "HOH":
+                    return Water(atoms, **kwargs)
+                else:
+                    return Ligand(atoms, **kwargs)
+            elif a.type == "ATOM":
+                if len(a.resname) == 2:
+                    return BINucleoutide(atoms, **kwargs)
+                else:
+                    return BIResidue(atoms, **kwargs)
             else:
-                return Ligand(atoms, **kwargs)
-        elif a.type == "ATOM":
-            if len(a.resname) == 2:
-                return BINucleoutide(atoms, **kwargs)
+                log("warning", "No matching class for atom:", a)
+                raise NoMatchingClass()
+        except (NoCaFound, NoBackbone) as e:
+            log("warning", e)
+            if ignore_errors:
+                return None
             else:
-                return BIResidue(atoms, **kwargs)
-        else:
-            log("warning", "No matching class for atom:", a)
-            raise NoMatchingClass()
+                raise
     return None
 
 
@@ -40,7 +47,7 @@ class BIResidue(object):
     def __init__(self, atoms, **kwargs):
         if type(atoms) == dict:
             atoms = atoms.values()
-        self.atoms = atoms
+        self.atoms = [a for a in atoms if a.element != "H"]
         self.ca = None
         self.cb = None
         self.c = None
@@ -75,6 +82,7 @@ class BIResidue(object):
                 self.o = a
             elif a.name == "N":
                 self.n = a
+        self.backbone = [self.ca, self.c, self.o, self.n]
 
         if self.is_residue:
 
@@ -86,6 +94,8 @@ class BIResidue(object):
                 print([a.name for a in self.atoms])
                 print()
                 raise NoCaFound()
+
+
 
             self.fragment = self.ca.get_misc("fragment", None)
 
@@ -103,6 +113,12 @@ class BIResidue(object):
                 self.id = ( self.resname, self.resnum, self.resseq, self.chain)
             else:
                 self.id = ( self.resname, self.resnum, self.resseq, self.chain, self.fragment)
+
+            if any([a is None for a in self.backbone]):
+                log("error", "Trying to initialise residue with no backbone")
+                print(self.backbone)
+                print(self)
+                raise NoBackbone()
 
     def __repr__(self):
         return f"<bi.{self.__class__.__name__} id={self.id}>"

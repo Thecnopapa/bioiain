@@ -53,6 +53,9 @@ class ModelNotFound(Exception):
 #Residue related
 class NoCaFound(Exception):
 	pass
+
+class NoBackbone(Exception):
+	pass
 	
 class NoMatchingClass(Exception):
 	pass
