@@ -409,7 +409,7 @@ class Hope(DespairLess):
 
         return loss, encoding_loss, decoding_loss
 
-    def plot_latent_space(self, dataset=None, seed=6, fig_dir=None, show=False, plot_preds=None):
+    def plot_latent_space(self, dataset=None, seed=6, fig_dir=None, show=False, plot_preds=None, max_points=1000):
         with torch.no_grad():
             log(1, "Plotting current state...")
             from ..visualisation.plots import fig2D
@@ -441,10 +441,20 @@ class Hope(DespairLess):
                 ax.scatter(*s, color=f"C{n}")
                 ax.text(*s, n)
 
+
+
             if dataset is not None:
-                log(2, "Plotting dataset..." )
+                indexes = range(len(dataset))
+                if len(dataset) > max_points:
+                    import random
+                    indexes = sorted(random.sample(list(indexes), max_points))
+
+
+                log(2, f"Plotting dataset... ({len(indexes)}/{len(dataset)})")
                 for n, item in enumerate(dataset):
-                    log(3, f"{n+1}/{len(dataset)}", end="\r")
+                    log(3, f"{n + 1}/{len(dataset)}", end="\r")
+                    if not n in indexes:
+                        continue
                     #token = self.get_closest_latent(e, only_id=True)
                     token, _, _, point = self._predict(item.t)
                     point = point.detach().cpu().numpy()

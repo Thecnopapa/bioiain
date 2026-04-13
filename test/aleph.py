@@ -133,11 +133,11 @@ if "-t" in sys.argv:
         log("title", "EPOCH", n)
         model.set_mode("autoencoder")
 
-        if "--no-plot" in sys.argv or len(dataset) > 10000:
+        if "--no-plot" in sys.argv:
             model.plot_latent_space(dataset=None)
-
         else:
-            model.plot_latent_space(dataset=dataset)
+            model.plot_latent_space(dataset=dataset, max_points=1000)
+
         model.plot_tokens()
 
 
@@ -152,7 +152,7 @@ if "-t" in sys.argv:
             print(f"{i}/{n_items} LOSS: {loss.item():7.3f} ({encoder_loss.item():7.3f}/{decoder_loss.item():7.3f}) av:{model.running_loss[model.mode]/model.running_loss["total"]:7.3f}", end="\r")
 
 
-            if 1 % 100000 == 0:
+            if i+1 % 100000 == 0:
                 logging.tracemalloc_top()
 
 
@@ -160,7 +160,7 @@ if "-t" in sys.argv:
         #model.write_loss()
         #model.draw_all_tokens()
         model.save()
-        if not "--local" in sys.argv:
+        if not "--local" in sys.argv and n+1 % 10 == 0:
             model.send_run(host="iainvisa.com", key=os.environ.get("IAINVISA_FILE_KEY", None), epoch=n)
         model.add_epoch()
 
