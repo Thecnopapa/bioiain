@@ -35,8 +35,12 @@ class BIEntity(object):
             "sequences": {
                 "aa": None,
             },
-            "symmetry": {
-            }
+            "symmetry": {},
+
+            # Tools
+            "SASA": {},
+            "PISA":{},
+            "DSSP":{},
         }
         self.headers = {
             "entry":{
@@ -65,6 +69,7 @@ class BIEntity(object):
         self._card = None
         self._parameters = None
         self._operations = None
+
 
         if parent is not None:
             self.paths["export_folder"] = parent.paths["export_folder"]
@@ -139,7 +144,7 @@ class BIEntity(object):
 
         return self.flags.get(flag) == value
 
-    def set_flag(self, flag, value=None):
+    def set_flag(self, flag, value=True):
         self.flags[flag] = value
 
     def sequence(self, force=False):
@@ -714,6 +719,43 @@ class BIEntity(object):
         if execute:
             script.execute()
         return script
+
+    def av_sasa(self, force=False, **kwargs):
+        if force or self.data["SASA"].get("average", None) is not None:
+            av = 0
+            total = 0
+            sasas = self.sasa_list(**kwargs)
+            for s in sasas:
+                if s is not None:
+                    av += s
+                    total += 1
+            if total == 0:
+                av = None
+            else:
+                av /= total
+            self.data["SASA"]["average"] = av
+        return self.data["SASA"]["average"]
+
+    def sasa_list(self, **kwargs):
+        self._calculate_sasa(**kwargs)
+        sasas = []
+        for a in self.atoms(**kwargs):
+            sasas.append(a.get_misc("SASA", None))
+        return sasas
+
+    def _calculate_sasa(self, **kwargs):
+        if not self.has_flag("sasa_calculated"):
+            from ..tools.SASA import SASA
+            sasa = SASA(**kwargs)
+            sasa.compute(self, **kwargs)
+        return self
+
+    def assembly_level(self):
+        pass
+
+    def _calculate_pisasa(self, **kwargs):
+        from ..tools.PISA import PISA
+        pisa = PISA(pisa_id=self.name(), **kwargs)
 
 
 

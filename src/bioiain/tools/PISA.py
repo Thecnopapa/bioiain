@@ -5,7 +5,16 @@ from ..utilities.logging import log
 from ..utilities.exceptions import *
 
 
-
+log("header", "Importing PISA module...")
+try:
+    ccp4_path = os.environ["CCP4"]
+except KeyError:
+    log("error", "PISA: CCP4 not enabled")
+    ccp4_path = None
+    raise CCP4NotEnabled("Trying to import the PISA module outside the CCP4 shell")
+if ccp4_path is None:
+    raise CCP4Error("CCP4 Path not found")
+log(1,"CCP4 detected at:", ccp4_path)
 
 
 class PISA(object):
@@ -24,15 +33,9 @@ class PISA(object):
         return self.data.get(key, None)
 
     def run_pisa(self, filepath, interfaces=True, assemblies=True):
-        try:
-            ccp4_path = os.environ["CCP4"]
-        except KeyError:
-            log("error", "CCP4 not enabled")
-            ccp4_path = None
-            raise CCP4NotEnabled()
-        if ccp4_path is None:
-            raise CCP4Error()
-        print(" ... CCP4 detected at:", ccp4_path)
+
+        assert ccp4_path is not None
+
         filepath = os.path.abspath(filepath)
         cmd = [
             self.pisa_command,
@@ -77,7 +80,7 @@ class PISA(object):
             print(out_path)
             if os.path.exists(out_path):
                 self.load(out_path)
-                print(" ... reusing pisa otput from:", out_path)
+                print(" ... reusing pisa output from:", out_path)
                 return out_path, self["pdb_code"]
         filepath = os.path.abspath(filepath)
         print(f" ... PISA: analysing: {filepath}")

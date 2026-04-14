@@ -146,6 +146,11 @@ class SASA(object):
             for atom, asa in zip(targets, asa_array):
                 if isinstance(atom, PseudoAtom):
                     atom.set_misc("SASA", float(asa[0]))
+            entity.set_flag("sasa_calculated", True)
+            entity.data["SASA"]["ball_radius"] = sasa.ball_radius
+            entity.data["SASA"]["n_points"] = sasa.n_points
+            entity.data["SASA"]["radii_dict"] = sasa.radii_dict
+            entity.data["SASA"]["average"] = None
         return asa_array
 
 
@@ -159,7 +164,7 @@ class KDT(object):
                 log(4, f"Entity: {coords_or_entity.name()}")
 
             coords_or_entity._kdtree = self
-            atoms = coords_or_entity.atoms(hetatm=True, water=False)
+            atoms = coords_or_entity.atoms(hetatm=True)
             coords = np.array([a.coord for a in atoms], dtype=np.float64)
         else:
             atoms = None
