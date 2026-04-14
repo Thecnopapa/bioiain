@@ -2,7 +2,7 @@ import os, json
 
 from ..utilities import *
 from ..utilities.parallel import avail_cpus
-from ..utilities.sequences import d3to1 ,d3toint
+from ..utilities.sequences import d3
 from ..utilities.exceptions import *
 
 import torch
@@ -99,9 +99,7 @@ class CVEmbedding(PerResidueEmbedding):
             len_j = j.d / modulo_norm
             len_i_j = min(1, i_j.d/max_dist)
             angle_i_j = i_j.a / 180
-
-            ri = d3toint[cv.resname]
-            rn = d3to1[cv.resname]
+            rn, ri = d3(cv.resname)
             seq += rn
 
             e.append([len_i, len_j, angle_i_j, len_i_j])

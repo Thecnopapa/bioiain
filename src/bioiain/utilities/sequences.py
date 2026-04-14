@@ -15,6 +15,15 @@ d3toint =  {'CYS': 0, 'ASP': 1, 'SER': 2, 'GLN': 3, 'LYS': 4,
              'GLY': 10, 'HIS': 11, 'LEU': 12, 'ARG': 13, 'TRP': 14,
              'ALA': 15, 'VAL': 16, 'GLU': 17, 'TYR': 18, 'MET': 19}
 
+def d3(resname):
+    try:
+        ri = d3toint[resname]
+        rn = d3to1[resname]
+    except:
+        log("warning", f"Unknown resname: {cv.resname} (using UNK/X)")
+        ri = 20
+        rn = "X"
+    return rn, ri
 
 
 
