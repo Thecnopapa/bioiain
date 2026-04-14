@@ -20,7 +20,7 @@ def d3(resname):
         ri = d3toint[resname]
         rn = d3to1[resname]
     except:
-        log("warning", f"Unknown resname: {cv.resname} (using UNK/X)")
+        log("warning", f"Unknown resname: {resname} (using UNK/X)")
         ri = 20
         rn = "X"
     return rn, ri
