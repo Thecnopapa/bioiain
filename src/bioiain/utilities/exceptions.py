@@ -76,3 +76,11 @@ class AlreadyOrthogonal(FractionalConversionError):
 
 class ALEPHError(Exception):
 	pass
+
+# PLINDER related
+
+class PLINDERError(Exception):
+	pass
+
+class PLINDERSystemNotLoaded(PLINDERError):
+	pass
