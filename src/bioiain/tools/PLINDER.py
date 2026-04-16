@@ -20,13 +20,14 @@ class PLINDERSystem(object):
 
     def from_id(self, system_id):
         from plinder.core import PlinderSystem
-        self.system_id = system_id
         self.system = PlinderSystem(system_id=system_id)
+        self.system_id = system_id
         self.loaded = True
 
     def _raise_if_unloaded(self):
         log("warning", "PLINDER system not loaded")
-        raise PLINDERSystemNotLoaded()
+        if not self.loaded:
+            raise PLINDERSystemNotLoaded()
 
     def annotations(self):
         self._raise_if_unloaded()
@@ -42,7 +43,7 @@ class PLINDERDatabase(object):
         if tutorial:
             self.plinder_remote = "gs://plinder/2024-06/tutorial"
             self.plinder_mount = os.path.join(SUBDIR_NAME)
-            self.plinder_cache = os.path.join(TEMP_FOLDER, "plinder/2024-06/tutorial")
+            self.plinder_cache = os.path.join(SUBDIR_NAME, "plinder/2024-06/tutorial")
             self.subset="tutorial"
         else:
             self.plinder_remote = "gs://plinder/2024-06/v2"

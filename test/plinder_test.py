@@ -16,3 +16,4 @@ print(q)
 
 system = PLINDERSystem(q.at[0,"system_id"])
 print(system)
+print(system.annotations())
