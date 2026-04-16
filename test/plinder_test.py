@@ -8,11 +8,11 @@ from src.bioiain.tools.PLINDER import PLINDERDatabase, PLINDERSystem
 
 
 log("start", "plinder_test.py")
-db = PLINDERDatabase()
-
+db = PLINDERDatabase(tutorial="--tutorial" in sys.argv)
+print(db)
 
 q = db.query(columns=["system_id", "entry_pdb_id", "entry_oligomeric_state"])
 print(q)
 
-system = PLINDERSystem.from_id(q.at[0,"system_id"])
+system = PLINDERSystem(q.at[0,"system_id"])
 print(system)
