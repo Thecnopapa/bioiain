@@ -160,8 +160,33 @@ class MSA(object):
 
 
 class MMSEQS2(MSA):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, mmseqs_cmd="mmsecs", **kwargs):
         super().__init__(*args, **kwargs)
+        self.mmseqs_cmd = mmseqs_cmd
+
+
+    def _cmd(self, command, *args, **kwargs):
+
+        cmd = [self.mmseqs_cmd, command]
+
+        for kwarg, value in kwargs.items():
+            if not kwarg.startswith("--"):
+                if len(kwarg) == 1:
+                    kwarg = f"-{kwarg}"
+                else:
+                    kwarg = f"--{kwarg}"
+            cmd.extend([kwarg, value])
+
+        cmd.extend(args)
+        print("$", " ".join(cmd))
+
+
+
+
+
+
+    def create_db(self):
+        pass
 
 
 
