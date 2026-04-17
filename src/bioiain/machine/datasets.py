@@ -495,9 +495,10 @@ class EmbeddingDataset(Dataset):
         }
         if save_split:
             data["splitted"] = self.splitted
+        self.data["n_structures"] = sum([1 for e in self.embeddings.values() if not e["deleted"]])
         os.makedirs(folder, exist_ok=True)
         path = os.path.join(folder, self.data["fname"])
-        self._save_fasta(target_path=self.data["fname"].replace(".json", ".fasta"))
+        self._save_fasta(target_path=path.replace(".json", ".fasta"))
         json.dump(data, open(path, "w"), indent=4)
         return path
 
@@ -535,11 +536,22 @@ class EmbeddingDataset(Dataset):
         return new
 
 
-    def _align(self, fasta_path=None):
-        if fasta_path is not None:
+    def align(self, force=False, **kwargs):
+        if self.data.get("msa_path", None) is None or not os.path.exists(self.data["msa_path"]):
+            return self._align(force=force, **kwargs)
+        return self.data["msa_path"]
+
+
+    def _align(self, fasta_path=None, **kwargs):
+        if fasta_path is None:
             fasta_path = self.data["fasta_path"]
         if fasta_path is not None:
-            pass
+            from ..utilities.sequences import MSA
+            msa = MSA(fasta_path, name=self.data["name"], out_folder=self.data["folder"], **kwargs)
+            self.data["msa_path"] = msa.msa_fasta.rewrite()
+        else:
+            log("error", f"No fasta path for: {self}")
+            return None
 
 
 

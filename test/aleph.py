@@ -114,6 +114,8 @@ if "-p" not in sys.argv:
 
 
         dataset.save()
+        dataset.align(force=True)
+        dataset.save()
 
 
 if "-t" in sys.argv:

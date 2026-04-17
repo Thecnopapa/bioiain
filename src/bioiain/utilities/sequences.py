@@ -108,6 +108,21 @@ class FASTA(object):
             [seqs.extend(seq) for seq in fasta_dict.values()]
             return seqs
 
+    def rewrite(self, duplicates=False, empties=False):
+        data = self._parse_fasta()
+        with open(self.fasta_path, "w") as f:
+            for key, sequences in data.items():
+                if not empties:
+                    sequences = [s for s in sequences if len(s) > 0]
+                n_seqs = len(sequences)
+                if not duplicates:
+                    if n_seqs > 1:
+                        log("warning", f"{n_seqs} sequences for id: {key} (keeping only first)")
+                    sequences = sequences[:1]
+                for seq in sequences:
+                    f.write(f"> {key}\n")
+                    f.write(f"{seq}\n\n")
+        return self.fasta_path
 
     def get_names(self, key=None):
         return self._parse_fasta(names=True, sequences=False, key=key)
@@ -124,7 +139,7 @@ class FASTA(object):
 
 
 class MSA(object):
-    def __init__(self, fasta_path, name=None, verbose=False):
+    def __init__(self, fasta_path, name=None, verbose=False, run_msa=True, build_tree=False, **kwargs):
         self.fasta_path = fasta_path
         fasta = FASTA(fasta_path)
         self.fasta_dict = fasta.parse()
@@ -132,9 +147,12 @@ class MSA(object):
             name = os.path.basename(fasta_path)
         self.name = name
         log("header", f"Initialising MSA: {self}")
-        self.msa_path = self._run_clustal_msa(name=self.name, verbose=verbose)
-        self.tree_path = self._build_tree(self.msa_path)
-        self.msa_fasta = FASTA(self.msa_path)
+        if run_msa:
+            self.msa_path = self._run_clustal_msa(name=self.name, verbose=verbose, **kwargs)
+            self.msa_fasta = FASTA(self.msa_path)
+        if build_tree:
+            self.tree_path = self._build_tree(self.msa_path)
+
 
 
     def __repr__(self):
@@ -159,7 +177,7 @@ class MSA(object):
             log(3, "Alignment already generated")
             return out_path
         cmd = [
-            "clustalw", "-align", "-type=protein",
+            clustal_cmd, "-align", "-type=protein",
             f"-infile={fasta_path}",
             f"-matrix={matrix}",
             f"-outfile={out_path}",
