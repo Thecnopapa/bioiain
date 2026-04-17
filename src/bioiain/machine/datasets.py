@@ -1,4 +1,4 @@
-import os, json, time
+import os, json, time, shutil
 from copy import deepcopy
 from ..utilities import *
 from ..utilities import relative_path
@@ -247,7 +247,7 @@ class EmbeddingDataset(Dataset):
         return self.data["label_to_index"]
 
 
-    def add(self, embedding, key:str|int|None=None, label_path=None, fasta=False):
+    def add(self, embedding, key:str|int|None=None, label_path=None, fasta=True):
 
         while self._lock:
             print("Awaiting for lock")
@@ -268,12 +268,13 @@ class EmbeddingDataset(Dataset):
             "length": embedding.length,
             "iter_dim": embedding.iter_dim,
             "deleted": False,
-
+            "sequence":embedding.sequence,
         }
 
         self.data["length"] += embedding.length
         if fasta and hasattr(embedding, "sequence"):
-            self._add_to_fasta(key, embedding.sequence)
+            if embedding.sequence is not None:
+                self._add_to_fasta(key, embedding.sequence)
 
         self.data["mapped"] = False
         self._lock = False
@@ -285,13 +286,23 @@ class EmbeddingDataset(Dataset):
         self.embeddings[key]["deleted"] = True
         self.data["mapped"] = False
 
+    def _save_fasta(self, target_path=None):
+        fp = self.data["fasta_path"]
+        if target_path is None:
+            new_fp = fp.replace(".tmp", "")
+        else:
+            new_fp = target_path
+        if not new_fp.split(".")[-1] in ["fasta", "fas", "aln"]:
+             new_fp = target_path + ".fasta"
+        shutil.move(fp, new_fp)
+        self.data["fasta_path"] = new_fp
 
     def _add_to_fasta(self, key, sequence):
-        if "fasta_path" in self.data:
+        if self.data.get("fasta_path", None) is not None:
             fasta_path = self.data["fasta_path"]
             mode = "a"
         else:
-            fasta_path = os.path.join(self.data["folder"], self.data["name"]+".dataset.fasta")
+            fasta_path = os.path.join(self.data["folder"], self.data["name"]+".dataset.fasta.tmp")
             self.data["fasta_path"] = fasta_path
             mode = "w"
         with open(fasta_path, mode) as f:
@@ -486,6 +497,7 @@ class EmbeddingDataset(Dataset):
             data["splitted"] = self.splitted
         os.makedirs(folder, exist_ok=True)
         path = os.path.join(folder, self.data["fname"])
+        self._save_fasta(target_path=self.data["fname"].replace(".json", ".fasta"))
         json.dump(data, open(path, "w"), indent=4)
         return path
 
@@ -521,6 +533,14 @@ class EmbeddingDataset(Dataset):
             try:  new.splitted = raw["splitted"]
             except KeyError: log("warning", f"Dataset split info not found at: {path}")
         return new
+
+
+    def _align(self, fasta_path=None):
+        if fasta_path is not None:
+            fasta_path = self.data["fasta_path"]
+        if fasta_path is not None:
+            pass
+
 
 
 

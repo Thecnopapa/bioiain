@@ -35,6 +35,7 @@ class Embedding(object):
         self.iter_dim = 0
         self.exists = os.path.exists(self.path)
         self.failed = False
+        self.sequence = None
 
 
     def __repr__(self):
