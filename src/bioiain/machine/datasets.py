@@ -310,7 +310,7 @@ class EmbeddingDataset(Dataset):
                 #f.write(f"# FASTA for dataset: {self.data["name"]}\n\n")
                 pass
             f.write(f"> {key}\n")
-            f.write(f"{sequence}\n\n")
+            f.write(f"{sequence}\n")
 
 
     def get(self, key, embedding=True, label=True, cache=True, label_key=None) -> Item:

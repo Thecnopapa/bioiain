@@ -34,6 +34,7 @@ def d3(resname):
 class FASTA(object):
     def __init__(self, fasta_path):
         self.fasta_path = fasta_path
+        self.single_line = None
 
 
     def __repr__(self):
@@ -108,7 +109,7 @@ class FASTA(object):
             [seqs.extend(seq) for seq in fasta_dict.values()]
             return seqs
 
-    def rewrite(self, duplicates=False, empties=False):
+    def rewrite(self, duplicates=False, empties=False, space_between=False, key_start="> "):
         data = self._parse_fasta()
         with open(self.fasta_path, "w") as f:
             for key, sequences in data.items():
@@ -119,9 +120,13 @@ class FASTA(object):
                     if n_seqs > 1:
                         log("warning", f"{n_seqs} sequences for id: {key} (keeping only first)")
                     sequences = sequences[:1]
+
                 for seq in sequences:
-                    f.write(f"> {key}\n")
-                    f.write(f"{seq}\n\n")
+                    f.write(f"{key_start}{key}\n")
+                    f.write(f"{seq}\n")
+                    if space_between:
+                        f.write("\n")
+        self.single_line = True
         return self.fasta_path
 
     def get_names(self, key=None):
@@ -140,8 +145,7 @@ class FASTA(object):
 class MSA(object):
     def __init__(self, fasta_path, name=None, **kwargs):
         self.fasta_path = fasta_path
-        fasta = FASTA(fasta_path)
-        self.fasta_dict = fasta.parse()
+        self.fasta = FASTA(fasta_path)
         if name is None:
             name = os.path.basename(fasta_path)
         self.name = name
@@ -153,16 +157,19 @@ class MSA(object):
 
 
     def __len__(self):
-        return len(self.fasta_dict)
+        return len(self.fasta.get_names())
 
 
 
 
 
 class MMSEQS2(MSA):
-    def __init__(self, *args, mmseqs_cmd="mmsecs", **kwargs):
+    def __init__(self, *args, mmseqs_cmd="mmseqs", **kwargs):
         super().__init__(*args, **kwargs)
         self.mmseqs_cmd = mmseqs_cmd
+        self.db_name = None
+        self.db_folder = None
+        self.create_db()
 
 
     def _cmd(self, command, *args, **kwargs):
@@ -174,19 +181,30 @@ class MMSEQS2(MSA):
                 if len(kwarg) == 1:
                     kwarg = f"-{kwarg}"
                 else:
-                    kwarg = f"--{kwarg}"
-            cmd.extend([kwarg, value])
+                    kwarg = f"--{kwarg.replace('_', '-')}"
+            cmd.extend([kwarg, str(value)])
 
-        cmd.extend(args)
-        print("$", " ".join(cmd))
-
-
-
+        cmd.extend([str(a) for a in args])
+        log(3, "$", " ".join(cmd))
+        subprocess.run(cmd)
 
 
 
-    def create_db(self):
-        pass
+
+
+    def create_db(self, db_name=None, fasta_path=None):
+        if fasta_path is None:
+            self.fasta.rewrite(key_start=">")
+            fasta_path = self.fasta_path
+        if db_name is None:
+            db_name = self.name
+        db_folder = os.path.join(SUBDIR_NAME, "mmseqs", db_name, db_name)
+        os.makedirs(os.path.join(SUBDIR_NAME, "mmseqs", db_name), exist_ok=True)
+        self._cmd("createdb", fasta_path, db_folder, createdb_mode=0)
+        self.db_name = db_name
+        self.db_folder = db_folder
+        return self
+
 
 
 
