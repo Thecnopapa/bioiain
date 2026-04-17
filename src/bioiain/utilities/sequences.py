@@ -137,23 +137,16 @@ class FASTA(object):
 
 
 
-
 class MSA(object):
-    def __init__(self, fasta_path, name=None, verbose=False, run_msa=True, build_tree=False, **kwargs):
+    def __init__(self, fasta_path, name=None, **kwargs):
         self.fasta_path = fasta_path
         fasta = FASTA(fasta_path)
         self.fasta_dict = fasta.parse()
         if name is None:
             name = os.path.basename(fasta_path)
         self.name = name
-        log("header", f"Initialising MSA: {self}")
-        if run_msa:
-            self.msa_path = self._run_clustal_msa(name=self.name, verbose=verbose, **kwargs)
-            self.msa_fasta = FASTA(self.msa_path)
-        if build_tree:
-            self.tree_path = self._build_tree(self.msa_path)
-
-
+        log("header", f"Initialising {self.__class__.__name__}...")
+        log(1, "Fasta path:", self.fasta_path)
 
     def __repr__(self):
         return f"<bi.{self.__class__.__name__}:{self.name} ({len(self)} sequences)>"
@@ -161,6 +154,26 @@ class MSA(object):
 
     def __len__(self):
         return len(self.fasta_dict)
+
+
+
+
+
+class MMSEQS2(MSA):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+
+class CLUSTAL(MSA):
+    def __init__(self, *args, verbose=False, run_msa=True, build_tree=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        kwargs.pop("name")
+        if run_msa:
+            self.msa_path = self._run_clustal_msa(name=self.name, verbose=verbose, **kwargs)
+            self.msa_fasta = FASTA(self.msa_path)
+        if build_tree:
+            self.tree_path = self._build_tree(self.msa_path)
 
 
     def _run_clustal_msa(self, fasta_path=None, name="temp", out_folder=None, clustal_cmd="clustalw", matrix="BLOSUM", out_format="fasta", force=False, verbose=False):

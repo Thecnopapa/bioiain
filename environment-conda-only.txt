@@ -3,3 +3,4 @@ pip
 conda-forge::pymol-open-source >= 2.5.0
 bioconda::foldseek == 10.941cd33
 bioconda::clustalw == 2.1
+bioconda::mmseqs2

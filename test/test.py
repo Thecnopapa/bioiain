@@ -56,7 +56,7 @@ from src.bioiain.symmetries.crystal import get_monomers
 from src.bioiain.machine.datasets import EmbeddingDataset
 from src.bioiain.machine.embeddings import SaProtEmbedding, MissingProgram, FoldseekError
 from src.bioiain.symmetries.interactions import InteractionProfile
-from src.bioiain.utilities.sequences import MSA
+from src.bioiain.utilities.sequences import CLUSTAL
 
 import torch
 torch.set_num_threads(avail_cpus)
@@ -265,7 +265,7 @@ if "-l" in sys.argv or "-e" in sys.argv:
 
         datset_path = dataset.save()
         log("header", "DATASET:", dataset)
-        msa = MSA(dataset.data["fasta_path"], dataset.data["name"], verbose=True)
+        msa = CLUSTAL(dataset.data["fasta_path"], dataset.data["name"], verbose=True)
         log("header", "MSA:", msa)
 
         n_mons = len(list(dataset.embeddings.keys()))

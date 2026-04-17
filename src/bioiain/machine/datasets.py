@@ -546,8 +546,8 @@ class EmbeddingDataset(Dataset):
         if fasta_path is None:
             fasta_path = self.data["fasta_path"]
         if fasta_path is not None:
-            from ..utilities.sequences import MSA
-            msa = MSA(fasta_path, name=self.data["name"], out_folder=self.data["folder"], **kwargs)
+            from ..utilities.sequences import CLUSTAL
+            msa = CLUSTAL(fasta_path, name=self.data["name"], out_folder=self.data["folder"], **kwargs)
             self.data["msa_path"] = msa.msa_fasta.rewrite()
         else:
             log("error", f"No fasta path for: {self}")

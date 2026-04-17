@@ -61,7 +61,8 @@ Issues = "https://github.com/Thecnopapa/bioiain/issues"
 conda = [
     "foldseek", #bioconda::foldseek
     "pymol-open-source", #conda-forge::pymol-open-source
-    "clustalw" #bioconda::clustalw
+    "clustalw", #bioconda::clustalw
+    "mmseqs2"
 ]
 ml = [
     "torch",
