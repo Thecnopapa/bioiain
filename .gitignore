@@ -32,6 +32,7 @@ MANIFEST
 
 .idea
 test/data/*/
+test/data/*.link.list
 test/exports
 test/crystals
 test/test
@@ -42,8 +43,10 @@ test/models
 test/datasets
 test/predictions
 test/runs
-test/models
 test/.models
+test/bioian.d
+test/logs
+test/trash
 
 test/figs
 

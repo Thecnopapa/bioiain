@@ -39,7 +39,7 @@ def downloadPDB(data_dir:str, list_name:str, pdb_list:list=None, file_path:str =
     os.makedirs(data_dir, exist_ok=True)
     list_folder = os.path.join(data_dir, list_name)
     os.makedirs(list_folder, exist_ok=True)
-    link_file = "{}_({}).txt".format(list_name, file_format)
+    link_file = "{}_{}.link.list".format(list_name, file_format)
     with open(os.path.join(data_dir, link_file) , "w") as f:
         for pdb in pdb_list:
             if file_format == "pdb":
