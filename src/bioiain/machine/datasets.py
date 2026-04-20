@@ -1,7 +1,7 @@
 import os, json, time, shutil
 from copy import deepcopy
 from ..utilities import *
-from ..utilities import relative_path
+from ..utilities import relative_path, MMSEQS2
 from ..utilities.exceptions import *
 from typing import Any
 
@@ -88,6 +88,7 @@ class EmbeddingDataset(Dataset):
             mapped = False,
             label_key = "label_path",
             deleted_indexes = 0,
+            aligned = False
         )
         self.mode="normal"
         os.makedirs(self.data["folder"], exist_ok=True)
@@ -298,6 +299,7 @@ class EmbeddingDataset(Dataset):
         self.data["fasta_path"] = new_fp
 
     def _add_to_fasta(self, key, sequence):
+        self.data["aligned"] = False
         if self.data.get("fasta_path", None) is not None:
             fasta_path = self.data["fasta_path"]
             mode = "a"
@@ -536,9 +538,36 @@ class EmbeddingDataset(Dataset):
         return new
 
 
+    def sequence_db(self, force=False, **kwargs):
+        if not self.data.get("mmseqs_db", False) or not os.path.exists(self.data.get("mmseqs_db_folder", None)):
+            self._create_sequence_db(**kwargs)
+        else:
+            log(2, "Sequence DB already generated (mmseqs2)")
+        return self
+
+
+    def _create_sequence_db(self, **kwargs):
+        from ..utilities.sequences import MMSEQS2
+        mmseqs = MMSEQS2(self.data["fasta_path"], **kwargs)
+        self.data["mmseqs_db_name"] = mmseqs.db_name
+        self.data["mmseqs_db_folder"] = mmseqs.db_folder
+        self.data["mmseqs_db"] = True
+        return self
+
+
+    def cluster(self, force=False, **kwargs):
+        if not self.data.get("mmseqs_db", False):
+            self._create_sequence_db(**kwargs)
+        mmseqs = MMSEQS2(self.data["mmseqs_db_folder"], **kwargs)
+        mmseqs.cluster()
+
+
+
     def align(self, force=False, **kwargs):
-        if self.data.get("msa_path", None) is None or not os.path.exists(self.data["msa_path"]):
-            return self._align(force=force, **kwargs)
+        if self.data.get("msa_path", None) is None or not os.path.exists(self.data["msa_path"]) or not self.data.get("aligned", False):
+            force = True
+        self._align(force=force, **kwargs)
+        self.data["aligned"] = True
         return self.data["msa_path"]
 
 

@@ -37,6 +37,15 @@ if "monomers" in sys.argv:
     else:
         DATA_FOLDER = "./data/cath-monomeric"
     DATA_NAME = "monomers"
+elif "receptors" in sys.argv:
+    if not "--no-download" in sys.argv:
+        DATA_FOLDER = downloadPDB("./data", "receptors",
+                                  file_path="./data/receptors.txt",
+                                  file_format="cif",
+                                  overwrite=False)
+    else:
+        DATA_FOLDER = "./data/receptors"
+    DATA_NAME = "receptors"
 else:
     DATA_FOLDER = downloadPDB( list_name="aleph", pdb_list=["1M2Z", "3HBB", "6F63", "5LXN", "3brf", "6e52", "7t2y", "3kg2", "2GEJ", "2bis"], data_dir="./data" )
     DATA_NAME = "aleph"
@@ -79,7 +88,7 @@ if "-p" not in sys.argv:
         dataset.load()
     print(dataset)
     if len(dataset) == 0:
-        if "--no-split" in sys.argv:
+        if "--thread" not in sys.argv:
             parts = [os.listdir(DATA_FOLDER)]
         else:
             parts = split_iterable(os.listdir(DATA_FOLDER), n_parts=4)
@@ -114,8 +123,10 @@ if "-p" not in sys.argv:
 
 
         dataset.save()
-        dataset.align(force=True)
-        dataset.save()
+    dataset.sequence_db()
+    dataset.cluster()
+    dataset.align()
+    dataset.save()
 
 
 if "-t" in sys.argv:

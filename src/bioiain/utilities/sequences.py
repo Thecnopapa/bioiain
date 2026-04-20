@@ -1,5 +1,5 @@
 import os, sys, json, subprocess
-
+import tempfile
 
 from .logging import log
 from .. import TEMP_FOLDER, SUBDIR_NAME
@@ -164,12 +164,25 @@ class MSA(object):
 
 
 class MMSEQS2(MSA):
-    def __init__(self, *args, mmseqs_cmd="mmseqs", **kwargs):
+    def __init__(self, *args, mmseqs_cmd="mmseqs", db_name=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.tmp_folder = os.path.join(TEMP_FOLDER, "mmseqs2")
+        os.makedirs(self.tmp_folder, exist_ok=True)
         self.mmseqs_cmd = mmseqs_cmd
         self.db_name = None
         self.db_folder = None
-        self.create_db()
+        self.name = self.name.replace(".fasta", ".db")
+        if db_name is None:
+            db_name = self.name.split(".")[0]
+        if os.path.isdir(self.fasta_path):
+            log(2, "Input is already DB, setup only")
+            self.db_folder = self.fasta_path
+            self.db_name = db_name
+            self.db_path = os.path.join(self.db_folder, self.db_name)
+        else:
+            log(2, "Input is a file, creating DB...")
+            self.create_db(db_name=db_name, **kwargs)
+
 
 
     def _cmd(self, command, *args, **kwargs):
@@ -191,19 +204,31 @@ class MMSEQS2(MSA):
 
 
 
-
-    def create_db(self, db_name=None, fasta_path=None):
+    def create_db(self, db_name=None, fasta_path=None, **kwargs):
         if fasta_path is None:
             self.fasta.rewrite(key_start=">")
             fasta_path = self.fasta_path
         if db_name is None:
-            db_name = self.name
-        db_folder = os.path.join(SUBDIR_NAME, "mmseqs", db_name, db_name)
-        os.makedirs(os.path.join(SUBDIR_NAME, "mmseqs", db_name), exist_ok=True)
-        self._cmd("createdb", fasta_path, db_folder, createdb_mode=0)
+            db_name = self.name.split(".")[0]
+        db_folder = os.path.join(SUBDIR_NAME, "mmseqs", self.name)
+        db_path = os.path.join(db_folder, db_name)
+        os.makedirs(db_folder, exist_ok=True)
+        self._cmd("createdb", fasta_path, db_path, createdb_mode=0)
         self.db_name = db_name
         self.db_folder = db_folder
+        self.db_path = db_path
         return self
+
+
+    def cluster(self, db_name=None, **kwargs):
+        if db_name is None:
+            db_name = self.db_name
+        cluster_db_folder = os.path.join(self.db_folder.replace(".db", ".cluster"))
+        cluster_db_path = os.path.join(cluster_db_folder, db_name)
+        os.makedirs(cluster_db_folder, exist_ok=True)
+        self._cmd("cluster",  self.db_path, cluster_db_path , self.tmp_folder)
+        self._cmd("createtsv", self.db_path, self.db_path, cluster_db_path, os.path.join(cluster_db_folder, f"{db_name}_clustered.tsv"))
+
 
 
 
@@ -230,7 +255,7 @@ class CLUSTAL(MSA):
         os.makedirs(out_folder, exist_ok=True)
         out_path = os.path.join(out_folder, fname)
         if os.path.exists(out_path) and not force:
-            log(3, "Alignment already generated")
+            log(3, "Alignment already generated (CLUSTAL)")
             return out_path
         cmd = [
             clustal_cmd, "-align", "-type=protein",
