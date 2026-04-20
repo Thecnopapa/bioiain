@@ -225,9 +225,28 @@ class MMSEQS2(MSA):
             db_name = self.db_name
         cluster_db_folder = os.path.join(self.db_folder.replace(".db", ".cluster"))
         cluster_db_path = os.path.join(cluster_db_folder, db_name)
+        out_path = os.path.join(cluster_db_folder, f"{db_name}_clustered.tsv")
         os.makedirs(cluster_db_folder, exist_ok=True)
         self._cmd("cluster",  self.db_path, cluster_db_path , self.tmp_folder)
-        self._cmd("createtsv", self.db_path, self.db_path, cluster_db_path, os.path.join(cluster_db_folder, f"{db_name}_clustered.tsv"))
+        self._cmd("createtsv", self.db_path, self.db_path, cluster_db_path, out_path)
+        clusters = {}
+        with open(out_path) as f:
+            for line in f:
+                c, i = line.strip().split("\t")
+                if c not in clusters:
+                    clusters[c] = {"name":c, "list": []}
+                clusters[c]["list"].append(i)
+        data = {"params": {
+
+        }, "clusters":{},}
+        for c in clusters:
+            data["clusters"][len(data["clusters"])] = clusters[c]
+        data_path = out_path.replace(".tsv", ".json")
+        json.dump(data, open(data_path, "w"), indent=4)
+        return data_path
+
+
+
 
 
 
