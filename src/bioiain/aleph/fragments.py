@@ -205,9 +205,10 @@ class FragmentedStructure(BIStructure):
         matrix = CVMatrix(self.cvectors())
         try:
             matrix.calculate_neighbours()
-        except CVMatrixError as e:
+        except NoNeighboursFound as e:
             log("warning", e)
-            self.add_flag("cvmatrix_error", True)
+            self.set_flag("cvmatrix_error", True)
+            self._cvmatrix = None
             return None
         matrix.save_fig(attribute="d", save_folder=os.path.join(self.folder(), "cvmaps"))
         if with_ligands:
@@ -246,7 +247,10 @@ class FragmentedStructure(BIStructure):
     def show_cvectors(self, execute=True, script=None):
 
         script = self.show_fragments(execute=False, script=script)
-        self.cvmatrix()
+        m = self.cvmatrix()
+        if m is None:
+            log("error", f"No CVMatrix for {self.name()}")
+            return None
         for cv in self.cvectors():
             if cv.is_gap:
                 script.line("gap_cvectors", coord1=cv.start.coord, coord2=cv.end.coord)
