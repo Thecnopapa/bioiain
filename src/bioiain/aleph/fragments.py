@@ -203,7 +203,12 @@ class FragmentedStructure(BIStructure):
         log(1, "Generating CVMatrix for:", self.name())
         from . import CVMatrix
         matrix = CVMatrix(self.cvectors())
-        matrix.calculate_neighbours()
+        try:
+            matrix.calculate_neighbours()
+        except CVMatrixError as e:
+            log("warning", e)
+            self.add_flag("cvmatrix_error", True)
+            return None
         matrix.save_fig(attribute="d", save_folder=os.path.join(self.folder(), "cvmaps"))
         if with_ligands:
             matrix.map_ligands(self)

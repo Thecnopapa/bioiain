@@ -77,6 +77,13 @@ class AlreadyOrthogonal(FractionalConversionError):
 class ALEPHError(Exception):
 	pass
 
+
+#CVector Related
+class CVMatrixError(Exception):
+	pass
+class NoNeighboursFound(CVMatrixError):
+	pass
+
 # PLINDER related
 
 class PLINDERError(Exception):

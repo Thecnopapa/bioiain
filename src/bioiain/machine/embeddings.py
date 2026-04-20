@@ -121,6 +121,8 @@ class CVEmbedding(PerResidueEmbedding):
             return None
         cvectors = frag.cvectors()
         cvmatrix = frag.cvmatrix() # Not used but calculates closest neighbours
+        if cvmatrix is None:
+            return None
 
         e, seq = self._cvectors_to_embedding(cvectors,modulo_norm=2.4, max_dist=10, **kwargs)
         e = torch.Tensor(e)

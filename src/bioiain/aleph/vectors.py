@@ -321,7 +321,8 @@ class CVMatrix(object):
             cv.closest_pos = target[4]
             #print("closest to", cv, "is", cv.closest)
             if target[1] is None:
-                raise Exception("AAAAA")
+                log("ERROR", f"No neighbours found for cv: {cv}\nMight be due to small structure")
+                raise NoNeighboursFound()
 
         return self
 
