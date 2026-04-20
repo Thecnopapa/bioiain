@@ -184,7 +184,7 @@ class FragmentedStructure(BIStructure):
                 for n, fatoms in atoms_by_fragment.items():
                     chain = list(set([r.chain for r in fatoms]))[0]
                     fragment = Fragment.from_atoms(fatoms, code=self.code(), chain_id=chain, fragment_id=n, parent=self)
-                    log(2, f"fragment {n}: {fragment}")
+                    log(2, f"fragment {n}: {fragment}", end="\r")
 
                     fragments.append(fragment)
                 if len(fragments) > 0:

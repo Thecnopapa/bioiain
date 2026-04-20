@@ -328,7 +328,7 @@ class BIEntity(object):
             raise exceptions.UnknownFormat(file_format)
         try:
             self._all_atoms(filepath=filepath, force=True, is_pdb=file_format == "pdb")
-        except Exception as e:
+        except (StructureLoadException, CrystalError) as e:
             log("Error", f"Structure not loaded: {filepath}", e)
             return None
 
