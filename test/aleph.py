@@ -102,6 +102,8 @@ if "-p" not in sys.argv:
 
                 path = os.path.join(DATA_FOLDER, file)
                 entity = BIEntity.from_file(path)
+                if entity is None:
+                    continue
 
                 embedding = EMBEDDING_CLASS(entity=entity).embedding(force="--force" in sys.argv)
 

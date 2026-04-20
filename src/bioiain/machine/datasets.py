@@ -103,9 +103,9 @@ class EmbeddingDataset(Dataset):
 
     def __repr__(self):
         if self.data["deleted_indexes"] > 0:
-            return f"<bi.{self.__class__.__name__}:{self.data["name"]} N={len(self)} mode={self.mode} deleted={self.data.get('deleted',False)}>"
+            return f"<bi.{self.__class__.__name__}:{self.data["name"]} N={len(self)} ({self.n_ids()}) mode={self.mode} deleted={self.data.get('deleted',False)}>"
         else:
-            return f"<bi.{self.__class__.__name__}:{self.data["name"]} N={len(self)} mode={self.mode}>"
+            return f"<bi.{self.__class__.__name__}:{self.data["name"]} N={len(self)} ({self.n_ids()}) mode={self.mode}>"
 
 
     def __len__(self):
@@ -114,6 +114,9 @@ class EmbeddingDataset(Dataset):
         elif self.mode == "test": return self.splitted["test_length"]
         elif self.mode == "train": return self.splitted["train_length"]
         else: raise Exception(f"Unknown mode: {self.mode}")
+
+    def n_ids(self):
+        return sum([1 for e in self.embeddings.items() if not e[1].get("deleted", False)])
 
 
     def __getitem__(self, key):

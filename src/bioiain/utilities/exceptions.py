@@ -72,6 +72,12 @@ class AlreadyFractional(FractionalConversionError):
 class AlreadyOrthogonal(FractionalConversionError):
 	pass
 
+class CrystalError(Exception):
+	pass
+
+class MissingCrystalInfo(CrystalError):
+	pass
+
 #ALEPH related
 
 class ALEPHError(Exception):

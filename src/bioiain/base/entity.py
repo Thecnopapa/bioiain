@@ -326,8 +326,11 @@ class BIEntity(object):
 
         if file_format not in ["cif", "pdb"]:
             raise exceptions.UnknownFormat(file_format)
-
-        self._all_atoms(filepath=filepath, force=True, is_pdb=file_format == "pdb")
+        try:
+            self._all_atoms(filepath=filepath, force=True, is_pdb=file_format == "pdb")
+        except Exception as e:
+            log("Error", f"Structure not loaded: {filepath}", e)
+            return None
 
         if code == "auto":
             code = read_mmcif(filepath, subset="_entry")["_entry.id"]
@@ -362,7 +365,7 @@ class BIEntity(object):
             self._all_atoms()
         return self._atoms
 
-    def _all_atoms(self, filepath=None, force=False, is_pdb=False):
+    def _all_atoms(self, filepath=None, force=False, is_pdb=False, require_crystal=True):
         from .atom import BIAtom
 
 
@@ -386,7 +389,11 @@ class BIEntity(object):
             self.headers["cell"] = mmcif("_cell")
             self.headers["symmetry"] = mmcif("_symmetry")
             self.data["symmetry"]["in_asu"] = True
-            self._calculate_crystal()
+            try:
+                self._calculate_crystal()
+            except CrystalError as e:
+                if require_crystal:
+                    raise e
             atoms = [BIAtom(a) for a in atoms]
 
             self._atoms = atoms
@@ -546,8 +553,12 @@ class BIEntity(object):
         return self
 
     def _calculate_crystal(self):
-        self._get_crystal_card()
-        self._get_operations()
+        try:
+            self._get_crystal_card()
+            self._get_operations()
+        except Exception as e:
+            self.set_flag("crystal_error", True)
+            raise CrystalError()
 
     def _get_crystal_card(self):
         cell = self.headers["cell"]
