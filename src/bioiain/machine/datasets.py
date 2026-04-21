@@ -88,7 +88,9 @@ class EmbeddingDataset(Dataset):
             mapped = False,
             label_key = "label_path",
             deleted_indexes = 0,
-            aligned = False
+            aligned = False,
+            fasta_path=None,
+            has_fasta=False,
         )
         self.mode="normal"
         os.makedirs(self.data["folder"], exist_ok=True)
@@ -292,6 +294,8 @@ class EmbeddingDataset(Dataset):
 
     def _save_fasta(self, target_path=None):
         fp = self.data["fasta_path"]
+        if fp is None:
+            return
         if target_path is None:
             new_fp = fp.replace(".tmp", "")
         else:
@@ -303,6 +307,7 @@ class EmbeddingDataset(Dataset):
 
     def _add_to_fasta(self, key, sequence):
         self.data["aligned"] = False
+        self.data["has_fasta"] = True
         if self.data.get("fasta_path", None) is not None:
             fasta_path = self.data["fasta_path"]
             mode = "a"
@@ -503,7 +508,8 @@ class EmbeddingDataset(Dataset):
         self.data["n_structures"] = sum([1 for e in self.embeddings.values() if not e["deleted"]])
         os.makedirs(folder, exist_ok=True)
         path = os.path.join(folder, self.data["fname"])
-        self._save_fasta(target_path=path.replace(".json", ".fasta"))
+        if self.data.get("fasta_path", None) is not None:
+            self._save_fasta(target_path=path.replace(".json", ".fasta"))
         json.dump(data, open(path, "w"), indent=4)
         return path
 
@@ -542,6 +548,9 @@ class EmbeddingDataset(Dataset):
 
 
     def sequence_db(self, force=False, **kwargs):
+        if not self.data.get("has_fasta", False):
+            log("error", "Dataset has no fasta file")
+            return None
         log(1, "Loading Sequence DB (mmseqs2)...")
         if not self.data.get("mmseqs_db", False) or not os.path.exists(self.data.get("mmseqs_db_folder", None)):
             self._create_sequence_db(**kwargs)

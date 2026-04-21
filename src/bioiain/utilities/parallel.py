@@ -128,8 +128,10 @@ class ThreadPool(object):
 
 
     class Thread(threading.Thread):
-        def __init__(self, *args, target=None, ret=None, **kwargs):
+        def __init__(self, *args, target=None, ret=None, thread_name=None, **kwargs):
+            self.thread_name = thread_name
             super().__init__(target=target, args=args, kwargs=kwargs)
+            self.name = self.thread_name
             self.ret = ret
 
             self.error = False
@@ -148,7 +150,7 @@ class ThreadPool(object):
                 self.ret = r
                 return r
             except:
-                print("ERRRRORRRR")
+                print("ERRRRORRRR in Thread")
                 self.error = True
                 raise
                 return None
@@ -174,15 +176,15 @@ class ThreadPool(object):
 
 
     def add(self, fun, *args, **kwargs):
-        t = self.Thread(*args, target=fun, **kwargs)
-        self.threads[len(self.threads)] = {"thread": t, "fun": fun, "status": "pending", "ret":t.ret, "name":None}
+        n = len(self.threads)
+        name = f"Thread {n}"
+        t = self.Thread(*args, target=fun, thread_name=name, **kwargs)
+        self.threads[n] = {"thread": t, "fun": fun, "status": "pending", "ret":t.ret, "name": name}
         return t
 
     def start(self, wait=False, **kwargs):
         pending_threads = {k: v for k, v in self.threads.items() if v["status"] == "pending"}
         for k, t in pending_threads.items():
-            t["thread"].name = "Thread {}".format(k)
-            t["name"] = t["thread"].name
             t["thread"].start()
             t["status"] = "running"
         log("header", f"ThreadPool: Running {len(pending_threads)} tasks (wait={wait})")

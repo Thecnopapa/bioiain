@@ -89,17 +89,18 @@ if "-p" not in sys.argv:
     log(2, dataset)
     total_files = len(os.listdir(DATA_FOLDER))
     if len(dataset) == 0:
+        pool = None
         if "--thread" not in sys.argv:
             parts = [os.listdir(DATA_FOLDER)]
         else:
             parts = split_iterable(os.listdir(DATA_FOLDER), n_parts="half")
-        pool = ThreadPool()
+            pool = ThreadPool()
 
         def generate_embeddings(file_list=None):
             log("header", f"Generating embeddings... ({len(file_list)})")
             for n, file in enumerate(file_list):
                 log("header", file)
-                log("title", f"{dataset.n_ids():4d}/{total_files:4d} ({file.split('.')[0]})")
+                log("title", f"{dataset.n_ids()+1:4d}/{total_files:4d} ({file.split('.')[0]})")
 
                 path = os.path.join(DATA_FOLDER, file)
                 entity = BIEntity.from_file(path)
@@ -119,10 +120,12 @@ if "-p" not in sys.argv:
                 dataset.add(embedding, key=entity.name())
                 print(dataset)
 
-
-        for part in parts:
-            pool.add(generate_embeddings, file_list=part)
-        pool.start(wait=True)
+        if len(parts) == 1 or pool is None:
+            generate_embeddings(parts[0])
+        else:
+            for part in parts:
+                pool.add(generate_embeddings, file_list=part)
+            pool.start(wait=True)
 
 
         dataset.save()
