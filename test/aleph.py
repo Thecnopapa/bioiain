@@ -91,7 +91,7 @@ if "-p" not in sys.argv:
         if "--thread" not in sys.argv:
             parts = [os.listdir(DATA_FOLDER)]
         else:
-            parts = split_iterable(os.listdir(DATA_FOLDER), n_parts=4)
+            parts = split_iterable(os.listdir(DATA_FOLDER), n_parts="half")
         pool = ThreadPool()
 
         def generate_embeddings(file_list=None):

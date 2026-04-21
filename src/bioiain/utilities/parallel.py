@@ -74,7 +74,9 @@ def split_iterable(iterable, n_parts:int|str="auto") -> list:
     elif n_parts == "max":
         n_parts = cpu_count
     elif n_parts == "double":
-        n_parts = cpu_count*2
+        n_parts = avail_cpus*2
+    elif n_parts == "double":
+        n_parts = avail_cpus//2
 
     assert type(n_parts) == int
     if n_parts <= 1:
