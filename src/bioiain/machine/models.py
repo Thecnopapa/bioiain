@@ -444,11 +444,15 @@ class Hope(DespairLess):
 
                 #print(latent)
 
+            names = ["tokens", "len i", "len j", "angle ij", "dist ij", "dist lig", "contactability"]
             for n, s in enumerate(latent):
                 for axx in [ax]+axes:
                     axx.scatter(*s, color=f"C{n}")
                     axx.text(*s, n)
-
+                    try:
+                        axx.set_title(names[n])
+                    except:
+                        pass
 
 
             if dataset is not None:

@@ -96,9 +96,9 @@ if "-p" not in sys.argv:
 
         def generate_embeddings(file_list=None):
             log("header", f"Generating embeddings... ({len(file_list)})")
-            for file in file_list:
+            for n, file in enumerate(file_list):
                 log("header", file)
-                log("title", file)
+                log("title", f" ({n}/{len(file_list)}){file}")
 
                 path = os.path.join(DATA_FOLDER, file)
                 entity = BIEntity.from_file(path)
