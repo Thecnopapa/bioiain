@@ -412,11 +412,18 @@ class Hope(DespairLess):
     def plot_latent_space(self, dataset=None, seed=6, fig_dir=None, show=False, plot_preds=None, max_points=1000):
         with torch.no_grad():
             log(1, "Plotting current state...")
-            from ..visualisation.plots import fig2D
+            from ..visualisation.plots import fig2D, grid2D
             from sklearn.decomposition import PCA
             from PIL import Image
 
-            fig, ax = fig2D()
+            if dataset is None:
+                fig, ax = fig2D()
+            else:
+                size_emb = dataset.get(1).t.size()[-1]+1
+                size = math.ceil(size_emb ** 0.5)
+                fig, axes = grid2D(size, size)
+                ax = axes[0]
+                axes = axes[1:size_emb]
 
             codebook = self.submodels["autoencoder"][self.codebook_index]
 
@@ -438,12 +445,15 @@ class Hope(DespairLess):
                 #print(latent)
 
             for n, s in enumerate(latent):
-                ax.scatter(*s, color=f"C{n}")
-                ax.text(*s, n)
+                for axx in [ax]+axes:
+                    axx.scatter(*s, color=f"C{n}")
+                    axx.text(*s, n)
 
 
 
             if dataset is not None:
+                import matplotlib as mpl
+                colorbar = mpl.colormaps["plasma"]
                 indexes = range(len(dataset))
                 if len(dataset) > max_points:
                     import random
@@ -463,6 +473,10 @@ class Hope(DespairLess):
                         point = pca.transform(point.reshape(1, -1))[0]
                         #print(point)
                     ax.scatter(*point, color=f"C{token}")
+                    for i, axx in enumerate(axes):
+                        c = colorbar(round(item.t[i].item()*100))
+                        axx.scatter(*point, color=c)
+
 
             if plot_preds is not None:
                 log(2, "Plotting predictions..." )
