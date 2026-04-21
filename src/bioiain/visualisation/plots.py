@@ -37,7 +37,7 @@ except:
 
 
 def grid2D(rows, columns, height=5, width=5, as_grid=False):
-    log(1, f"Creating {rows}x{columns} (rxc) grid...")
+    log(2, f"Creating {rows}x{columns} (rxc) grid...")
     fig, grid_axes = plt.subplots(rows, columns, figsize=(columns*width, rows*height))
     if as_grid:
         return fig, grid_axes
