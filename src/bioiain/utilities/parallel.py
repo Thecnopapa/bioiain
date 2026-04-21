@@ -75,7 +75,7 @@ def split_iterable(iterable, n_parts:int|str="auto") -> list:
         n_parts = cpu_count
     elif n_parts == "double":
         n_parts = avail_cpus*2
-    elif n_parts == "double":
+    elif n_parts == "half":
         n_parts = avail_cpus//2
 
     assert type(n_parts) == int

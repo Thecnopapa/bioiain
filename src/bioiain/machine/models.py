@@ -446,21 +446,21 @@ class Hope(DespairLess):
 
             names = ["tokens", "len i", "len j", "angle ij", "dist ij", "dist lig", "contactability"]
             for n, s in enumerate(latent):
-                for axx in [ax]+axes:
+                for a, axx in enumerate([ax]+axes):
                     axx.scatter(*s, color=f"C{n}")
                     axx.text(*s, n)
                     try:
-                        axx.set_title(names[n])
+                        axx.set_title(names[a])
                     except:
                         pass
 
 
             if dataset is not None:
                 import matplotlib as mpl
+                import random
                 colorbar = mpl.colormaps["plasma"]
                 indexes = range(len(dataset))
                 if len(dataset) > max_points:
-                    import random
                     indexes = sorted(random.sample(list(indexes), max_points))
 
 
@@ -478,8 +478,11 @@ class Hope(DespairLess):
                         #print(point)
                     ax.scatter(*point, color=f"C{token}")
                     for i, axx in enumerate(axes):
-                        c = colorbar(round(item.t[i].item()*100))
+                        c = colorbar(round(item.t[i].item()*255))
                         axx.scatter(*point, color=c)
+                        #if random.random() < 0.05:
+                        #    axx.text(*point, f"{item.t[i].item():3.2f}", color="black")
+
 
 
             if plot_preds is not None:
