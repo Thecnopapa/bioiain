@@ -87,6 +87,7 @@ if "-p" not in sys.argv:
     if not ("--rebuild" in sys.argv or "--force" in sys.argv):
         dataset.load()
     log(2, dataset)
+    total_files = len(os.listdir(DATA_FOLDER))
     if len(dataset) == 0:
         if "--thread" not in sys.argv:
             parts = [os.listdir(DATA_FOLDER)]
@@ -98,7 +99,7 @@ if "-p" not in sys.argv:
             log("header", f"Generating embeddings... ({len(file_list)})")
             for n, file in enumerate(file_list):
                 log("header", file)
-                log("title", f" ({n}/{len(file_list)}){file}")
+                log("title", f"{dataset.n_ids():4d}/{total_files:4d} ({file.split('.')[0]})")
 
                 path = os.path.join(DATA_FOLDER, file)
                 entity = BIEntity.from_file(path)
