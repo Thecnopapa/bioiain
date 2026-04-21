@@ -542,10 +542,11 @@ class EmbeddingDataset(Dataset):
 
 
     def sequence_db(self, force=False, **kwargs):
+        log(1, "Loading Sequence DB (mmseqs2)...")
         if not self.data.get("mmseqs_db", False) or not os.path.exists(self.data.get("mmseqs_db_folder", None)):
             self._create_sequence_db(**kwargs)
         else:
-            log(2, "Sequence DB already generated (mmseqs2)")
+            log(2, "Sequence DB already generated")
         return self
 
 
@@ -561,14 +562,17 @@ class EmbeddingDataset(Dataset):
     def cluster(self, force=False, **kwargs):
         if not self.data.get("mmseqs_db", False):
             self._create_sequence_db(**kwargs)
-        if not self.data.get("clustered", False) or force:
-            mmseqs = MMSEQS2(self.data["mmseqs_db_folder"], **kwargs)
-            self.data["clustered_path"] = mmseqs.cluster()
-            self.data["clustered"] = True
+        if not self.data.get("clustered", False) or not os.path.exists(self.data.get("clustered_path", False)):
+            force=True
+        mmseqs = MMSEQS2(self.data["mmseqs_db_folder"], **kwargs)
+        self.data["clustered_path"] = mmseqs.cluster(force=force, **kwargs)
+        self.data["clustered"] = True
+
         self._add_clusters_to_embeddings(**kwargs)
         return self.data["clustered_path"]
 
-    def _add_clusters_to_embeddings(self, label="cluster"):
+    def _add_clusters_to_embeddings(self, label="cluster", **kwargs):
+        clusters_path = self.data["clustered_path"]
         clusters = json.load(open(self.data["clustered_path"]))["clusters"]
         for k, e in self.embeddings.items():
             for i, c in clusters.items():

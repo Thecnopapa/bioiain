@@ -86,7 +86,7 @@ if "-p" not in sys.argv:
 
     if not ("--rebuild" in sys.argv or "--force" in sys.argv):
         dataset.load()
-    print(dataset)
+    log(2, dataset)
     if len(dataset) == 0:
         if "--thread" not in sys.argv:
             parts = [os.listdir(DATA_FOLDER)]
@@ -126,8 +126,7 @@ if "-p" not in sys.argv:
 
         dataset.save()
     dataset.sequence_db()
-    dataset.cluster()
-    dataset.align()
+    dataset.cluster(reassign=False, verbosity=1)
     dataset.save()
 
 

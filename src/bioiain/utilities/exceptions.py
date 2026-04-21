@@ -97,3 +97,37 @@ class PLINDERError(Exception):
 
 class PLINDERSystemNotLoaded(PLINDERError):
 	pass
+
+
+#MMSEQS2 related
+
+class MMSEQS2Error(Exception):
+	pass
+
+class DatabaseError(MMSEQS2Error):
+	pass
+
+class ClusteringError(MMSEQS2Error):
+	pass
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

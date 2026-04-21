@@ -1,6 +1,7 @@
 import os, sys, json, subprocess
 import tempfile
 
+from ..utilities.exceptions import *
 from .logging import log
 from .. import TEMP_FOLDER, SUBDIR_NAME
 
@@ -164,13 +165,14 @@ class MSA(object):
 
 
 class MMSEQS2(MSA):
-    def __init__(self, *args, mmseqs_cmd="mmseqs", db_name=None, **kwargs):
+    def __init__(self, *args, mmseqs_cmd="mmseqs", db_name=None, verbosity=2, **kwargs):
         super().__init__(*args, **kwargs)
         self.tmp_folder = os.path.join(TEMP_FOLDER, "mmseqs2")
         os.makedirs(self.tmp_folder, exist_ok=True)
         self.mmseqs_cmd = mmseqs_cmd
         self.db_name = None
         self.db_folder = None
+        self.verbosity = verbosity
         self.name = self.name.replace(".fasta", ".db")
         if db_name is None:
             db_name = self.name.split(".")[0]
@@ -220,29 +222,59 @@ class MMSEQS2(MSA):
         return self
 
 
-    def cluster(self, db_name=None, **kwargs):
+    def cluster(self, db_name=None, reassign=False, force=False, **kwargs):
         if db_name is None:
             db_name = self.db_name
         cluster_db_folder = os.path.join(self.db_folder.replace(".db", ".cluster"))
         cluster_db_path = os.path.join(cluster_db_folder, db_name)
         out_path = os.path.join(cluster_db_folder, f"{db_name}_clustered.tsv")
-        os.makedirs(cluster_db_folder, exist_ok=True)
-        self._cmd("cluster",  self.db_path, cluster_db_path , self.tmp_folder)
-        self._cmd("createtsv", self.db_path, self.db_path, cluster_db_path, out_path)
-        clusters = {}
-        with open(out_path) as f:
-            for line in f:
-                c, i = line.strip().split("\t")
-                if c not in clusters:
-                    clusters[c] = {"name":c, "list": []}
-                clusters[c]["list"].append(i)
-        data = {"params": {
-
-        }, "clusters":{},}
-        for c in clusters:
-            data["clusters"][len(data["clusters"])] = clusters[c]
         data_path = out_path.replace(".tsv", ".json")
-        json.dump(data, open(data_path, "w"), indent=4)
+        cmd = ["cluster", self.db_path, cluster_db_path, self.tmp_folder]
+        if reassign:
+            cmd.append("--cluster-reassign")
+
+        params = {
+            "cmd": " ".join([str(c) for c in cmd]),
+            "reassign":reassign,
+        }
+        os.makedirs(cluster_db_folder, exist_ok=True)
+
+        if not os.path.exists(cluster_db_path) or not os.path.exists(data_path):
+            force=True
+        if os.path.exists(data_path):
+            if json.load(open(data_path))["params"] != params:
+                log(3, "Different params detected")
+                force = True
+
+        if force:
+            try:
+                self._cmd(*cmd, v=self.verbosity)
+            except:
+                raise ClusteringError()
+        else:
+            log(3, "Cluster DB already clustered (mmseqs2)")
+
+        if force or not os.path.exists(out_path):
+            try:
+                self._cmd("createtsv", self.db_path, self.db_path, cluster_db_path, out_path, v=self.verbosity)
+            except:
+                raise ClusteringError()
+
+        try:
+            clusters = {}
+            with open(out_path) as f:
+                for line in f:
+                    c, i = line.strip().split("\t")
+                    if c not in clusters:
+                        clusters[c] = {"name":c, "list": []}
+                    clusters[c]["list"].append(i)
+            data = {"params": params, "clusters":{},}
+            for c in clusters:
+                data["clusters"][len(data["clusters"])] = {**clusters[c], "n": len(clusters[c]["list"])}
+
+            json.dump(data, open(data_path, "w"), indent=4)
+        except:
+            raise ClusteringError()
         return data_path
 
 
