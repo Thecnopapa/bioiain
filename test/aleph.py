@@ -46,6 +46,15 @@ elif "receptors" in sys.argv:
     else:
         DATA_FOLDER = "./data/receptors"
     DATA_NAME = "receptors"
+elif "lbds" in sys.argv:
+    if not "--no-download" in sys.argv:
+        DATA_FOLDER = downloadPDB("./data", "lbds",
+                                  file_path="./data/LBDs.txt",
+                                  file_format="cif",
+                                  overwrite=False)
+    else:
+        DATA_FOLDER = "./data/lbds"
+    DATA_NAME = "lbds"
 else:
     DATA_FOLDER = downloadPDB( list_name="aleph", pdb_list=["1M2Z", "3HBB", "6F63", "5LXN", "3brf", "6e52", "7t2y", "3kg2", "2GEJ", "2bis"], data_dir="./data" )
     DATA_NAME = "aleph"
@@ -70,6 +79,10 @@ else:
 log(1, "DATA NAME:", DATA_NAME)
 
 if "-p" not in sys.argv:
+
+    log("start", "Embeddings")
+    log("title", "Embeddings")
+
     LR = 0.0001
     if "--lr" in sys.argv:
         LR = float(sys.argv[sys.argv.index("--lr") + 1])
@@ -135,10 +148,13 @@ if "-p" not in sys.argv:
     dataset.save()
     dataset.align(verbose=True, build_tree=True)
     dataset.save()
+    log("end", "Embeddings")
 
 
 model = None
 if "-t" in sys.argv:
+    log("start", "Training")
+    log("title", "Training")
 
 
     epochs = 100
@@ -198,9 +214,12 @@ if "-t" in sys.argv:
             model.send_run(host="iainvisa.com", key=os.environ.get("IAINVISA_FILE_KEY", None), epoch=n)
         model.add_epoch()
     model.save()
+    log("end", "Training")
+
 
 
 if "--tokenise" in sys.argv or "-t" in sys.argv:
+    log("start", "Tokenisation")
     log("title", "Tokenisation")
 
     if model is None:
@@ -225,6 +244,8 @@ if "--tokenise" in sys.argv or "-t" in sys.argv:
 
 
 if "-p" in sys.argv:
+    log("start", "Prediction")
+    log("title", "Prediction")
     with torch.no_grad():
         from src.bioiain.visualisation.pymol import PymolScript
         from src.bioiain.visualisation.plots import mpl_colours
@@ -340,6 +361,8 @@ if "-p" in sys.argv:
 
         script.execute(compile=True)
         script.execute()
+    log("end", "Prediction")
+
 
 
 

@@ -301,7 +301,7 @@ class MMSEQS2(MSA):
 class CLUSTAL(MSA):
     def __init__(self, *args, verbose=False, run_msa=True, build_tree=False, **kwargs):
         super().__init__(*args, **kwargs)
-        kwargs.pop("name")
+        kwargs.pop("name", None)
         if run_msa:
             self.msa_path = self._run_clustal_msa(name=self.name, verbose=verbose, **kwargs)
             self.msa_fasta = FASTA(self.msa_path)

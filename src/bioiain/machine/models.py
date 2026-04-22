@@ -602,7 +602,8 @@ class Hope(DespairLess):
         log(1, "Token fasta path:", token_fasta_path)
         log(2, "Dataset:", dataset)
 
-        msa = CLUSTAL(token_fasta_path, name=None, out_folder=dataset.data["folder"], matrix="ID", **kwargs)
+        msa = CLUSTAL(token_fasta_path, verbose=True, out_folder=dataset.data["folder"], matrix="ID", build_tree=True, **kwargs)
+
         return msa.msa_path
 
 
