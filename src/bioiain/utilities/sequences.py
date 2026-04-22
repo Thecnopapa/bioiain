@@ -116,6 +116,7 @@ class FASTA(object):
             return seqs
 
     def rewrite(self, duplicates=False, empties=False, space_between=False, key_start="> "):
+        log(3, "Rewriting FASTA:", self.fasta_path)
         data = self._parse_fasta()
         with open(self.fasta_path, "w") as f:
             for key, sequences in data.items():
@@ -155,8 +156,8 @@ class MSA(object):
         if name is None:
             name = os.path.basename(fasta_path).replace(".fasta", "")
         self.name = name
-        log("header", f"Initialising {self.__class__.__name__}...")
-        log(1, "Fasta path:", self.fasta_path)
+        log(1, f"Initialising {self.__class__.__name__}...")
+        log(2, "Fasta path:", self.fasta_path)
 
     def __repr__(self):
         return f"<bi.{self.__class__.__name__}:{self.name} ({len(self)} sequences)>"
@@ -304,6 +305,7 @@ class CLUSTAL(MSA):
         if run_msa:
             self.msa_path = self._run_clustal_msa(name=self.name, verbose=verbose, **kwargs)
             self.msa_fasta = FASTA(self.msa_path)
+            self.msa_fasta.rewrite()
         if build_tree:
             self.tree_path = self._build_tree(self.msa_path)
 
@@ -312,7 +314,7 @@ class CLUSTAL(MSA):
 
         if fasta_path is None:
             fasta_path = self.fasta_path
-        log(2, f"Calculating MSA of: {fasta_path}")
+        log(2, f"Calculating MSA ({matrix}) of: {fasta_path}")
         fname = f"{name}_{matrix}.ms.alignment.fasta"
         if out_folder is None:
             out_folder = os.path.join(TEMP_FOLDER, "alignments")

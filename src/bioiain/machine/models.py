@@ -588,7 +588,7 @@ class Hope(DespairLess):
                     #log("warning", f"N ({len(tok_seq)}) of generated tokens does not mach embedding sequence length ({len(strucc['sequence'])})")
                     pass
                 #log(2, tok_seq)
-                f.write(f">{name}_tokens\n")
+                f.write(f"> {name}_tokens\n")
                 f.write(f"{tok_seq}\n")
         log(2, "Token fasta path:", tok_fasta_path)
         if dataset.data.get("tokenised", None) is None:
@@ -602,7 +602,8 @@ class Hope(DespairLess):
         log(1, "Token fasta path:", token_fasta_path)
         log(2, "Dataset:", dataset)
 
-        msa = CLUSTAL(token_fasta_path, name=None, out_folder=dataset.data["folder"], **kwargs).fasta.rewrite()
+        msa = CLUSTAL(token_fasta_path, name=None, out_folder=dataset.data["folder"], matrix="ID", **kwargs)
+        return msa.msa_path
 
 
 

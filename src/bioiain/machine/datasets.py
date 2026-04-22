@@ -3,6 +3,7 @@ from copy import deepcopy
 from ..utilities import *
 from ..utilities import relative_path, MMSEQS2
 from ..utilities.exceptions import *
+from ..utilities.sequences import *
 from typing import Any
 
 from torch import Tensor
