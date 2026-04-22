@@ -222,20 +222,28 @@ class MMSEQS2(MSA):
         return self
 
 
-    def cluster(self, db_name=None, reassign=False, force=False, **kwargs):
+    def cluster(self, db_name=None, reassign=False, force=False, linear=False, easy=False, **kwargs):
         if db_name is None:
             db_name = self.db_name
         cluster_db_folder = os.path.join(self.db_folder.replace(".db", ".cluster"))
         cluster_db_path = os.path.join(cluster_db_folder, db_name)
         out_path = os.path.join(cluster_db_folder, f"{db_name}_clustered.tsv")
         data_path = out_path.replace(".tsv", ".json")
-        cmd = ["cluster", self.db_path, cluster_db_path, self.tmp_folder]
-        if reassign:
+        if linear:
+            cmd = ["linclust"]
+        else:
+            cmd = ["cluster"]
+        if easy:
+            cmd =  ["easy-"+cmd[0]]
+        cmd.extend([self.db_path, cluster_db_path, self.tmp_folder])
+        if reassign and not linear:
             cmd.append("--cluster-reassign")
 
         params = {
             "cmd": " ".join([str(c) for c in cmd]),
             "reassign":reassign,
+            "linear":linear,
+            "easy":easy,
         }
         os.makedirs(cluster_db_folder, exist_ok=True)
 

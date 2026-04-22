@@ -130,8 +130,12 @@ if "-p" not in sys.argv:
 
         dataset.save()
     dataset.sequence_db()
-    dataset.cluster(reassign=False, verbosity=1)
+    dataset.cluster(reassign=True, verbosity=3)
+
     dataset.save()
+    dataset.align(verbose=True, build_tree=True)
+    dataset.save()
+
 
 
 if "-t" in sys.argv:
