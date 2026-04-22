@@ -21,6 +21,7 @@ import psutil
 from . import DEVICE
 
 from ..utilities.exceptions import *
+from ..utilities.sequences import *
 
 from .losses import *
 from .base_model import BaseModel
@@ -564,6 +565,51 @@ class Hope(DespairLess):
                 img = torchvision.transforms.v2.functional.pil_to_tensor(img)
                 self.writer.add_image(f"tokens", img, global_step=self.data["epoch"])
                 del img
+
+    def _tokenise(self, dataset):
+        log(1, "Generating tokens...")
+        log(2, "Dataset:", dataset)
+        tok_fasta_path = dataset.data["fasta_path"].replace(".fasta", f".{self.get_fname()}.tokens.fasta")
+
+        with open(tok_fasta_path, mode="w") as f:
+            for ns, (name, strucc) in enumerate(dataset.embeddings.items()):
+                print(f"{ns:4d}/{dataset.n_ids():4d} {name}", end="\r")
+                start_n = strucc["start"]
+                end_n = strucc["end"]
+                tok_seq = ""
+                for n in range(start_n, end_n):
+                    item = dataset.get(n)
+                    pred = self._predict(item.t)
+                    token_n = pred[0] - 1
+                    token = intto1(token_n)
+                    tok_seq += token
+
+                if len(tok_seq) != len(strucc["sequence"]):
+                    #log("warning", f"N ({len(tok_seq)}) of generated tokens does not mach embedding sequence length ({len(strucc['sequence'])})")
+                    pass
+                #log(2, tok_seq)
+                f.write(f">{name}_tokens\n")
+                f.write(f"{tok_seq}\n")
+        log(2, "Token fasta path:", tok_fasta_path)
+        if dataset.data.get("tokenised", None) is None:
+            dataset.data["tokenised"] = {}
+        dataset.data["tokenised"][self.get_fname()] = tok_fasta_path
+        dataset.save()
+        return tok_fasta_path
+
+    def _align_tokens(self, dataset, token_fasta_path, **kwargs):
+        log("header", "Aligning tokens...")
+        log(1, "Token fasta path:", token_fasta_path)
+        log(2, "Dataset:", dataset)
+
+        msa = CLUSTAL(token_fasta_path, name=None, out_folder=dataset.data["folder"], **kwargs).fasta.rewrite()
+
+
+
+
+
+
+
 
 class HopeFull(Hope):
     def __init__(self, *args, hidden_dims=None, **kwargs):

@@ -9,12 +9,12 @@ from .. import TEMP_FOLDER, SUBDIR_NAME
 d3to1 = {'CYS': 'C', 'ASP': 'D', 'SER': 'S', 'GLN': 'Q', 'LYS': 'K',
              'ILE': 'I', 'PRO': 'P', 'THR': 'T', 'PHE': 'F', 'ASN': 'N',
              'GLY': 'G', 'HIS': 'H', 'LEU': 'L', 'ARG': 'R', 'TRP': 'W',
-             'ALA': 'A', 'VAL': 'V', 'GLU': 'E', 'TYR': 'Y', 'MET': 'M'}
+             'ALA': 'A', 'VAL': 'V', 'GLU': 'E', 'TYR': 'Y', 'MET': 'M', "UNK": "X"}
 
 d3toint =  {'CYS': 0, 'ASP': 1, 'SER': 2, 'GLN': 3, 'LYS': 4,
              'ILE': 5, 'PRO': 6, 'THR': 6, 'PHE': 8, 'ASN': 9,
              'GLY': 10, 'HIS': 11, 'LEU': 12, 'ARG': 13, 'TRP': 14,
-             'ALA': 15, 'VAL': 16, 'GLU': 17, 'TYR': 18, 'MET': 19}
+             'ALA': 15, 'VAL': 16, 'GLU': 17, 'TYR': 18, 'MET': 19, "UNK":20}
 
 def d3(resname):
     try:
@@ -28,6 +28,11 @@ def d3(resname):
 
 
 
+def intto1(i):
+    for d3, n in d3toint.items():
+        if i == n:
+            return d3to1[d3]
+    return "X"
 
 
 
@@ -148,7 +153,7 @@ class MSA(object):
         self.fasta_path = fasta_path
         self.fasta = FASTA(fasta_path)
         if name is None:
-            name = os.path.basename(fasta_path)
+            name = os.path.basename(fasta_path).replace(".fasta", "")
         self.name = name
         log("header", f"Initialising {self.__class__.__name__}...")
         log(1, "Fasta path:", self.fasta_path)

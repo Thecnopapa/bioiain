@@ -573,9 +573,10 @@ class EmbeddingDataset(Dataset):
             self._create_sequence_db(**kwargs)
         if not self.data.get("clustered", False) or not os.path.exists(self.data.get("clustered_path", False)):
             force=True
-        mmseqs = MMSEQS2(self.data["mmseqs_db_folder"], **kwargs)
-        self.data["clustered_path"] = mmseqs.cluster(force=force, **kwargs)
-        self.data["clustered"] = True
+        if not self.data.get("clustered", False) or force:
+            mmseqs = MMSEQS2(self.data["mmseqs_db_folder"], **kwargs)
+            self.data["clustered_path"] = mmseqs.cluster(force=force, **kwargs)
+            self.data["clustered"] = True
 
         self._add_clusters_to_embeddings(**kwargs)
         return self.data["clustered_path"]

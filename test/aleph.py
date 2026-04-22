@@ -137,7 +137,7 @@ if "-p" not in sys.argv:
     dataset.save()
 
 
-
+model = None
 if "-t" in sys.argv:
 
 
@@ -193,12 +193,34 @@ if "-t" in sys.argv:
 
         #model.write_loss()
         #model.draw_all_tokens()
-        model.save()
+        model.save(temp=True)
         if not "--local" in sys.argv and ( (n+1) % 10 == 0 or (n+1)==epochs):
             model.send_run(host="iainvisa.com", key=os.environ.get("IAINVISA_FILE_KEY", None), epoch=n)
         model.add_epoch()
+    model.save()
 
 
+if "--tokenise" in sys.argv or "-t" in sys.argv:
+    log("title", "Tokenisation")
+
+    if model is None:
+        log("header", "Loading saved model...")
+        model_data_path = sys.argv[sys.argv.index("--md") + 1]
+        log(1, "Model path:", model_data_path)
+        data = json.load(open(model_data_path))
+        log(1, "Model class (data):", data.get("model"))
+        model_class = getattr(models, data.get("model"))
+
+        model = model_class(name="inference", in_shape=data.get("in_shape"), inference=True)
+        model.load(model_data_path)
+    else:
+        log("header", "Using loaded model...")
+
+    log(1, "Model:", model)
+    log(1, "Dataset:", dataset)
+
+    tok_fasta = model._tokenise(dataset)
+    model._align_tokens(dataset, tok_fasta)
 
 
 
