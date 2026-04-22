@@ -146,6 +146,18 @@ if "-t" in sys.argv:
 
     model = MODEL_CLASS(name=DATA_NAME, in_shape=dataset.get(0).t.shape, batch_size=0, lr=LR, embedding_class = EMBEDDING_CLASS)
     model.add_text("data", model.json())
+    model.add_text("hparams", json.dumps({
+        "model_name": model.__class__.__name__,
+        "dataset": dataset,
+        "label": dataset.data["label_key"],
+        "seed": seed,
+        "optimiser": model.optimisers.get(model.mode, "default").__class__.__name__,
+        "loss_fn": model.criterions.get(model.mode, "default").__class__.__name__,
+        "lr": LR,
+        "batch_size": 0,
+        "target_epochs": epochs,
+        "device": DEVICE,
+        }, indent=4))
 
     model.set_mode("autoencoder")
     model.mount()
