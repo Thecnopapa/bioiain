@@ -31,7 +31,11 @@ class BIChain(BIEntity):
         if chain_id is None:
             chain_id = self.find_id()
         chain_id = str(chain_id)
-        assert(len(chain_id) == 1)
+        if len(chain_id) != 1:
+            chain_id = chain_id.replace("_", "-")
+
+            log(f"warning", "CHAIN ID is longer than 1: {chain_id}")
+            self.set_flag("unconventional_chain_id", True)
         self.data["info"]["chain_id"] = chain_id
         if self.has_flag("has_chain_id", True):
             old_name = self.name().split("_")
