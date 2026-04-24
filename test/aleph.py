@@ -190,8 +190,7 @@ if "-t" in sys.argv:
         if "--no-plot" in sys.argv:
             model.plot_latent_space(dataset=None)
         else:
-            model.plot_latent_space(dataset=dataset, max_points=1000, mesh_points=10)
-            exit()
+            model.plot_latent_space(dataset=dataset, max_points=1000, mesh_points=20)
 
         model.plot_tokens()
 

@@ -367,6 +367,13 @@ class Hope(DespairLess):
             "layer_set": ["autoencoder"]
         }
 
+    def _predict_from_latent(self, x):
+        self.set_mode("codebook", quiet=True)
+        z = self._forward(x)
+        index = int(self.submodels["autoencoder"][self.codebook_index].last_index[0].detach().cpu().numpy())
+        score = float(self.submodels["autoencoder"][self.codebook_index].last_loss.detach().cpu().numpy())
+        return index, score, z, x
+
 
     def _predict(self, x):
         x = self._encode(x)
@@ -392,11 +399,11 @@ class Hope(DespairLess):
 
     def forward(self, x):
         #print("FORWARD")
-        self.set_mode("autoencoder")
+        self.set_mode("autoencoder", quiet=True)
 
         x = x.to(DEVICE)
         z = self._forward(x)
-        zn = torch.clamp(z, min=0, max=1)
+        #zn = torch.clamp(z, min=0, max=1)
 
         #print(self.submodels["autoencoder"])
         encoding_loss = self.submodels["autoencoder"][self.codebook_index].last_loss
@@ -483,20 +490,18 @@ class Hope(DespairLess):
                 y_min = min([l[1] for l in latent])
                 y_max = max([l[1] for l in latent])
 
-                x_size = x_max - x_min // mesh_points
-                y_size = y_max - y_min // mesh_points
-                x_padding = mesh_points // 10 * x_size
-                y_padding = mesh_points // 10 * y_size
+                x_size = x_max - x_min / mesh_points
+                y_size = y_max - y_min / mesh_points
 
-                x_range = np.arange(x_min-x_padding, x_max+x_padding, x_size)
-                y_range = np.arange(y_min-y_padding, y_max+y_padding, y_size)
-                print(x_range, y_range)
+
+                x_range = np.linspace(x_min, x_max, mesh_points)
+                y_range = np.linspace(y_min, y_max, mesh_points)
                 for x in x_range:
                     for y in y_range:
-                        m = (x-(x_size/2)), (y-(y_size/2))
+                        m = (float(x-(x_size/2))), float((y-(y_size/2)))
                         token = None
                         if pca is None:
-                            token = np.argmin(m*o_latent)
+                            token, _, _, _ = self._predict_from_latent(torch.tensor(m).to(DEVICE))
 
                         pred = self._decode(torch.tensor(m).to(DEVICE))
                         pred = pred.detach().cpu().numpy()
@@ -509,18 +514,6 @@ class Hope(DespairLess):
 
 
 
-
-            for n, s in enumerate(latent):
-                for a, axx in enumerate([ax]+axes):
-                    if mesh:
-                        axx.scatter(*s, color=f"C{n}", edgecolors='black')
-                    else:
-                        axx.scatter(*s, color=f"C{n}")
-                    axx.text(*s, n)
-                    try:
-                        axx.set_title(names[a])
-                    except:
-                        pass
 
 
             if dataset is not None:
@@ -544,7 +537,10 @@ class Hope(DespairLess):
                         #print(point)
                         point = pca.transform(point.reshape(1, -1))[0]
                         #print(point)
-                    ax.scatter(*point, color=f"C{token}")
+                    if mesh:
+                        ax.scatter(*point, color=f"C{token}", edgecolors='black')
+                    else:
+                        ax.scatter(*point, color=f"C{token}")
                     for i, axx in enumerate(axes):
                         c = colorbar(round(item.t[i].item()*255))
                         if mesh:
@@ -555,11 +551,22 @@ class Hope(DespairLess):
                         #    axx.text(*point, f"{item.t[i].item():3.2f}", color="black")
 
 
-
             if plot_preds is not None:
                 log(2, "Plotting predictions..." )
                 for token, _, _, point in plot_preds:
                     ax.scatter(*point.detach().cpu().numpy(), color=f"C{token}")
+
+            for n, s in enumerate(latent):
+                for a, axx in enumerate([ax]+axes):
+                    if mesh:
+                        axx.scatter(*s, color=f"C{n}", edgecolors='black')
+                    else:
+                        axx.scatter(*s, color=f"C{n}")
+                    axx.text(*s, n, backgroundcolor=f"C{n}", fontsize="small")
+                    try:
+                        axx.set_title(names[a])
+                    except:
+                        pass
 
 
             if fig_dir is None:
