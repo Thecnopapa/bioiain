@@ -117,7 +117,11 @@ if "-p" not in sys.argv:
 
                 path = os.path.join(DATA_FOLDER, file)
                 entity = BIEntity.from_file(path)
+
                 if entity is None:
+                    continue
+                if len(entity) > 2000:
+                    log("Warning", "entity too large!")
                     continue
 
                 embedding = EMBEDDING_CLASS(entity=entity).embedding(force="--force" in sys.argv)
@@ -164,7 +168,7 @@ if "-t" in sys.argv:
     model.add_text("data", model.json())
     model.add_text("hparams", json.dumps({
         "model_name": model.__class__.__name__,
-        "dataset": dataset,
+        "dataset": str(dataset),
         "label": dataset.data["label_key"],
         "seed": seed,
         "optimiser": model.optimisers.get(model.mode, "default").__class__.__name__,
@@ -186,7 +190,8 @@ if "-t" in sys.argv:
         if "--no-plot" in sys.argv:
             model.plot_latent_space(dataset=None)
         else:
-            model.plot_latent_space(dataset=dataset, max_points=1000)
+            model.plot_latent_space(dataset=dataset, max_points=1000, mesh_points=10)
+            exit()
 
         model.plot_tokens()
 

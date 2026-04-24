@@ -410,12 +410,39 @@ class Hope(DespairLess):
 
         return loss, encoding_loss, decoding_loss
 
-    def plot_latent_space(self, dataset=None, seed=6, fig_dir=None, show=False, plot_preds=None, max_points=1000):
+    def _latent_distance_matrix(self):
+        log(2, "Generating latent distance matrix...")
+        codebook = self.submodels["autoencoder"][self.codebook_index]
+        tokens = np.array(list(zip(*codebook.codebook.weight.t().detach().cpu().numpy())))
+        distances = {}
+        for n1, t1 in enumerate(tokens):
+            if n1 == len(tokens) -1:
+                break
+            for n2, t2 in enumerate(tokens[n1+1:]):
+                n2 = n1 + n2 + 1
+                if n1 == n2:
+                    distances[n1, n2] = 0
+                else:
+                    d = multidimensional_distance(t1, t2)
+                    distances[n1, n2] = d
+                    distances[n2, n1] = d
+        print(json.dumps(distances, indent=4))
+        return distances
+
+
+
+    def plot_latent_space(self, dataset=None, seed=6, fig_dir=None, show=False, plot_preds=None, max_points=1000, mesh_points=None):
         with torch.no_grad():
             log(1, "Plotting current state...")
             from ..visualisation.plots import fig2D, grid2D
             from sklearn.decomposition import PCA
             from PIL import Image
+            import matplotlib as mpl
+            colorbar = mpl.colormaps["plasma"]
+
+            mesh = False
+            if mesh_points is not None:
+                mesh = True
 
             if dataset is None:
                 fig, ax = fig2D()
@@ -428,27 +455,67 @@ class Hope(DespairLess):
 
             codebook = self.submodels["autoencoder"][self.codebook_index]
 
-            latent = np.array(list(zip(*codebook.codebook.weight.t().detach().cpu().numpy())))
+            o_latent = np.array(list(zip(*codebook.codebook.weight.t().detach().cpu().numpy())))
             #print("Latent:")
             #print(latent)
             #print("##")
 
-
+            pca = None
             if codebook.latent_dims > 2:
+                mesh = False
                 log(2, "Performing PCA on latent...")
                 pca = PCA(n_components=2, random_state=seed)
-                latent = pca.fit_transform(latent)
+                latent = pca.fit_transform(o_latent)
 
                 log(3, "PCA components:")
                 for n, c in enumerate(pca.components_):
                     log(4, f"PC{n+1}: {c}")
 
                 #print(latent)
+            else:
+                latent = o_latent
 
             names = ["tokens", "len i", "len j", "angle ij", "dist ij", "dist lig", "contactability"]
+
+            if mesh:
+                x_min = min([l[0] for l in latent])
+                x_max = max([l[0] for l in latent])
+                y_min = min([l[1] for l in latent])
+                y_max = max([l[1] for l in latent])
+
+                x_size = x_max - x_min // mesh_points
+                y_size = y_max - y_min // mesh_points
+                x_padding = mesh_points // 10 * x_size
+                y_padding = mesh_points // 10 * y_size
+
+                x_range = np.arange(x_min-x_padding, x_max+x_padding, x_size)
+                y_range = np.arange(y_min-y_padding, y_max+y_padding, y_size)
+                print(x_range, y_range)
+                for x in x_range:
+                    for y in y_range:
+                        m = (x-(x_size/2)), (y-(y_size/2))
+                        token = None
+                        if pca is None:
+                            token = np.argmin(m*o_latent)
+
+                        pred = self._decode(torch.tensor(m).to(DEVICE))
+                        pred = pred.detach().cpu().numpy()
+                        if token is not None:
+                            ax.add_patch(mpl.patches.Rectangle(m, x_size, y_size, color=f"C{token}"))
+                        for i, axx in enumerate(axes):
+                            c = colorbar(round(pred[i].item() * 255))
+                            axx.add_patch(mpl.patches.Rectangle(m, x_size, y_size, color=c))
+
+
+
+
+
             for n, s in enumerate(latent):
                 for a, axx in enumerate([ax]+axes):
-                    axx.scatter(*s, color=f"C{n}")
+                    if mesh:
+                        axx.scatter(*s, color=f"C{n}", edgecolors='black')
+                    else:
+                        axx.scatter(*s, color=f"C{n}")
                     axx.text(*s, n)
                     try:
                         axx.set_title(names[a])
@@ -457,9 +524,9 @@ class Hope(DespairLess):
 
 
             if dataset is not None:
-                import matplotlib as mpl
+
                 import random
-                colorbar = mpl.colormaps["plasma"]
+
                 indexes = range(len(dataset))
                 if len(dataset) > max_points:
                     indexes = sorted(random.sample(list(indexes), max_points))
@@ -480,7 +547,10 @@ class Hope(DespairLess):
                     ax.scatter(*point, color=f"C{token}")
                     for i, axx in enumerate(axes):
                         c = colorbar(round(item.t[i].item()*255))
-                        axx.scatter(*point, color=c)
+                        if mesh:
+                            axx.scatter(*point, color=c, edgecolors='black')
+                        else:
+                            axx.scatter(*point, color=c)
                         #if random.random() < 0.05:
                         #    axx.text(*point, f"{item.t[i].item():3.2f}", color="black")
 
