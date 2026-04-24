@@ -490,12 +490,16 @@ class Hope(DespairLess):
                 y_min = min([l[1] for l in latent])
                 y_max = max([l[1] for l in latent])
 
-                x_size = x_max - x_min / mesh_points
-                y_size = y_max - y_min / mesh_points
+                x_size = (x_max - x_min) / mesh_points
+                y_size = (y_max - y_min) / mesh_points
 
+                padding = mesh_points // 10
+                x_padding = padding*x_size
+                y_padding = padding*y_size
 
-                x_range = np.linspace(x_min, x_max, mesh_points)
-                y_range = np.linspace(y_min, y_max, mesh_points)
+                x_range = np.linspace(x_min-x_padding, x_max+x_padding, mesh_points+(padding*2))
+                y_range = np.linspace(y_min-y_padding, y_max+y_padding, mesh_points+(padding*2))
+
                 for x in x_range:
                     for y in y_range:
                         m = (float(x-(x_size/2))), float((y-(y_size/2)))
@@ -506,10 +510,10 @@ class Hope(DespairLess):
                         pred = self._decode(torch.tensor(m).to(DEVICE))
                         pred = pred.detach().cpu().numpy()
                         if token is not None:
-                            ax.add_patch(mpl.patches.Rectangle(m, x_size, y_size, color=f"C{token}"))
+                            ax.add_patch(mpl.patches.Rectangle((x,y), x_size, y_size, color=f"C{token}"))
                         for i, axx in enumerate(axes):
                             c = colorbar(round(pred[i].item() * 255))
-                            axx.add_patch(mpl.patches.Rectangle(m, x_size, y_size, color=c))
+                            axx.add_patch(mpl.patches.Rectangle((x,y), x_size, y_size, color=c))
 
 
 
@@ -562,7 +566,7 @@ class Hope(DespairLess):
                         axx.scatter(*s, color=f"C{n}", edgecolors='black')
                     else:
                         axx.scatter(*s, color=f"C{n}")
-                    axx.text(*s, n, backgroundcolor=f"C{n}", fontsize="small")
+                    axx.text(*s, n, backgroundcolor=f"C{n}", fontsize="xx-small")
                     try:
                         axx.set_title(names[a])
                     except:
