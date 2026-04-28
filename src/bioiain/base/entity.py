@@ -174,13 +174,15 @@ class BIEntity(object):
     def ligands(self, relevant_only=True):
         return [l for l in self.atoms(ca_only=False, ligands=True) if l.relevant]
 
-    def cvectors(self):
-        if self._cvectors is None:
-            self._calculate_cvectors()
+    def cvectors(self, vc_mode=None):
+        if self._cvectors is None or vc_mode != getattr(self, "_vc_mode", None):
+            self._calculate_cvectors(vc_mode=vc_mode)
+        else:
+            log(1, f"Using previously saved CVectors ({vc_mode})...")
         return self._cvectors
 
-    def _calculate_cvectors(self):
-        log(1, "Calculating CVectors for:", self.name())
+    def _calculate_cvectors(self, vc_mode=None):
+        log(1, "Calculating CVectors for:", self.name(), f"({vc_mode})")
         from ..aleph.vectors import CVector
         residues = self.residues()
         n_res = len(residues)
@@ -189,12 +191,13 @@ class BIEntity(object):
             if n == 0 or n == n_res -1:
                 continue
             print(f"{n:4d}/{len(residues)-2:4d}", end="\r")
-            cvector = CVector(residues[n-1], res, residues[n+1], params=self.params(), symops=self.symops(), entity_centre=self.com())
+            cvector = CVector(residues[n-1], res, residues[n+1], params=self.params(), symops=self.symops(), entity_centre=self.com(), vc_mode=vc_mode)
             if cvector.trash:
                 continue
             cvector_list.append(cvector)
         log(2, f"n CVectors: {len(cvector_list)}")
         self._cvectors = cvector_list
+        self._vc_mode = vc_mode
         return cvector_list
 
 

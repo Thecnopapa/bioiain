@@ -106,7 +106,7 @@ class CVEmbedding(PerResidueEmbedding):
             e.append([len_i, len_j, angle_i_j, len_i_j])
         return e, seq
 
-    def generate_embedding(self, *args, modulo_norm=2.4, max_dist=10, **kwargs):
+    def generate_embedding(self, *args, modulo_norm=2.4, max_dist=10, vc_mode=None, **kwargs):
 
         try:
             self.entity = self.entity.fragment()
@@ -119,8 +119,8 @@ class CVEmbedding(PerResidueEmbedding):
 
         if frag.data["fragments"]["n_fragments"] <= 1:
             return None
-        cvectors = frag.cvectors()
-        cvmatrix = frag.cvmatrix() # Not used but calculates closest neighbours
+        cvectors = frag.cvectors(vc_mode=vc_mode)
+        cvmatrix = frag.cvmatrix(vc_mode=vc_mode) # Not used but calculates closest neighbours
         if cvmatrix is None:
             return None
 
@@ -132,6 +132,19 @@ class CVEmbedding(PerResidueEmbedding):
         self.length = len(self.sequence)
         self.exists = True
         return self.path
+
+class CVEmbeddingVB(CVEmbedding):
+
+    def generate_embedding(self, *args, modulo_norm=2.4, max_dist=10, **kwargs):
+
+        return super().generate_embedding(self, *args, modulo_norm=modulo_norm, max_dist=max_dist, vc_mode="ca_projection", **kwargs)
+
+class CVEmbeddingVC(CVEmbedding):
+
+    def generate_embedding(self, *args, modulo_norm=2.4, **kwargs):
+
+        return super().generate_embedding(self, *args, modulo_norm=modulo_norm, max_dist=20, vc_mode="ca_projection", **kwargs)
+
 
 
 class CVEmbeddingV1(CVEmbedding):
@@ -160,6 +173,8 @@ class CVEmbeddingV2(CVEmbeddingV1):
                 is_contact = False
             emb.append(int(is_contact))
         return e, seq
+
+
 
 
 

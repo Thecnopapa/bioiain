@@ -15,7 +15,7 @@ from ..base.atom import PseudoAtom
 
 
 class CVector(object):
-    def __init__(self, res1, res2, res3, params=None, symops=None, entity_centre=None):
+    def __init__(self, res1, res2, res3, params=None, symops=None, entity_centre=None, vc_mode=None):
         self.res1 = res1
         self.res2 = res2
         self.res3 = res3
@@ -32,7 +32,8 @@ class CVector(object):
         self.is_gap = False
         self.trash = False
 
-
+        self.vc_mode = vc_mode
+        self.vc = None
         self.d = None
         self.v = None
         self.start = None
@@ -71,7 +72,7 @@ class CVector(object):
             closest_opn=self.closest_opn,
             closest_lig_name=self.closest_lig.name if self.closest_lig is not None else None,
             closest_lig_chain=self.closest_lig.chain if self.closest_lig is not None else None,
-            dist_to_lig=f"{self.dist_to_lig:8.3f}",
+            dist_to_lig=f"{self.dist_to_lig:8.3f}" if self.dist_to_lig is not None else None,
         )
         for k, v in d.items():
             if v is None:
@@ -98,8 +99,16 @@ class CVector(object):
         self.end = PseudoAtom(find_com([r.o for r in self.residues]))
 
         self.v = vector(self.start.coord, self.end.coord)
-
         self.d = length(self.v)
+        if self.vc_mode is None:
+            self.vc = self.start.copy()
+        elif self.vc_mode == "ca_projection":
+            ca = self.res2.ca.coord
+            start_ca = vector(self.start.coord, ca)
+            self.vc =  PseudoAtom((start_ca[0] + ca[0], start_ca[1] + ca[1], start_ca[2] + ca[2]))
+        else:
+            log("error", "VC Mode Not Implemented:", self.vc_mode)
+            raise NotImplementedError("VC Mode Not Implemented:", self.vc_mode)
 
         if len({self.res1.chain, self.res2.chain, self.res3.chain}) > 1:
             self.across_chains = True
@@ -154,20 +163,20 @@ class CVPair(object):
     def calculate(self):
 
 
-
+        
         if self.v2.params is not None and self.v2.symops is not None:
-            self.v1.start.to_frac(self.v2.params)
-            self.v2.start.to_frac(self.v2.params)
-            coord, d, opn, pos = self.v2.start.closest(self.v1.start.coord, symops=self.v2.symops, params=self.v2.params, centre=self.v2.entity_centre)
+            self.v1.vc.to_frac(self.v2.params)
+            self.v2.vc.to_frac(self.v2.params)
+            coord, d, opn, pos = self.v2.vc.closest(self.v1.vc.coord, symops=self.v2.symops, params=self.v2.params, centre=self.v2.entity_centre)
 
             self.d = d
             self.opn_of_v2 = opn
             self.pos_of_v2 = pos
-            self.v1.start.to_orth(self.v2.params)
-            self.v2.start.to_orth(self.v2.params)
-            self.v = vector(self.v1.start.coord, coord)
+            self.v1.vc.to_orth(self.v2.params)
+            self.v2.vc.to_orth(self.v2.params)
+            self.v = vector(self.v1.vc.coord, coord)
         else:
-            self.v = vector(self.v1.start.coord, self.v2.start.coord)
+            self.v = vector(self.v1.vc.coord, self.v2.vc.coord)
             self.d = flength(self.v)
 
 
@@ -184,16 +193,17 @@ class CVPair(object):
             raise
 
 class CVMatrix(object):
-    def __init__(self, cvector_list):
+    def __init__(self, cvector_list, vc_mode=None):
         self.vectors = cvector_list
         self.matrix = None
         self.length = len(self.vectors)
+        self.vc_mode = vc_mode
 
         self.calculate()
 
     def calculate(self):
         self.matrix = []
-        log(2, "Calculating matrix...")
+        log(2, f"Calculating matrix ({self.vc_mode})...")
 
         for n, v1 in enumerate(self.vectors):
             self.matrix.append([])
@@ -230,11 +240,13 @@ class CVMatrix(object):
         return t
 
 
-    def save_fig(self, attribute="d", save_folder=None):
+    def save_fig(self, attribute="d", save_folder=None, prefix="cvmatrix"):
         if save_folder is None:
             save_folder = os.path.join(SUBDIR_NAME, "cvmaps")
         os.makedirs(save_folder, exist_ok=True)
-        filename = os.path.join(save_folder, f"{attribute}.png")
+        if self.vc_mode is not None:
+            prefix = f"{prefix}_{self.vc_mode}"
+        filename = os.path.join(save_folder, f"{prefix}_{attribute}.png")
         plot_heatmap(self.square(attribute), filename=filename)
         return filename
 

@@ -199,10 +199,10 @@ class FragmentedStructure(BIStructure):
 
 
 
-    def _map_cvectors(self, with_ligands=True):
-        log(1, "Generating CVMatrix for:", self.name())
+    def _map_cvectors(self, with_ligands=True, vc_mode=None):
+        log(1, "Generating CVMatrix for:", self.name(), f"({vc_mode})")
         from . import CVMatrix
-        matrix = CVMatrix(self.cvectors())
+        matrix = CVMatrix(self.cvectors(vc_mode=vc_mode), vc_mode=vc_mode)
         try:
             matrix.calculate_neighbours()
         except NoNeighboursFound as e:
@@ -216,11 +216,14 @@ class FragmentedStructure(BIStructure):
             matrix.save_fig(attribute="dlig", save_folder=os.path.join(self.folder(), "cvmaps"))
 
         self._cvmatrix = matrix
+        self._matrix_vc_mode = vc_mode
         return self._cvmatrix
 
-    def cvmatrix(self, **kwargs):
-        if self._cvmatrix is None:
-            self._map_cvectors(**kwargs)
+    def cvmatrix(self, vc_mode=None, **kwargs):
+        if self._cvmatrix is None or vc_mode != getattr(self, "_matrix_vc_mode", None):
+            self._map_cvectors(vc_mode=vc_mode, **kwargs)
+        else:
+            log(1, f"Using previously saved CVMatrix ({vc_mode})...")
         return self._cvmatrix
 
     def show(self):
@@ -244,33 +247,40 @@ class FragmentedStructure(BIStructure):
             script.execute()
         return script
 
-    def show_cvectors(self, execute=True, script=None):
+    def show_cvectors(self, execute=True, script=None, vc_mode=None):
 
         script = self.show_fragments(execute=False, script=script)
-        m = self.cvmatrix()
+        m = self.cvmatrix(vc_mode=vc_mode)
         if m is None:
             log("error", f"No CVMatrix for {self.name()}")
             return None
-        for cv in self.cvectors():
+        for cv in self.cvectors(vc_mode=vc_mode):
             if cv.is_gap:
                 script.line("gap_cvectors", coord1=cv.start.coord, coord2=cv.end.coord)
             else:
                 script.line("cvectors", coord1=cv.start.coord, coord2=cv.end.coord)
 
+            if m.vc_mode is not None:
+                script.line("ca_vc", coord1=cv.res2.ca.coord, coord2=cv.vc.coord)
+
+            script.line("ca_cv", coord1=cv.res2.ca.coord, coord2=cv.start.coord)
+
             #if cv.fragment is None:
             #    continue
             if cv.closest_opn == 1 or cv.closest_opn is None:
-                script.line("neighbours", coord1=cv.start.coord, coord2=cv.closest.start.coord)
+                script.line("neighbours", coord1=cv.vc.coord, coord2=cv.closest.vc.coord)
             else:
                 symstart = cv.closest.start.copy().to_frac(self.params()).symop(self.symops(cv.closest_opn), self.params(), position=cv.closest_pos).to_orth(self.params())
                 symend = cv.closest.end.copy().to_frac(self.params()).symop(self.symops(cv.closest_opn), self.params(), position=cv.closest_pos).to_orth(self.params())
-                script.line("neighbours", coord1=cv.start.coord, coord2=symstart)
+                script.line("neighbours", coord1=cv.vc.coord, coord2=symstart)
                 script.line("cvectors_sym", coord1=symstart, coord2=symend)
 
         script.color("neighbours", "orange")
         script.color("cvectors", "cyan")
         script.color("gap_cvectors", "purple")
         script.color("cvectors_sym", "green")
+        script.color("ca_vc", "yellow")
+        script.color("ca_cv", "red")
         print(self.export())
         script.load(self.path(), self.name())
         script.color(self.name(), "white")

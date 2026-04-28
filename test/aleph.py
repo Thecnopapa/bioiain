@@ -72,7 +72,18 @@ elif "--v2" in sys.argv:
     DATA_NAME += "_v2"
     EMBEDDING_CLASS = CVEmbeddingV2
 
+elif "--vB" in sys.argv:
+    VB = True
+    DATA_NAME += "_vB"
+    EMBEDDING_CLASS = CVEmbeddingVB
+
+elif "--vC" in sys.argv:
+    VB = True
+    DATA_NAME += "_vC"
+    EMBEDDING_CLASS = CVEmbeddingVC
+
 else:
+    DATA_NAME += "_v0"
     EMBEDDING_CLASS = CVEmbedding
     V0 = True
 
