@@ -13,8 +13,10 @@ def multidimensional_com(points):
 def multidimensional_distance(point1, point2):
     p1 = np.array(point1)
     p2 = np.array(point2)
-
-    d = np.sqrt((p1-p2)**2 - (2*p1*p2))
+    # print((p1-p2)**2)
+    # print((2*p1*p2))
+    # d = np.sqrt((p1-p2)**2 - (2*p1*p2))
+    d = np.linalg.norm(p1 - p2)
     return d
 
 

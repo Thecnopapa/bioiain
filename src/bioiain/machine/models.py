@@ -417,28 +417,72 @@ class Hope(DespairLess):
 
         return loss, encoding_loss, decoding_loss
 
-    def _latent_distance_matrix(self):
+    def _latent_distance_matrix(self, normalise=True, discretise:int=None):
         log(2, "Generating latent distance matrix...")
         codebook = self.submodels["autoencoder"][self.codebook_index]
         tokens = np.array(list(zip(*codebook.codebook.weight.t().detach().cpu().numpy())))
         distances = {}
         for n1, t1 in enumerate(tokens):
+            distances[n1, n1] = 0
             if n1 == len(tokens) -1:
                 break
             for n2, t2 in enumerate(tokens[n1+1:]):
                 n2 = n1 + n2 + 1
-                if n1 == n2:
-                    distances[n1, n2] = 0
-                else:
+                if n1 != n2:
                     d = multidimensional_distance(t1, t2)
                     distances[n1, n2] = d
-                    distances[n2, n1] = d
-        print(json.dumps(distances, indent=4))
-        return distances
+                    #distances[n2, n1] = d
+
+        max_dist = max(distances.values())
+        if normalise:
+            for k, d in distances.items():
+                distances[k] = d / max_dist
+            max_dist = 1
+
+        if discretise is not None:
+            bins = np.linspace(0, max_dist, discretise+1)
+            print(bins)
+            for k, d in distances.items():
+                distances[k] = bins[np.digitize([d], bins[1:])][0]
+
+        for k, d in distances.items():
+            print(f"{k[0] + 1}-{k[1] + 1}: {distances[k]}")
+
+        return distances, max_dist
+
+    def _build_blossum(self):
+        distances, max_dist = self._latent_distance_matrix(normalise=True, discretise=10)
+        blossum_folder = os.path.join(self.data["folder"], "matrixes")
+        blossum_path = os.path.join(blossum_folder, f"matrixe_{self}_E{self.data["epoch"]}.mat")
+        os.makedirs(blossum_folder, exist_ok=True)
+        print("open", blossum_path)
+        with open(blossum_path, "w") as f:
+            letters = list(set([intto1(k[0]) for k in distances.keys()]))
+            header = "   " + "  ".join(letters + ["X", "*"])
+            f.write(header)
+            f.write("\n")
+
+            toks = list(set([k[0] for k in distances.keys()])) + ["X", "*"]
+            for t1 in toks:
+                l1 = intto1(t1)
+                line = f"{l1}"
+                for t2 in toks:
+                    try:
+                        if t2 < t1:
+                            line += f" {distances[(t2, t1)] * 10:2.0f}"
+                        else:
+                            line += f" {distances[(t1, t2)]*10:2.0f}"
+                    except:
+                        line += f" {10:2.0f}"
+                f.write(line)
+                f.write("\n")
 
 
 
-    def plot_latent_space(self, dataset=None, seed=6, fig_dir=None, show=False, plot_preds=None, max_points=1000, mesh_points=None):
+
+
+
+    def plot_latent_space(self, dataset=None, seed=6, fig_dir=None, show=False, plot_preds=None, max_points=1000, mesh_points=None, save=True):
         with torch.no_grad():
             log(1, "Plotting current state...")
             from ..visualisation.plots import fig2D, grid2D
@@ -453,6 +497,7 @@ class Hope(DespairLess):
 
             if dataset is None:
                 fig, ax = fig2D()
+                axes = []
             else:
                 size_emb = dataset.get(1).t.size()[-1]+1
                 size = math.ceil(size_emb ** 0.5)
@@ -566,25 +611,27 @@ class Hope(DespairLess):
                         axx.scatter(*s, color=f"C{n}", edgecolors='black')
                     else:
                         axx.scatter(*s, color=f"C{n}")
-                    axx.text(*s, n, backgroundcolor=f"C{n}", fontsize="xx-small")
+                    axx.text(*s, n+1, backgroundcolor=f"C{n}", fontsize="xx-small")
                     try:
                         axx.set_title(names[a])
                     except:
                         pass
 
-
-            if fig_dir is None:
-                fig_dir = os.path.join(self.data["folder"], "latents")
-            os.makedirs(fig_dir, exist_ok=True)
-            fig_path = os.path.join(fig_dir, f"latent_{self}_E{self.data["epoch"]}.png")
-            fig.savefig(fig_path)
+            if save:
+                if fig_dir is None:
+                    fig_dir = os.path.join(self.data["folder"], "latents")
+                os.makedirs(fig_dir, exist_ok=True)
+                fig_path = os.path.join(fig_dir, f"latent_{self}_E{self.data["epoch"]}.png")
+                log(1, "Saving to: open", fig_path)
+                fig.savefig(fig_path)
             if show:
                 fig.show()
+                plt.show(block=True)
             plt.close(fig)
-            log(1, "Saving to: open", fig_path)
 
 
-            if self.writer is not None:
+
+            if self.writer is not None and save:
                 img = Image.open(fig_path)
                 img = torchvision.transforms.v2.functional.pil_to_tensor(img)
                 self.writer.add_image(f"latent", img, global_step=self.data["epoch"])
