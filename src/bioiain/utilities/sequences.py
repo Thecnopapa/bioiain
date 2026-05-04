@@ -299,23 +299,26 @@ class MMSEQS2(MSA):
 
 
 class CLUSTAL(MSA):
-    def __init__(self, *args, verbose=False, run_msa=True, build_tree=False, **kwargs):
+    def __init__(self, *args, verbose=False, run_msa=True, build_tree=False, matrix_path=None, **kwargs):
         super().__init__(*args, **kwargs)
         kwargs.pop("name", None)
         if run_msa:
-            self.msa_path = self._run_clustal_msa(name=self.name, verbose=verbose, **kwargs)
+            self.msa_path = self._run_clustal_msa(name=self.name, verbose=verbose, matrix_path=matrix_path, **kwargs)
             self.msa_fasta = FASTA(self.msa_path)
             self.msa_fasta.rewrite()
         if build_tree:
             self.tree_path = self._build_tree(self.msa_path)
 
 
-    def _run_clustal_msa(self, fasta_path=None, name="temp", out_folder=None, clustal_cmd="clustalw", matrix="BLOSUM", out_format="fasta", force=False, verbose=False):
+    def _run_clustal_msa(self, fasta_path=None, name="temp", out_folder=None, clustal_cmd="clustalw", matrix="BLOSUM", out_format="fasta", force=False, verbose=False, matrix_path=None, **kwargs):
 
         if fasta_path is None:
             fasta_path = self.fasta_path
         log(2, f"Calculating MSA ({matrix}) of: {fasta_path}")
         fname = f"{name}_{matrix}.ms.alignment.fasta"
+        if matrix == "path":
+            assert matrix_path is not None
+            matrix = matrix_path
         if out_folder is None:
             out_folder = os.path.join(TEMP_FOLDER, "alignments")
         os.makedirs(out_folder, exist_ok=True)
@@ -327,8 +330,10 @@ class CLUSTAL(MSA):
             clustal_cmd, "-align", "-type=protein",
             f"-infile={fasta_path}",
             f"-matrix={matrix}",
+            f"-pwmatrix={matrix}",
             f"-outfile={out_path}",
             f"-output={out_format}"
+            f"-slow"
         ]
         if verbose:
             log(3, "$", " ".join(cmd))

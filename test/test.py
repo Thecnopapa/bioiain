@@ -4,7 +4,7 @@ sys.path.append('..')
 
 from src.bioiain.utilities import *
 
-log("start", "aleph.py")
+log("start", "test.py")
 
 from src.bioiain.utilities.logging import *
 
@@ -117,10 +117,10 @@ if len(dataset) == 0:
     log("ERROR", "Datest is empty:", dataset)
     exit()
 
-dataset.sequence_db()
-dataset.cluster(reassign=True, verbosity=3)
+#dataset.sequence_db()
+#dataset.cluster(reassign=True, verbosity=3)
+#dataset.save()
 
-dataset.save()
 dataset.align(verbose=True, build_tree=True)
 dataset.save()
 log("end", "Embeddings")
@@ -147,10 +147,11 @@ log(1, "Model:", model)
 log(1, "Dataset:", dataset)
 
 tok_fasta = model._tokenise(dataset)
-model._align_tokens(dataset, tok_fasta)
 
 
-model._build_blossum()
+
+matrix_path = model._build_blossum()
+model._align_tokens(dataset, tok_fasta, matrix="path", matrix_path=matrix_path, force=True)
 model.plot_latent_space(show=True)
 
 

@@ -442,47 +442,59 @@ class Hope(DespairLess):
         if discretise is not None:
             bins = np.linspace(0, max_dist, discretise+1)
             print(bins)
+            print(len(bins))
             for k, d in distances.items():
                 distances[k] = bins[np.digitize([d], bins[1:])][0]
 
-        for k, d in distances.items():
-            print(f"{k[0] + 1}-{k[1] + 1}: {distances[k]}")
 
+        distances = {k:v for k, v in sorted([(kk, vv) for kk, vv in distances.items()], key=lambda x: intto1(x[0]))}
+        for k, d in distances.items():
+            print(f"{k[0] + 1}-{k[1] + 1} ({intto1(k[0])}-{intto1([1])}): {distances[k]:2.1f}")
+            pass
         return distances, max_dist
 
-    def _build_blossum(self):
-        distances, max_dist = self._latent_distance_matrix(normalise=True, discretise=10)
+    def _build_blossum(self, discretisation=10):
+        distances, max_dist = self._latent_distance_matrix(normalise=True, discretise=discretisation)
         blossum_folder = os.path.join(self.data["folder"], "matrixes")
-        blossum_path = os.path.join(blossum_folder, f"matrixe_{self}_E{self.data["epoch"]}.mat")
+        blossum_path = os.path.join(blossum_folder, f"matrix_{self}_E{self.data["epoch"]}.mat")
         os.makedirs(blossum_folder, exist_ok=True)
         print("open", blossum_path)
         with open(blossum_path, "w") as f:
-            letters = list(set([intto1(k[0]) for k in distances.keys()]))
+            letters = sorted(list(set([intto1(k[0]) for k in distances.keys()])))
             header = "   " + "  ".join(letters + ["X", "*"])
             f.write(header)
             f.write("\n")
 
-            toks = list(set([k[0] for k in distances.keys()])) + ["X", "*"]
+            toks = sorted(list(set([k[0] for k in distances.keys()])), key=lambda x: intto1(x)) + ["X", "*"]
+
+            upper = discretisation//2
+            lower = upper - discretisation
+
             for t1 in toks:
                 l1 = intto1(t1)
                 line = f"{l1}"
                 for t2 in toks:
                     try:
-                        if t2 < t1:
-                            line += f" {distances[(t2, t1)] * 10:2.0f}"
+                        if t1 == t2:
+                            v = 0
+                        elif t2 < t1:
+                            v = (distances[(t2, t1)] * discretisation)
                         else:
-                            line += f" {distances[(t1, t2)]*10:2.0f}"
+                            v = (distances[(t1, t2)] * discretisation)
                     except:
-                        line += f" {10:2.0f}"
+                        v = discretisation
+
+                    v = discretisation - v + lower
+                    line += f" {v:2.0f}"
                 f.write(line)
                 f.write("\n")
+        return blossum_path
 
 
 
 
 
-
-    def plot_latent_space(self, dataset=None, seed=6, fig_dir=None, show=False, plot_preds=None, max_points=1000, mesh_points=None, save=True):
+    def plot_latent_space(self, dataset=None, letters=True, seed=6, fig_dir=None, show=False, plot_preds=None, max_points=1000, mesh_points=None, save=True):
         with torch.no_grad():
             log(1, "Plotting current state...")
             from ..visualisation.plots import fig2D, grid2D
@@ -611,7 +623,10 @@ class Hope(DespairLess):
                         axx.scatter(*s, color=f"C{n}", edgecolors='black')
                     else:
                         axx.scatter(*s, color=f"C{n}")
-                    axx.text(*s, n+1, backgroundcolor=f"C{n}", fontsize="xx-small")
+                    if letters:
+                        axx.text(*s, intto1(n), backgroundcolor=f"C{n}", fontsize="xx-small")
+                    else:
+                        axx.text(*s, n + 1, backgroundcolor=f"C{n}", fontsize="xx-small")
                     try:
                         axx.set_title(names[a])
                     except:
@@ -725,12 +740,13 @@ class Hope(DespairLess):
         dataset.save()
         return tok_fasta_path
 
-    def _align_tokens(self, dataset, token_fasta_path, **kwargs):
+    def _align_tokens(self, dataset, token_fasta_path, matrix="ID", matrix_path=None, **kwargs):
         log("header", "Aligning tokens...")
         log(1, "Token fasta path:", token_fasta_path)
         log(2, "Dataset:", dataset)
+        log(2, "Matrix:", matrix, f"({matrix_path})" if matrix_path else "")
 
-        msa = CLUSTAL(token_fasta_path, verbose=True, out_folder=dataset.data["folder"], matrix="ID", build_tree=True, **kwargs)
+        msa = CLUSTAL(token_fasta_path, verbose=True, out_folder=dataset.data["folder"], matrix=matrix, matrix_path=matrix_path, build_tree=True, **kwargs)
 
         return msa.msa_path
 

@@ -75,9 +75,10 @@ class Item(object):
 
 class EmbeddingDataset(Dataset):
     def __init__(self,*args,  name, folder=None, **kwargs):
+        fname = f"{name}.dataset"
         if folder is None:
-            folder = os.path.join(SUBDIR_NAME, "datasets")
-        fname = f"{name}.dataset.json"
+            folder = os.path.join(SUBDIR_NAME, "datasets", fname)
+        fname = fname + ".json"
         path = os.path.join(folder, fname)
         self.data = dict(
             name = name,
