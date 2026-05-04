@@ -8,7 +8,7 @@ import asyncio
 import datetime
 
 
-log("title", "test.py")
+log("title", "deprecated_pipeline_v1.py")
 log("start", "SET UP")
 
 
