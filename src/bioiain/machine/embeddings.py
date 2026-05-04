@@ -84,6 +84,11 @@ class PerResidueEmbedding(Embedding):
 
 
 class CVEmbedding(PerResidueEmbedding):
+    """
+    Default CV embedding: 4 params [l(i), l(j) , a(ij), d(ij)].
+    Normalised to 1 (2.4A, 10A by default).
+    Virtual center is CV start.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(self, *args, **kwargs)
 
@@ -96,10 +101,10 @@ class CVEmbedding(PerResidueEmbedding):
             j = cv.closest
             i_j = cv.closest_vp
 
-            len_i = i.d / modulo_norm
-            len_j = j.d / modulo_norm
+            len_i = min(1, i.d / modulo_norm)
+            len_j = min(1, j.d / modulo_norm)
             len_i_j = min(1, i_j.d/max_dist)
-            angle_i_j = i_j.a / 180
+            angle_i_j = min(1, i_j.a / 180)
             rn, ri = d3(cv.resname)
             seq += rn
 
@@ -134,12 +139,20 @@ class CVEmbedding(PerResidueEmbedding):
         return self.path
 
 class CVEmbeddingVB(CVEmbedding):
+    """
+    CV embedding: 4 params [l(i), l(j) , a(ij), d(ij)].
+    Virtual center is CV start projected over CA.
+    """
 
     def generate_embedding(self, *args, modulo_norm=2.4, max_dist=10, **kwargs):
 
         return super().generate_embedding(self, *args, modulo_norm=modulo_norm, max_dist=max_dist, vc_mode="ca_projection", **kwargs)
 
 class CVEmbeddingVC(CVEmbedding):
+    """
+    CV embedding: 4 params [l(i), l(j) , a(ij), d(ij)].
+    Normalised to 1 (20A for VC-VC distance).
+    """
 
     def generate_embedding(self, *args, modulo_norm=2.4, **kwargs):
 
@@ -148,6 +161,10 @@ class CVEmbeddingVC(CVEmbedding):
 
 
 class CVEmbeddingV1(CVEmbedding):
+    """
+    CV embedding: 5 params [l(i), l(j) , a(ij), d(ij), d(l)].
+    5th parameter is distance to the closest ligand.
+    """
 
     def _cvectors_to_embedding(self, cvectors, modulo_norm, max_dist, **kwargs):
         e, seq = super()._cvectors_to_embedding(cvectors, modulo_norm, max_dist, **kwargs)
@@ -161,6 +178,11 @@ class CVEmbeddingV1(CVEmbedding):
 
 
 class CVEmbeddingV2(CVEmbeddingV1):
+    """
+    CV embedding: 6 params [l(i), l(j) , a(ij), d(ij), d(l), cont].
+    5th parameter is distance to the closest ligand.
+    6th parameter is contactability.
+    """
 
     def _cvectors_to_embedding(self, cvectors, modulo_norm, max_dist, **kwargs):
 
