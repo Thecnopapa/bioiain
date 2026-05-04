@@ -12,7 +12,7 @@ d3to1 = {'CYS': 'C', 'ASP': 'D', 'SER': 'S', 'GLN': 'Q', 'LYS': 'K',
              'ALA': 'A', 'VAL': 'V', 'GLU': 'E', 'TYR': 'Y', 'MET': 'M', "UNK": "X"}
 
 d3toint =  {'CYS': 0, 'ASP': 1, 'SER': 2, 'GLN': 3, 'LYS': 4,
-             'ILE': 5, 'PRO': 6, 'THR': 6, 'PHE': 8, 'ASN': 9,
+             'ILE': 5, 'PRO': 6, 'THR': 7, 'PHE': 8, 'ASN': 9,
              'GLY': 10, 'HIS': 11, 'LEU': 12, 'ARG': 13, 'TRP': 14,
              'ALA': 15, 'VAL': 16, 'GLU': 17, 'TYR': 18, 'MET': 19, "UNK":20}
 

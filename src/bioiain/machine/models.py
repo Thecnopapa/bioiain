@@ -661,7 +661,7 @@ class Hope(DespairLess):
                 for n in range(start_n, end_n):
                     item = dataset.get(n)
                     pred = self._predict(item.t)
-                    token_n = pred[0] - 1
+                    token_n = pred[0]
                     token = intto1(token_n)
                     tok_seq += token
 

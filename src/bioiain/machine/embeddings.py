@@ -124,7 +124,7 @@ class CVEmbedding(PerResidueEmbedding):
         if cvmatrix is None:
             return None
 
-        e, seq = self._cvectors_to_embedding(cvectors,modulo_norm=2.4, max_dist=10, **kwargs)
+        e, seq = self._cvectors_to_embedding(cvectors,modulo_norm=modulo_norm, max_dist=max_dist, **kwargs)
         e = torch.Tensor(e)
         torch.save(e, self.path)
         #print(e, e.shape, len(seq))
@@ -143,7 +143,7 @@ class CVEmbeddingVC(CVEmbedding):
 
     def generate_embedding(self, *args, modulo_norm=2.4, **kwargs):
 
-        return super().generate_embedding(self, *args, modulo_norm=modulo_norm, max_dist=20, vc_mode="ca_projection", **kwargs)
+        return super().generate_embedding(self, *args, modulo_norm=modulo_norm, max_dist=20, **kwargs)
 
 
 
