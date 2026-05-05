@@ -177,6 +177,10 @@ class CVEmbeddingV1(CVEmbedding):
         return e, seq
 
 
+class CVEmbeddingV1C(CVEmbeddingV1, CVEmbeddingVC):
+    pass
+
+
 class CVEmbeddingV2(CVEmbeddingV1):
     """
     CV embedding: 6 params [l(i), l(j) , a(ij), d(ij), d(l), cont].

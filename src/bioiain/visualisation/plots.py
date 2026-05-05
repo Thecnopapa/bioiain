@@ -47,8 +47,8 @@ def grid2D(rows, columns, height=5, width=5, as_grid=False):
 
     return fig, axes
 
-def fig2D():
-    fig = plt.figure()
+def fig2D(**kwargs):
+    fig = plt.figure(**kwargs)
     ax = fig.add_subplot(111)
     ax.set_aspect('equal')
     return fig, ax

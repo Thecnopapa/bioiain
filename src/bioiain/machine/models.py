@@ -1,6 +1,7 @@
 import os, json, platform
 
 import torchvision.transforms.v2.functional
+from IPython.core.pylabtools import figsize
 from sklearn.metrics import confusion_matrix
 import PIL
 
@@ -508,7 +509,7 @@ class Hope(DespairLess):
                 mesh = True
 
             if dataset is None:
-                fig, ax = fig2D()
+                fig, ax = fig2D(figsize=[3000, 3000])
                 axes = []
             else:
                 size_emb = dataset.get(1).t.size()[-1]+1
@@ -526,7 +527,7 @@ class Hope(DespairLess):
 
             pca = None
             if codebook.latent_dims > 2:
-                mesh = False
+                #mesh = False
                 log(2, "Performing PCA on latent...")
                 pca = PCA(n_components=2, random_state=seed)
                 latent = pca.fit_transform(o_latent)
@@ -559,10 +560,15 @@ class Hope(DespairLess):
 
                 for x in x_range:
                     for y in y_range:
-                        m = (float(x-(x_size/2))), float((y-(y_size/2)))
-                        token = None
-                        if pca is None:
-                            token, _, _, _ = self._predict_from_latent(torch.tensor(m).to(DEVICE))
+                        m = (float(x - (x_size / 2))), float((y - (y_size / 2)))
+
+                        if pca is not None:
+                            m = pca.inverse_transform(np.array(m).reshape(1, -1))[0].astype("f")
+                            #print(m)
+                            #print(m.dtype)
+
+
+                        token, _, _, _ = self._predict_from_latent(torch.tensor(m).to(DEVICE))
 
                         pred = self._decode(torch.tensor(m).to(DEVICE))
                         pred = pred.detach().cpu().numpy()

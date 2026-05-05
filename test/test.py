@@ -84,6 +84,11 @@ elif "--vC" in sys.argv:
     DATA_NAME += "_vC"
     EMBEDDING_CLASS = CVEmbeddingVC
 
+elif "--v1C" in sys.argv:
+    VB = True
+    DATA_NAME += "_v1C"
+    EMBEDDING_CLASS = CVEmbeddingV1C
+
 else:
     DATA_NAME += "_v0"
     EMBEDDING_CLASS = CVEmbedding
@@ -146,13 +151,13 @@ else:
 log(1, "Model:", model)
 log(1, "Dataset:", dataset)
 
-tok_fasta = model._tokenise(dataset)
+#tok_fasta = model._tokenise(dataset)
 
 
 
-matrix_path = model._build_blossum()
-model._align_tokens(dataset, tok_fasta, matrix="path", matrix_path=matrix_path, force=True)
-model.plot_latent_space(show=True)
+#matrix_path = model._build_blossum()
+#model._align_tokens(dataset, tok_fasta, matrix="path", matrix_path=matrix_path, force=True)
+model.plot_latent_space(show=True, mesh_points=50, dataset=dataset)
 
 
 
