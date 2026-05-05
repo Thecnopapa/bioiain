@@ -193,11 +193,30 @@ class CVEmbeddingV2(CVEmbeddingV1):
         e, seq = super()._cvectors_to_embedding(cvectors, modulo_norm, max_dist, **kwargs)
 
         for emb, cv in zip(e, cvectors):
-            if cv.chain != cv.closest.chain or cv.closest_opn is not None:
+            print(cv.chain, cv.closest.chain, cv.chain != cv.closest.chain, cv.closest_opn)
+            if cv.chain != cv.closest.chain or (cv.closest_opn is not None or cv.closest_opn == 1): # TODO: Fix
                 is_contact = True
             else:
                 is_contact = False
             emb.append(int(is_contact))
+        return e, seq
+
+class CVEmbeddingV3(CVEmbeddingV2):
+    """
+    CV embedding: 7 params [l(i), l(j) , a(ij), d(ij), d(l), cont, SASA].
+    5th parameter is distance to the closest ligand.
+    6th parameter is contactability.
+    7th parameter is residue SASA.
+    """
+
+    def _cvectors_to_embedding(self, cvectors, modulo_norm, max_dist, **kwargs):
+
+        e, seq = super()._cvectors_to_embedding(cvectors, modulo_norm, max_dist, **kwargs)
+
+        #TODO: Calculate SASA
+        for emb, cv in zip(e, cvectors):
+            sasa = None
+            emb.append(sasa)
         return e, seq
 
 
