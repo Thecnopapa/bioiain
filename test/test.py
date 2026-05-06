@@ -64,35 +64,61 @@ else:
 V0 = False
 V1 = False
 V2 = False
+V3 = False
+V4 = False
 
-if "--v1" in sys.argv:
-    V1 = True
-    DATA_NAME += "_v1"
-    EMBEDDING_CLASS = CVEmbeddingV1
-elif "--v2" in sys.argv:
-    V2 = True
-    DATA_NAME += "_v2"
-    EMBEDDING_CLASS = CVEmbeddingV2
+VA = False
+VB = False
+VC = False
 
-elif "--vB" in sys.argv:
+
+
+if "--vB" in sys.argv:
+    V0 = True
     VB = True
     DATA_NAME += "_vB"
     EMBEDDING_CLASS = CVEmbeddingVB
 
 elif "--vC" in sys.argv:
-    VB = True
+    V0 = True
+    VC = True
     DATA_NAME += "_vC"
     EMBEDDING_CLASS = CVEmbeddingVC
 
+elif "--v1" in sys.argv:
+    V1 = True
+    VA = True
+    DATA_NAME += "_v1"
+    EMBEDDING_CLASS = CVEmbeddingV1
+elif "--v2" in sys.argv:
+    V2 = True
+    VA = True
+    DATA_NAME += "_v2"
+    EMBEDDING_CLASS = CVEmbeddingV2
+
 elif "--v1C" in sys.argv:
-    VB = True
+    V1 = True
+    VC = True
     DATA_NAME += "_v1C"
     EMBEDDING_CLASS = CVEmbeddingV1C
+
+elif"--v2C" in sys.argv:
+    V2 = True
+    VC = True
+    DATA_NAME += "_v2C"
+    EMBEDDING_CLASS = CVEmbeddingV2C
+
+elif "--v3" in sys.argv or "--v3C" in sys.argv:
+    V3 = True
+    VC = True
+    DATA_NAME += "_v3C"
+    EMBEDDING_CLASS = CVEmbeddingV3C
 
 else:
     DATA_NAME += "_v0"
     EMBEDDING_CLASS = CVEmbedding
     V0 = True
+    VA = True
 
 log(1, "DATA NAME:", DATA_NAME)
 
