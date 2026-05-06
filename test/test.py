@@ -61,132 +61,24 @@ else:
                               data_dir="./data")
     DATA_NAME = "aleph"
 
-V0 = False
-V1 = False
-V2 = False
-V3 = False
-V4 = False
-
-VA = False
-VB = False
-VC = False
 
 
+for file in os.listdir(DATA_FOLDER):
+    if "1M2Z" not in file.upper():
+        continue
 
-if "--vB" in sys.argv:
-    V0 = True
-    VB = True
-    DATA_NAME += "_vB"
-    EMBEDDING_CLASS = CVEmbeddingVB
+    entity = BIEntity.from_file(os.path.join(DATA_FOLDER, file))
+    entity.calculate_sasa()
+    entity.export()
+    embedding = CVEmbeddingV3C(entity=entity).embedding(force="--force" in sys.argv)
+    entity.export()
 
-elif "--vC" in sys.argv:
-    V0 = True
-    VC = True
-    DATA_NAME += "_vC"
-    EMBEDDING_CLASS = CVEmbeddingVC
-
-elif "--v1" in sys.argv:
-    V1 = True
-    VA = True
-    DATA_NAME += "_v1"
-    EMBEDDING_CLASS = CVEmbeddingV1
-elif "--v2" in sys.argv:
-    V2 = True
-    VA = True
-    DATA_NAME += "_v2"
-    EMBEDDING_CLASS = CVEmbeddingV2
-
-elif "--v1C" in sys.argv:
-    V1 = True
-    VC = True
-    DATA_NAME += "_v1C"
-    EMBEDDING_CLASS = CVEmbeddingV1C
-
-elif"--v2C" in sys.argv:
-    V2 = True
-    VC = True
-    DATA_NAME += "_v2C"
-    EMBEDDING_CLASS = CVEmbeddingV2C
-
-elif "--v3" in sys.argv or "--v3C" in sys.argv:
-    V3 = True
-    VC = True
-    DATA_NAME += "_v3C"
-    EMBEDDING_CLASS = CVEmbeddingV3C
-
-else:
-    DATA_NAME += "_v0"
-    EMBEDDING_CLASS = CVEmbedding
-    V0 = True
-    VA = True
-
-log(1, "DATA NAME:", DATA_NAME)
-
-
-
-log("start", "Embeddings")
-log("title", "Embeddings")
-
-LR = 0.0001
-if "--lr" in sys.argv:
-    LR = float(sys.argv[sys.argv.index("--lr") + 1])
-log(1, f"Learning rate: {LR}")
-
-MODEL_NAME = "Hope"
-if "--model" in sys.argv:
-    MODEL_NAME = sys.argv[sys.argv.index("--model") + 1]
-MODEL_CLASS = getattr(models, MODEL_NAME)
-log(1, f"Model: {MODEL_CLASS}")
-
-dataset = EmbeddingDataset(name=f"tokens_{DATA_NAME}")
-
-if not ("--rebuild" in sys.argv or "--force" in sys.argv):
-    dataset.load()
-log(2, dataset)
-total_files = len(os.listdir(DATA_FOLDER))
-if len(dataset) == 0:
-    log("ERROR", "Datest is empty:", dataset)
-    exit()
-
-#dataset.sequence_db()
-#dataset.cluster(reassign=True, verbosity=3)
-#dataset.save()
-
-dataset.align(verbose=True, build_tree=True)
-dataset.save()
-log("end", "Embeddings")
-
-model = None
-
-log("start", "Tokenisation")
-log("title", "Tokenisation")
-
-if model is None:
-    log("header", "Loading saved model...")
-    model_data_path = sys.argv[sys.argv.index("--md") + 1]
-    log(1, "Model path:", model_data_path)
-    data = json.load(open(model_data_path))
-    log(1, "Model class (data):", data.get("model"))
-    model_class = getattr(models, data.get("model"))
-
-    model = model_class(name="inference", in_shape=data.get("in_shape"), inference=True)
-    model.load(model_data_path)
-else:
-    log("header", "Using loaded model...")
-
-log(1, "Model:", model)
-log(1, "Dataset:", dataset)
-
-#tok_fasta = model._tokenise(dataset)
-
-
-
-#matrix_path = model._build_blossum()
-#model._align_tokens(dataset, tok_fasta, matrix="path", matrix_path=matrix_path, force=True)
-model.plot_latent_space(show=True, mesh_points=50, dataset=dataset)
-
-
-
+    if embedding is None:
+        log("warning", "No embedding for file:", file)
+        continue
+    if "1M2Z" in file:
+        [print(r, e) for r, e in zip(entity.residues(), embedding.tensor())]
+        # entity.fragment().show_cvectors()
 
 
 

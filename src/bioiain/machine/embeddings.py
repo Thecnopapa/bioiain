@@ -21,6 +21,8 @@ class FoldseekError(Exception):
 
 
 
+
+
 class Embedding(object):
     def __init__(self, *args, name=None, folder=None, **kwargs):
         assert name is not None
@@ -214,9 +216,10 @@ class CVEmbeddingV3(CVEmbeddingV2):
         e, seq = super()._cvectors_to_embedding(cvectors, modulo_norm, max_dist, **kwargs)
 
         #TODO: Calculate SASA
-        self.entity.sasa
+        self.entity.calculate_sasa()
         for emb, cv in zip(e, cvectors):
-            sasa = None
+            sasa = cv.res2.sasa()
+            print("Final:", sasa)
             emb.append(sasa)
         return e, seq
 

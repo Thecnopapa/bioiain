@@ -3,6 +3,7 @@ import os, sys, math, json
 import numpy as np
 from sklearn.neighbors import KDTree
 
+from ..base import PseudoAtom, BIAtom
 from ..utilities import log
 
 atomic_radii = {
@@ -66,6 +67,7 @@ class SASA(object):
         self.ball_radius = ball_radius
         self.n_points = n_points
         global atomic_radii
+        self.radii_dict_name = radii_dict
         self.radii_dict = atomic_radii[radii_dict]
 
         self._sphere = self._compute_sphere()
@@ -91,7 +93,6 @@ class SASA(object):
         return coords
 
     def compute(self, entity, targets=None, save_sasas=None, force=False, quiet=False, **kwargs):
-        from ..base import PseudoAtom
         if not quiet:
             log(2, "Computing ASA...")
 
@@ -106,7 +107,7 @@ class SASA(object):
         n_atoms = 0
         for a in kdt.atoms:
             n_atoms += 1
-            if a in self.radii_dict:
+            if a.element in self.radii_dict:
                 radii_list.append(self.radii_dict[a.element])
             else:
                 radii_list.append(self.radii_dict["other"])
@@ -124,14 +125,16 @@ class SASA(object):
         if targets is None:
             if save_sasas is None:
                 save_sasas = True
-            targets = kdt.coords
-        elif save_sasas is None:
-            save_sasas = False
+            targets = kdt.atoms
+        else:
+            targets = [PseudoAtom(c) for c in targets]
+            if save_sasas is None:
+                save_sasas = False
 
         asa_array = np.zeros((len(targets), 1), dtype=np.int64)
         target_radii = []
         for a in targets:
-            if a in self.radii_dict:
+            if a.element in self.radii_dict:
                 target_radii.append(self.radii_dict[a.element])
             else:
                 target_radii.append(self.radii_dict["other"])
@@ -171,9 +174,9 @@ class SASA(object):
                 if isinstance(atom, PseudoAtom):
                     atom.set_misc("SASA", float(asa[0]))
             entity.set_flag("sasa_calculated", True)
-            entity.data["SASA"]["ball_radius"] = sasa.ball_radius
-            entity.data["SASA"]["n_points"] = sasa.n_points
-            entity.data["SASA"]["radii_dict"] = sasa.radii_dict
+            entity.data["SASA"]["ball_radius"] = self.ball_radius
+            entity.data["SASA"]["n_points"] = self.n_points
+            entity.data["SASA"]["radii_dict"] = self.radii_dict_name
             entity.data["SASA"]["average"] = None
         return asa_array
 
@@ -191,7 +194,7 @@ class KDT(object):
             atoms = coords_or_entity.atoms(hetatm=True)
             coords = np.array([a.coord for a in atoms], dtype=np.float64)
         else:
-            atoms = None
+            atoms = [PseudoAtom(c) for c in coords_or_entity]
             coords = np.array(coords_or_entity)
 
         self.atoms = atoms

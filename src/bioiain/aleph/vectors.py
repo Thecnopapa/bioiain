@@ -53,9 +53,12 @@ class CVector(object):
 
         self.calculate()
 
+    def full_id(self):
+        return f"{self.chain}_{self.fragment}_{self.resseq}_{self.resname}_{self.resnum}"
 
     def _mmcif_dict(self):
         d =  dict(
+            id=self.full_id(),
             chain=self.chain,
             fragment=self.fragment,
             resseq=self.resseq,
@@ -64,6 +67,7 @@ class CVector(object):
             d=f"{self.d:8.3f}",
             start_x=f"{self.start.coord[0]:8.3f}", start_y=f"{self.start.coord[1]:8.3f}", start_z=f"{self.start.coord[2]:8.3f}",
             end_x=f"{self.end.coord[0]:8.3f}", end_y=f"{self.end.coord[1]:8.3f}", end_z=f"{self.end.coord[2]:8.3f}",
+            vc_x=f"{self.vc.coord[0]:8.3f}", vc_y=f"{self.vc.coord[1]:8.3f}", vc_z=f"{self.vc.coord[2]:8.3f}",
             closest_resseq=self.closest.resseq if self.closest is not None else None,
             closest_resnum=self.closest.resnum if self.closest is not None else None,
             closest_chain=self.closest.chain if self.closest is not None else None,
@@ -192,6 +196,33 @@ class CVPair(object):
             self.dlig = min([d for d in (self.v1.dist_to_lig, self.v2.dist_to_lig) if d is not None])
         except:
             raise
+
+    def _mmcif_dict(self):
+        data = {
+            "cv1_id": self.v1.full_id(),
+            "cv2_id": self.v2.full_id(),
+            "resnum_1": self.v1.resnum,
+            "chain1": self.v1.chain,
+            "fragment1": self.v1.fragment,
+            "resnum_2": self.v2.resnum,
+            "chain2": self.v2.chain,
+            "fragment2": self.v2.fragment,
+            "opn_of_v2": self.opn_of_v2,
+            "pos_of_v2": self.v2.pos,
+            "d": f"{self.d:8.3f}",
+            "a": f"{self.a:8.3f}",
+            "t1": f"{self.t1:8.3f}",
+            "t2": f"{self.t2:8.3f}",
+            "da": f"{self.da:8.3f}",
+            "dlig": f"{self.dlig:8.3f}",
+            "v_x": f"{self.v[0]:8.3f}",
+            "v_y": f"{self.v[1]:8.3f}",
+            "v_z": f"{self.v[2]:8.3f}"
+        }
+        return data
+
+
+
 
 class CVMatrix(object):
     def __init__(self, cvector_list, vc_mode=None):

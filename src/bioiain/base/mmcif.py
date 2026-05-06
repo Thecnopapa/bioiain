@@ -442,6 +442,8 @@ def write_dict_list(data, label, file_path, name=None, mode="w", **kwargs):
     if not label.startswith("_"):
         label = "_" + label
 
+    log(3, "Writing dict list to:", file_path)
+    log(4, "Label:", label)
 
     keys = ["n"]
 

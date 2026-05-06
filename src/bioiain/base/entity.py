@@ -468,6 +468,8 @@ class BIEntity(object):
 
 
     def _export_structure(self, filepath:str, atoms:list=None, headers:bool=None, misc_fields:bool=True, cleanup=False, as_pdb=False, cvectors=True, cvmatrix=True) -> str:
+
+        log(2,"Exporting structure...")
         mode = "w"
         if atoms is None:
             if cleanup:
@@ -491,8 +493,15 @@ class BIEntity(object):
                     write_dict(d, file_path=filepath, label=k, mode=mode, name=self.name())
                     mode = "a"
 
+
+            print("CVECTORS", cvectors, self._cvectors is not None)
+            print("CVMATRIX", cvmatrix, getattr(self, "_cvmatrix", None) is not None)
+
             if cvectors and self._cvectors is not None:
                 write_dict_list(self._cvectors, file_path=filepath, label="aleph_cvectors", mode=mode, name=self.name())
+                mode = "a"
+            if cvmatrix and getattr(self, "_cvmatrix", None) is not None:
+                write_dict_list([v.closest_vp for v in self._cvmatrix.vectors], file_path=filepath, label="aleph_cvmatrix", mode=mode, name=self.name())
                 mode = "a"
 
             return write_atoms(atoms, filepath, name=self.name(), include_misc=misc_fields, mode=mode)
@@ -751,13 +760,13 @@ class BIEntity(object):
         return self.data["SASA"]["average"]
 
     def sasa_list(self, **kwargs):
-        self._calculate_sasa(**kwargs)
+        self.calculate_sasa(**kwargs)
         sasas = []
         for a in self.atoms(**kwargs):
             sasas.append(a.get_misc("SASA", None))
         return sasas
 
-    def _calculate_sasa(self, **kwargs):
+    def calculate_sasa(self, **kwargs):
         if not self.has_flag("sasa_calculated"):
             from ..tools.SASA import SASA
             sasa = SASA(**kwargs)

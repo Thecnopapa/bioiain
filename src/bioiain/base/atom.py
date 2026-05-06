@@ -20,6 +20,7 @@ class PseudoAtom(object):
         self._all_is_frac = False
         self._last_centre = None
         self._sym_coords = {}
+        self.element = getattr(self, "element", None)
 
     def __repr__(self):
         return f"<bi.{self.__class__.__name__} at: {self.coord} (frac:{self.is_fractional})>"
@@ -469,7 +470,16 @@ class BIAtom(PseudoAtom):
     def _none_point(val):
         if val is None:
             return "."
-        return str(val)
+        if type(val) == float:
+            return f"{val:7.3f}"
+        elif type(val) == int:
+            return f"{val:>3d}"
+        elif type(val) in [list, tuple, dict]:
+            log("warning", "Data type not insertable in mmcif:", type(val))
+            return "."
+        else:
+            return f"{str(val):<3s}"
+
 
     def _mmcif_dict(self, include_misc=True):
 
@@ -510,6 +520,7 @@ class BIAtom(PseudoAtom):
 
 
         except Exception as e:
+            log("ERROR", "Generating atom mmcif dict")
             print(self)
             print(self.__dict__)
             raise e
@@ -517,9 +528,7 @@ class BIAtom(PseudoAtom):
 
         if include_misc:
             for k, v in self.misc.items():
-                data[k] = f"{self._none_point(v):>3s}"
-
-
+                data[k] = self._none_point(v)
         return data
 
 

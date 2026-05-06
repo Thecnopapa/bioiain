@@ -63,6 +63,9 @@ class BIResidue(object):
         self.is_residue = True
         self.is_disordered = False
 
+        self._av_sasa = None
+        self._norm_sasa = None
+
 
             
 
@@ -139,8 +142,34 @@ class BIResidue(object):
             a.set_bfactor(bfactor)
         return self
 
-    def sasa(self):
-        pass
+    def sasa(self, normalised=False, force=False):
+        if normalised:
+            if self._norm_sasa is None or force:
+                self._read_sasa()
+            return self._norm_sasa
+        else:
+            if self._av_sasa is None or force:
+                self._read_sasa()
+            return self._av_sasa
+
+    def _read_sasa(self):
+        from ..tools.SASA import residue_sasas
+        av = 0
+        total = 0
+        for a in self.atoms:
+            s = a.get_misc("SASA")
+            print("saved:", s)
+            av += s
+            total += 1
+        av /= total if total != 0 else None
+        print("av:", av)
+        self._av_sasa = av
+        self._norm_sasa = min(1, av / residue_sasas[self.resname]) if self.resname in residue_sasas and av is not None else None
+        print("norm_sasa:", self._norm_sasa)
+        return self._av_sasa
+
+
+
 
 
 class BINucleoutide(object):

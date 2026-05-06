@@ -112,16 +112,16 @@ def log(level:int|str=1, *args, **kwargs):
 
         elif v > -1:
             if level == "warning":
-                print("\033[93m")
+                print("\033[93m",end="")
                 print("WARNING: ", end="")
                 print(*args, **kwargs)
-                print("\033[0m")
+                print("\033[0m",end="")
             elif level == "debug":
                 print(*args, **kwargs)
             elif level == "title":
-                print("\033]0;")
+                print("\033]0;",end="")
                 print(*args, **kwargs)
-                print("\a")
+                print("\a",end="")
             elif v > 0:
                 if level == 0 or level is None:
                     print(*args, **kwargs)

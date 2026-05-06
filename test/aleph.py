@@ -55,6 +55,16 @@ elif "lbds" in sys.argv:
     else:
         DATA_FOLDER = "./data/lbds"
     DATA_NAME = "lbds"
+
+elif "consensus" in sys.argv:
+    if not "--no-download" in sys.argv:
+        DATA_FOLDER = downloadPDB("./data", "consensus",
+                                  file_path="./data/consensus.txt",
+                                  file_format="cif",
+                                  overwrite=False)
+    else:
+        DATA_FOLDER = "./data/consensus"
+    DATA_NAME = "consensus"
 else:
     DATA_FOLDER = downloadPDB( list_name="aleph", pdb_list=["1M2Z", "3HBB", "6F63", "5LXN", "3brf", "6e52", "7t2y", "3kg2", "2GEJ", "2bis"], data_dir="./data" )
     DATA_NAME = "aleph"
@@ -259,7 +269,9 @@ if "--tokenise" in sys.argv or "-t" in sys.argv:
     log(1, "Dataset:", dataset)
 
     tok_fasta = model._tokenise(dataset)
-    model._align_tokens(dataset, tok_fasta)
+    matrix_path = model._build_blossum()
+    model._align_tokens(dataset, tok_fasta, matrix="path", matrix_path=matrix_path, force=True)
+    #model._align_tokens(dataset, tok_fasta)
 
 
 
