@@ -67,17 +67,17 @@ for file in os.listdir(DATA_FOLDER):
     if "1M2Z" not in file.upper():
         continue
 
-    entity = BIEntity.from_file(os.path.join(DATA_FOLDER, file))
+    entity = FragmentedStructure.from_file(os.path.join(DATA_FOLDER, file))
     entity.calculate_sasa()
     entity.export()
-    embedding = CVEmbeddingV3C(entity=entity).embedding(force="--force" in sys.argv)
+    embedding = CVEmbeddingV3C(entity=entity).embedding(force=True)
     entity.export()
 
     if embedding is None:
         log("warning", "No embedding for file:", file)
         continue
-    if "1M2Z" in file:
-        [print(r, e) for r, e in zip(entity.residues(), embedding.tensor())]
+
+    [print(r, e) for r, e in zip(entity.residues(), embedding.tensor())]
         # entity.fragment().show_cvectors()
 
 

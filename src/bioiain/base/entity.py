@@ -766,8 +766,8 @@ class BIEntity(object):
             sasas.append(a.get_misc("SASA", None))
         return sasas
 
-    def calculate_sasa(self, **kwargs):
-        if not self.has_flag("sasa_calculated"):
+    def calculate_sasa(self, force=False, **kwargs):
+        if not self.has_flag("sasa_calculated") or force:
             from ..tools.SASA import SASA
             sasa = SASA(**kwargs)
             sasa.compute(self, **kwargs)

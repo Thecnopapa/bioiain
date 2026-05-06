@@ -215,11 +215,9 @@ class CVEmbeddingV3(CVEmbeddingV2):
 
         e, seq = super()._cvectors_to_embedding(cvectors, modulo_norm, max_dist, **kwargs)
 
-        #TODO: Calculate SASA
         self.entity.calculate_sasa()
         for emb, cv in zip(e, cvectors):
-            sasa = cv.res2.sasa()
-            print("Final:", sasa)
+            sasa = cv.res2.sasa(normalised=True)
             emb.append(sasa)
         return e, seq
 

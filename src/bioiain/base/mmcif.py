@@ -302,7 +302,7 @@ def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list
                         assert len(set(group_key)) == 1
                     except AssertionError:
                         print(group_key)
-                        log("warning", f"Multiple keys structure found in line {n}:", repr(line))
+                        log("error", f"Multiple keys structure found in line {n}:", repr(line))
                         exit()
                         continue
                     group_key = group_key[0]

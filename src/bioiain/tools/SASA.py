@@ -127,7 +127,7 @@ class SASA(object):
                 save_sasas = True
             targets = kdt.atoms
         else:
-            targets = [PseudoAtom(c) for c in targets]
+            targets = [PseudoAtom(c) if not isinstance(c, PseudoAtom) else c for c in targets]
             if save_sasas is None:
                 save_sasas = False
 
