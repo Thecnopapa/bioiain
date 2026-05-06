@@ -767,6 +767,10 @@ class HopeFull(Hope):
     def __init__(self, *args, hidden_dims=None, **kwargs):
         super().__init__(*args, hidden_dims=(50,50), **kwargs)
 
+class HopeFullMax(Hope):
+    def __init__(self, *args, hidden_dims=None, **kwargs):
+        super().__init__(*args, hidden_dims=(100,100), **kwargs)
+
 
 ########################################################################################################################
 
