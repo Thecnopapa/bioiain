@@ -139,6 +139,10 @@ class BIResidue(object):
             a.set_bfactor(bfactor)
         return self
 
+    def sasa(self):
+        pass
+
+
 class BINucleoutide(object):
     child_class = BIAtom
     type="dna"

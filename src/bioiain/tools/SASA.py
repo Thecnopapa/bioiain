@@ -32,6 +32,30 @@ atomic_radii = {
     }
 }
 
+residue_sasas = {
+    "ALA": 129.0,
+    "ARG": 274.0,
+    "ASN": 195.0,
+    "ASP": 193.0,
+    "CYS": 167.0,
+    "GLU": 223.0,
+    "GLN": 225.0,
+    "GLY": 104.0,
+    "HIS": 224.0,
+    "ILE": 197.0,
+    "LEU": 201.0,
+    "LYS": 236.0,
+    "MET": 224.0,
+    "PHE": 240.0,
+    "PRO": 159.0,
+    "SER": 155.0,
+    "THR": 172.0,
+    "TRP": 285.0,
+    "TYR": 263.0,
+    "VAL": 174.0,
+}
+
+
 
 class SASA(object):
     def __init__(self, ball_radius=1.40, n_points=100, radii_dict="default", **kwargs):

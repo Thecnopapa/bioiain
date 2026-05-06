@@ -767,7 +767,7 @@ class BIEntity(object):
     def assembly_level(self):
         pass
 
-    def _calculate_pisasa(self, **kwargs):
+    def _calculate_pisa(self, **kwargs):
         from ..tools.PISA import PISA
         pisa = PISA(pisa_id=self.name(), **kwargs)
 
