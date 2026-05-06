@@ -184,7 +184,6 @@ class CVEmbeddingV1C(CVEmbeddingV1, CVEmbeddingVC):
 class CVEmbeddingV2(CVEmbeddingV1):
     """
     CV embedding: 6 params [l(i), l(j) , a(ij), d(ij), d(l), cont].
-    5th parameter is distance to the closest ligand.
     6th parameter is contactability.
     """
 
@@ -193,19 +192,20 @@ class CVEmbeddingV2(CVEmbeddingV1):
         e, seq = super()._cvectors_to_embedding(cvectors, modulo_norm, max_dist, **kwargs)
 
         for emb, cv in zip(e, cvectors):
-            print(cv.chain, cv.closest.chain, cv.chain != cv.closest.chain, cv.closest_opn)
-            if cv.chain != cv.closest.chain or (cv.closest_opn is not None or cv.closest_opn == 1): # TODO: Fix
+            #print(cv.chain, cv.closest.chain, cv.chain != cv.closest.chain, cv.closest_opn, cv.closest_opn not in [None, 1])
+            if cv.chain != cv.closest.chain or cv.closest_opn not in [None, 1]:
                 is_contact = True
             else:
                 is_contact = False
             emb.append(int(is_contact))
         return e, seq
 
+class CVEmbeddingV2C(CVEmbeddingV2, CVEmbeddingVC):
+    pass
+
 class CVEmbeddingV3(CVEmbeddingV2):
     """
     CV embedding: 7 params [l(i), l(j) , a(ij), d(ij), d(l), cont, SASA].
-    5th parameter is distance to the closest ligand.
-    6th parameter is contactability.
     7th parameter is residue SASA.
     """
 
@@ -219,6 +219,31 @@ class CVEmbeddingV3(CVEmbeddingV2):
             emb.append(sasa)
         return e, seq
 
+class CVEmbeddingV3C(CVEmbeddingV3, CVEmbeddingVC):
+    pass
+
+class CVEmbeddingV4(CVEmbeddingV3):
+    """
+    CV embedding: 10 params [l(i), l(j) , a(ij), d(ij), d(l), cont, SASA, dihedral, theta1, theta2].
+    8th parameter is the dihedral angle between CVs.
+    9th parameter is the angle between CV1 and ij.
+    10th parameter is the angle between CV2 and ij.
+    """
+
+    def _cvectors_to_embedding(self, cvectors, modulo_norm, max_dist, **kwargs):
+
+        e, seq = super()._cvectors_to_embedding(cvectors, modulo_norm, max_dist, **kwargs)
+
+        for emb, cv in zip(e, cvectors):
+            i_j = cv.closest_vp
+            da = min(1, i_j / 180)
+            t1 = min(1, i_j.t1 / 180)
+            t2 = min(1, i_j.t2 / 180)
+            emb.extend([da, t1 , t2])
+        return e, seq
+
+class CVEmbeddingV4C(CVEmbeddingV4, CVEmbeddingVC):
+    pass
 
 
 

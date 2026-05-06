@@ -184,6 +184,7 @@ class CVPair(object):
         self.a = angle_between_vectors(self.v1.v, self.v2.v)
         self.t1 = angle_between_vectors(self.v1.v, self.v)
         self.t2 = angle_between_vectors(self.v2.v, self.v)
+        self.da = dihedral_angle(self.v1.end, self.v1.start, self.v2.start, self.v2.end)
         return self
 
     def map_lig(self):

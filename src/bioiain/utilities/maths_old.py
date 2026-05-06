@@ -59,24 +59,7 @@ def dihedral_angle(p0, p1, p2, p3):
     y = np.dot(np.cross(b1, v), w)
     return np.degrees(np.arctan2(y, x))
 
-def dihedral_angle2(p0, p1, p2, p3):
-    b0 = scale(vector(p0, p1), -1.0)
-    b1 = vector(p1, p2)
-    b2 = vector(p2, p3)
-    b1 /= np.linalg.norm(b1)
-    v = b0 - np.dot(b0, b1) * b1
-    w = b2 - np.dot(b2, b1) * b1
-    x = np.dot(v, w)
-    y = np.dot(np.cross(b1, v), w)
-    return np.degrees(np.arctan2(y, x))
 
-def dihedral_angle_diff(angle1, angle2):
-    a1 = (angle1+360)%360
-    a2 = (angle2+360)%360
-    print(angle1, angle2)
-    print(a1, a2, a1-a2)
-    diff = a1-a2
-    return diff
 def angle_modulus(angle):
     return (angle + 360) % 360
 
