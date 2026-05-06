@@ -168,7 +168,7 @@ class BIResidue(object):
         av = summ / total if total != 0 else None
         self._sasa = summ
         self._av_sasa = av
-        self._norm_sasa = min(1, av / residue_sasas[self.resname]) if self.resname in residue_sasas and av is not None else None
+        self._norm_sasa = min(1, summ / residue_sasas[self.resname]) if self.resname in residue_sasas and av is not None else None
         print( self._av_sasa, self._sasa, residue_sasas[self.resname], self._norm_sasa)
         return self._sasa
 
