@@ -123,6 +123,12 @@ elif "--v3" in sys.argv or "--v3C" in sys.argv:
     DATA_NAME += "_v3C"
     EMBEDDING_CLASS = CVEmbeddingV3C
 
+elif "--v4" in sys.argv or "--v4C" in sys.argv:
+    V4 = True
+    VC = True
+    DATA_NAME += "_v4C"
+    EMBEDDING_CLASS = CVEmbeddingV4C
+
 else:
     DATA_NAME += "_v0"
     EMBEDDING_CLASS = CVEmbedding

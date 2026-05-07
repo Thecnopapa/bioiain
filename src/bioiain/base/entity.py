@@ -493,14 +493,17 @@ class BIEntity(object):
                     write_dict(d, file_path=filepath, label=k, mode=mode, name=self.name())
                     mode = "a"
 
-
+            print(self)
             print("CVECTORS", cvectors, self._cvectors is not None)
+            print(self._cvectors)
             print("CVMATRIX", cvmatrix, getattr(self, "_cvmatrix", None) is not None)
+            print(getattr(self, "_cvmatrix", None))
 
-            if cvectors and self._cvectors is not None:
+
+            if cvectors and (self._cvectors is not None):
                 write_dict_list(self._cvectors, file_path=filepath, label="aleph_cvectors", mode=mode, name=self.name())
                 mode = "a"
-            if cvmatrix and getattr(self, "_cvmatrix", None) is not None:
+            if cvmatrix and (getattr(self, "_cvmatrix", None) is not None):
                 write_dict_list([v.closest_vp for v in self._cvmatrix.vectors], file_path=filepath, label="aleph_cvmatrix", mode=mode, name=self.name())
                 mode = "a"
 

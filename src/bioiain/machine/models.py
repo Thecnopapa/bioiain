@@ -540,7 +540,7 @@ class Hope(DespairLess):
             else:
                 latent = o_latent
 
-            names = ["tokens", "len i", "len j", "angle ij", "dist ij", "dist lig", "contactability"]
+            names = ["tokens", "len i", "len j", "angle ij", "dist ij", "dist lig", "contactability", "SASA", "dihedral", "t1", "t2"]
 
             if mesh:
                 x_min = min([l[0] for l in latent])

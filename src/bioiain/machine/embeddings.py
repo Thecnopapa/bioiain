@@ -238,7 +238,7 @@ class CVEmbeddingV4(CVEmbeddingV3):
 
         for emb, cv in zip(e, cvectors):
             i_j = cv.closest_vp
-            da = min(1, i_j / 180)
+            da = min(1, i_j.da / 180)
             t1 = min(1, i_j.t1 / 180)
             t2 = min(1, i_j.t2 / 180)
             emb.extend([da, t1 , t2])
