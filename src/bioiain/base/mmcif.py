@@ -480,7 +480,7 @@ def write_dict_list(data, label, file_path, name=None, mode="w", **kwargs):
             for n, d in enumerate([d for d in data if d is not None]):
                 if get_dict:
                     d = d._mmcif_dict(**kwargs)
-                    f.write(f"{n}  "+"  ".join([quote_if_necessary(v) for v in d.values()]) + "\n")
+                    f.write(f"{n:4d}  "+"  ".join([quote_if_necessary(v) for v in d.values()]) + "\n")
 
         return file_path
     except Exception as e:

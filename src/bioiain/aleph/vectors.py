@@ -1,5 +1,6 @@
 import os, json
 import numpy as np
+from plotly.express.trendline_functions import expanding
 
 from .. import SUBDIR_NAME
 from ..utilities.logging import log
@@ -59,25 +60,25 @@ class CVector(object):
 
     def _mmcif_dict(self):
         d =  dict(
-            id=self.full_id(),
+            id=f"{self.full_id():18s}",
             chain=self.chain,
-            fragment=self.fragment,
-            resseq=self.resseq,
-            resname=self.resname,
-            resnum=self.resnum,
+            fragment=f"{self.fragment:2d}" if self.fragment else ". ",
+            resseq=f"{self.resseq:3d}",
+            resname=f"{self.resname:3s}",
+            resnum=f"{self.resnum:3d}",
             d=f"{self.d:8.3f}",
             start_x=f"{self.start.coord[0]:8.3f}", start_y=f"{self.start.coord[1]:8.3f}", start_z=f"{self.start.coord[2]:8.3f}",
             end_x=f"{self.end.coord[0]:8.3f}", end_y=f"{self.end.coord[1]:8.3f}", end_z=f"{self.end.coord[2]:8.3f}",
             vc_x=f"{self.vc.coord[0]:8.3f}", vc_y=f"{self.vc.coord[1]:8.3f}", vc_z=f"{self.vc.coord[2]:8.3f}",
-            closest_resseq=self.closest.resseq if self.closest is not None else None,
-            closest_resnum=self.closest.resnum if self.closest is not None else None,
+            closest_resseq=f"{self.closest.resseq:3d}" if self.closest is not None else " . ",
+            closest_resnum=f"{self.closest.resnum:3d}" if self.closest is not None else " . ",
             closest_chain=self.closest.chain if self.closest is not None else None,
             closest_fragment=self.closest.fragment if self.closest is not None else None,
             closest_pos="_".join([str(p) for p in self.closest_pos]) if self.closest_pos is not None else None,
-            closest_opn=self.closest_opn,
-            closest_lig_name=self.closest_lig.name if self.closest_lig is not None else None,
-            closest_lig_chain=self.closest_lig.chain if self.closest_lig is not None else None,
-            dist_to_lig=f"{self.dist_to_lig:8.3f}" if self.dist_to_lig is not None else None,
+            closest_opn=f"{self.closest_opn:2d}",
+            closest_lig_name=f"{self.closest_lig.name:3s}" if self.closest_lig is not None else " . ",
+            closest_lig_chain=f"{self.closest_lig.chain}" if self.closest_lig is not None else " . ",
+            dist_to_lig=f"{self.dist_to_lig:8.3f}" if self.dist_to_lig is not None else "       .",
         )
         for k, v in d.items():
             if v is None:
@@ -108,7 +109,7 @@ class CVector(object):
         if self.vc_mode is None:
             self.vc = self.start.copy()
         elif self.vc_mode == "ca_projection":
-            ca = self.res2.ca.coord
+            ca = selfpos.res2.ca.coord
             start_ca = vector(self.start.coord, ca)
             self.vc =  PseudoAtom((start_ca[0] + ca[0], start_ca[1] + ca[1], start_ca[2] + ca[2]))
         else:
@@ -126,18 +127,22 @@ class CVector(object):
 
         return self
 
+
+    def pair(self, target, **kwargs):
+        return CVPair(self, target, **kwargs)
+
     def __mod__(self, target):
-        return CVPair(self, target)
+        return self.pair(target)
 
 
 
 
 class CVPair(object):
-    def __init__(self, cvec1, cvec2):
+    def __init__(self, cvec1, cvec2, recalculate=False, **kwargs):
         self.v1 = cvec1
         self.v2 = cvec2
-        self.opn_of_v2 = None
-        self.pos_of_v2 = None
+        self.opn_of_v2 = kwargs.get("opn_of_v2", None)
+        self.pos_of_v2 = kwargs.get("pos_of_v2", None)
 
         self.chain1 = self.v1.chain
         self.chain2 = self.v2.chain
@@ -148,13 +153,15 @@ class CVPair(object):
         self.fragment1 = self.v1.fragment
         self.fragment2 = self.v2.fragment
 
-        self.dlig = None
+        self.dlig = kwargs.get("dlig", None)
 
-        self.v = None
-        self.d = None
-        self.a = None
-        self.t1 = None
-        self.t2 = None
+        self.v = kwargs.get("v", None)
+        self.d = kwargs.get("d", None)
+        self.a = kwargs.get("a", None)
+        self.t1 = kwargs.get("t1", None)
+        self.t2 = kwargs.get("t2", None)
+        self.da = kwargs.get("da", None)
+
 
         self.calculate()
 
@@ -167,58 +174,67 @@ class CVPair(object):
 
     def calculate(self):
 
-
-        
         if self.v2.params is not None and self.v2.symops is not None:
-            self.v1.vc.to_frac(self.v2.params)
-            self.v2.vc.to_frac(self.v2.params)
-            coord, d, opn, pos = self.v2.vc.closest(self.v1.vc.coord, symops=self.v2.symops, params=self.v2.params, centre=self.v2.entity_centre)
+            if any([v is None for v in [self.d, self.v, self.opn_of_v2, self.pos_of_v2]]):
+                self.v1.vc.to_frac(self.v2.params)
+                self.v2.vc.to_frac(self.v2.params)
+                coord, d, opn, pos = self.v2.vc.closest(self.v1.vc.coord, symops=self.v2.symops, params=self.v2.params, centre=self.v2.entity_centre)
 
-            self.d = d
-            self.opn_of_v2 = opn
-            self.pos_of_v2 = pos
-            self.v1.vc.to_orth(self.v2.params)
-            self.v2.vc.to_orth(self.v2.params)
-            self.v = vector(self.v1.vc.coord, coord)
+                self.d = d
+                self.opn_of_v2 = opn
+                self.pos_of_v2 = pos
+                self.v1.vc.to_orth(self.v2.params)
+                self.v2.vc.to_orth(self.v2.params)
+                self.v = vector(self.v1.vc.coord, coord)
         else:
-            self.v = vector(self.v1.vc.coord, self.v2.vc.coord)
-            self.d = flength(self.v)
+            if self.v is None:
+                self.v = vector(self.v1.vc.coord, self.v2.vc.coord)
+            if self.d is None:
+                self.d = flength(self.v)
 
 
         #print(self.v, self.d)
-        self.a = angle_between_vectors(self.v1.v, self.v2.v)
-        self.t1 = angle_between_vectors(self.v1.v, self.v)
-        self.t2 = angle_between_vectors(self.v2.v, self.v)
-        self.da = dihedral_angle(self.v1.end, self.v1.start, self.v2.start, self.v2.end)
+        if self.a is None:
+            self.a = angle_between_vectors(self.v1.v, self.v2.v)
+        if self.t1 is None:
+            self.t1 = angle_between_vectors(self.v1.v, self.v)
+        if self.t2 is None:
+            self.t2 = angle_between_vectors(self.v2.v, self.v)
+        if self.da is None:
+            self.da = dihedral_angle(self.v1.end, self.v1.start, self.v2.start, self.v2.end)
+
         return self
 
     def map_lig(self):
         try:
-            self.dlig = min([d for d in (self.v1.dist_to_lig, self.v2.dist_to_lig) if d is not None])
+            dlig = min([d for d in (self.v1.dist_to_lig, self.v2.dist_to_lig) if d is not None], default=None)
+            self.dlig = dlig
+
         except:
             raise
 
     def _mmcif_dict(self):
         data = {
-            "cv1_id": self.v1.full_id(),
-            "cv2_id": self.v2.full_id(),
-            "resnum_1": self.v1.resnum,
-            "chain1": self.v1.chain,
-            "fragment1": self.v1.fragment,
-            "resnum_2": self.v2.resnum,
-            "chain2": self.v2.chain,
-            "fragment2": self.v2.fragment,
-            "opn_of_v2": self.opn_of_v2,
-            "pos_of_v2": self.v2.pos,
-            "d": f"{self.d:8.3f}",
-            "a": f"{self.a:8.3f}",
-            "t1": f"{self.t1:8.3f}",
-            "t2": f"{self.t2:8.3f}",
-            "da": f"{self.da:8.3f}",
-            "dlig": f"{self.dlig:8.3f}",
-            "v_x": f"{self.v[0]:8.3f}",
-            "v_y": f"{self.v[1]:8.3f}",
-            "v_z": f"{self.v[2]:8.3f}"
+            "cv1_id": f"{self.v1.full_id():18s}",
+            "cv2_id": f"{self.v2.full_id():18s}",
+            "resnum_1": f"{self.v1.resnum:3d}" if self.v1.resnum is not None else " . ",
+            "chain1": self.v1.chain if self.v1.chain is not None else ".",
+            "fragment1": f"{self.v1.fragment:2d}" if self.v1.fragment is not None else " .",
+            "resnum_2": f"{self.v2.resnum:3d}" if self.v2.resnum is not None else " . ",
+            "chain2": self.v2.chain if self.v2.chain is not None else ".",
+            "fragment2": f"{self.v2.fragment:2d}" if self.v2.fragment is not None else " .",
+            "opn_of_v2": self.opn_of_v2 if self.opn_of_v2 is not None else ".",
+            "pos_of_v2": self.pos_of_v2 if self.pos_of_v2 is not None else ".",
+            "v_x": f"{self.v[0]:8.3f}" if self.v is not None else ".",
+            "v_y": f"{self.v[1]:8.3f}" if self.v is not None else ".",
+            "v_z": f"{self.v[2]:8.3f}" if self.v is not None else ".",
+            "d": f"{self.d:8.3f}" if self.d is not None else "       .",
+            "a": f"{self.a:8.3f}" if self.a is not None else "       .",
+            "t1": f"{self.t1:8.3f}" if self.t1 is not None else "       .",
+            "t2": f"{self.t2:8.3f}" if self.t2 is not None else "       .",
+            "da": f"{self.da:8.3f}" if self.da is not None else "       .",
+            "dlig": f"{self.dlig:8.3f}" if self.dlig is not None else "       .",
+
         }
         return data
 
@@ -337,7 +353,7 @@ class CVMatrix(object):
             vc = v["vc"]
 
 
-            radius = 5
+            radius = 10
             neighs_found=False
             while radius <= max_distance:
                 neighbors, distances = tree.of(vc, radius=radius, distances=True)
@@ -348,25 +364,45 @@ class CVMatrix(object):
                     raise Exception()
 
 
-                targets = [(tree.atom_of(neigh), d) for neigh, d in zip(neighbors, distances)]
+                potential = [(tree.atom_of(neigh)._nnk, tree.atom_of(neigh), tree.op_of(neigh), tree.pos_of(neigh), d) for neigh, d in zip(neighbors, distances)]
 
-                targets = [t for t in targets if data[k]["cv"].fragment != cv.fragment and data[k]["cv"] != cv]
+                targets = []
+                for p in potential:
+                    print("POTENTIAL:", p)
+                    k = p[0]
+                    pvc = p[1]
+                    if pvc == vc:
+                        print("Same vc")
+                        continue
+
+                    pfrag = data[k]["cv"].fragment
+                    pop = p[2]
+                    ppos = p[3]
+                    if (pfrag == cv.fragment) and (pop ==1):
+                        print("Same fragment")
+                        continue
+
+                    targets.append(p)
+
+                print("TARGETS:")
+                [print(t) for t in targets]
 
 
-                if len(neighbors) < n_neighbours:
+                if len(targets) < n_neighbours:
                     radius += 5
+                    log("warning", "Expanding search to:", radius)
                     continue
 
                 neighs_found = True
 
-                targets = sorted(targets, key=lambda x: x[1])
+                targets = sorted(targets, key=lambda x: x[-1])
                 print("sorted targets:")
                 print(targets)
 
-                for t, d in targets[:n_neighbours]:
-                    k2 = t._nnk
+                for t in targets[:n_neighbours]:
+                    k2 = t[0]
                     cv.closest = data[k2]["cv"]
-                    cv.closest_vp = cv % cv.closest
+                    cv.closest_vp = cv.pair(cv.closest, d= t[-1], op_of_v2=t[2], pos_of_v2=t[3])
                     cv.closest_opn = cv.closest_vp.opn_of_v2
                     cv.closest_pos = cv.closest_vp.pos_of_v2
                     if n_neighbours != 1:
@@ -379,6 +415,7 @@ class CVMatrix(object):
             if not neighs_found:
                 log("ERROR", f"No neighbours found for cv: {cv}\nMight be due to small structure")
                 raise NoNeighboursFound()
+
         return self
 
 

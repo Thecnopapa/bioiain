@@ -71,7 +71,6 @@ for file in os.listdir(DATA_FOLDER):
 
     matrix = entity.cvmatrix()
     entity.export()
-    exit()
     entity.calculate_sasa()
     entity.export()
     embedding = CVEmbeddingV3C(entity=entity).embedding(force=True)
@@ -83,6 +82,7 @@ for file in os.listdir(DATA_FOLDER):
 
     [print(r, e) for r, e in zip(entity.residues(), embedding.tensor())]
         # entity.fragment().show_cvectors()
+    entity.show_cvectors()
 
 
 

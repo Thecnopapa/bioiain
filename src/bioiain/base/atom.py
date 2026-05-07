@@ -85,7 +85,7 @@ class PseudoAtom(object):
 
     def to_frac(self, params):
         if self.is_fractional:
-            log("Warining", f"Atom: {self} is already fractional")
+            log("Warning", f"Atom: {self} is already fractional")
             raise AlreadyFractional(self)
 
         self._orth_coords = self.coord
@@ -102,7 +102,7 @@ class PseudoAtom(object):
 
     def to_orth(self, params):
         if not self.is_fractional:
-            log("Warining", f"Atom: {self} is already orthogonal")
+            log("Warning", f"Atom: {self} is already orthogonal")
             raise AlreadyOrthogonal(self)
 
 

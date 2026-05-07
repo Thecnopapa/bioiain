@@ -182,7 +182,7 @@ class SASA(object):
 
 
 class KDT(object):
-    def __init__(self, coords_or_entity, leaf_size=10, quiet=False, force=False, **kwargs):
+    def __init__(self, coords_or_entity, leaf_size=10, quiet=False, force=False, params=None, **kwargs):
         if not quiet:
             log(3, "Building KDT...")
         from ..base import BIEntity
@@ -197,8 +197,28 @@ class KDT(object):
             atoms = [PseudoAtom(c) if not isinstance(c, PseudoAtom) else c for c in coords_or_entity]
             coords = np.array([a.coord if isinstance(a, PseudoAtom) else a for a in atoms])
 
+        operations = [1]*len(coords)
+        positions = [None]*len(coords)
+
+        if params is not None:
+            asu_atoms = atoms
+            atoms = []
+            coords = []
+            operations = []
+            positions = []
+            for atom in asu_atoms:
+                for op, (coord, pos) in atom.all():
+                    atoms.append(atom)
+                    coords.append(coord)
+                    operations.append(op)
+                    positions.append(pos)
+
+
+
         self.atoms = atoms
         self.coords = coords
+        self.operations = operations
+        self.positions = positions
 
         self.tree = KDTree(self.coords, leaf_size=leaf_size)
 
@@ -225,11 +245,16 @@ class KDT(object):
 
 
     def atom_of(self, item):
-        assert self.atoms is not None
         return self.atoms[item]
 
     def coord_of(self, item):
         return self.coords[item]
+
+    def pos_of(self, item):
+        return self.positions[item]
+
+    def op_of(self, item):
+        return self.operations[item]
 
     def __call__(self, item, radius, distances=False):
         return self.tree.query_radius(item, r=radius, return_distance=distances)
