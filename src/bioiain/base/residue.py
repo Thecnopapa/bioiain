@@ -100,9 +100,7 @@ class BIResidue(object):
                 print()
                 raise NoCaFound()
 
-
-
-            self.fragment = self.ca.get_misc("fragment", None)
+            self.set_fragment()
 
             self.resnum = self.ca.resnum
             self.resname = self.ca.resname
@@ -142,6 +140,12 @@ class BIResidue(object):
         for a in self.atoms:
             a.set_bfactor(bfactor)
         return self
+
+    def set_fragment(self, fragment=None, unset=False):
+        if fragment is not None or unset:
+            for a in self.atoms:
+                a.set_misc(fragment)
+        self.fragment = self.ca.get_misc("fragment", None)
 
     def sasa(self, normalised=False, average=False, force=False):
         if normalised:

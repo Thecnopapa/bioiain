@@ -68,7 +68,9 @@ for file in os.listdir(DATA_FOLDER):
         continue
 
     entity = FragmentedStructure.from_file(os.path.join(DATA_FOLDER, file))
+
     matrix = entity.cvmatrix()
+    entity.export()
     exit()
     entity.calculate_sasa()
     entity.export()

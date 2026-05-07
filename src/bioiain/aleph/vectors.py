@@ -266,7 +266,7 @@ class CVMatrix(object):
 
     def map(self, attribute):
         log(2, f"Mapping CVMatrix (attr={attribute})")
-        print(self.matrix)
+        #print(self.matrix)
         return (lambda m: np.array([np.array([getattr(x, attribute) if x is not None and getattr(x, attribute) is not None else 0 for x in l]) for l in m ]))(self.matrix)
 
     def square(self, attribute):
@@ -332,7 +332,7 @@ class CVMatrix(object):
 
         tree = KDT([v["vc"] for v in data.values()])
 
-        for n1, v in data.items():
+        for k1, v in data.items():
             cv = v["cv"]
             vc = v["vc"]
 
@@ -346,25 +346,32 @@ class CVMatrix(object):
                 if len(neighbors) == 0:
                     log("error", f"No neighbours found radius={radius}, even itself")
                     raise Exception()
-                if len(neighbors) < n_neighbours+1:
+
+
+                targets = [(tree.atom_of(neigh), d) for neigh, d in zip(neighbors, distances)]
+
+                targets = [t for t in targets if data[k]["cv"].fragment != cv.fragment and data[k]["cv"] != cv]
+
+
+                if len(neighbors) < n_neighbours:
                     radius += 5
                     continue
 
                 neighs_found = True
-                targets = [(tree.atom_of(neigh), d) for neigh, d in zip(neighbors, distances)]
+
                 targets = sorted(targets, key=lambda x: x[1])
                 print("sorted targets:")
                 print(targets)
 
-                for t, d in targets[1:n_neighbours+1]:
-                    k = t._nnk
-                    cv.closest = data[k]["cv"]
+                for t, d in targets[:n_neighbours]:
+                    k2 = t._nnk
+                    cv.closest = data[k2]["cv"]
                     cv.closest_vp = cv % cv.closest
                     cv.closest_opn = cv.closest_vp.opn_of_v2
                     cv.closest_pos = cv.closest_vp.pos_of_v2
                     if n_neighbours != 1:
                         log("Warning", "More than one neighbour requested but not implemented")
-                    self.matrix[n1][k] = cv.closest_vp
+                    self.matrix[k1][k2] = cv.closest_vp
 
                     break # Only programmed for n_neighbours == 1, must be adapted if more needed
                 break
@@ -372,64 +379,64 @@ class CVMatrix(object):
             if not neighs_found:
                 log("ERROR", f"No neighbours found for cv: {cv}\nMight be due to small structure")
                 raise NoNeighboursFound()
-            return self
-
-
-
-
-
-
-
-
-            for n2, vp in enumerate(self.matrix[n1]):
-
-                if vp is None:
-                    vp = self.matrix[n2][n1]
-
-                if n2 == n1 or (vp.chain1 == vp.chain2 and vp.opn_of_v2 is not None and vp.pos_of_v2 is not None and abs(vp.resnum1-vp.resnum2) <=2) :
-                    continue
-                print(f"{n1+1} / {n2+1} / {len(self.vectors)}", end="\r")
-
-
-                    #if vp is None:
-                    #    continue
-                #print(vp, vp.d)
-                #print(vp.chain1, vp.chain2)
-
-                if use_fragments:
-                    #print(vp.fragment1, vp.fragment2)
-                    if vp.fragment1 == vp.fragment2:
-                        continue
-                else:
-                    if vp.chain1 == vp.chain2:
-                        continue
-
-
-                #print(str(cv), str(vp.v1), str(vp.v2))
-
-                if str(cv) == str(vp.v1):
-                    t = vp.v2
-                elif str(cv) == str(vp.v2):
-                    t = vp.v1
-                else:
-                    continue
-
-                #print(cv, t)
-                if vp.d < target[0]:
-                    target = (vp.d, t, vp, vp.opn_of_v2, vp.pos_of_v2)
-                    continue
-
-            #print(target)
-            cv.closest = target[1]
-            cv.closest_vp = target[2]
-            cv.closest_opn = target[3]
-            cv.closest_pos = target[4]
-            #print("closest to", cv, "is", cv.closest)
-            if target[1] is None:
-                log("ERROR", f"No neighbours found for cv: {cv}\nMight be due to small structure")
-                raise NoNeighboursFound()
-
         return self
+
+
+
+
+
+
+
+
+        #     for n2, vp in enumerate(self.matrix[n1]):
+        #
+        #         if vp is None:
+        #             vp = self.matrix[n2][n1]
+        #
+        #         if n2 == n1 or (vp.chain1 == vp.chain2 and vp.opn_of_v2 is not None and vp.pos_of_v2 is not None and abs(vp.resnum1-vp.resnum2) <=2) :
+        #             continue
+        #         print(f"{n1+1} / {n2+1} / {len(self.vectors)}", end="\r")
+        #
+        #
+        #             #if vp is None:
+        #             #    continue
+        #         #print(vp, vp.d)
+        #         #print(vp.chain1, vp.chain2)
+        #
+        #         if use_fragments:
+        #             #print(vp.fragment1, vp.fragment2)
+        #             if vp.fragment1 == vp.fragment2:
+        #                 continue
+        #         else:
+        #             if vp.chain1 == vp.chain2:
+        #                 continue
+        #
+        #
+        #         #print(str(cv), str(vp.v1), str(vp.v2))
+        #
+        #         if str(cv) == str(vp.v1):
+        #             t = vp.v2
+        #         elif str(cv) == str(vp.v2):
+        #             t = vp.v1
+        #         else:
+        #             continue
+        #
+        #         #print(cv, t)
+        #         if vp.d < target[0]:
+        #             target = (vp.d, t, vp, vp.opn_of_v2, vp.pos_of_v2)
+        #             continue
+        #
+        #     #print(target)
+        #     cv.closest = target[1]
+        #     cv.closest_vp = target[2]
+        #     cv.closest_opn = target[3]
+        #     cv.closest_pos = target[4]
+        #     #print("closest to", cv, "is", cv.closest)
+        #     if target[1] is None:
+        #         log("ERROR", f"No neighbours found for cv: {cv}\nMight be due to small structure")
+        #         raise NoNeighboursFound()
+        #
+        # return self
 
 
 

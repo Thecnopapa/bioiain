@@ -45,6 +45,11 @@ class FragmentedStructure(BIStructure):
         self._cvmatrix = None
         self._fragments = None
 
+    @classmethod
+    def from_file(cls, *args, **kwargs):
+        self = super().from_file(*args, **kwargs)
+        self.fragment(in_place=True)
+        return self
 
 
     def _fragment_with_aleph(self, force=False, export=False, **kwargs):
@@ -161,8 +166,7 @@ class FragmentedStructure(BIStructure):
 
         self.data["fragments"]["n_fragments"] = len(self._fragments)
         self.set_flag("fragmented", True)
-        if export:
-            self.export()
+        self.export()
         #print(self.all_atoms())
 
         return self._fragments

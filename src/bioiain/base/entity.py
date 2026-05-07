@@ -81,7 +81,14 @@ class BIEntity(object):
             self.paths["export_folder"] = os.path.join(self.tmp_folder, self.paths["export_folder"] )
 
 
-
+    def clear_cahces(self):
+        self._com = None
+        self._kdtree = None
+        self._chains = None
+        self._residues = None
+        self._atoms = None
+        self._mates = None
+        self._cvectors = None
 
     def __repr__(self):
         if self.is_symmetry():
@@ -493,11 +500,11 @@ class BIEntity(object):
                     write_dict(d, file_path=filepath, label=k, mode=mode, name=self.name())
                     mode = "a"
 
-            print(self)
-            print("CVECTORS", cvectors, self._cvectors is not None)
-            print(self._cvectors)
-            print("CVMATRIX", cvmatrix, getattr(self, "_cvmatrix", None) is not None)
-            print(getattr(self, "_cvmatrix", None))
+            #print(self)
+            log(3, "CVECTORS", cvectors, self._cvectors is not None)
+            #print(self._cvectors)
+            log(3,"CVMATRIX", cvmatrix, getattr(self, "_cvmatrix", None) is not None)
+            #print(getattr(self, "_cvmatrix", None))
 
 
             if cvectors and (self._cvectors is not None):

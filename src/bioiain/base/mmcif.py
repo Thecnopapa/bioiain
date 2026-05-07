@@ -457,10 +457,13 @@ def write_dict_list(data, label, file_path, name=None, mode="w", **kwargs):
     if type(data[0]) is not dict:
         get_dict=True
 
-    if get_dict:
-        keys.extend(data[0]._mmcif_dict(**kwargs).keys())
-    else:
-        keys.extend(data[0].keys())
+    for d in data:
+        if d is not None:
+            if get_dict:
+                keys.extend(d._mmcif_dict(**kwargs).keys())
+            else:
+                keys.extend(d.keys())
+            break
 
 
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -474,10 +477,9 @@ def write_dict_list(data, label, file_path, name=None, mode="w", **kwargs):
             for k in keys:
                 f.write(f"{label}.{k}\n")
 
-            for n, d in enumerate(data):
+            for n, d in enumerate([d for d in data if d is not None]):
                 if get_dict:
                     d = d._mmcif_dict(**kwargs)
-
                     f.write(f"{n}  "+"  ".join([quote_if_necessary(v) for v in d.values()]) + "\n")
 
         return file_path
