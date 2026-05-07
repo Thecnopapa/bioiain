@@ -364,7 +364,7 @@ class CVMatrix(object):
                     cv.closest_pos = cv.closest_vp.pos_of_v2
                     if n_neighbours != 1:
                         log("Warning", "More than one neighbour requested but not implemented")
-                    self.matrix[n1][k] == cv.closest_vp
+                    self.matrix[n1][k] = cv.closest_vp
 
                     break # Only programmed for n_neighbours == 1, must be adapted if more needed
                 break
