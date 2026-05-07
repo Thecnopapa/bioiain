@@ -194,8 +194,8 @@ class KDT(object):
             atoms = coords_or_entity.atoms(hetatm=True)
             coords = np.array([a.coord for a in atoms], dtype=np.float64)
         else:
-            atoms = [PseudoAtom(c) for c in coords_or_entity]
-            coords = np.array(coords_or_entity)
+            atoms = [PseudoAtom(c) if not isinstance(c, PseudoAtom) else c for c in coords_or_entity]
+            coords = np.array([a.coord if isinstance(a, PseudoAtom) else a for a in atoms])
 
         self.atoms = atoms
         self.coords = coords
@@ -204,9 +204,9 @@ class KDT(object):
 
     def of(self, coords, radius=10, distances=False, unique=False):
 
-        if np.isscalar(coords[0]):
+        if isinstance(coords, PseudoAtom) or np.isscalar(coords[0]):
             coords = [coords]
-        coords = np.array(coords)
+        coords = np.array([a.coord if isinstance(a, PseudoAtom) else a for a in coords])
         neigh_indexes = []
         out = self(coords, radius=radius, distances=distances)
         if distances:
@@ -222,6 +222,7 @@ class KDT(object):
 
             else:
                 return out
+
 
     def atom_of(self, item):
         assert self.atoms is not None

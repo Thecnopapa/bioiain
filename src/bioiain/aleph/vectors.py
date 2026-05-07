@@ -233,8 +233,12 @@ class CVMatrix(object):
         self.vc_mode = vc_mode
         self.max_distance = max_distance
 
+        self.reset_matrix()
         self.calculate_neighbours(max_distance=max_distance, **kwargs)
 
+
+    def reset_matrix(self):
+        self.matrix = [[None] * self.length] * self.length
 
     def calculate_full(self):
         self.matrix = []
@@ -262,6 +266,7 @@ class CVMatrix(object):
 
     def map(self, attribute):
         log(2, f"Mapping CVMatrix (attr={attribute})")
+        print(self.matrix)
         return (lambda m: np.array([np.array([getattr(x, attribute) if x is not None and getattr(x, attribute) is not None else 0 for x in l]) for l in m ]))(self.matrix)
 
     def square(self, attribute):
@@ -347,7 +352,7 @@ class CVMatrix(object):
 
                 neighs_found = True
                 targets = [(tree.atom_of(neigh), d) for neigh, d in zip(neighbors, distances)]
-                targets = sorted(targets, key=lambda x: x[0])
+                targets = sorted(targets, key=lambda x: x[1])
                 print("sorted targets:")
                 print(targets)
 
@@ -359,6 +364,8 @@ class CVMatrix(object):
                     cv.closest_pos = cv.closest_vp.pos_of_v2
                     if n_neighbours != 1:
                         log("Warning", "More than one neighbour requested but not implemented")
+                    self.matrix[n1][k] == cv.closest_vp
+
                     break # Only programmed for n_neighbours == 1, must be adapted if more needed
                 break
 
