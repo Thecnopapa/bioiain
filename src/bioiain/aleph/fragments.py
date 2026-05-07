@@ -48,13 +48,14 @@ class FragmentedStructure(BIStructure):
     @classmethod
     def from_file(cls, *args, **kwargs):
         self = super().from_file(*args, **kwargs)
-        self.fragment(in_place=True)
+        if self.has_flag("loaded", True):
+            self.fragment(in_place=True)
         return self
 
 
     def _fragment_with_aleph(self, force=False, export=False, **kwargs):
         log(2, "Fragmenting structure with ALEPH...")
-        if (self._fragments is not None) and not force:
+        if self.has_flag("fragmented", True) and not force:
             log(2, "Fragments already generated!")
             return self._fragments
 
@@ -206,7 +207,7 @@ class FragmentedStructure(BIStructure):
     def _map_cvectors(self, with_ligands=True, vc_mode=None):
         log(1, "Generating CVMatrix for:", self.name(), f"({vc_mode})")
         from . import CVMatrix
-        matrix = CVMatrix(self.cvectors(vc_mode=vc_mode), vc_mode=vc_mode)
+        matrix = CVMatrix(self.cvectors(vc_mode=vc_mode), vc_mode=vc_mode, entity=self)
         try:
             matrix.calculate_neighbours()
         except NoNeighboursFound as e:

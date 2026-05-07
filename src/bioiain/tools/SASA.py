@@ -182,7 +182,7 @@ class SASA(object):
 
 
 class KDT(object):
-    def __init__(self, coords_or_entity, leaf_size=10, quiet=False, force=False, params=None, **kwargs):
+    def __init__(self, coords_or_entity, leaf_size=10, quiet=False, force=False, params=None, symops=None, com=None, **kwargs):
         if not quiet:
             log(3, "Building KDT...")
         from ..base import BIEntity
@@ -200,14 +200,14 @@ class KDT(object):
         operations = [1]*len(coords)
         positions = [None]*len(coords)
 
-        if params is not None:
+        if params is not None and symops is not None:
             asu_atoms = atoms
             atoms = []
             coords = []
             operations = []
             positions = []
             for atom in asu_atoms:
-                for op, (coord, pos) in atom.all():
+                for op, (coord, pos) in atom.all(centre=com, params=params, symops=symops).items():
                     atoms.append(atom)
                     coords.append(coord)
                     operations.append(op)

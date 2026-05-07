@@ -79,10 +79,9 @@ for file in os.listdir(DATA_FOLDER):
     if embedding is None:
         log("warning", "No embedding for file:", file)
         continue
-
+    print(embedding)
     [print(r, e) for r, e in zip(entity.residues(), embedding.tensor())]
-        # entity.fragment().show_cvectors()
-    entity.show_cvectors()
+    #entity.show_cvectors()
 
 
 

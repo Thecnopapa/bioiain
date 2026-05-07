@@ -394,6 +394,9 @@ def write_atoms(atoms, file_path, name=None, include_misc=True, preserve_ids=Fal
                 d = a._mmcif_dict(include_misc=include_misc)
                 if not preserve_ids:
                     d["id"] = f"{n:4d}"
+                if len(d.values()) != len(labels):
+                    log("Warning", f"Atom with inconsistent ({d.values()}/{len(labels)}) labels")
+                    continue
                 f.write("  ".join(d.values()) + "\n")
                 n+=1
 

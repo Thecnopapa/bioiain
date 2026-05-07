@@ -322,7 +322,7 @@ class BIEntity(object):
 
 
     @classmethod
-    def from_file(cls, filepath, code="auto", file_format="auto", force=False, **kwargs):
+    def from_file(cls, filepath, code="auto", file_format="auto", force=False, check_existing=True, **kwargs):
         log(1, "Loading from file:", filepath)
         self = cls(**kwargs)
         if self.has_flag("loaded", True):
@@ -353,6 +353,19 @@ class BIEntity(object):
         self.paths["top_folder"] = self.code()
         self.set_name(self.code())
         self.set_flag("fractional", False)
+
+
+        if check_existing and not force:
+            prev_path = self.export(dry=True)
+            if os.path.exists(prev_path):
+                log("warning", "Recovering previously exported file:", prev_path)
+                try:
+                    recovered_self = cls.recover_from_path(prev_path)
+                    return recovered_self
+                except Exception as e:
+                    log("warning", e)
+                    log("Error", "Recovery failed (returning new)")
+
         self.set_flag("loaded", True)
         return self
 
@@ -414,7 +427,7 @@ class BIEntity(object):
             self.headers["symmetry"]["space_group_name_H-M"] = f"\'{self.headers["symmetry"]["space_group_name_H-M"]}\'"
 
 
-    def export(self, minimal=False, cleanup=False, as_pdb=False, target_folder=None, sufix=None):
+    def export(self, minimal=False, cleanup=False, as_pdb=False, target_folder=None, sufix=None, dry=False):
 
         custom_folder = False
         if target_folder is None:
@@ -441,6 +454,8 @@ class BIEntity(object):
             raise
         os.makedirs(base_folder, exist_ok=True)
         base_path = os.path.join(base_folder, fname)
+        if dry: return base_path+".cif"
+
         log(2, f"Exporting: {self} to {base_path}")
         if self.has_flag("is_fractional", True):
             log("Warning", "A fractional entity was about to be exported!")
@@ -474,7 +489,7 @@ class BIEntity(object):
         return filepath
 
 
-    def _export_structure(self, filepath:str, atoms:list=None, headers:bool=None, misc_fields:bool=True, cleanup=False, as_pdb=False, cvectors=True, cvmatrix=True) -> str:
+    def _export_structure(self, filepath:str, atoms:list=None, headers:bool=None, misc_fields:bool=True, cleanup=True, as_pdb=False, cvectors=True, cvmatrix=True) -> str:
 
         log(2,"Exporting structure...")
         mode = "w"
@@ -482,6 +497,7 @@ class BIEntity(object):
             if cleanup:
                 atoms = self.atoms()
             else:
+                #log("Warning", "Exporting all atoms and misc fields might corrupt the file (cleanup=True recommended)")
                 atoms = self._all_atoms()
         if as_pdb:
             return write_pdb_atoms(atoms, filepath, mode=mode, end=True)
@@ -501,19 +517,21 @@ class BIEntity(object):
                     mode = "a"
 
             #print(self)
-            log(3, "CVECTORS", cvectors, self._cvectors is not None)
+            #log(3, "CVECTORS", cvectors, self._cvectors is not None)
             #print(self._cvectors)
-            log(3,"CVMATRIX", cvmatrix, getattr(self, "_cvmatrix", None) is not None)
+            #log(3,"CVMATRIX", cvmatrix, getattr(self, "_cvmatrix", None) is not None)
             #print(getattr(self, "_cvmatrix", None))
 
 
             if cvectors and (self._cvectors is not None):
+                log(3, "Exporting cvectors...")
                 write_dict_list(self._cvectors, file_path=filepath, label="aleph_cvectors", mode=mode, name=self.name())
                 mode = "a"
             if cvmatrix and (getattr(self, "_cvmatrix", None) is not None):
+                log(3, "Exporting cvmatrix...")
                 write_dict_list([v.closest_vp for v in self._cvmatrix.vectors], file_path=filepath, label="aleph_cvmatrix", mode=mode, name=self.name())
                 mode = "a"
-
+            log(3, "Exporting atoms...")
             return write_atoms(atoms, filepath, name=self.name(), include_misc=misc_fields, mode=mode)
 
     @classmethod
@@ -542,7 +560,7 @@ class BIEntity(object):
 
 
 
-
+    # TODO: Recover all from cif
     @classmethod
     def recover_from_path(cls, path, **kwargs):
 
@@ -558,7 +576,7 @@ class BIEntity(object):
 
         raw = None
         if os.path.exists(cif_path):
-            self = cls.from_file(cif_path, **kwargs)
+            self = cls.from_file(cif_path, check_existing=False, **kwargs)
         elif os.path.exists(data_path):
             raw = json.load(open(path, "r"))
             self = cls.from_file(raw["paths"]["self"], **kwargs)
