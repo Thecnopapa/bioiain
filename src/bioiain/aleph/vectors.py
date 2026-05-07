@@ -7,6 +7,7 @@ from ..utilities.exceptions import *
 from ..utilities.maths import *
 from ..visualisation.plots import plot_heatmap
 from ..base.atom import PseudoAtom
+from ..tools.SASA import KDT
 
 
 
@@ -225,15 +226,17 @@ class CVPair(object):
 
 
 class CVMatrix(object):
-    def __init__(self, cvector_list, vc_mode=None):
+    def __init__(self, cvector_list, vc_mode=None, complete=False, max_distance=30, **kwargs):
         self.vectors = cvector_list
         self.matrix = None
         self.length = len(self.vectors)
         self.vc_mode = vc_mode
+        self.max_distance = max_distance
 
-        self.calculate()
+        self.calculate_neighbours(max_distance=max_distance, **kwargs)
 
-    def calculate(self):
+
+    def calculate_full(self):
         self.matrix = []
         log(2, f"Calculating matrix ({self.vc_mode})...")
 
@@ -313,13 +316,64 @@ class CVMatrix(object):
 
 
 
-    def calculate_neighbours(self, use_fragments=True):
+    def calculate_neighbours(self, use_fragments=True, max_distance=30, n_neighbours=1):
         log(2, "Calculating neighbours for:", self)
 
 
-        for n1, cv in enumerate(self.vectors):
+        data = {k: {"vc":cv.vc, "cv":cv} for k, cv in enumerate(self.vectors)}
+        for k, v in data.items():
+            v["vc"]._nnk = k
 
-            target = (99999., None, None, None, None)
+
+        tree = KDT([v["vc"] for v in data.values()])
+
+        for n1, v in data.items():
+            cv = v["cv"]
+            vc = v["vc"]
+
+
+            radius = 5
+            neighs_found=False
+            while radius <= max_distance:
+                neighbors, distances = tree.of(vc, radius=radius, distances=True)
+                print(neighbors)
+                print(distances)
+                if len(neighbors) == 0:
+                    log("error", f"No neighbours found radius={radius}, even itself")
+                    raise Exception()
+                if len(neighbors) < n_neighbours+1:
+                    radius += 5
+                    continue
+
+                neighs_found = True
+                targets = [(tree.atom_of(neigh), d) for neigh, d in zip(neighbors, distances)]
+                targets = sorted(targets, key=lambda x: x[0])
+                print("sorted targets:")
+                print(targets)
+
+                for t, d in targets[1:n_neighbours+1]:
+                    k = t._nnk
+                    cv.closest = data[k]["cv"]
+                    cv.closest_vp = cv % cv.closest
+                    cv.closest_opn = cv.closest_vp.opn_of_v2
+                    cv.closest_pos = cv.closest_vp.pos_of_v2
+                    if n_neighbours != 1:
+                        log("Warning", "More than one neighbour requested but not implemented")
+                    break # Only programmed for n_neighbours == 1, must be adapted if more needed
+                break
+
+            if not neighs_found:
+                log("ERROR", f"No neighbours found for cv: {cv}\nMight be due to small structure")
+                raise NoNeighboursFound()
+            return self
+
+
+
+
+
+
+
+
             for n2, vp in enumerate(self.matrix[n1]):
 
                 if vp is None:
