@@ -94,7 +94,7 @@ class SASA(object):
 
     def compute(self, entity, targets=None, save_sasas=None, force=False, quiet=False, **kwargs):
         if not quiet:
-            log(2, "Computing ASA...")
+            log(2, "Computing SASA...")
 
         if getattr(entity, "_kdtree", None) is not None and not force:
             if not quiet:

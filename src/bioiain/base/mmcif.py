@@ -290,10 +290,10 @@ def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list
                     #                 subset])
 
                     if exclude is not None:
-                        print(group_key)
-                        print(exclude)
-                        print([group_key == s if not s.endswith("*") else group_key.startswith(s[:-1]) for s in
-                               exclude])
+                        # print(group_key)
+                        # print(exclude)
+                        # print([group_key == s if not s.endswith("*") else group_key.startswith(s[:-1]) for s in
+                        #        exclude])
                         if any([group_key == s if not s.endswith("*") else group_key.startswith(s[:-1]) for s in
                                     exclude]):
                             continue

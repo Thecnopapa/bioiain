@@ -254,7 +254,8 @@ class CVMatrix(object):
         self.calculate_neighbours(max_distance=max_distance)
 
     def __repr__(self):
-        return f"<{self.__class__.__name__}: ({self.entity}) - {self.length}>"
+        return f"<{self.__class__.__name__} of {self.entity} N={self.length}>"
+
     def reset_matrix(self):
         self.matrix = [[None] * self.length] * self.length
 

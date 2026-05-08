@@ -12,7 +12,7 @@ class BIEntity(object):
     extension = "structure"
     level = "structure"
     tmp_folder = "/tmp"
-    excluded_from_headers = ["_bi_*", "_atom_site", "_aleph_*"]
+    excluded_from_headers = ["_bi_*", "_atom_sites", "_aleph_*"]
 
     def __init__(self, export_folder=None, parent=None, use_tmp=False, **kwargs):
         if export_folder is None:
@@ -37,6 +37,9 @@ class BIEntity(object):
                 "aa": None,
             },
             "symmetry": {},
+
+            # Machine
+            "embeddings": {},
 
             # Tools
             "SASA": {},
@@ -537,7 +540,7 @@ class BIEntity(object):
             full_headers = {}
             if all_headers and headers and self.paths.get("source", None) is not None:
                 full_headers = read_mmcif(self.paths.get("source", None), exclude=self.excluded_from_headers).dict()
-                print(full_headers.keys())
+                #print(full_headers.keys())
 
             if headers:
                 for e in self.exporting:
