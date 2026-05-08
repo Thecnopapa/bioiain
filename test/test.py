@@ -8,25 +8,25 @@ log("start", "test.py")
 
 from src.bioiain.utilities.logging import *
 
-tracemalloc_start()
+#tracemalloc_start()
 
-from src.bioiain.aleph import *
+#from src.bioiain.aleph import *
 from src.bioiain.base import *
-from src.bioiain.machine import *
-from src.bioiain.utilities.parallel import *
 
-import torch, random
-import numpy as np
+#from src.bioiain.utilities.parallel import *
 
-torch.set_num_threads(avail_cpus)
-log(1, f"Torch using {avail_cpus} threads")
+#import torch, random
+#import numpy as np
 
-seed = 6
-random.seed(seed)
-np.random.seed(seed)
-torch.manual_seed(seed)
-torch.cuda.manual_seed(seed)
-torch.cuda.manual_seed_all(seed)
+#torch.set_num_threads(avail_cpus)
+#log(1, f"Torch using {avail_cpus} threads")
+
+#seed = 6
+#random.seed(seed)
+#np.random.seed(seed)
+#torch.manual_seed(seed)
+#torch.cuda.manual_seed(seed)
+#torch.cuda.manual_seed_all(seed)
 
 if "monomers" in sys.argv:
     if not "--no-download" in sys.argv:
@@ -67,6 +67,11 @@ for file in os.listdir(DATA_FOLDER):
     if "1M2Z" not in file.upper():
         continue
 
+
+    entity = BIEntity.from_file(os.path.join(DATA_FOLDER, file))
+    entity.export()
+    exit()
+
     entity = FragmentedStructure.from_file(os.path.join(DATA_FOLDER, file))
     print(entity)
     entity.fragment()
@@ -75,6 +80,7 @@ for file in os.listdir(DATA_FOLDER):
     entity.export()
     entity.calculate_sasa()
     entity.export()
+    from src.bioiain.machine import *
     embedding = CVEmbeddingV3C(entity=entity).embedding(force=True)
     entity.export()
 

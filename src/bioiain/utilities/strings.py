@@ -4,6 +4,34 @@ from ..utilities.logging import log
 
 
 
+def interpret(val):
+    if val is None:
+        return val
+    if type(val) is list:
+        for n, v in enumerate(val):
+            val[n] = interpret(v)
+        return val
+
+    if type(val) is dict:
+        for k, v in val:
+            val[k] = interpret(v)
+        return val
+
+    try:
+        return int(val)
+    except ValueError:
+        try:
+            return float(val)
+        except ValueError:
+            if val.lower() in ["true", "yes"]:
+                return True
+            elif val.lower() in ["false", "no"]:
+                return False
+            elif val.lower() in ["." ,"none", "?", "nan"]:
+                return None
+            return val
+
+
 def clean_string(string:str, allow:list[str]=(".", "_"), remove_newlines:bool=True) -> str:
     """
     Remove unwanted characters from string.

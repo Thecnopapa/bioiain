@@ -74,11 +74,11 @@ class CVector(object):
             closest_resnum=f"{self.closest.resnum:3d}" if self.closest is not None else " . ",
             closest_chain=self.closest.chain if self.closest is not None else None,
             closest_fragment=self.closest.fragment if self.closest is not None else None,
-            closest_pos="_".join([str(p) for p in self.closest_pos]) if self.closest_pos is not None else None,
             closest_opn=f"{self.closest_opn:2d}",
             closest_lig_name=f"{self.closest_lig.name:3s}" if self.closest_lig is not None else " . ",
             closest_lig_chain=f"{self.closest_lig.chain}" if self.closest_lig is not None else " . ",
             dist_to_lig=f"{self.dist_to_lig:8.3f}" if self.dist_to_lig is not None else "       .",
+            closest_pos="_".join([str(p) for p in self.closest_pos]) if self.closest_pos is not None else "       .",
         )
         for k, v in d.items():
             if v is None:
@@ -224,7 +224,6 @@ class CVPair(object):
             "chain2": self.v2.chain if self.v2.chain is not None else ".",
             "fragment2": f"{self.v2.fragment:2d}" if self.v2.fragment is not None else " .",
             "opn_of_v2": self.opn_of_v2 if self.opn_of_v2 is not None else ".",
-            "pos_of_v2": f"'{self.pos_of_v2}'" if self.pos_of_v2 is not None else ".",
             "v_x": f"{self.v[0]:8.3f}" if self.v is not None else ".",
             "v_y": f"{self.v[1]:8.3f}" if self.v is not None else ".",
             "v_z": f"{self.v[2]:8.3f}" if self.v is not None else ".",
@@ -234,6 +233,7 @@ class CVPair(object):
             "t2": f"{self.t2:8.3f}" if self.t2 is not None else "       .",
             "da": f"{self.da:8.3f}" if self.da is not None else "       .",
             "dlig": f"{self.dlig:8.3f}" if self.dlig is not None else "       .",
+            "pos_of_v2": "_".join([str(p) for p in self.pos_of_v2]) if self.pos_of_v2 is not None else "       .",
 
         }
         return data

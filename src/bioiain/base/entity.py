@@ -12,9 +12,9 @@ class BIEntity(object):
     extension = "structure"
     level = "structure"
     tmp_folder = "/tmp"
+    excluded_from_headers = ["_bi_*", "_atom_site", "_aleph_*"]
 
     def __init__(self, export_folder=None, parent=None, use_tmp=False, **kwargs):
-        from . import BIAtom, BIResidue, BIChain
         if export_folder is None:
             export_folder = os.path.join(SUBDIR_NAME, "exports")
         self.children = []
@@ -354,19 +354,32 @@ class BIEntity(object):
         log(2, "Reading CIF data...")
         data = read_mmcif(filepath, subset="_bi_*")
         if len(data) > 0:
-            print(data)
+            #print(data)
             for k in data.keys():
                 kk = k.split("_")[2]
                 ss = "_".join(k.split("_")[3:])
                 #print(kk, ss)
-                new_data = getattr(self, kk, {}) | data[k]
+                old_data = getattr(self, kk, {})
+                print(data[k])
+                print(old_data)
+                new_data = old_data
+                print(new_data)
+                if ss is None or ss == "":
+                    new_data = new_data | data[k]
+                else:
+                    new_data[ss] = new_data.get(ss, {}) | data[k]
+                print(new_data)
+
+                #print(getattr(self, kk, {})[ss])
+                #print(data[k])
+                #new_data = getattr(self, kk, {}) | getattr(self, kk, {ss:None})[ss] | data[k]
                 #print("new data:")
                 #print(new_data)
                 #print("###", type(new_data))
                 setattr(self, kk, new_data)
-            print("DATA:",self.data)
-            print("PATHS:",self.paths)
-            print("FLAGS:", self.flags)
+            #print("DATA:",self.data)
+            #print("PATHS:",self.paths)
+            #print("FLAGS:", self.flags)
             #self.data = self.data | data
             #input("Press Enter to continue...")
             self.set_flag("data_recovered", True)
@@ -386,9 +399,10 @@ class BIEntity(object):
                 except Exception as e:
                     log("warning", e.__class__.__name__, e)
                     log("Error", "Recovery failed (returning new)")
+                    raise
 
         self.recover_cvectors()
-
+        self.paths["source"] = filepath
         self.set_flag("loaded", True)
         self.export()
         return self
@@ -455,7 +469,7 @@ class BIEntity(object):
             self.headers["symmetry"]["space_group_name_H-M"] = f"\'{self.headers["symmetry"]["space_group_name_H-M"]}\'"
 
 
-    def export(self, minimal=False, cleanup=False, as_pdb=False, target_folder=None, sufix=None, dry=False):
+    def export(self, minimal=False, cleanup=False, as_pdb=False, target_folder=None, sufix=None, dry=False, all_headers=True):
 
         custom_folder = False
         if target_folder is None:
@@ -476,7 +490,7 @@ class BIEntity(object):
         if minimal:
             fname += ".minimal"
         try:
-            base_folder = os.path.join(target_folder, self.paths.get("top_folder", self.code()), self.paths["sub_folder"])
+            base_folder = os.path.join(target_folder, self.paths.get("top_folder", self.code()), self.paths["sub_folder"].strip() )
         except TypeError:
             print(self.paths)
             raise
@@ -493,12 +507,12 @@ class BIEntity(object):
             orth = self
 
         if minimal:
-            minimal_path= orth._export_structure(base_path, headers=False, misc_fields=True, cleanup=True, as_pdb=as_pdb)
+            minimal_path= orth._export_structure(base_path, headers=False, all_headers=False, misc_fields=True, cleanup=True, as_pdb=as_pdb)
             if not custom_folder:
                 self.paths["minimal"] = minimal_path
             return minimal_path
         else:
-            path = orth._export_structure(base_path, headers=True, misc_fields=True, cleanup=cleanup, as_pdb=as_pdb)
+            path = orth._export_structure(base_path, headers=True, all_headers=all_headers, misc_fields=True, cleanup=cleanup, as_pdb=as_pdb)
             if not custom_folder:
                 self.paths["self"] = path
                 if not as_pdb:
@@ -517,7 +531,7 @@ class BIEntity(object):
         return filepath
 
 
-    def _export_structure(self, filepath:str, atoms:list=None, headers:bool=None, misc_fields:bool=True, cleanup=True, as_pdb=False, cvectors=True, cvmatrix=True) -> str:
+    def _export_structure(self, filepath:str, atoms:list=None, headers:bool=None, misc_fields:bool=True, cleanup=True, as_pdb=False, all_headers=True, cvectors=True, cvmatrix=True) -> str:
 
         log(2,"Exporting structure...")
         mode = "w"
@@ -530,6 +544,12 @@ class BIEntity(object):
         if as_pdb:
             return write_pdb_atoms(atoms, filepath, mode=mode, end=True)
         else:
+
+            full_headers = {}
+            if all_headers and headers and self.paths.get("source", None) is not None:
+                full_headers = read_mmcif(self.paths.get("source", None), exclude=self.excluded_from_headers).dict()
+                print(full_headers.keys())
+
             if headers:
                 for e in self.exporting:
                     d = getattr(self, e)
@@ -543,8 +563,15 @@ class BIEntity(object):
                 # print(type(self.headers))
                 # print(self.headers)
 
-                for k, d in self.headers.items():
-                    write_dict(d, file_path=filepath, label=k, mode=mode, name=self.name())
+
+                full_headers = full_headers | self.headers
+                for k, d in full_headers.items():
+                    if type(d) is list and len(d) > 1:
+                        write_dict_list(d, file_path=filepath, label=k, mode=mode, name=self.name())
+                    else:
+                        if type(d) is list:
+                            d = d[0]
+                        write_dict(d, file_path=filepath, label=k, mode=mode, name=self.name())
                     mode = "a"
 
             #print(self)

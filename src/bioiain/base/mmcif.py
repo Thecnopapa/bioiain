@@ -85,6 +85,12 @@ class MMCIF(object):
     def keys(self):
         return list(self.data.keys())
 
+    def items(self):
+        return self.data.items()
+
+    def dict(self):
+        return self.data
+
     def __len__(self):
         return len(self.data.keys())
 
@@ -133,11 +139,16 @@ class MMCIF(object):
         entry = ".".join([*args])
         return self[entry]
 
+    @classmethod
+    def read_mmcif(cls, *args, **kwargs):
+        self = read_mmcif(*args, as_dict=False, **kwargs)
+        return self
 
 
 
 
-def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list|str=None) -> MMCIF:
+
+def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list|str=None ,as_dict=False) -> MMCIF:
     from ..utilities.strings import str_to_list_with_literals
     data = {}
     name = os.path.basename(file_path).split(".")[0]
@@ -277,7 +288,12 @@ def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list
                     # print(subset)
                     # print([group_key == s if not s.endswith("*") else group_key.startswith(s[:-1]) for s in
                     #                 subset])
+
                     if exclude is not None:
+                        print(group_key)
+                        print(exclude)
+                        print([group_key == s if not s.endswith("*") else group_key.startswith(s[:-1]) for s in
+                               exclude])
                         if any([group_key == s if not s.endswith("*") else group_key.startswith(s[:-1]) for s in
                                     exclude]):
                             continue
@@ -290,7 +306,7 @@ def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list
                     if group_key not in data.keys():
                         data[group_key] = [{}]
                     #print(f"{group_key}.{k} ->", " ".join(v))
-                    data[group_key][0][k] = " ".join(v)
+                    data[group_key][0][k] = interpret(" ".join(v))
 
 
             else: # IN LOOP
@@ -341,16 +357,18 @@ def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list
                         except AssertionError:
                             log("warning", f"Missmatch on key-value numbers in group {group_key}, element {i}")
                             continue
-                        d = {k:v for k, v in zip(loop_keys, l)}
+                        d = {k:interpret(v) for k, v in zip(loop_keys, l)}
                         data[group_key].append(d)
                     #print(f"{group_key} ->", f"list of length: {len(loop_values)}")
-
-    mmcif = MMCIF(data, cif_path=file_path)
-    if output_folder is not None:
-        save_path = os.path.join(output_folder, f"{name}.header.json")
-        log("debug","Headers saved to:", os.path.abspath(save_path))
-        mmcif.save(save_path)
-    return mmcif
+    if not as_dict:
+        mmcif = MMCIF(data, cif_path=file_path)
+        if output_folder is not None:
+            save_path = os.path.join(output_folder, f"{name}.header.json")
+            log("debug","Headers saved to:", os.path.abspath(save_path))
+            mmcif.save(save_path)
+        return mmcif
+    else:
+        return data
 
 
 def write_pdb_atoms(atoms, file_path, mode="w", end=True):
@@ -439,11 +457,14 @@ def write_dict(data, label, file_path, name=None, mode="w"):
         label = "_" + label
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     try:
-        with open(file_path, mode) as f:
+        with (open(file_path, mode) as f):
             if mode == "w" and name is not None:
                 f.write(f"data_{name}\n")
             f.write("#\n")
-            print(data)
+            if not type(data) is dict:
+                log("error", "Trying to export dict that is not dict")
+                print(label, data)
+
             for k, v in data.items():
                 if v is None:
                     f.write(f"{label}.{k}   ?\n")
