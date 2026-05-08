@@ -76,8 +76,17 @@ class MMCIF(object):
         self.data = data
         self.cif_path = cif_path
 
+    def __repr__(self):
+        return f"<bi.MMCIF: {self.cif_path} keys={self.keys()}>"
+
     def save(self, path):
         json.dump(self.data, open(path, "w"), indent=4)
+
+    def keys(self):
+        return list(self.data.keys())
+
+    def __len__(self):
+        return len(self.data.keys())
 
     def __getitem__(self, key):
         index = None
@@ -132,6 +141,10 @@ def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list
     from ..utilities.strings import str_to_list_with_literals
     data = {}
     name = os.path.basename(file_path).split(".")[0]
+    if type(subset) is str:
+        subset = [subset]
+    if type(exclude) is str:
+        subset = [exclude]
     if output_folder is not None:
         os.makedirs(output_folder, exist_ok=True)
     with open(file_path, "r") as f:
@@ -260,12 +273,20 @@ def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list
                         pass
 
                 if not multi_line and group_key is not None:
+                    # print(group_key)
+                    # print(subset)
+                    # print([group_key == s if not s.endswith("*") else group_key.startswith(s[:-1]) for s in
+                    #                 subset])
                     if exclude is not None:
-                        if group_key in exclude:
+                        if any([group_key == s if not s.endswith("*") else group_key.startswith(s[:-1]) for s in
+                                    exclude]):
                             continue
                     if subset is not None:
-                        if group_key not in subset:
+                        if not any([group_key == s if not s.endswith("*") else group_key.startswith(s[:-1]) for s in
+                                    subset]):
                             continue
+                        # if group_key not in subset:
+                        #     continue
                     if group_key not in data.keys():
                         data[group_key] = [{}]
                     #print(f"{group_key}.{k} ->", " ".join(v))
@@ -422,7 +443,7 @@ def write_dict(data, label, file_path, name=None, mode="w"):
             if mode == "w" and name is not None:
                 f.write(f"data_{name}\n")
             f.write("#\n")
-
+            print(data)
             for k, v in data.items():
                 if v is None:
                     f.write(f"{label}.{k}   ?\n")

@@ -68,6 +68,8 @@ for file in os.listdir(DATA_FOLDER):
         continue
 
     entity = FragmentedStructure.from_file(os.path.join(DATA_FOLDER, file))
+    print(entity)
+    entity.fragment()
 
     matrix = entity.cvmatrix()
     entity.export()

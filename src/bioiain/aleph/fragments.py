@@ -48,10 +48,13 @@ class FragmentedStructure(BIStructure):
     @classmethod
     def from_file(cls, *args, **kwargs):
         self = super().from_file(*args, **kwargs)
-        if self.has_flag("loaded", True):
-            self.fragment(in_place=True)
+        # if not self.has_flag("fragmented", True):
+        #     self.fragment(in_place=True)
+        self.recover_cvmatrix()
         return self
 
+    def recover_cvmatrix(self):
+        pass
 
     def _fragment_with_aleph(self, force=False, export=False, **kwargs):
         log(2, "Fragmenting structure with ALEPH...")

@@ -324,12 +324,9 @@ class BIEntity(object):
     @classmethod
     def from_file(cls, filepath, code="auto", file_format="auto", force=False, check_existing=True, **kwargs):
         log(1, "Loading from file:", filepath)
+        if not os.path.exists(filepath):
+            raise FileNotFoundError(filepath)
         self = cls(**kwargs)
-        if self.has_flag("loaded", True):
-            if force:
-                log("warning: already loaded")
-            else:
-                raise exceptions.AlreadyLoaded()
 
         if file_format == "auto":
             file_format = filepath.split(".")[-1]
@@ -354,22 +351,51 @@ class BIEntity(object):
         self.set_name(self.code())
         self.set_flag("fractional", False)
 
+        log(2, "Reading CIF data...")
+        data = read_mmcif(filepath, subset="_bi_*")
+        if len(data) > 0:
+            print(data)
+            for k in data.keys():
+                kk = k.split("_")[2]
+                ss = "_".join(k.split("_")[3:])
+                #print(kk, ss)
+                new_data = getattr(self, kk, {}) | data[k]
+                #print("new data:")
+                #print(new_data)
+                #print("###", type(new_data))
+                setattr(self, kk, new_data)
+            print("DATA:",self.data)
+            print("PATHS:",self.paths)
+            print("FLAGS:", self.flags)
+            #self.data = self.data | data
+            #input("Press Enter to continue...")
+            self.set_flag("data_recovered", True)
+        else:
+            self.set_flag("data_recovered", False)
+
 
         if check_existing and not force:
             prev_path = self.export(dry=True)
             if os.path.exists(prev_path):
                 log("warning", "Recovering previously exported file:", prev_path)
                 try:
-                    recovered_self = cls.recover_from_path(prev_path)
+                    recovered_self = cls.from_file(prev_path, check_existing=False,**kwargs)
+                    if recovered_self is None:
+                        raise StructureRecoverException()
                     return recovered_self
                 except Exception as e:
-                    log("warning", e)
+                    log("warning", e.__class__.__name__, e)
                     log("Error", "Recovery failed (returning new)")
 
+        self.recover_cvectors()
+
         self.set_flag("loaded", True)
+        self.export()
         return self
 
 
+    def  recover_cvectors(self):
+        pass
 
 
     def from_biopython(self, entity):
@@ -409,6 +435,8 @@ class BIEntity(object):
             log(1, "Reading atoms from CIF:", filepath)
             mmcif= read_mmcif(filepath, subset=["_atom_site", "_cell", "_symmetry"])
             atoms=mmcif("_atom_site")
+            if atoms is None:
+                raise StructureLoadException("No atoms")
             self.headers["cell"] = mmcif("_cell")
             self.headers["symmetry"] = mmcif("_symmetry")
             self.data["symmetry"]["in_asu"] = True
@@ -512,6 +540,9 @@ class BIEntity(object):
                     else:
                         write_dict(d, file_path=filepath, label=f"bi_{e}", mode=mode, name=self.name())
                         mode = "a"
+                # print(type(self.headers))
+                # print(self.headers)
+
                 for k, d in self.headers.items():
                     write_dict(d, file_path=filepath, label=k, mode=mode, name=self.name())
                     mode = "a"
@@ -560,37 +591,40 @@ class BIEntity(object):
 
 
 
-    # TODO: Recover all from cif
-    @classmethod
-    def recover_from_path(cls, path, **kwargs):
-
-        if path.endswith(".json"):
-            data_path = path
-            cif_path = data_path.replace(".json", ".cif")
-        elif path.endswith(".cif"):
-            cif_path = path
-            data_path = cif_path.replace(".cif", ".json")
-        else:
-            cif_path = path+".cif"
-            data_path = path+".json"
-
-        raw = None
-        if os.path.exists(cif_path):
-            self = cls.from_file(cif_path, check_existing=False, **kwargs)
-        elif os.path.exists(data_path):
-            raw = json.load(open(path, "r"))
-            self = cls.from_file(raw["paths"]["self"], **kwargs)
-        else:
-            raise FileNotFoundError(path, cif_path, data_path)
-
-        if os.path.exists(data_path) and raw is None:
-            raw = json.load(open(path, "r"))
-            for k, v in raw.items():
-                setattr(self, k, v)
-        else:
-            log("Warning", "Data file not found for:", path)
-
-        return self
+    # @classmethod
+    # def recover_from_path(cls, cif_path, **kwargs):
+    #
+    #     # if path.endswith(".json"):
+    #     #     data_path = path
+    #     #     cif_path = data_path.replace(".json", ".cif")
+    #     # elif path.endswith(".cif"):
+    #     #     cif_path = path
+    #     #     data_path = cif_path.replace(".cif", ".json")
+    #     # else:
+    #     #     cif_path = path+".cif"
+    #     #     data_path = path+".json"
+    #     #
+    #     # if os.path.exists(cif_path):
+    #     #     self = cls.from_file(cif_path, check_existing=False, **kwargs)
+    #     #     if self.has_flag("data_recovered", True):
+    #     #         log(3, "Recovering data from CIF...")
+    #     # else:
+    #     #     raise FileNotFoundError(path, cif_path)
+    #     # elif os.path.exists(data_path):
+    #     #     raw = json.load(open(path, "r"))
+    #     #     self = cls.from_file(raw["paths"]["self"], check_existing=False, **kwargs)
+    #     # else:
+    #     #     raise FileNotFoundError(path, cif_path, data_path)
+    #     #
+    #     # if os.path.exists(data_path) and raw is None:
+    #     #     log(3, "Recovering data from json...")
+    #     #     raw = json.load(open(path, "r"))
+    #     #     for k, v in raw.items():
+    #     #         setattr(self, k, v)
+    #     # elif raw is None:
+    #     #     log("Warning", "Data file not found for:", path)
+    #
+    #     return self
 
     def _calculate_crystal(self):
         try:
