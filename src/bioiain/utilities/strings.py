@@ -18,9 +18,13 @@ def interpret(val):
         return val
 
     try:
+        if "E" in str(val):
+            raise ValueError
         return int(val)
     except ValueError:
         try:
+            if "E" in str(val):
+                raise ValueError
             return float(val)
         except ValueError:
             if val.lower() in ["true", "yes"]:

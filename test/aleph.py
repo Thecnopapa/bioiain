@@ -172,20 +172,21 @@ if "-p" not in sys.argv:
         def generate_embeddings(file_list=None):
             log("header", f"Generating embeddings... ({len(file_list)})")
             for n, file in enumerate(file_list):
-                log("header", file)
-                log("title", f"{dataset.n_ids()+1:4d}/{total_files:4d} ({file.split('.')[0]})")
+                log("header", f"{dataset.n_ids()+1:4d}/{total_files:4d} ({file.split('.')[0]}) ({EMBEDDING_CLASS.__name__})")
+                log("title", f"{dataset.n_ids()+1:3d}/{total_files:3d} ({EMBEDDING_CLASS.__name__})")
 
                 path = os.path.join(DATA_FOLDER, file)
-                entity = BIEntity.from_file(path)
-
-                if entity is None:
+                try:
+                    entity = FragmentedStructure.from_file(path)
+                except Exception as e:
+                    log("Warning", "Skipping embedding for:", file, f"({e})")
                     continue
                 if len(entity) > 2000:
                     log("Warning", "entity too large!")
                     continue
 
                 embedding = EMBEDDING_CLASS(entity=entity).embedding(force="--force" in sys.argv)
-
+                entity.export()
                 if embedding is None:
                     log("warning", "No embedding for file:", file)
                     continue
@@ -243,8 +244,8 @@ if "-t" in sys.argv:
     model.mount()
 
     for n in range(epochs):
-        log("start", "EPOCH", n)
-        log("title", "EPOCH", n)
+        log("start", "EPOCH", n, model.__class__.__name__, EMBEDDING_CLASS.__name__)
+        log("title", "EPOCH", n, model.__class__.__name__, EMBEDDING_CLASS.__name__)
         model.set_mode("autoencoder")
 
         if "--no-plot" in sys.argv:

@@ -106,13 +106,13 @@ class BIEntity(object):
         return len(self.residues())
 
     def name(self):
-        return self.data["info"]["name"]
+        return str(self.data["info"]["name"])
 
     def set_name(self, name, append=False):
         if append and self.name() is not None:
             self.data["info"]["name"] = self.name() + f"_{name}"
         else:
-            self.data["info"]["name"] = name
+            self.data["info"]["name"] = str(name)
 
     def path(self, minimal=False):
         if not minimal:
@@ -137,10 +137,10 @@ class BIEntity(object):
         return os.path.join(*folders)
 
     def code(self):
-        return self.data["info"]["code"]
+        return str(self.data["info"]["code"])
 
     def id(self):
-        return self.data["info"]["code"]
+        return str(self.data["info"]["code"])
 
     def get_sequence(self, name="aa"):
         return self.data["sequences"][name]
@@ -167,7 +167,7 @@ class BIEntity(object):
     def structure(self, code=None):
         from .structure import BIStructure
         if code is None:
-            code = self.data["info"]["code"]
+            code = str(self.data["info"]["code"])
         return BIStructure.from_atoms(self._atoms, code, parent=self)
 
     def chains(self):
@@ -317,7 +317,7 @@ class BIEntity(object):
             code = kwargs["parent"].code()
         if code is not None:
             self.data["info"]["code"] = clean_string(code).upper()
-            self.data["info"]["code"] = code
+            #self.data["info"]["code"] = str(code)
         self.set_name(self.code())
         self.paths["top_folder"] = self.code()
 
@@ -341,10 +341,11 @@ class BIEntity(object):
             self._all_atoms(filepath=filepath, force=True, is_pdb=file_format == "pdb")
         except (StructureLoadException, CrystalError) as e:
             log("Error", f"Structure not loaded: {filepath}", e)
+            raise e
             return None
 
         if code == "auto":
-            code = read_mmcif(filepath, subset="_entry")["_entry.id"]
+            code = str(read_mmcif(filepath, subset="_entry")["_entry.id"])
 
         if code == "file" or code is None:
             code = filepath.split(".")[0]
@@ -470,7 +471,7 @@ class BIEntity(object):
         else:
             custom_folder = True
 
-        fname = self.name()
+        fname = str(self.name())
         if sufix is not None:
             custom_folder = True
             if sufix[0] in [".", "-", "_", "(",]:
