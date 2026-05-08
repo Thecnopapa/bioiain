@@ -68,14 +68,12 @@ for file in os.listdir(DATA_FOLDER):
         continue
 
 
-    entity = BIEntity.from_file(os.path.join(DATA_FOLDER, file))
-    entity.export()
-    exit()
+
+
 
     entity = FragmentedStructure.from_file(os.path.join(DATA_FOLDER, file))
     print(entity)
     entity.fragment()
-
     matrix = entity.cvmatrix()
     entity.export()
     entity.calculate_sasa()

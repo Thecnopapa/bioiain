@@ -20,6 +20,7 @@ class BIEntity(object):
         self.children = []
         self.paths = {
             "self": None, # This entity cif path
+            "source": None,
             "minimal": None, # This but only nice atoms (no headers or data)
             "parent": None, # Parent entity cif path
             "export_folder": export_folder, # Folder with all exports (default: "bioiain/exports")
@@ -322,7 +323,7 @@ class BIEntity(object):
 
 
     @classmethod
-    def from_file(cls, filepath, code="auto", file_format="auto", force=False, check_existing=True, **kwargs):
+    def from_file(cls, filepath, code="auto", file_format="auto", force=False, check_existing=True, source=None, **kwargs):
         log(1, "Loading from file:", filepath)
         if not os.path.exists(filepath):
             raise FileNotFoundError(filepath)
@@ -358,33 +359,21 @@ class BIEntity(object):
             for k in data.keys():
                 kk = k.split("_")[2]
                 ss = "_".join(k.split("_")[3:])
-                #print(kk, ss)
                 old_data = getattr(self, kk, {})
-                print(data[k])
-                print(old_data)
                 new_data = old_data
-                print(new_data)
                 if ss is None or ss == "":
                     new_data = new_data | data[k]
                 else:
                     new_data[ss] = new_data.get(ss, {}) | data[k]
-                print(new_data)
-
-                #print(getattr(self, kk, {})[ss])
-                #print(data[k])
-                #new_data = getattr(self, kk, {}) | getattr(self, kk, {ss:None})[ss] | data[k]
-                #print("new data:")
-                #print(new_data)
-                #print("###", type(new_data))
                 setattr(self, kk, new_data)
-            #print("DATA:",self.data)
-            #print("PATHS:",self.paths)
-            #print("FLAGS:", self.flags)
-            #self.data = self.data | data
-            #input("Press Enter to continue...")
             self.set_flag("data_recovered", True)
         else:
             self.set_flag("data_recovered", False)
+
+        if self.paths["self"] != filepath:
+            self.paths["source"] = filepath
+        elif source is not None:
+            self.paths["source"] = source
 
 
         if check_existing and not force:
@@ -392,7 +381,7 @@ class BIEntity(object):
             if os.path.exists(prev_path):
                 log("warning", "Recovering previously exported file:", prev_path)
                 try:
-                    recovered_self = cls.from_file(prev_path, check_existing=False,**kwargs)
+                    recovered_self = cls.from_file(prev_path, check_existing=False, source=filepath, **kwargs)
                     if recovered_self is None:
                         raise StructureRecoverException()
                     return recovered_self
@@ -402,7 +391,7 @@ class BIEntity(object):
                     raise
 
         self.recover_cvectors()
-        self.paths["source"] = filepath
+
         self.set_flag("loaded", True)
         self.export()
         return self

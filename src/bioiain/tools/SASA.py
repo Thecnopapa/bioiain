@@ -142,7 +142,7 @@ class SASA(object):
 
 
         for i, target in enumerate(targets):
-            log(3, f"{i}/{len(targets)}", end="")
+            log(3, f"{i}/{len(targets)}", end="\r")
             # exposed_points = ptset.copy()
 
             if isinstance(target, PseudoAtom):
