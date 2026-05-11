@@ -216,12 +216,15 @@ class CVEmbeddingV3(CVEmbeddingV2):
         e, seq = super()._cvectors_to_embedding(cvectors, modulo_norm, max_dist, **kwargs)
 
         self.entity.calculate_sasa()
-        for emb, cv in zip(e, cvectors):
+        new_e = []
+        new_seq = []
+        for emb, s, cv in zip(e, seq, cvectors):
             sasa = cv.res2.sasa(normalised=True)
-            if sasa is None:
-                raise NoEmbeddingForThisResidue( )
-            emb.append(sasa)
-        return e, seq
+            if sasa is not None:
+                emb.append(sasa)
+                new_e.append(emb)
+                new_seq.append(s)
+        return new_e, new_seq
 
 class CVEmbeddingV3C(CVEmbeddingV3, CVEmbeddingVC):
     pass

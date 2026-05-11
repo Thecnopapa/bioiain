@@ -186,6 +186,8 @@ if "-p" not in sys.argv:
                     continue
 
                 embedding = EMBEDDING_CLASS(entity=entity).embedding(force="--force" in sys.argv)
+
+
                 entity.export()
                 if embedding is None:
                     log("warning", "No embedding for file:", file)
