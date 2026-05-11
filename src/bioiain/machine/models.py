@@ -398,6 +398,15 @@ class Hope(DespairLess):
         zn = torch.clamp(z, min=0, max=1)
         return zn
 
+    def _autoencode(self, x):
+
+        x = x.to(DEVICE)
+        y = self._encode(x)
+        z = self._decode(y)
+        index = int(self.submodels["autoencoder"][self.codebook_index].last_index[0].detach().cpu().numpy())
+        score = float(self.submodels["autoencoder"][self.codebook_index].last_loss.detach().cpu().numpy())
+        return index, score, z, x, y
+
     def forward(self, x):
         #print("FORWARD")
         self.set_mode("autoencoder", quiet=True)
@@ -508,11 +517,14 @@ class Hope(DespairLess):
             if mesh_points is not None:
                 mesh = True
 
-            if dataset is None:
+            if dataset is None and plot_preds is None:
                 fig, ax = fig2D(figsize=[3000, 3000])
                 axes = []
             else:
-                size_emb = dataset.get(1).t.size()[-1]+1
+                if dataset is not None:
+                    size_emb = dataset.get(1).t.size()[-1]+1
+                else:
+                    size_emb = plot_preds[0][3].size()[-1]+1
                 size = math.ceil(size_emb ** 0.5)
                 fig, axes = grid2D(size, size)
                 ax = axes[0]
@@ -619,9 +631,22 @@ class Hope(DespairLess):
 
 
             if plot_preds is not None:
-                log(2, "Plotting predictions..." )
-                for token, _, _, point in plot_preds:
-                    ax.scatter(*point.detach().cpu().numpy(), color=f"C{token}")
+                log(2, f"Plotting predictions... ({len(plot_preds)})" )
+                for n, (token, _, _, point) in enumerate(plot_preds):
+                    log(3, f"{n + 1}/{len(plot_preds)}", end="\r")
+                    point = point.detach().cpu().numpy()
+                    if codebook.latent_dims > 2:
+                        point = pca.transform(point.reshape(1, -1))[0]
+                    if mesh:
+                        ax.scatter(*point, color=f"C{token}", edgecolors='black', marker="s")
+                    else:
+                        ax.scatter(*point, color=f"C{token}", marker="s")
+                    for i, axx in enumerate(axes):
+                        c = colorbar(round(item.t[i].item() * 255))
+                        if mesh:
+                            axx.scatter(*point, color=c, edgecolors='black', marker="s")
+                        else:
+                            axx.scatter(*point, color=c, marker="s")
 
             for n, s in enumerate(latent):
                 for a, axx in enumerate([ax]+axes):

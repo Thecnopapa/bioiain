@@ -195,13 +195,13 @@ class CVPair(object):
 
         #print(self.v, self.d)
         if self.a is None:
-            self.a = angle_between_vectors(self.v1.v, self.v2.v)
+            self.a = angle_between_vectors(self.v1.v, self.v2.v)+ 180
         if self.t1 is None:
-            self.t1 = angle_between_vectors(self.v1.v, self.v)
+            self.t1 = angle_between_vectors(self.v1.v, self.v)+ 180
         if self.t2 is None:
-            self.t2 = angle_between_vectors(self.v2.v, self.v)
+            self.t2 = angle_between_vectors(self.v2.v, self.v)+ 180
         if self.da is None:
-            self.da = dihedral_angle(self.v1.end, self.v1.start, self.v2.start, self.v2.end)
+            self.da = dihedral_angle(self.v1.end, self.v1.start, self.v2.start, self.v2.end) + 180
 
         return self
 

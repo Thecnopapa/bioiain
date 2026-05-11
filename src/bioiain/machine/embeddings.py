@@ -106,7 +106,7 @@ class CVEmbedding(PerResidueEmbedding):
             len_i = min(1, i.d / modulo_norm)
             len_j = min(1, j.d / modulo_norm)
             len_i_j = min(1, i_j.d/max_dist)
-            angle_i_j = min(1, i_j.a / 180)
+            angle_i_j = min(1, i_j.a / 360)
             rn, ri = d3(cv.resname)
             seq += rn
 
@@ -132,10 +132,19 @@ class CVEmbedding(PerResidueEmbedding):
             return None
 
         e, seq = self._cvectors_to_embedding(cvectors,modulo_norm=modulo_norm, max_dist=max_dist, **kwargs)
-        e = torch.Tensor(e)
-        torch.save(e, self.path)
+
+        final_e = []
+        final_seq = []
+        for emb, seq in zip(e, seq):
+            if any([ee is None for ee in emb]):
+                continue
+            final_e.append(emb)
+            final_seq.append(seq)
+
+        final_e = torch.Tensor(final_e)
+        torch.save(final_e, self.path)
         #print(e, e.shape, len(seq))
-        self.sequence = seq
+        self.sequence = final_seq
         self.length = len(self.sequence)
         self.exists = True
         return self.path
@@ -216,15 +225,11 @@ class CVEmbeddingV3(CVEmbeddingV2):
         e, seq = super()._cvectors_to_embedding(cvectors, modulo_norm, max_dist, **kwargs)
 
         self.entity.calculate_sasa()
-        new_e = []
-        new_seq = []
+
         for emb, s, cv in zip(e, seq, cvectors):
             sasa = cv.res2.sasa(normalised=True)
-            if sasa is not None:
-                emb.append(sasa)
-                new_e.append(emb)
-                new_seq.append(s)
-        return new_e, new_seq
+            emb.append(sasa)
+        return e, seq
 
 class CVEmbeddingV3C(CVEmbeddingV3, CVEmbeddingVC):
     pass
@@ -243,9 +248,9 @@ class CVEmbeddingV4(CVEmbeddingV3):
 
         for emb, cv in zip(e, cvectors):
             i_j = cv.closest_vp
-            da = min(1, i_j.da / 180)
-            t1 = min(1, i_j.t1 / 180)
-            t2 = min(1, i_j.t2 / 180)
+            da = min(1, i_j.da / 360)
+            t1 = min(1, i_j.t1 / 360)
+            t2 = min(1, i_j.t2 / 360)
             emb.extend([da, t1 , t2])
         return e, seq
 

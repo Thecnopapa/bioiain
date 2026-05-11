@@ -15,6 +15,9 @@ elif torch.xpu.is_available():
 log(1, "DEVICE:", DEVICE)
 
 
+def tensor_to_numpy(tensor):
+    return tensor.detach().cpu().numpy()
+
 from .embeddings import *
 from .base_model import *
 from .datasets import *

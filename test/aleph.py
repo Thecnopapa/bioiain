@@ -246,8 +246,8 @@ if "-t" in sys.argv:
     model.mount()
 
     for n in range(epochs):
-        log("start", "EPOCH", n, model.__class__.__name__, EMBEDDING_CLASS.__name__)
-        log("title", "EPOCH", n, model.__class__.__name__, EMBEDDING_CLASS.__name__)
+        log("start", "EPOCH", n, model.__class__.__name__, DATA_NAME)
+        log("title", "EPOCH", n, model.__class__.__name__, DATA_NAME)
         model.set_mode("autoencoder")
 
         if "--no-plot" in sys.argv:
@@ -353,6 +353,8 @@ if "-p" in sys.argv:
                 log("warning", f"Embedding class ({EMBEDDING_CLASS.__name__}) does not match the model embedding class ({model.data['embedding_class']})")
 
         embedding = EMBEDDING_CLASS(entity=entity).embedding(force=True)
+        dd = EmbeddingDataset(name = prediction_name, folder=prediction_folder)
+        dd.add(embedding)
         print(embedding)
         
         entity = embedding.entity
@@ -368,20 +370,36 @@ if "-p" in sys.argv:
         script.spectrum(entity.name(), color="blue_yellow_red")
 
         paths_emb = []
+        paths_pred = []
         t = embedding.tensor()
+        preds = [model._predict(e) for e in embedding.tensor()]
+        decoded = [model._decode(pred[3]) for pred in preds]
+
+        names = ["tokens", "len i", "len j", "angle ij", "dist ij", "dist lig", "contactability", "SASA", "dihedral",
+                 "t1", "t2"]
+
         for i in range(t.shape[-1]):
             for res in residues:
                 res.set_bfactor(0)
             for cv, emb in zip(cvectors, t):
                 res = cv.res2
                 res.set_bfactor(emb[i])
-            paths_emb.append(entity.export(sufix=f"EMB{i}"))
+            paths_emb.append(entity.export(sufix=f"EMB_{names[i]}"))
             script.load(paths_emb[-1])
 
+            for res in residues:
+                res.set_bfactor(0)
+            for cv, dec in zip(cvectors, decoded):
+                res = cv.res2
+                res.set_bfactor(dec[i])
+            paths_pred.append(entity.export(sufix=f"PRED_{names[i]}"))
+            script.load(paths_pred[-1])
+
         script.spectrum("*EMB*", color="blue_yellow_red", minimum=0, maximum=1)
+        script.spectrum("*PRED*", color="blue_yellow_red", minimum=0, maximum=1)
         script.write_script()
 
-        preds = [model._predict(e) for e in embedding.tensor()]
+
 
         print(len(cvectors), len(preds))
         assert len(cvectors) == len(preds)
@@ -394,39 +412,37 @@ if "-p" in sys.argv:
 
 
         tok_list = {}
-        for cv, pred in zip(cvectors, preds): 
+        for cv, pred in zip(cvectors, preds):
             res = cv.res2
             #print(res, pred[0])
             t = pred[0]
             res.set_bfactor(t)
-            rname = f"TOK{t:2d}_{cv.chain}_{cv.resseq}"
-            if not t in tok_list:
-                tok_list[t] = [rname]
-            else:
-                tok_list[t].append(rname)
-            cv_chain = BIChain.from_atoms([*cv.res1.atoms, *cv.res2.atoms, *cv.res3.atoms], code=rname, chain_id="A", complex=True, share=False)
-            closest_chain = BIChain.from_atoms([*cv.closest.res1.atoms, *cv.closest.res2.atoms, *cv.closest.res3.atoms], code=rname, chain_id="B", complex=True, share=False)
-            atoms = [*cv_chain.all_atoms(), *closest_chain.all_atoms()]
-            script.load(write_atoms(atoms, os.path.join(TEMP_FOLDER, "trash", rname)), rname)
+            # rname = f"TOK{t:2d}_{cv.chain}_{cv.resseq}"
+            # if not t in tok_list:
+            #     tok_list[t] = [rname]
+            # else:
+            #     tok_list[t].append(rname)
+            # cv_chain = BIChain.from_atoms([*cv.res1.atoms, *cv.res2.atoms, *cv.res3.atoms], code=rname, chain_id="A", complex=True, share=False)
+            # closest_chain = BIChain.from_atoms([*cv.closest.res1.atoms, *cv.closest.res2.atoms, *cv.closest.res3.atoms], code=rname, chain_id="B", complex=True, share=False)
+            # atoms = [*cv_chain.all_atoms(), *closest_chain.all_atoms()]
+            # script.load(write_atoms(atoms, os.path.join(TEMP_FOLDER, "trash", rname)), rname)
 
         path_tok = entity.export(sufix="tokens")
-        script.load(path_tok)
-        script.spectrum("*tokens", color="_".join(mpl_colours)+"_"+"_".join(mpl_colours), minimum=0, maximum=19)
-
-        #script.disable("(all)")
+        # script.load(path_tok)
+        # script.spectrum("*tokens", color="_".join(mpl_colours)+"_"+"_".join(mpl_colours), minimum=0, maximum=19)
 
 
-        for tok, tok_res in tok_list.items():
-            script.group(f"TOK{tok:2d}_", f"Token_{tok}")
-            for res in tok_res:
-                script.align(f"({res} and c. A)", f"({tok_res[0]} and c. A)")
-        script.hide("TOK*")
-        script.show("TOK*", "lines")
-        script.spectrum("TOK*", color="_".join(mpl_colours) + "_" + "_".join(mpl_colours), minimum=0, maximum=19)
+        # for tok, tok_res in tok_list.items():
+        #     script.group(f"TOK{tok:2d}_", f"Token_{tok}")
+        #     for res in tok_res:
+        #         script.align(f"({res} and c. A)", f"({tok_res[0]} and c. A)")
+        # script.hide("TOK*")
+        # script.show("TOK*", "lines")
+        # script.spectrum("TOK*", color="_".join(mpl_colours) + "_" + "_".join(mpl_colours), minimum=0, maximum=19)
 
         script.write_script()
 
-        model.plot_latent_space(plot_preds=preds, show=True, fig_dir=prediction_folder)
+        model.plot_latent_space(dataset=dd, plot_preds=preds, show=True, fig_dir=prediction_folder, mesh_points=10)
 
         script.execute(compile=True)
         script.execute()

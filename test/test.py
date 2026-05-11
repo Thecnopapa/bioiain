@@ -79,14 +79,15 @@ for file in os.listdir(DATA_FOLDER):
     entity.calculate_sasa()
     entity.export()
     from src.bioiain.machine import *
-    embedding = CVEmbeddingV3C(entity=entity).embedding(force=True)
+    embedding = CVEmbeddingV4C(entity=entity).embedding(force=True)
     entity.export()
 
     if embedding is None:
         log("warning", "No embedding for file:", file)
         continue
     print(embedding)
-    [print(r, e) for r, e in zip(entity.residues(), embedding.tensor())]
+    for r, e in zip(entity.residues(), embedding.tensor()):
+        print(r, "\t", " ".join([f"{ee.item():3.2f}" for ee in e]))
     #entity.show_cvectors()
 
 
