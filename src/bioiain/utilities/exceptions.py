@@ -50,7 +50,7 @@ class PISAError(CCP4Error):
 class ModelNotFound(Exception):
 	pass
 
-#Residue related
+# Residue related
 class NoCaFound(Exception):
 	pass
 
@@ -62,7 +62,7 @@ class NoMatchingClass(Exception):
 
 
 
-#Crystal related
+# Crystal related
 class FractionalConversionError(Exception):
 	pass
 
@@ -78,13 +78,13 @@ class CrystalError(Exception):
 class MissingCrystalInfo(CrystalError):
 	pass
 
-#ALEPH related
+# ALEPH related
 
 class ALEPHError(Exception):
 	pass
 
 
-#CVector Related
+# CVector Related
 class CVMatrixError(Exception):
 	pass
 class NoNeighboursFound(CVMatrixError):
@@ -99,7 +99,7 @@ class PLINDERSystemNotLoaded(PLINDERError):
 	pass
 
 
-#MMSEQS2 related
+# MMSEQS2 related
 
 class MMSEQS2Error(Exception):
 	pass
@@ -111,7 +111,9 @@ class ClusteringError(MMSEQS2Error):
 	pass
 
 
-
+# Embedding related
+class NoEmbeddingForThisResidue(Exception):
+	pass
 
 
 

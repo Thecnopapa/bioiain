@@ -218,6 +218,8 @@ class CVEmbeddingV3(CVEmbeddingV2):
         self.entity.calculate_sasa()
         for emb, cv in zip(e, cvectors):
             sasa = cv.res2.sasa(normalised=True)
+            if sasa is None:
+                raise NoEmbeddingForThisResidue( )
             emb.append(sasa)
         return e, seq
 

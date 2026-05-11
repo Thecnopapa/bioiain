@@ -50,7 +50,8 @@ class FragmentedStructure(BIStructure):
         self = super().from_file(*args, **kwargs)
         # if not self.has_flag("fragmented", True):
         #     self.fragment(in_place=True)
-        self.recover_cvmatrix()
+        if self is not None:
+            self.recover_cvmatrix()
         return self
 
     def recover_cvmatrix(self):
