@@ -375,7 +375,7 @@ if "-p" in sys.argv:
         preds = [model._predict(e) for e in embedding.tensor()]
         decoded = [model._decode(pred[3]) for pred in preds]
 
-        names = ["tokens", "len i", "len j", "angle ij", "dist ij", "dist lig", "contactability", "SASA", "dihedral",
+        names = ["len i", "len j", "angle ij", "dist ij", "dist lig", "contactability", "SASA", "dihedral",
                  "t1", "t2"]
 
         for i in range(t.shape[-1]):
