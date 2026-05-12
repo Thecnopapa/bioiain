@@ -796,7 +796,7 @@ class HopeLess(Hope):
     def __init__(self, *args, hidden_dims=None, **kwargs):
         hidden_dims = kwargs.get("in_shape")[-1]
         super().__init__(*args, hidden_dims=(hidden_dims, hidden_dims), **kwargs)
-        log(2, f"{self.__class__.__name__} model initialised with {hidden_dims} latent dims")
+        log(1, f"{self.__class__.__name__} model initialised with {hidden_dims} latent dims")
 
 
 
