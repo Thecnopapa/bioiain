@@ -328,9 +328,11 @@ class PymolScript(object):
         args = "'cell'"
         return self.add(fun, args, **kwargs)
 
-    def group(self, prefix:str="sym", name:str|None=None, **kwargs) -> Command:
+    def group(self, prefix:str="sym", name:str|None=None, also_suffix=False, **kwargs) -> Command:
         fun = "group"
-        sele = self._to_str(prefix+"*")
+        if also_suffix:
+            prefix = "*"+prefix if not prefix.startswith("*") else prefix
+        sele = self._to_str(prefix+"*" if  not prefix.endswith("*") else prefix)
         if name is None:
             name = prefix
         args = [self._to_str(name), sele]
@@ -399,6 +401,12 @@ class PymolScript(object):
         if not show_distance:
             self.hide(name, "label")
         return r
+
+    def set(self, param, value):
+        fun = "set"
+        param = self._to_str(param)
+        value = self._to_str(value)
+        return self.add(fun, param, value)
 
 
 

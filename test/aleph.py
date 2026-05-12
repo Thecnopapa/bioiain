@@ -225,7 +225,6 @@ if "-t" in sys.argv:
 
 
     epochs = 100
-    print(dataset)
 
     model = MODEL_CLASS(name=DATA_NAME, in_shape=dataset.get(0).t.shape, batch_size=0, lr=LR, embedding_class = EMBEDDING_CLASS)
     model.add_text("data", model.json())
@@ -349,7 +348,7 @@ if "-p" in sys.argv:
         print(entity)
         print(len(entity.residues()))
         if model.data["embedding_class"] is not None:
-            if EMBEDDING_CLASS.__name__ == model.data["embedding_class"]:
+            if EMBEDDING_CLASS.__name__ != model.data["embedding_class"]:
                 log("warning", f"Embedding class ({EMBEDDING_CLASS.__name__}) does not match the model embedding class ({model.data['embedding_class']})")
 
         embedding = EMBEDDING_CLASS(entity=entity).embedding(force=True)
@@ -370,13 +369,17 @@ if "-p" in sys.argv:
         script.spectrum(entity.name(), color="blue_yellow_red")
 
         paths_emb = []
-        paths_pred = []
+        paths_dec = []
+        paths_disc = []
         t = embedding.tensor()
         preds = [model._predict(e) for e in embedding.tensor()]
-        decoded = [model._decode(pred[3]) for pred in preds]
+        [print(p) for p in preds]
+        decoded = [model._decode(pred[3].detach()) for pred in preds]
+        discretised = [model._decode(pred[2].detach()) for pred in preds]
 
         names = ["len i", "len j", "angle ij", "dist ij", "dist lig", "contactability", "SASA", "dihedral",
                  "t1", "t2"]
+
 
         for i in range(t.shape[-1]):
             for res in residues:
@@ -391,12 +394,27 @@ if "-p" in sys.argv:
                 res.set_bfactor(0)
             for cv, dec in zip(cvectors, decoded):
                 res = cv.res2
+                #print(dec)
                 res.set_bfactor(dec[i])
-            paths_pred.append(entity.export(sufix=f"PRED_{names[i]}"))
-            script.load(paths_pred[-1])
+            paths_dec.append(entity.export(sufix=f"DEC_{names[i]}"))
+            script.load(paths_dec[-1])
+
+            for res in residues:
+                res.set_bfactor(0)
+            for cv, dis in zip(cvectors, discretised):
+                res = cv.res2
+                #print(dis)
+                res.set_bfactor(dis[0][i])
+            paths_disc.append(entity.export(sufix=f"DIS_{names[i]}"))
+            script.load(paths_disc[-1])
+
 
         script.spectrum("*EMB*", color="blue_yellow_red", minimum=0, maximum=1)
-        script.spectrum("*PRED*", color="blue_yellow_red", minimum=0, maximum=1)
+        script.spectrum("*DEC*", color="blue_yellow_red", minimum=0, maximum=1)
+        script.spectrum("*DIS*", color="blue_yellow_red", minimum=0, maximum=1)
+        for name in names:
+            script.group(name, name, also_suffix=True)
+
         script.write_script()
 
 
@@ -428,8 +446,8 @@ if "-p" in sys.argv:
             # script.load(write_atoms(atoms, os.path.join(TEMP_FOLDER, "trash", rname)), rname)
 
         path_tok = entity.export(sufix="tokens")
-        # script.load(path_tok)
-        # script.spectrum("*tokens", color="_".join(mpl_colours)+"_"+"_".join(mpl_colours), minimum=0, maximum=19)
+        script.load(path_tok)
+        script.spectrum("*tokens", color="_".join(mpl_colours)+"_"+"_".join(mpl_colours), minimum=0, maximum=19)
 
 
         # for tok, tok_res in tok_list.items():
@@ -439,6 +457,8 @@ if "-p" in sys.argv:
         # script.hide("TOK*")
         # script.show("TOK*", "lines")
         # script.spectrum("TOK*", color="_".join(mpl_colours) + "_" + "_".join(mpl_colours), minimum=0, maximum=19)
+
+        script.set("grid_mode", 1)
 
         script.write_script()
 
