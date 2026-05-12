@@ -403,9 +403,8 @@ class Hope(DespairLess):
         x = x.to(DEVICE)
         y = self._encode(x)
         z = self._decode(y)
-        index = int(self.submodels["autoencoder"][self.codebook_index].last_index[0].detach().cpu().numpy())
-        score = float(self.submodels["autoencoder"][self.codebook_index].last_loss.detach().cpu().numpy())
-        return index, score, z, x, y
+
+        return z, y
 
     def forward(self, x):
         #print("FORWARD")
@@ -632,7 +631,7 @@ class Hope(DespairLess):
 
             if plot_preds is not None:
                 log(2, f"Plotting predictions... ({len(plot_preds)})" )
-                for n, (token, _, _, point) in enumerate(plot_preds):
+                for n, (token, _, point, _) in enumerate(plot_preds):
                     log(3, f"{n + 1}/{len(plot_preds)}", end="\r")
                     point = point.detach().cpu().numpy()
                     if codebook.latent_dims > 2:
@@ -785,9 +784,6 @@ class Hope(DespairLess):
 
 
 
-
-
-
 class HopeFull(Hope):
     def __init__(self, *args, hidden_dims=None, **kwargs):
         super().__init__(*args, hidden_dims=(50,50), **kwargs)
@@ -795,6 +791,17 @@ class HopeFull(Hope):
 class HopeFullMax(Hope):
     def __init__(self, *args, hidden_dims=None, **kwargs):
         super().__init__(*args, hidden_dims=(100,100), **kwargs)
+
+class HopeLess(Hope):
+    def __init__(self, *args, hidden_dims=None, **kwargs):
+        hidden_dims = kwargs.get("in_shape")[-1]
+        super().__init__(*args, hidden_dims=(hidden_dims, hidden_dims), **kwargs)
+        log(2, f"{self.__class__.__name__} model initialised with {hidden_dims} latent dims")
+
+
+
+
+
 
 
 ########################################################################################################################
