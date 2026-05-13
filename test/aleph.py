@@ -199,6 +199,8 @@ if "-p" not in sys.argv:
                 print(embedding)
                 dataset.add(embedding, key=entity.name())
                 print(dataset)
+                if (n+1) % 100 == 0:
+                    tracemalloc_top()
 
         if len(parts) == 1 or pool is None:
             generate_embeddings(parts[0])
