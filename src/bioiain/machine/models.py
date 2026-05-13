@@ -602,6 +602,7 @@ class Hope(DespairLess):
             if show:
                 fig.show()
                 plt.show(block=True)
+            plt.close(fig)
 
             if self.writer is not None and save:
                 img = Image.open(fig_path)
