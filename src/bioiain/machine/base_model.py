@@ -29,7 +29,7 @@ class BaseModel(nn.Module):
     def __init__(
             self,
             name:str,
-            in_shape:list|tuple,
+            in_shape:list|list|tuple,
             lr:float=0.001,
             batch_size:int=0,
             folder:str=os.path.join(SUBDIR_NAME, "models"),
@@ -37,7 +37,6 @@ class BaseModel(nn.Module):
             dry=False,
             embedding_class=None,
             **kwargs):
-
         super().__init__()
         self.data = {}
         self.data["dataname"] = name
@@ -53,7 +52,10 @@ class BaseModel(nn.Module):
         self.writer = None
         self.dry = dry
         self.mounted = False
-        self.data["in_shape"] = in_shape
+        if type(in_shape) is int:
+            self.data["in_shape"] = (in_shape)
+        else:
+            self.data["in_shape"] = in_shape
         self.inference = inference
         os.makedirs(self.data["folder"], exist_ok=True)
 
@@ -329,6 +331,10 @@ class BaseModel(nn.Module):
             data_path = data_path.replace(".data.json", ".temp.data.json")
         json.dump(self.data, open(data_path, "w"), indent=4)
         return data_path
+
+    @classmethod
+    def load(self, *args, **kwargs):
+        pass
 
 
     def load(self, data_path=None, epoch=None, weights_only=False):

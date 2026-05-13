@@ -19,7 +19,7 @@ from .datasets import Item, Dataset
 from torch.utils.tensorboard import SummaryWriter
 import datetime
 import psutil
-from . import DEVICE
+from . import DEVICE, tensor_to_numpy
 
 from ..utilities.exceptions import *
 from ..utilities.sequences import *
@@ -350,9 +350,10 @@ class DespairLess(Despair):
 class Hope(DespairLess):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.data["latent_dims"] =  self.data["hidden_dims"][-1]
 
         self.layers["codebook"] = {
-            "codebook": Codebook(20, self.data["hidden_dims"][-1])
+            "codebook": Codebook(20, self.data["latent_dims"])
         }
 
         self.layers["autoencoder"] = {
@@ -369,6 +370,11 @@ class Hope(DespairLess):
         }
 
     def _predict_from_latent(self, x):
+        """
+        Predict token form latent space tensor
+        :param x: latent space tensor
+        :return: index, score, latent(token), latent(embedding)/input
+        """
         self.set_mode("codebook", quiet=True)
         z = self._forward(x)
         index = int(self.submodels["autoencoder"][self.codebook_index].last_index[0].detach().cpu().numpy())
@@ -376,7 +382,12 @@ class Hope(DespairLess):
         return index, score, z, x
 
 
-    def _predict(self, x):
+    def _predict(self, x) -> tuple[int, float, torch.Tensor, torch.Tensor]:
+        """
+        Predict token form embedding tensor
+        :param x: embedding tensor
+        :return: index, score, latent(token), latent(embedding)
+        """
         x = self._encode(x)
         self.set_mode("codebook", quiet=True)
         z = self._forward(x)
@@ -501,11 +512,109 @@ class Hope(DespairLess):
 
 
 
+    def plot_latent_dimensions(self, dataset, max_points=100, save=True, show=False, fig_dir=None, plot_raw=True, r_threshold=5):
+        with torch.no_grad():
+            log(1, "Plotting latent dimensions...")
+            from ..visualisation.plots import fig2D, grid2D
+            from sklearn.decomposition import PCA
+            from PIL import Image
+            import matplotlib as mpl
+            colorbar = mpl.colormaps["plasma"]
+
+            embedding_size = dataset.get(1).t.size()[-1]
+            latent_size = self.data["latent_dims"]
+            latent_size_sqrt = math.ceil((latent_size+1) ** 0.5)
+
+            fig, axes = grid2D(latent_size_sqrt, latent_size_sqrt, height=latent_size_sqrt, width=latent_size_sqrt)
+            last_ax = axes[latent_size]
+            for ax in axes[latent_size:]:
+                ax.set_axis_off()
+            axes = axes[:latent_size]
+
+            import random
+            indexes = range(len(dataset))
+            if len(dataset) > max_points:
+                indexes = sorted(random.sample(list(indexes), max_points))
+
+
+            points = [self._predict(item.t)[3] for n, item in enumerate(dataset) if n in indexes]
+            decoded = [self._decode(p) for p in points]
+            points = [tensor_to_numpy(p) for p in points]
+            decoded = [tensor_to_numpy(d) for d in decoded]
+
+            violin_settings = dict(
+                showmeans = False,
+                showmedians = False,
+                showextrema = False,
+                orientation= "horizontal",
+                positions = [0.5],
+            )
+
+            names = ["len i", "len j", "angle ij", "dist ij", "dist lig", "contactability", "SASA", "dihedral", "t1", "t2"]
+            for i, ax in enumerate(axes):
+                ax.set_title(f"Dimension {i}", size=10)
+                v = ax.violinplot([p[i] for p in points], **violin_settings)
+                for b in v["bodies"]:
+                    b.set_facecolor("black")
+                    b.set_edgecolor("black")
+                    b.set_alpha(0.1)
+                # for f in range(embedding_size):
+                #     vv = ax.violinplot([d[f] for d in data], **violin_settings)
+                #     for bb in vv["bodies"]:
+                #         bb.set_facecolor(f"C{f}")
+                #         bb.set_edgecolor(f"C{f}")
+                #         bb.set_alpha(0.1)
+
+                sorted_data = sorted(list(zip(points, decoded)), key=lambda x: x[0][i])
+
+                pp = [p[0][i] for p in sorted_data]
+
+                for f in range(embedding_size):
+                    # if i == len(axes):
+                    #     legend_lines.append(mpl.lines.Line2D([0], [0], color=f"C{f}"))
+                    #     legend_names.append(names[f] if f < len(names) else "")
+                    dd = [d[1][f] for d in sorted_data]
+                    a, b, c, d = (0,0,0,0)
+                    (d, c, b, a), r, rr, rrr, rrrr= np.polyfit(pp, dd, deg=3, full=True)
+                    print(r, rr, rrr, rrrr)
+                    if r[0] <= r_threshold:
+                        x_seq = np.linspace(min(pp), max(pp), 100)
+
+                        ax.plot(x_seq, a + b * x_seq + c * (x_seq**2) + d * (x_seq**3), color=f"C{f}", linewidth=3, alpha=1)
+                        if plot_raw:
+                            ax.plot(pp, dd, color=f"C{f}", alpha=0.2)
+                        ax.set_ylim(-0.1, 1.1)
+            for f in range(embedding_size):
+                last_ax.plot(0,0, alpha=1, linewidth=3, label=names[f], color=f"C{f}")
+                last_ax.legend()
+
+            plt.subplots_adjust()
+            plt.tight_layout()
+
+
+            if save:
+                if fig_dir is None:
+                    fig_dir = os.path.join(self.data["folder"], "dimensions")
+                os.makedirs(fig_dir, exist_ok=True)
+                fig_path = os.path.join(fig_dir, f"dimensions_{self}_E{self.data["epoch"]}.png")
+                log(1, "Saving to: open", fig_path)
+                fig.savefig(fig_path)
+            if show:
+                fig.show()
+                plt.show(block=True)
+
+            if self.writer is not None and save:
+                img = Image.open(fig_path)
+                img = torchvision.transforms.v2.functional.pil_to_tensor(img)
+                self.writer.add_image(f"dimensions", img, global_step=self.data["epoch"])
+                del img
+
+
 
 
     def plot_latent_space(self, dataset=None, letters=True, seed=6, fig_dir=None, show=False, plot_preds=None, max_points=1000, mesh_points=None, save=True):
         with torch.no_grad():
-            log(1, "Plotting current state...")
+            log(1, "Plotting latent space...")
             from ..visualisation.plots import fig2D, grid2D
             from sklearn.decomposition import PCA
             from PIL import Image

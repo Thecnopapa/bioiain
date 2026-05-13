@@ -12,6 +12,7 @@ from src.bioiain.utilities.logging import *
 
 #from src.bioiain.aleph import *
 from src.bioiain.base import *
+from src.bioiain.machine import models
 
 #from src.bioiain.utilities.parallel import *
 
@@ -60,6 +61,21 @@ else:
                               pdb_list=["1M2Z", "3HBB", "6F63", "5LXN", "3brf", "6e52", "7t2y", "3kg2", "2GEJ", "2bis"],
                               data_dir="./data")
     DATA_NAME = "aleph"
+
+
+
+from src.bioiain.machine.datasets import EmbeddingDataset
+
+dataset = EmbeddingDataset(name=f"tokens_aleph_v4C").load()
+print(dataset)
+model = models.HopeLess(name="inference_test", in_shape=dataset.get(0).t.shape, inference=True)
+model.load("/localdata/iain/bioiain/test/bioiain.d/models/HopeLess/HopeLess_aleph_v4C.data.json")
+print(model)
+
+model.plot_latent_dimensions(dataset=dataset)
+
+
+exit()
 
 
 

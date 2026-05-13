@@ -109,7 +109,7 @@ class CVector(object):
         if self.vc_mode is None:
             self.vc = self.start.copy()
         elif self.vc_mode == "ca_projection":
-            ca = selfpos.res2.ca.coord
+            ca = self.res2.ca.coord
             start_ca = vector(self.start.coord, ca)
             self.vc =  PseudoAtom((start_ca[0] + ca[0], start_ca[1] + ca[1], start_ca[2] + ca[2]))
         else:

@@ -150,7 +150,7 @@ class FragmentedStructure(BIStructure):
                 fragment = Fragment.from_atoms(fatoms, code=self.code(), chain_id=chain, fragment_id=n, parent=self)
                 if export:
                     fragment.export()
-                log(2, f"fragment {n}: {fragment}")
+                log(2, f"fragment {n}: {fragment}", end="\r")
                 if single_atom_ratio[0] / single_atom_ratio[1] > 0.5:
                     log("Warning",
                         f"Detected fragment with too many missing side chains ({single_atom_ratio[0] / single_atom_ratio[1]:3.1f}%)")
