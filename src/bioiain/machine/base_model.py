@@ -393,7 +393,7 @@ class BaseModel(nn.Module):
     def add_text(self, name, text):
         if self.writer is None:
             self._create_writer()
-        self.writer.add_text(name, text)
+        self.writer.add_text(name, text, global_step=self.data["epoch"])
 
     def test(self, dataset, re_load=False, temp=False):
         self.leftover_batch()

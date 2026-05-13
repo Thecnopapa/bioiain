@@ -254,6 +254,7 @@ if "-t" in sys.argv:
         else:
             model.plot_latent_space(dataset=dataset, max_points=1000, mesh_points=20)
             model.plot_latent_dimensions(dataset=dataset, max_points=1000, r_threshold=5)
+            model.plot_latent_dimensions(dataset=dataset, max_points=1000, r_threshold=100 , plot_raw=False)
 
         model.plot_tokens()
 

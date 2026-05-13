@@ -596,7 +596,7 @@ class Hope(DespairLess):
                 if fig_dir is None:
                     fig_dir = os.path.join(self.data["folder"], "dimensions")
                 os.makedirs(fig_dir, exist_ok=True)
-                fig_path = os.path.join(fig_dir, f"dimensions_{self}_E{self.data["epoch"]}.png")
+                fig_path = os.path.join(fig_dir, f"dimensions_{self}_E{self.data["epoch"]}{'_raw' if plot_raw else ''}.png")
                 log(1, "Saving to: open", fig_path)
                 fig.savefig(fig_path)
             if show:
@@ -606,7 +606,10 @@ class Hope(DespairLess):
             if self.writer is not None and save:
                 img = Image.open(fig_path)
                 img = torchvision.transforms.v2.functional.pil_to_tensor(img)
-                self.writer.add_image(f"dimensions", img, global_step=self.data["epoch"])
+                if plot_raw:
+                    self.writer.add_image(f"dimensions/raw", img, global_step=self.data["epoch"])
+                else:
+                    self.writer.add_image(f"dimensions/clean", img, global_step=self.data["epoch"])
                 del img
 
 
@@ -653,9 +656,11 @@ class Hope(DespairLess):
                 latent = pca.fit_transform(o_latent)
 
                 log(3, "PCA components:")
+                pca_text = ""
                 for n, c in enumerate(pca.components_):
+                    pca_text += f"PC{n+1}: " + ", ".join([f"{x:3.2f}" for x in c]) + "\n"
                     log(4, f"PC{n+1}: {c}")
-
+                self.add_text("pca/components", pca_text)
                 #print(latent)
             else:
                 latent = o_latent
