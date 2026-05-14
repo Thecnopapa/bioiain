@@ -1,24 +1,7 @@
-import os, json, platform
+import os, json
 
 import torchvision.transforms.v2.functional
-from IPython.core.pylabtools import figsize
-from sklearn.metrics import confusion_matrix
-import PIL
 
-from ..utilities.logging import *
-from ..utilities.parallel import *
-
-import torch
-import torch.nn as nn
-
-import pandas as pd
-import numpy as np
-
-from .datasets import Item, Dataset
-
-from torch.utils.tensorboard import SummaryWriter
-import datetime
-import psutil
 from . import DEVICE, tensor_to_numpy
 
 from ..utilities.exceptions import *
