@@ -68,8 +68,8 @@ Characteristic vectors are a powerful abstraction of protein structure, and can 
 **Tools**
 
 Utility functions to use and parse some external tools are included. For now this includes:
- - DSSP
- - PISA
+ - [DSSP](https://doi.org/10.1002/bip.360221211)
+ - [PISA](https://doi.org/10.1016/j.jmb.2007.05.022)
 
 
 **Utilities**
