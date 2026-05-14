@@ -46,17 +46,10 @@ from operator import itemgetter
 
 if PYTHON_V == 3:
     import configparser
-    from urllib.parse import urlparse, urlencode
     from urllib.request import urlopen, Request
-    from urllib.error import HTTPError
     from builtins import range
     from builtins import str
-elif PYTHON_V == 2:
-    import ConfigParser
-    from urlparse import urlparse
-    from urllib import urlencode
-    from urllib2 import urlopen, Request, build_opener, install_opener, HTTPError, HTTPRedirectHandler
-    import urllib2
+
 
 # format imports
 import json
@@ -73,7 +66,6 @@ from termcolor import colored, cprint
 import matplotlib.pyplot as plt
 import matplotlib.transforms as transforms
 from matplotlib.lines import Line2D
-import pylab
 
 # Scientific and numerical imports
 import math
@@ -3486,7 +3478,7 @@ def annotate_pdb_model(reference, strictness_ah, strictness_bs, peptide_length, 
     f.close()
 
     # NOTE: Graphs of the secondary structures
-    pylab.figure(figsize=(width_pic, height_pic))
+    plt.figure(figsize=(width_pic, height_pic))
     ax = plt.subplot()
     x = []
     y = []
@@ -3515,17 +3507,17 @@ def annotate_pdb_model(reference, strictness_ah, strictness_bs, peptide_length, 
     trans = transforms.blended_transform_factory(ax.transAxes, ax.transData)
     ax.annotate("alpha", xy=(1.01, 2.2), xycoords=trans, clip_on=False, va='center')
     ax.annotate("beta", xy=(1.01, 1.4), xycoords=trans, clip_on=False, va='center')
-    pylab.title('' + os.path.basename(reference) + ' CVLs', fontsize=20)
-    pylab.ylabel('CVL', fontsize=16)
-    pylab.xlabel('CV id', fontsize=16)
-    # pylab.xlim(numpy.arange(numpy.min(x), numpy.max(x), 1.0))
-    pylab.xticks(numpy.arange(numpy.min(x), numpy.max(x), 1.0))
+    plt.title('' + os.path.basename(reference) + ' CVLs', fontsize=20)
+    plt.ylabel('CVL', fontsize=16)
+    plt.xlabel('CV id', fontsize=16)
+    # plt.xlim(numpy.arange(numpy.min(x), numpy.max(x), 1.0))
+    plt.xticks(numpy.arange(numpy.min(x), numpy.max(x), 1.0))
     legend_elements = [Line2D([0], [0], marker='o', color='w', label='Alpha', markerfacecolor='r', markersize=10),
                        Line2D([0], [0], marker='o', color='w', label='Beta', markerfacecolor='y', markersize=10),
                        Line2D([0], [0], marker='o', color='w', label='Coil', markerfacecolor='b', markersize=10)]
-    pylab.legend(handles=legend_elements, loc='upper right')
-    pylab.savefig(os.path.join("./", os.path.basename(reference)[:-4] + "_CVLs.png"))
-    pylab.close()
+    plt.legend(handles=legend_elements, loc='upper right')
+    plt.savefig(os.path.join("./", os.path.basename(reference)[:-4] + "_CVLs.png"))
+    plt.close()
 
     f = open(os.path.join("./", os.path.basename(reference)[:-4] + "_CVLs.txt"), "w")
     for opo, l in enumerate(x):
@@ -3536,7 +3528,7 @@ def annotate_pdb_model(reference, strictness_ah, strictness_bs, peptide_length, 
 
 
     # NOTE: Graph of the distances of the secondary structures
-    pylab.figure(figsize=(width_pic, height_pic))
+    plt.figure(figsize=(width_pic, height_pic))
     x = []
     y = []
     z = []
@@ -3568,7 +3560,7 @@ def annotate_pdb_model(reference, strictness_ah, strictness_bs, peptide_length, 
     f.close()
 
     # NOTE: Graph of the angles in secondary structures
-    pylab.figure(figsize=(width_pic, height_pic))
+    plt.figure(figsize=(width_pic, height_pic))
     x = []
     y = []
     z = [] #Secodnary structure
@@ -3622,62 +3614,62 @@ def annotate_pdb_model(reference, strictness_ah, strictness_bs, peptide_length, 
     dic_json = {'Angles_pic': {'cvids': x, 'cv_anles':y, 'sstype': z, 'label': q, 'ca_distance' : k, 'fragment_start' : o, 'fragment_mean' : n, 'fragment_label':l}}
     modify_json_file('output.json', dic_json, plot=True)
 
-    pylab.scatter(x, y, s=75, color=[cmap[u] for u in z])
-    pylab.plot(x, y, linewidth=2, color="g")
-    pylab.scatter(o, n, linewidth=2, color="g")
+    plt.scatter(x, y, s=75, color=[cmap[u] for u in z])
+    plt.plot(x, y, linewidth=2, color="g")
+    plt.scatter(o, n, linewidth=2, color="g")
 
     f = open(os.path.join("./", os.path.basename(reference)[:-4] + "_Angles.txt"), "w")
 
     for xyq in zip(x, y, q, z):
-        pylab.annotate(xyq[2].replace("_",""), xy=xyq[:2], textcoords='data', ha='center', va="bottom")
+        plt.annotate(xyq[2].replace("_",""), xy=xyq[:2], textcoords='data', ha='center', va="bottom")
         f.write(str(xyq[0]) + "\t" + str(xyq[1]) + "\t" + str(xyq[2]) + "\t" + str(xyq[3]) + "\n")
     # for xy in zip(x, y, z):
     #    f.write(str(xy[0]) + "\t" + str(xy[1]) + "\t" + str(xy[2]) +"\n")
 
     for onl in zip(o, n, l, z):
-        pylab.annotate(onl[2].replace("_",""), xy=onl[:2], textcoords='data', ha='center', va="bottom")
+        plt.annotate(onl[2].replace("_",""), xy=onl[:2], textcoords='data', ha='center', va="bottom")
         # f.write(str(onl[0]) + "\t" + str(onl[1]) + "\t" + str(onl[2]) + "\t" + str(onl[3]) +"\n")
 
-    # pylab.axhline(y=2.2, color='b')
-    # pylab.axhline(y=1.4, color='b')
-    pylab.title('' + os.path.basename(reference) + ' Angles', fontsize=20)
-    pylab.ylabel('Angle', fontsize=16)
-    pylab.xlabel('CV id', fontsize=16)
-    # # pylab.xlim(numpy.arange(numpy.min(x), numpy.max(x), 1.0))
-    pylab.xticks(numpy.arange(numpy.min(x), numpy.max(x), 1.0))
+    # plt.axhline(y=2.2, color='b')
+    # plt.axhline(y=1.4, color='b')
+    plt.title('' + os.path.basename(reference) + ' Angles', fontsize=20)
+    plt.ylabel('Angle', fontsize=16)
+    plt.xlabel('CV id', fontsize=16)
+    # # plt.xlim(numpy.arange(numpy.min(x), numpy.max(x), 1.0))
+    plt.xticks(numpy.arange(numpy.min(x), numpy.max(x), 1.0))
     legend_elements = [Line2D([0], [0], marker='o', color='w', label='Alpha', markerfacecolor='r', markersize=10),
                        Line2D([0], [0], marker='o', color='w', label='Beta', markerfacecolor='y', markersize=10),
                        Line2D([0], [0], marker='o', color='w', label='Coil', markerfacecolor='b', markersize=10)]
     plt.legend(handles=legend_elements, loc='upper right')
-    pylab.savefig(os.path.join("./", os.path.basename(reference)[:-4] + "_Angles.png"))
-    pylab.close()
+    plt.savefig(os.path.join("./", os.path.basename(reference)[:-4] + "_Angles.png"))
+    plt.close()
 
     f.close()
 
     #NOTE: Graph of the Ca-Ca distances
-    pylab.figure(figsize=(width_pic, height_pic))
-    pylab.scatter(x, k, s=75, color=[cmap[u] for u in z])
-    pylab.plot(x, k, linewidth=2, color="green")
+    plt.figure(figsize=(width_pic, height_pic))
+    plt.scatter(x, k, s=75, color=[cmap[u] for u in z])
+    plt.plot(x, k, linewidth=2, color="green")
     for xk in zip(x, k, q):
-        pylab.annotate(xk[2].replace("_",""), xy=xk[:2], textcoords='data', ha='center', va="bottom")
-    pylab.title('' + os.path.basename(reference) + ' Ca-Ca distances', fontsize=20)
-    pylab.ylabel('Angstrom', fontsize=16)
-    pylab.xlabel('CV id', fontsize=16)
-    # # pylab.xlim(numpy.arange(numpy.min(x), numpy.max(x), 1.0))
-    pylab.xticks(numpy.arange(numpy.min(x), numpy.max(x), 1.0))
-    pylab.ylim((0, 4))
+        plt.annotate(xk[2].replace("_",""), xy=xk[:2], textcoords='data', ha='center', va="bottom")
+    plt.title('' + os.path.basename(reference) + ' Ca-Ca distances', fontsize=20)
+    plt.ylabel('Angstrom', fontsize=16)
+    plt.xlabel('CV id', fontsize=16)
+    # # plt.xlim(numpy.arange(numpy.min(x), numpy.max(x), 1.0))
+    plt.xticks(numpy.arange(numpy.min(x), numpy.max(x), 1.0))
+    plt.ylim((0, 4))
     legend_elements = [Line2D([0], [0], marker='o', color='w', label='Alpha', markerfacecolor='r', markersize=10),
                        Line2D([0], [0], marker='o', color='w', label='Beta', markerfacecolor='y', markersize=10),
                        Line2D([0], [0], marker='o', color='w', label='Coil', markerfacecolor='b', markersize=10)]
     plt.legend(handles=legend_elements, loc='upper right')
-    pylab.savefig(os.path.join("./", os.path.basename(reference)[:-4] + "_ca-ca_d.png"))
-    pylab.close()
+    plt.savefig(os.path.join("./", os.path.basename(reference)[:-4] + "_ca-ca_d.png"))
+    plt.close()
 
     # r = np.arange(0, 2, 0.01)
     # theta = 2 * np.pi * r
 
-    # ax = pylab.subplot(111, projection='polar')
-    v, ax = pylab.subplots(1, sharex=True, figsize=(width_pic, height_pic), subplot_kw=dict(polar=True))
+    # ax = plt.subplot(111, projection='polar')
+    v, ax = plt.subplots(1, sharex=True, figsize=(width_pic, height_pic), subplot_kw=dict(polar=True))
 
     # ax = axarr.subplot(111, projection='polar')
     # ax.bar(0, numpy.pi, width=0.1)
@@ -3696,7 +3688,7 @@ def annotate_pdb_model(reference, strictness_ah, strictness_bs, peptide_length, 
     # NOTE: decomment following line to print also lines connecting dots
     ####ax.plot([(numpy.pi/180.0 )*sole for sole in y],x)
     # for xyq in zip([(numpy.pi/180.0 )*sole for sole in y], x, q):
-    #     pylab.annotate(xyq[2], xy=xyq[:2], textcoords='data')
+    #     plt.annotate(xyq[2], xy=xyq[:2], textcoords='data')
     # ax.set_rmax(len(x))
 
     # ax.set_rticks([0.5, 1, 1.5, 2])  # less radial ticks
@@ -3708,8 +3700,8 @@ def annotate_pdb_model(reference, strictness_ah, strictness_bs, peptide_length, 
                        Line2D([0], [0], marker='o', color='w', label='Beta', markerfacecolor='y', markersize=10),
                        Line2D([0], [0], marker='o', color='w', label='Coil', markerfacecolor='b', markersize=10)]
     plt.legend(handles=legend_elements, loc='upper right')
-    pylab.savefig(os.path.join("./", os.path.basename(reference)[:-4] + "_Angles2.png"))
-    pylab.close()
+    plt.savefig(os.path.join("./", os.path.basename(reference)[:-4] + "_Angles2.png"))
+    plt.close()
 
 
 #@SystemUtility.timing

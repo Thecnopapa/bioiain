@@ -36,6 +36,9 @@ class CVector(object):
 
         self.vc_mode = vc_mode
         self.vc = None
+
+        self.ss = None
+
         self.d = None
         self.v = None
         self.start = None
@@ -66,6 +69,7 @@ class CVector(object):
             resseq=f"{self.resseq:3d}",
             resname=f"{self.resname:3s}",
             resnum=f"{self.resnum:3d}",
+            ss=f"{self.ss:2s}" if self.ss is not None else ". ",
             d=f"{self.d:8.3f}",
             start_x=f"{self.start.coord[0]:8.3f}", start_y=f"{self.start.coord[1]:8.3f}", start_z=f"{self.start.coord[2]:8.3f}",
             end_x=f"{self.end.coord[0]:8.3f}", end_y=f"{self.end.coord[1]:8.3f}", end_z=f"{self.end.coord[2]:8.3f}",
@@ -124,8 +128,21 @@ class CVector(object):
             self.is_gap = True
             self.trash = True
 
+        self.ss = self._calculate_ss()
+
 
         return self
+
+
+    def _calculate_ss(self, delta_cvla = 0.2, delta_cvlb = 0.05):
+
+        if 1.4 - delta_cvlb <= self.d <= 1.4 + delta_cvlb:
+            ss = "bs"
+        elif 2.2 - delta_cvla <= self.d <= 2.2 + delta_cvla:
+            ss = "ah"
+        else:
+            ss = "co"
+        return ss
 
 
     def pair(self, target, **kwargs):
