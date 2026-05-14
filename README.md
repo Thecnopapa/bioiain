@@ -26,7 +26,7 @@ Relevant python code can be found in the `src` folder within their relevant fold
 The `test` is for development use, and it's contents will be **probably** deleted/modified at some point, and are not included in the package.
 
 > [!NOTE]
-> Preset workflows are being developed, including the [projectDimer](Https://GitHub.com/Thecnopapa/projectDimer) workflow. (WIP)
+> Preset workflows are being developed, including the [projectDimer](https://gitHub.com/thecnopapa/projectdimer) workflow. (WIP)
 
 
 **Protein Framework**
