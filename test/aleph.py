@@ -243,8 +243,11 @@ if "-t" in sys.argv:
         "device": DEVICE,
         }, indent=4))
 
+
     model.set_mode("autoencoder")
     model.mount()
+    total_params = sum(p.numel() for p in model.submodels["autoencoder"].parameters())
+    log(1, "Number of parameters in the model:", total_params)
 
     for n in range(epochs):
         log("start", "EPOCH", n, model.__class__.__name__, DATA_NAME)
