@@ -333,9 +333,9 @@ class BIEntity(object):
             file_format = filepath.split(".")[-1]
 
         if file_format not in ["cif", "pdb"]:
-            raise exceptions.UnknownFormat(file_format)
+            raise UnknownFormat(file_format)
         try:
-            self._all_atoms(filepath=filepath, force=True, is_pdb=file_format == "pdb")
+            self._all_atoms(filepath=filepath, force=True, is_pdb=file_format == "pdb", **kwargs)
         except (StructureLoadException, CrystalError) as e:
             log("Error", f"Structure not loaded: {filepath}", e)
             raise e
@@ -418,7 +418,7 @@ class BIEntity(object):
             self._all_atoms()
         return self._atoms
 
-    def _all_atoms(self, filepath=None, force=False, is_pdb=False, require_crystal=True):
+    def _all_atoms(self, filepath=None, force=False, require_crystal=True, **kwargs):
         from .atom import BIAtom
 
 
