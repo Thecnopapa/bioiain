@@ -446,7 +446,8 @@ def write_atoms(atoms, file_path, name=None, include_misc=True, preserve_ids=Fal
 
 
 def write_dict(data, label, file_path, name=None, mode="w"):
-
+    if data is None:
+        return file_path
     if len(data) == 0:
         return file_path
     if not file_path.endswith(".cif"):
@@ -477,7 +478,8 @@ def write_dict(data, label, file_path, name=None, mode="w"):
         raise e
 
 def write_dict_list(data, label, file_path, name=None, mode="w", **kwargs):
-
+    if data is None:
+        return file_path
     if len(data) == 0:
         return file_path
     if not file_path.endswith(".cif"):
