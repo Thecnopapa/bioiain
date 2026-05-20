@@ -1,11 +1,8 @@
-import os, json
-
-from ..utilities import *
 
 from ..utilities.exceptions import *
 from .atom import BIAtom
 from .ligand import Ligand, Water
-from ..utilities import clean_string, d3to1
+from ..utilities import d3to1
 
 
 

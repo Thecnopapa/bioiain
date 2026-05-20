@@ -1,6 +1,3 @@
-import os, json
-from ..utilities import *
-from ..utilities import clean_string
 from ..utilities.exceptions import *
 from .mmcif import *
 import numpy as np

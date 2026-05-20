@@ -1,7 +1,5 @@
 import os, json, requests
 
-from ..utilities import *
-
 from ..utilities.strings import *
 
 def downloadPDB(data_dir:str, list_name:str, pdb_list:list=None, file_path:str = None, file_format="cif",

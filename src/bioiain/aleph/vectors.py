@@ -1,13 +1,7 @@
-import os, json
-import numpy as np
-
 from .. import SUBDIR_NAME
 from ..utilities.logging import log
 from ..utilities.exceptions import *
 from ..utilities.maths import *
-from ..visualisation.plots import plot_heatmap
-from ..base.atom import PseudoAtom
-from ..tools.SASA import KDT
 
 
 
@@ -103,6 +97,7 @@ class CVector(object):
 
 
     def calculate(self):
+        from ..base.atom import PseudoAtom
 
         self.start =  PseudoAtom(find_com([r.ca for r in self.residues]))
         self.end = PseudoAtom(find_com([r.o for r in self.residues]))
@@ -316,6 +311,7 @@ class CVMatrix(object):
 
 
     def save_fig(self, attribute="d", save_folder=None, prefix="cvmatrix"):
+        from ..visualisation.plots import plot_heatmap
         if save_folder is None:
             save_folder = os.path.join(SUBDIR_NAME, "cvmaps")
         os.makedirs(save_folder, exist_ok=True)
@@ -326,6 +322,7 @@ class CVMatrix(object):
         return filename
 
     def show(self, attribute="d"):
+        from ..visualisation.plots import plot_heatmap
         plot_heatmap(self.square(attribute), show=True)
 
     def map_ligands(self, entity):
@@ -358,6 +355,7 @@ class CVMatrix(object):
 
     def calculate_neighbours(self, use_fragments=True, max_distance=30, n_neighbours=1):
         log(2, "Calculating neighbours for:", self)
+        from ..tools.SASA import KDT
 
 
         data = {k: {"vc":cv.vc, "cv":cv} for k, cv in enumerate(self.vectors)}

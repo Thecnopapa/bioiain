@@ -5,11 +5,10 @@ from .chain import BIChain
 from .residue import BIResidue
 from .ligand import Ligand, Water
 from .atom import BIAtom, PseudoAtom
-from ..aleph.fragments import FragmentedStructure
 
 from .mmcif import *
 
 
 __all__ = ["entity", "structure", "chain", "residue", "atom", "mmcif", "ligand"]
-__all__.extend(["BIEntity", "BIStructure", "BIChain", "BIResidue", "BIAtom", "PseudoAtom", "FragmentedStructure", "Ligand", "Water"])
+__all__.extend(["BIEntity", "BIStructure", "BIChain", "BIResidue", "BIAtom", "PseudoAtom", "Ligand", "Water"])
 __all__.extend(["downloadPDB", "MMCIF", "read_mmcif", "write_atoms"])

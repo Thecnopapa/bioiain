@@ -1,5 +1,3 @@
-import os, json
-
 from ..utilities.exceptions import *
 from .entity import BIEntity
 from .residue import BIResidue
