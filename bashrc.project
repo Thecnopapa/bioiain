@@ -225,7 +225,6 @@ checkout(){
 
 # PROJECT SPECIFIC AFTER THIS
 
-
 testing(){
   cd $FOLDER_PATH/test && python test.py "$@"
 }
@@ -266,6 +265,7 @@ update-test(){
 }
 
 update-gcloud(){
+    gcloud config set project iainvisa
     echo '$ pip install -i https://europe-west1-python.pkg.dev/iainvisa/python/simple/ --extra-index-url https://pypi.org/simple/ bioiain -U'
     pip install -i  https://europe-west1-python.pkg.dev/iainvisa/python/simple/ --extra-index-url https://pypi.org/simple/ bioiain -U
 }

@@ -275,7 +275,8 @@ def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list
                     #print("line_list",line_list)
                     #print(n)
                     if n != 1:
-                        log("warning", f"No key-value structure found in line {n}:", repr(line), f"\n  (In file: {file_path})")
+                        #log("warning", f"No key-value structure found in line {n}:", repr(line), f"\n  (In file: {file_path})")
+                        pass
 
                     else:
                         #log("debug", "Parsing:", line.replace("\n", "").strip())
@@ -454,7 +455,7 @@ def write_dict(data, label, file_path, name=None, mode="w"):
         file_path += ".cif"
     if not label.startswith("_"):
         label = "_" + label
-    log(3, "Writing dict to:", file_path, f"({label})", end="")
+    log(3, "Writing dict to:", file_path, f"({label})", end="\n")
 
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     try:
@@ -489,7 +490,7 @@ def write_dict_list(data, label, file_path, name=None, mode="w", **kwargs):
     if not label.startswith("_"):
         label = "_" + label
 
-    log(3, "Writing dict list to:", file_path, f"({label})", end="")
+    log(3, "Writing dict list to:", file_path, f"({label})", end="\n")
 
     keys = ["n"]
 
