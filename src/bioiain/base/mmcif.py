@@ -3,6 +3,11 @@ import os, json, requests
 from ..utilities.strings import *
 from ..utilities.exceptions import *
 
+# TODO: A More simple download option
+# TODO: Fix mysterious prints in mmcif parsing
+# TODO: Fix loops missing the data in entity exporting
+
+
 def downloadPDB(data_dir:str, list_name:str, pdb_list:list=None, file_path:str = None, file_format="cif",
                 overwrite:bool=False) -> str:
     """
