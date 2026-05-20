@@ -20,6 +20,13 @@ class DeletedIndex(Exception):
 		self.next_n = next_n
 
 
+# MMCIF related
+class MMCIFError(Exception):
+	pass
+class MMCIFTypeError(MMCIFError):
+	pass
+
+
 # Structure import related
 class StructureLoadException(Exception):
 	pass

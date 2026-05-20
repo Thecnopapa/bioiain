@@ -1,6 +1,7 @@
 import os, json, requests
 
 from ..utilities.strings import *
+from ..utilities.exceptions import *
 
 def downloadPDB(data_dir:str, list_name:str, pdb_list:list=None, file_path:str = None, file_format="cif",
                 overwrite:bool=False) -> str:
@@ -233,7 +234,7 @@ def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list
                         else:
                             multi_cached.extend(line_list)
                     else:
-                        raise TypeError("Bioiain mmcif Parser error")
+                        raise MMCIFTypeError("Bioiain mmcif Parser error")
 
 
 
@@ -339,6 +340,7 @@ def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list
                     except AssertionError:
                         print(group_key)
                         log("error", f"Multiple keys structure found in line {n}:", repr(line))
+                        raise MMCIFError(f"Multiple keys structure found")
                         exit()
                         continue
                     group_key = group_key[0]
