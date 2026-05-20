@@ -2,7 +2,7 @@ import torchvision.transforms.v2.functional
 import PIL
 
 from torch.utils.tensorboard import SummaryWriter
-
+from ..utilities import *
 from . import DEVICE
 
 from .losses import *

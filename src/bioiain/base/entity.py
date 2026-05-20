@@ -1,7 +1,7 @@
 from ..utilities.exceptions import *
 from .mmcif import *
 import numpy as np
-
+from ..utilities import *
 
 
 class BIEntity(object):

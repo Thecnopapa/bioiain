@@ -17,7 +17,7 @@ def build_res(atoms, ignore_errors=True, **kwargs):
                 else:
                     return Ligand(atoms, **kwargs)
             elif a.type == "ATOM":
-                if len(a.resname) == 2:
+                if len(a.resname) < 3:
                     return BINucleoutide(atoms, **kwargs)
                 else:
                     return BIResidue(atoms, **kwargs)
@@ -41,7 +41,7 @@ def build_res(atoms, ignore_errors=True, **kwargs):
 class BIResidue(object):
     child_class = BIAtom
     type="residue"
-    def __init__(self, atoms, **kwargs):
+    def __init__(self, atoms, require_ca=True, **kwargs):
         if type(atoms) == dict:
             atoms = atoms.values()
         self.atoms = [a for a in atoms if a.element != "H"]
@@ -92,10 +92,10 @@ class BIResidue(object):
                 log("Warning", "Only one atom given to residue, treating as CA")
                 self.ca = self.atoms[0]
             if self.ca is None:
-                log("error", "Trying to initialise residue with no CA")
-                print([a.name for a in self.atoms])
-                print()
-                raise NoCaFound()
+                if require_ca:
+                    log("error", "Trying to initialise residue with no CA")
+                    print([a.name for a in self.atoms])
+                    raise NoCaFound()
 
             self.set_fragment()
 
