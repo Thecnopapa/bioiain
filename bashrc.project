@@ -232,20 +232,20 @@ testing(){
 upload(){
   cd $FOLDER_PATH | exit 0
   python3 -m build
-  python3 -m twine upload --repository pypi dist/* --verbose
+  python3 -m twine upload --repository pypi dist/* --verbose --skip-existing
   rm dist/*
 }
 upload-test(){
   cd $FOLDER_PATH | exit 0
   python3 -m build
-  python3 -m twine upload --repository testpypi dist/* --verbose
+  python3 -m twine upload --repository testpypi dist/* --verbose --skip-existing
   rm dist/*
 }
 
 upload-gcloud(){
   cd $FOLDER_PATH | exit 0
   python3 -m build
-  python3 -m twine upload --repository-url  https://europe-west1-python.pkg.dev/iainvisa/python/ dist/* --verbose
+  python3 -m twine upload --repository-url  https://europe-west1-python.pkg.dev/iainvisa/python/ dist/* --verbose --skip-existing
   rm dist/*
 }
 
