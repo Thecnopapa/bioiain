@@ -1,6 +1,5 @@
 import os, json
 import numpy as np
-from plotly.express.trendline_functions import expanding
 
 from .. import SUBDIR_NAME
 from ..utilities.logging import log
