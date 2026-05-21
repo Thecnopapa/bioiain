@@ -69,10 +69,10 @@ from src.bioiain.machine.datasets import EmbeddingDataset
 dataset = EmbeddingDataset(name=f"tokens_aleph_v4C").load()
 print(dataset)
 model = models.HopeLess(name="inference_test", in_shape=dataset.get(0).t.shape, inference=True)
-model.load("/localdata/iain/bioiain/test/bioiain.d/models/HopeLess/HopeLess_aleph_v4C.data.json")
+model.load("/localdata/iain/bioiain/test/bioiain.d/models/HopeLess/HopeLess_monomers_v4C.temp.data.json")
 print(model)
 
-model.plot_latent_dimensions(dataset=dataset)
+model.plot_latent_dimensions(dataset=dataset, r_threshold=100, only=[4,5], name="sasa_lig")
 
 
 exit()
