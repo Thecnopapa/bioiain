@@ -475,12 +475,9 @@ def write_dict(data, label, file_path, name=None, mode="w"):
                 print(label, data)
 
             for k, v in data.items():
-                if v is None:
-                    f.write(f"{label}.{k}   ?\n")
-                elif f"{label}.{k}" in quoted_headers or should_be_quoted(v):
-                    f.write(f"{label}.{k}   '{str(v)}'\n")
-                else:
-                    f.write(f"{label}.{k}   {str(v)}\n")
+                #print(label, k, v)
+                f.write(f"{label}.{k}   {cleanup_for_mmcif(v ,force_quote=f'{label}.{k}' in quoted_headers)}\n")
+
         return file_path
     except Exception as e:
         log("error", f"Dict writing to mmcif failed, deleting corrupted file: {file_path}")
@@ -519,7 +516,6 @@ def write_dict_list(data, label, file_path, name=None, mode="w", **kwargs):
                 keys.extend(d.keys())
             break
 
-
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     try:
         with open(file_path, mode) as f:
@@ -527,14 +523,14 @@ def write_dict_list(data, label, file_path, name=None, mode="w", **kwargs):
                 f.write(f"data_{name}\n")
             f.write("#\n")
             f.write("loop_\n")
-
+            #print(keys)
             for k in keys:
                 f.write(f"{label}.{k}\n")
 
             for n, d in enumerate([d for d in data if d is not None]):
                 if get_dict:
                     d = d._mmcif_dict(**kwargs)
-                    f.write(f"{n:4d}  "+"  ".join([quote_if_necessary(v) for v in d.values()]) + "\n")
+                f.write(f"{n:4d}  "+"  ".join([cleanup_for_mmcif(v) for v in d.values()]) + "\n")
 
         return file_path
     except Exception as e:
@@ -543,23 +539,36 @@ def write_dict_list(data, label, file_path, name=None, mode="w", **kwargs):
         raise e
 
 
-def quote_if_necessary(value):
-    if should_be_quoted(value):
+
+def cleanup_for_mmcif(value, **kwargs):
+    if value is None:
+        return "?"
+    if str(value).strip() == "":
+        return "."
+    value = str(value).replace("\n", "").strip()
+    return quote_if_necessary(value, **kwargs)
+
+
+def quote_if_necessary(value, force_quote=False, **kwargs):
+    if "'" in value:
+        return f'"{value}"'
+    if should_be_quoted(value, **kwargs) or force_quote:
         return f"'{value}'"
     else:
         return str(value)
 
 
-def should_be_quoted(value):
+def should_be_quoted(value, always_quote_chars="/><;:,() "):
     if value is None:
         return False
     value = str(value)
     if value.strip() == "":
         return True
+    for c in always_quote_chars:
+        if c in value:
+            return True
     if value.startswith("'") and value.endswith("'"):
         return False
-    if "'" in value:
-        return True
     if value.startswith("<") or value.endswith(">"):
         return True
 

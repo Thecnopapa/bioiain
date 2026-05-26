@@ -64,6 +64,14 @@ else:
 
 
 
+from src.bioiain.aleph import *
+
+entity = BIEntity.from_file(os.path.join(DATA_FOLDER, "7C2X.cif"), code="TEST", force=True)
+print(entity)
+
+
+
+exit()
 from src.bioiain.machine.datasets import EmbeddingDataset
 
 dataset = EmbeddingDataset(name=f"tokens_aleph_v4C").load()
