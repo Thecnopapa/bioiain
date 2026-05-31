@@ -139,6 +139,8 @@ class CVEmbedding(PerResidueEmbedding):
             if any([ee is None for ee in emb]):
                 continue
             final_e.append(emb)
+            if type(seq) is list:
+                seq = "".join(seq)
             final_seq.append(seq)
 
         final_e = torch.Tensor(final_e)

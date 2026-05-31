@@ -495,7 +495,7 @@ class Hope(DespairLess):
 
 
 
-    def plot_latent_dimensions(self, dataset, max_points=100, save=True, show=False, fig_dir=None, plot_raw=True, r_threshold=5):
+    def plot_latent_dimensions(self, dataset, name="dimensioons", max_points=100, save=True, show=False, fig_dir=None, plot_raw=True, r_threshold=5, only:int|list[int]=None):
         with torch.no_grad():
             log(1, "Plotting latent dimensions...")
             from ..visualisation.plots import fig2D, grid2D
@@ -556,10 +556,19 @@ class Hope(DespairLess):
                     # if i == len(axes):
                     #     legend_lines.append(mpl.lines.Line2D([0], [0], color=f"C{f}"))
                     #     legend_names.append(names[f] if f < len(names) else "")
+
+                    if type(only) is list:
+                        if not f in only:
+                            continue
+                    elif type(only) is int:
+                        if f != only:
+                            continue
+
                     dd = [d[1][f] for d in sorted_data]
                     a, b, c, d = (0,0,0,0)
                     (d, c, b, a), r, rr, rrr, rrrr= np.polyfit(pp, dd, deg=3, full=True)
-                    print(r, rr, rrr, rrrr)
+                    #print(r, rr, rrr, rrrr)
+
                     if r[0] <= r_threshold:
                         x_seq = np.linspace(min(pp), max(pp), 100)
 
@@ -577,9 +586,9 @@ class Hope(DespairLess):
 
             if save:
                 if fig_dir is None:
-                    fig_dir = os.path.join(self.data["folder"], "dimensions")
+                    fig_dir = os.path.join(self.data["folder"], name)
                 os.makedirs(fig_dir, exist_ok=True)
-                fig_path = os.path.join(fig_dir, f"dimensions_{self}_E{self.data["epoch"]}{'_raw' if plot_raw else ''}.png")
+                fig_path = os.path.join(fig_dir, f"{name}_{self}_E{self.data["epoch"]}{'_raw' if plot_raw else ''}.png")
                 log(1, "Saving to: open", fig_path)
                 fig.savefig(fig_path)
             if show:

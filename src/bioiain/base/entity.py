@@ -1,7 +1,7 @@
 from ..utilities.exceptions import *
 from .mmcif import *
 import numpy as np
-
+from ..utilities import *
 
 
 class BIEntity(object):
@@ -9,7 +9,7 @@ class BIEntity(object):
     extension = "structure"
     level = "structure"
     tmp_folder = "/tmp"
-    excluded_from_headers = ["_bi_*", "_atom_sites", "_aleph_*"]
+    excluded_from_headers = ["_bi_*", "_atom_site", "_aleph_*","_cell", "_symmetry"]
 
     def __init__(self, export_folder=None, parent=None, use_tmp=False, **kwargs):
         if export_folder is None:
@@ -558,11 +558,12 @@ class BIEntity(object):
                 for k, d in full_headers.items():
                     if type(d) is list and len(d) > 1:
                         write_dict_list(d, file_path=filepath, label=k, mode=mode, name=self.name())
+                        mode = "a"
                     else:
                         if type(d) is list:
                             d = d[0]
                         write_dict(d, file_path=filepath, label=k, mode=mode, name=self.name())
-                    mode = "a"
+                        mode = "a"
 
             #print(self)
             #log(3, "CVECTORS", cvectors, self._cvectors is not None)

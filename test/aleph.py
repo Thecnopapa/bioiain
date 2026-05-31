@@ -12,6 +12,7 @@ tracemalloc_start()
 
 from src.bioiain.aleph import *
 from src.bioiain.base import *
+from src.bioiain.aleph import *
 from src.bioiain.machine import *
 from src.bioiain.utilities.parallel import *
 
