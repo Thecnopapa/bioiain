@@ -22,7 +22,7 @@ class BaseModel(nn.Module):
             embedding_class=None,
             **kwargs):
         super().__init__()
-        self.data = {}
+        self.data = getattr(self, "data", {})
         self.data["dataname"] = name
 
         self.data["folder"] = os.path.join(folder, self.__class__.__name__)

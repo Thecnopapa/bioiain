@@ -1,4 +1,4 @@
-import os, json, sys, pickle, random
+import os, json, sys, random
 sys.path.append('..')
 
 import torchvision.transforms.v2.functional
@@ -21,317 +21,30 @@ from src.bioiain.visualisation.plots import grid2D, fig2D
 from PIL import Image
 from sklearn.decomposition import PCA
 
-from sklearn.cluster import KMeans
 
 
 
-class Despair(BaseModel):
-    def __init__(self, *args, hidden_dims=[10, 2], num_classes=20, dropout=0, **kwargs):
-        super().__init__(*args, **kwargs)
+
+class Summer(BaseModel):
+    def __init__(self, *args, hidden_dims=None, num_classes=20, **kwargs):
+        self.data={}
+        if hidden_dims is None:
+            hidden_dims = [kwargs.get("in_shape")[-1]]
 
         self.data["num_classes"] = num_classes
         self.data["hidden_dims"] = hidden_dims
-        self.data["dropout"] = dropout
-        self._current_state = None
-        self.set_mode("autoencoder")
-        self.data["tokens"] = None
+        self.data["latent_dims"] = self.data["hidden_dims"][-1]
 
 
-        self.layers["encoder"] = {
-            "en_l1": nn.Linear(self.data["in_shape"][0], hidden_dims[0]),
-            "en_relu1": nn.ReLU(),
-            "en_l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
-        }
-
-        self.layers["decoder"] = {
-            "de_l2": nn.Linear(hidden_dims[1], hidden_dims[0]),
-            "de_relu1": nn.ReLU(),
-            "de_l1": nn.Linear(hidden_dims[0], self.data["in_shape"][0]),
-
-
-        }
-
-        self.optimisers.pop("default")
-        self.optimisers["autoencoder"] = {
-            "class": torch.optim.Adam,
-            "layer_set": ["encoder", "decoder"]
-        }
-        self.optimisers["encoder"] = {
-            "class": torch.optim.Adam,
-            "layer_set": ["encoder"]
-        }
-        self.optimisers["decoder"] = {
-            "class": torch.optim.Adam,
-            "layer_set": ["decoder"]
-        }
-
-        self.criterions["autoencoder"] = VQLoss()
-        self.running_loss["encoder"] = 0
-        self.running_loss["decoder"] = 0
-
-
-    def forward(self, x, to_latent=False, from_latent=False):
-        x = x.to(DEVICE)
-        if not from_latent:
-            x = super().forward(x, submodel_name="encoder")
-        if not to_latent:
-            x = super().forward(x, submodel_name="decoder")
-        return x
-
-
-    def train(self, item, i=None, n_items=None):
-
-        item.to(DEVICE)
-        latent = self(item.t, to_latent=True)
-        #print("latent", latent)
-        latent, token_latent, origin_latent = self.get_closest_latent(latent)
-        #print("token latent", token_latent)
-
-        encoder_loss = self.criterions["autoencoder"].encoder_loss(latent, token_latent, origin_latent, commitment=0)
-        self.running_loss["encoder"] += encoder_loss.item()
-
-        #print("encoder_loss", encoder_loss)
-
-        latent_diff = torch.sub(latent, token_latent)
-        #print("latent diff", latent_diff)
-        new_latent = torch.sub(latent, latent_diff)
-        #print("new latent", new_latent)
-        out = self(new_latent.to(DEVICE), from_latent=True)
-
-        decoder_loss = self.criterions["autoencoder"].decoder_loss(out, item.t)
-        self.running_loss["decoder"] += decoder_loss.item()
-
-
-        loss = self.loss(encoder_loss, decoder_loss)
-
-        if i is not None and n_items is not None:
-
-            print(f"{i}/{n_items} LOSS: {loss.item():7.3f} ({encoder_loss.item():7.3f}/{decoder_loss.item():7.3f}) av:{self.running_loss[self.mode]/self.running_loss["total"]:7.3f}", end="\r")
-
-
-        return loss
-
-
-
-
-
-    def latent_generator(self, dataset):
-        log(2, "Generating latent embeddings...")
-        n_items = len(dataset)
-        for n, item in enumerate(dataset):
-            print(f"{n+1}/{n_items}", end="\r")
-            latent = self.forward(item.t, to_latent=True)
-            yield latent.detach().cpu().numpy()
-
-
-    def get_closest_latent(self, x, only_id=False):
-
-        target = x.detach().cpu().numpy().reshape(1, -1).astype(float)
-        token_id = self._current_state.predict(target)
-
-        token_latent = self._current_state.cluster_centers_[token_id][0]
-        #print("TOKEN LATENT" ,token_latent)
-
-        origin = multidimensional_com(self._current_state.cluster_centers_)
-
-        distance_from_origin = multidimensional_distance(origin, target)
-        distance_from_token = multidimensional_distance(target, token_latent)
-
-
-
-        if only_id:
-            return token_id, distance_from_token, distance_from_origin
-
-        latent = torch.tensor(token_latent, requires_grad=True).float().to(DEVICE)
-        origin = torch.tensor(origin, requires_grad=True).float().to(DEVICE)
-
-        return x, latent , origin
-
-
-
-    def cluster_latent_space(self, dataset, seed=6):
-        log(1, "CLustering latent space...")
-
-
-        algorithm = KMeans(n_clusters=20, random_state=seed)
-        with torch.no_grad():
-            a = np.array(list(self.latent_generator(dataset))).astype(float)
-            log(2, "Fitting...")
-            algorithm.fit(a)
-            tracemalloc_top()
-            del a
-
-        self._current_state = algorithm
-        self.data["tokens"] = self._current_state.cluster_centers_.copy().tolist()
-
-        estimator_path = os.path.join(self.data["folder"], self.get_fname()+ ".estimator.pkl")
-        pickle.dump(algorithm, open(estimator_path, "wb"))
-        self.data["estimator_path"] = estimator_path
-
-    def plot_current_state(self, dataset=None, seed=6, tokens=True):
-        log(1, "Plotting current state...")
-
-
-
-        fig, ax = fig2D()
-
-
-        if self.data["hidden_dims"][-1] > 2:
-            pca = PCA(n_components=2, random_state=seed)
-            state = pca.fit_transform(self._current_state.cluster_centers_.copy())
-
-            log(2, "PCA components:")
-            for n, c in enumerate(pca.components_):
-                log(3, f"PC{n+1}: {c}")
-
-        else:
-            state = self._current_state.cluster_centers_.copy()
-
-        for n, s in enumerate(state):
-            ax.scatter(*s, color=f"C{n}")
-            ax.text(*s, n)
-
-        if dataset is not None:
-            with torch.no_grad():
-                if self.data["hidden_dims"][-1] > 2:
-                    transformed = pca.transform(list(self.latent_generator(dataset)))
-                else:
-                    transformed = self.latent_generator(dataset)
-
-            for n, (e, l) in enumerate(zip(transformed, self._current_state.labels_)):
-                #token = self.get_closest_latent(e, only_id=True)
-                ax.scatter(*e, color=f"C{l}")
-
-
-        fig_dir = os.path.join(self.data["folder"], "latents")
-        os.makedirs(fig_dir, exist_ok=True)
-        fig_path = os.path.join(fig_dir, f"latent_{self}_E{self.data["epoch"]}.png")
-        fig.savefig(fig_path)
-        plt.close(fig)
-        print("saving to:", fig_path)
-
-        if self.writer is not None:
-            img = Image.open(fig_path)
-            img = torchvision.transforms.v2.functional.pil_to_tensor(img)
-            self.writer.add_image(f"latent", img, global_step=self.data["epoch"])
-            del img
-        if tokens:
-            self.draw_all_tokens()
-
-    def predict_tokens(self, latents):
-        preds = self.estimator.predict(latents)
-        return preds
-
-    def estimator(self):
-        estimator = pickle.load(open(self.data["estimator_path"], "rb"))
-        return estimator
-
-
-
-    def draw_all_tokens(self, show=False, save=True):
-        log(1,"Drawing all tokens...")
-
-        fig, axes = grid2D(5, 4)
-
-        #print(axes)
-
-
-        for n, ax in enumerate(axes):
-            #print(n, ax)
-            self.draw_token(n, ax=ax)
-
-        if show:
-            fig.show()
-        if save:
-            save_path = os.path.join(self.data["folder"], "tokens", f"tokens_{self}_E{self.data["epoch"]}.png")
-            os.makedirs(os.path.dirname(save_path), exist_ok=True)
-            fig.savefig(save_path)
-            plt.close(fig)
-
-            if self.writer is not None:
-                img = Image.open(save_path)
-                img = torchvision.transforms.v2.functional.pil_to_tensor(img)
-                self.writer.add_image(f"tokens", img, global_step=self.data["epoch"])
-                del img
-
-    def draw_token(self, token_id, show=False, save=False, fig=None, ax=None):
-        log(2,"Drawing token:", token_id, end="\r")
-        #print("ax:", ax)
-
-
-        tokens = self.estimator().cluster_centers_
-        token = torch.Tensor(tokens[token_id])
-
-        with torch.no_grad():
-            reconstructed = self(token, from_latent=True)
-            reconstructed = [i.item() for i in reconstructed]
-            i_length, j_length, i_j_angle, i_j_length = reconstructed
-
-        i_length = i_length *2.4
-        j_length = j_length *2.4
-        i_j_angle = i_j_angle*180
-        i_j_length = i_j_length*10
-
-
-        cv1_start = (0,0)
-
-        cv1_end = (0, i_length)
-
-        cv2_start = (i_j_length, 0)
-
-        cv2_end = rotate2D(cv2_start, (i_j_length, j_length), i_j_angle)
-
-
-
-
-        if ax is None:
-            fig, ax = fig2D()
-        ax.scatter(*cv1_start)
-        ax.scatter(*cv1_end)
-        ax.plot(*zip(cv1_start, cv1_end))
-        ax.text(*cv1_start, "I")
-
-        ax.text(i_j_length/2, 0, f"{i_j_length:3.1}")
-
-        ax.scatter(*cv2_start)
-        ax.scatter(*cv2_end)
-        ax.plot(*zip(cv2_start, cv2_end))
-        ax.text(*cv2_start, "J")
-
-        #ax.quiver(cv1_start, cv1_end)
-        #ax.quiver(cv2_start, cv2_end)
-
-        ax.set_title(f"Token: i:{i_length:3.2f} j:{j_length:3.2f} d:{i_j_length:3.1f} a:{i_j_angle:3.1f}")
-
-
-        if fig is not None:
-            if show:
-                fig.show()
-            if save:
-                save_path = os.path.join(self.data["folder"], "tokens", f"token_{token_id}.png")
-                os.makedirs(os.path.dirname(save_path), exist_ok=True)
-
-                fig.savefig(save_path)
-            plt.close(fig)
-
-
-
-class DespairLess(Despair):
-    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+
         self.layers["encoder"] = {
             "en_linear": nn.Linear(self.data["in_shape"][0], self.data["hidden_dims"][-1])
         }
         self.layers["decoder"] = {
             "de_linear": nn.Linear(self.data["hidden_dims"][-1], self.data["in_shape"][0])
         }
-
-
-
-class Hope(DespairLess):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.data["latent_dims"] =  self.data["hidden_dims"][-1]
 
         self.layers["codebook"] = {
             "codebook": Codebook(20, self.data["latent_dims"])
@@ -345,10 +58,35 @@ class Hope(DespairLess):
         self.codebook_index = list(self.layers["autoencoder"].keys()).index("codebook")
         self.MSE = nn.MSELoss()
 
+        self.optimisers.pop("default")
+
+
+        self.optimisers["encoder"] = {
+            "class": torch.optim.Adam,
+            "layer_set": ["encoder"]
+        }
+        self.optimisers["decoder"] = {
+            "class": torch.optim.Adam,
+            "layer_set": ["decoder"]
+        }
         self.optimisers["autoencoder"] = {
             "class": torch.optim.Adam,
             "layer_set": ["autoencoder"]
         }
+        self.criterions["autoencoder"] = VQLoss()
+
+        self.running_loss["encoder"] = 0
+        self.running_loss["decoder"] = 0
+        self.running_loss["autoencoder"] = 0
+
+        self.set_mode("autoencoder")
+        self.data["name"] = str(self)
+
+    def __str__(self):
+        return f"{self.__class__.__name__}{self.data['latent_dims']}D_{self.data['dataname']}"
+
+
+
 
     def _predict_from_latent(self, x):
         """
@@ -362,7 +100,6 @@ class Hope(DespairLess):
         score = float(self.submodels["autoencoder"][self.codebook_index].last_loss.detach().cpu().numpy())
         return index, score, z, x
 
-
     def _predict(self, x) -> tuple[int, float, torch.Tensor, torch.Tensor]:
         """
         Predict token form embedding tensor
@@ -375,7 +112,6 @@ class Hope(DespairLess):
         index = int(self.submodels["autoencoder"][self.codebook_index].last_index[0].detach().cpu().numpy())
         score = float(self.submodels["autoencoder"][self.codebook_index].last_loss.detach().cpu().numpy())
         return index, score, z, x
-
 
     def _encode(self, x):
         self.set_mode("encoder", quiet=True)
@@ -399,40 +135,40 @@ class Hope(DespairLess):
         return z, y
 
     def forward(self, x):
-        #print("FORWARD")
+        # print("FORWARD")
         self.set_mode("autoencoder", quiet=True)
 
         x = x.to(DEVICE)
         z = self._forward(x)
-        #zn = torch.clamp(z, min=0, max=1)
+        # zn = torch.clamp(z, min=0, max=1)
 
-        #print(self.submodels["autoencoder"])
+        # print(self.submodels["autoencoder"])
         encoding_loss = self.submodels["autoencoder"][self.codebook_index].last_loss
         decoding_loss = self.MSE(x, z)
         self.running_loss["encoder"] += encoding_loss.item()
         self.running_loss["decoder"] += decoding_loss.item()
-        #print("encoding loss:", encoding_loss)
-        #print("decoding loss:", decoding_loss)
+        # print("encoding loss:", encoding_loss)
+        # print("decoding loss:", decoding_loss)
         loss = self.loss(encoding_loss, decoding_loss)
-        #print("loss:", loss)
+        # print("loss:", loss)
 
         return loss, encoding_loss, decoding_loss
 
-    def _latent_distance_matrix(self, normalise=True, discretise:int=None):
+    def _latent_distance_matrix(self, normalise=True, discretise: int = None):
         log(2, "Generating latent distance matrix...")
         codebook = self.submodels["autoencoder"][self.codebook_index]
         tokens = np.array(list(zip(*codebook.codebook.weight.t().detach().cpu().numpy())))
         distances = {}
         for n1, t1 in enumerate(tokens):
             distances[n1, n1] = 0
-            if n1 == len(tokens) -1:
+            if n1 == len(tokens) - 1:
                 break
-            for n2, t2 in enumerate(tokens[n1+1:]):
+            for n2, t2 in enumerate(tokens[n1 + 1:]):
                 n2 = n1 + n2 + 1
                 if n1 != n2:
                     d = multidimensional_distance(t1, t2)
                     distances[n1, n2] = d
-                    #distances[n2, n1] = d
+                    # distances[n2, n1] = d
 
         max_dist = max(distances.values())
         if normalise:
@@ -441,14 +177,14 @@ class Hope(DespairLess):
             max_dist = 1
 
         if discretise is not None:
-            bins = np.linspace(0, max_dist, discretise+1)
+            bins = np.linspace(0, max_dist, discretise + 1)
             print(bins)
             print(len(bins))
             for k, d in distances.items():
                 distances[k] = bins[np.digitize([d], bins[1:])][0]
 
-
-        distances = {k:v for k, v in sorted([(kk, vv) for kk, vv in distances.items()], key=lambda x: intto1(x[0]))}
+        distances = {k: v for k, v in
+                     sorted([(kk, vv) for kk, vv in distances.items()], key=lambda x: intto1(x[0]))}
         for k, d in distances.items():
             print(f"{k[0] + 1}-{k[1] + 1} ({intto1(k[0])}-{intto1([1])}): {distances[k]:2.1f}")
             pass
@@ -468,7 +204,7 @@ class Hope(DespairLess):
 
             toks = sorted(list(set([k[0] for k in distances.keys()])), key=lambda x: intto1(x)) + ["X", "*"]
 
-            upper = discretisation//2
+            upper = discretisation // 2
             lower = upper - discretisation
 
             for t1 in toks:
@@ -491,9 +227,8 @@ class Hope(DespairLess):
                 f.write("\n")
         return blossum_path
 
-
-
-    def plot_latent_dimensions(self, dataset, name="dimensioons", max_points=100, save=True, show=False, fig_dir=None, plot_raw=True, r_threshold=5, only:int|list[int]=None):
+    def plot_latent_dimensions(self, dataset, name="dimensioons", max_points=100, save=True, show=False,
+                               fig_dir=None, plot_raw=True, r_threshold=5, only: int | list[int] = None):
         with torch.no_grad():
             log(1, "Plotting latent dimensions...")
 
@@ -501,7 +236,7 @@ class Hope(DespairLess):
 
             embedding_size = dataset.get(1).t.size()[-1]
             latent_size = self.data["latent_dims"]
-            latent_size_sqrt = math.ceil((latent_size+1) ** 0.5)
+            latent_size_sqrt = math.ceil((latent_size + 1) ** 0.5)
 
             fig, axes = grid2D(latent_size_sqrt, latent_size_sqrt, height=latent_size_sqrt, width=latent_size_sqrt)
             last_ax = axes[latent_size]
@@ -513,21 +248,21 @@ class Hope(DespairLess):
             if len(dataset) > max_points:
                 indexes = sorted(random.sample(list(indexes), max_points))
 
-
             points = [self._predict(item.t)[3] for n, item in enumerate(dataset) if n in indexes]
             decoded = [self._decode(p) for p in points]
             points = [tensor_to_numpy(p) for p in points]
             decoded = [tensor_to_numpy(d) for d in decoded]
 
             violin_settings = dict(
-                showmeans = False,
-                showmedians = False,
-                showextrema = False,
-                orientation= "horizontal",
-                positions = [0.5],
+                showmeans=False,
+                showmedians=False,
+                showextrema=False,
+                orientation="horizontal",
+                positions=[0.5],
             )
 
-            names = ["len i", "len j", "angle ij", "dist ij", "dist lig", "contactability", "SASA", "dihedral", "t1", "t2"]
+            names = ["len i", "len j", "angle ij", "dist ij", "dist lig", "contactability", "SASA", "dihedral",
+                     "t1", "t2"]
             for i, ax in enumerate(axes):
                 ax.set_title(f"Dimension {i}", size=10)
                 v = ax.violinplot([p[i] for p in points], **violin_settings)
@@ -559,30 +294,31 @@ class Hope(DespairLess):
                             continue
 
                     dd = [d[1][f] for d in sorted_data]
-                    a, b, c, d = (0,0,0,0)
-                    (d, c, b, a), r, rr, rrr, rrrr= np.polyfit(pp, dd, deg=3, full=True)
-                    #print(r, rr, rrr, rrrr)
+                    a, b, c, d = (0, 0, 0, 0)
+                    (d, c, b, a), r, rr, rrr, rrrr = np.polyfit(pp, dd, deg=3, full=True)
+                    # print(r, rr, rrr, rrrr)
 
                     if r[0] <= r_threshold:
                         x_seq = np.linspace(min(pp), max(pp), 100)
 
-                        ax.plot(x_seq, a + b * x_seq + c * (x_seq**2) + d * (x_seq**3), color=f"C{f}", linewidth=3, alpha=1)
+                        ax.plot(x_seq, a + b * x_seq + c * (x_seq ** 2) + d * (x_seq ** 3), color=f"C{f}",
+                                linewidth=3, alpha=1)
                         if plot_raw:
                             ax.plot(pp, dd, color=f"C{f}", alpha=0.2)
                         ax.set_ylim(-0.1, 1.1)
             for f in range(embedding_size):
-                last_ax.plot(0,0, alpha=1, linewidth=3, label=names[f], color=f"C{f}")
+                last_ax.plot(0, 0, alpha=1, linewidth=3, label=names[f], color=f"C{f}")
                 last_ax.legend()
 
             plt.subplots_adjust()
             plt.tight_layout()
 
-
             if save:
                 if fig_dir is None:
                     fig_dir = os.path.join(self.data["folder"], name)
                 os.makedirs(fig_dir, exist_ok=True)
-                fig_path = os.path.join(fig_dir, f"{name}_{self}_E{self.data["epoch"]}{'_raw' if plot_raw else ''}.png")
+                fig_path = os.path.join(fig_dir,
+                                        f"{name}_{self}_E{self.data["epoch"]}{'_raw' if plot_raw else ''}.png")
                 log(1, "Saving to: open", fig_path)
                 fig.savefig(fig_path)
             if show:
@@ -599,10 +335,8 @@ class Hope(DespairLess):
                     self.writer.add_image(f"dimensions/clean", img, global_step=self.data["epoch"])
                 del img
 
-
-
-
-    def plot_latent_space(self, dataset=None, letters=True, seed=6, fig_dir=None, show=False, plot_preds=None, max_points=1000, mesh_points=None, save=True):
+    def plot_latent_space(self, dataset=None, letters=True, seed=6, fig_dir=None, show=False, plot_preds=None,
+                          max_points=1000, mesh_points=None, save=True):
         with torch.no_grad():
             log(1, "Plotting latent space...")
             colorbar = mpl.colormaps["plasma"]
@@ -616,9 +350,9 @@ class Hope(DespairLess):
                 axes = []
             else:
                 if dataset is not None:
-                    size_emb = dataset.get(1).t.size()[-1]+1
+                    size_emb = dataset.get(1).t.size()[-1] + 1
                 else:
-                    size_emb = plot_preds[0][3].size()[-1]+1
+                    size_emb = plot_preds[0][3].size()[-1] + 1
                 size = math.ceil(size_emb ** 0.5)
                 fig, axes = grid2D(size, size)
                 ax = axes[0]
@@ -627,13 +361,13 @@ class Hope(DespairLess):
             codebook = self.submodels["autoencoder"][self.codebook_index]
 
             o_latent = np.array(list(zip(*codebook.codebook.weight.t().detach().cpu().numpy())))
-            #print("Latent:")
-            #print(latent)
-            #print("##")
+            # print("Latent:")
+            # print(latent)
+            # print("##")
 
             pca = None
             if codebook.latent_dims > 2:
-                #mesh = False
+                # mesh = False
                 log(2, "Performing PCA on latent...")
                 pca = PCA(n_components=2, random_state=seed)
                 latent = pca.fit_transform(o_latent)
@@ -641,14 +375,15 @@ class Hope(DespairLess):
                 log(3, "PCA components:")
                 pca_text = ""
                 for n, c in enumerate(pca.components_):
-                    pca_text += f"PC{n+1}: " + ", ".join([f"{x:3.2f}" for x in c]) + "\n"
-                    log(4, f"PC{n+1}: {c}")
+                    pca_text += f"PC{n + 1}: " + ", ".join([f"{x:3.2f}" for x in c]) + "\n"
+                    log(4, f"PC{n + 1}: {c}")
                 self.add_text("pca/components", pca_text)
-                #print(latent)
+                # print(latent)
             else:
                 latent = o_latent
 
-            names = ["tokens", "len i", "len j", "angle ij", "dist ij", "dist lig", "contactability", "SASA", "dihedral", "t1", "t2"]
+            names = ["tokens", "len i", "len j", "angle ij", "dist ij", "dist lig", "contactability", "SASA",
+                     "dihedral", "t1", "t2"]
 
             if mesh:
                 x_min = min([l[0] for l in latent])
@@ -660,11 +395,11 @@ class Hope(DespairLess):
                 y_size = (y_max - y_min) / mesh_points
 
                 padding = mesh_points // 10
-                x_padding = padding*x_size
-                y_padding = padding*y_size
+                x_padding = padding * x_size
+                y_padding = padding * y_size
 
-                x_range = np.linspace(x_min-x_padding, x_max+x_padding, mesh_points+(padding*2))
-                y_range = np.linspace(y_min-y_padding, y_max+y_padding, mesh_points+(padding*2))
+                x_range = np.linspace(x_min - x_padding, x_max + x_padding, mesh_points + (padding * 2))
+                y_range = np.linspace(y_min - y_padding, y_max + y_padding, mesh_points + (padding * 2))
 
                 for x in x_range:
                     for y in y_range:
@@ -672,24 +407,18 @@ class Hope(DespairLess):
 
                         if pca is not None:
                             m = pca.inverse_transform(np.array(m).reshape(1, -1))[0].astype("f")
-                            #print(m)
-                            #print(m.dtype)
-
+                            # print(m)
+                            # print(m.dtype)
 
                         token, _, _, _ = self._predict_from_latent(torch.tensor(m).to(DEVICE))
 
                         pred = self._decode(torch.tensor(m).to(DEVICE))
                         pred = pred.detach().cpu().numpy()
                         if token is not None:
-                            ax.add_patch(mpl.patches.Rectangle((x,y), x_size, y_size, color=f"C{token}"))
+                            ax.add_patch(mpl.patches.Rectangle((x, y), x_size, y_size, color=f"C{token}"))
                         for i, axx in enumerate(axes):
                             c = colorbar(round(pred[i].item() * 255))
-                            axx.add_patch(mpl.patches.Rectangle((x,y), x_size, y_size, color=c))
-
-
-
-
-
+                            axx.add_patch(mpl.patches.Rectangle((x, y), x_size, y_size, color=c))
 
             if dataset is not None:
 
@@ -697,35 +426,33 @@ class Hope(DespairLess):
                 if len(dataset) > max_points:
                     indexes = sorted(random.sample(list(indexes), max_points))
 
-
                 log(2, f"Plotting dataset... ({len(indexes)}/{len(dataset)})")
                 for n, item in enumerate(dataset):
                     log(3, f"{n + 1}/{len(dataset)}", end="\r")
                     if not n in indexes:
                         continue
-                    #token = self.get_closest_latent(e, only_id=True)
+                    # token = self.get_closest_latent(e, only_id=True)
                     token, _, _, point = self._predict(item.t)
                     point = point.detach().cpu().numpy()
                     if codebook.latent_dims > 2:
-                        #print(point)
+                        # print(point)
                         point = pca.transform(point.reshape(1, -1))[0]
-                        #print(point)
+                        # print(point)
                     if mesh:
                         ax.scatter(*point, color=f"C{token}", edgecolors='black')
                     else:
                         ax.scatter(*point, color=f"C{token}")
                     for i, axx in enumerate(axes):
-                        c = colorbar(round(item.t[i].item()*255))
+                        c = colorbar(round(item.t[i].item() * 255))
                         if mesh:
                             axx.scatter(*point, color=c, edgecolors='black')
                         else:
                             axx.scatter(*point, color=c)
-                        #if random.random() < 0.05:
+                        # if random.random() < 0.05:
                         #    axx.text(*point, f"{item.t[i].item():3.2f}", color="black")
 
-
             if plot_preds is not None:
-                log(2, f"Plotting predictions... ({len(plot_preds)})" )
+                log(2, f"Plotting predictions... ({len(plot_preds)})")
                 for n, (token, _, point, _) in enumerate(plot_preds):
                     log(3, f"{n + 1}/{len(plot_preds)}", end="\r")
                     point = point.detach().cpu().numpy()
@@ -743,7 +470,7 @@ class Hope(DespairLess):
                             axx.scatter(*point, color=c, marker="s")
 
             for n, s in enumerate(latent):
-                for a, axx in enumerate([ax]+axes):
+                for a, axx in enumerate([ax] + axes):
                     if mesh:
                         axx.scatter(*s, color=f"C{n}", edgecolors='black')
                     else:
@@ -769,28 +496,25 @@ class Hope(DespairLess):
                 plt.show(block=True)
             plt.close(fig)
 
-
-
             if self.writer is not None and save:
                 img = Image.open(fig_path)
                 img = torchvision.transforms.v2.functional.pil_to_tensor(img)
                 self.writer.add_image(f"latent", img, global_step=self.data["epoch"])
                 del img
 
-
     def plot_tokens(self):
         with torch.no_grad():
             log(1, "Plotting Tokens...")
 
-
             fig, axes = grid2D(5, 4)
 
-            tokens = self.submodels["autoencoder"][self.codebook_index].codebook.weight.detach().cpu()#.numpy().tolist()
-            #print("TOKENS")
-            #print(len(tokens))
-            #print(tokens)
+            tokens = self.submodels["autoencoder"][
+                self.codebook_index].codebook.weight.detach().cpu()  # .numpy().tolist()
+            # print("TOKENS")
+            # print(len(tokens))
+            # print(tokens)
             for n, (ax, token) in enumerate(zip(axes, tokens)):
-                #print(token)
+                # print(token)
                 dec = self._decode(torch.Tensor(token)).detach().cpu().numpy()
                 i_length, j_length, i_j_angle, i_j_length = dec[0], dec[1], dec[2], dec[3]
 
@@ -819,7 +543,8 @@ class Hope(DespairLess):
                 ax.plot(*zip(cv2_start, cv2_end))
                 ax.text(*cv2_start, "J")
 
-                ax.set_title(f"Token {n}: i:{i_length:3.2f} j:{j_length:3.2f} d:{i_j_length:3.1f} a:{i_j_angle:3.1f}°")
+                ax.set_title(
+                    f"Token {n}: i:{i_length:3.2f} j:{j_length:3.2f} d:{i_j_length:3.1f} a:{i_j_angle:3.1f}°")
 
             save_path = os.path.join(self.data["folder"], "tokens", f"tokens_{self}_E{self.data["epoch"]}.png")
             os.makedirs(os.path.dirname(save_path), exist_ok=True)
@@ -851,9 +576,9 @@ class Hope(DespairLess):
                     tok_seq += token
 
                 if len(tok_seq) != len(strucc["sequence"]):
-                    #log("warning", f"N ({len(tok_seq)}) of generated tokens does not mach embedding sequence length ({len(strucc['sequence'])})")
+                    # log("warning", f"N ({len(tok_seq)}) of generated tokens does not mach embedding sequence length ({len(strucc['sequence'])})")
                     pass
-                #log(2, tok_seq)
+                # log(2, tok_seq)
                 f.write(f"> {name}_tokens\n")
                 f.write(f"{tok_seq}\n")
         log(2, "Token fasta path:", tok_fasta_path)
@@ -869,27 +594,12 @@ class Hope(DespairLess):
         log(2, "Dataset:", dataset)
         log(2, "Matrix:", matrix, f"({matrix_path})" if matrix_path else "")
 
-        msa = CLUSTAL(token_fasta_path, verbose=True, out_folder=dataset.data["folder"], matrix=matrix, matrix_path=matrix_path, build_tree=True, **kwargs)
+        msa = CLUSTAL(token_fasta_path, verbose=True, out_folder=dataset.data["folder"], matrix=matrix,
+                      matrix_path=matrix_path, build_tree=True, **kwargs)
 
         return msa.msa_path
 
 
-
-
-
-class HopeFull(Hope):
-    def __init__(self, *args, hidden_dims=None, **kwargs):
-        super().__init__(*args, hidden_dims=(50,50), **kwargs)
-
-class HopeFullMax(Hope):
-    def __init__(self, *args, hidden_dims=None, **kwargs):
-        super().__init__(*args, hidden_dims=(100,100), **kwargs)
-
-class HopeLess(Hope):
-    def __init__(self, *args, hidden_dims=None, **kwargs):
-        hidden_dims = kwargs.get("in_shape")[-1]
-        super().__init__(*args, hidden_dims=(hidden_dims, hidden_dims), **kwargs)
-        log(1, f"{self.__class__.__name__} model initialised with {hidden_dims} latent dims")
 
 
 

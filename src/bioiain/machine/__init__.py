@@ -23,4 +23,4 @@ from .base_model import *
 from .datasets import *
 from .losses import *
 
-__all_ = ["datasets", "embeddings", "losses", "base_model"]
+__all_ = ["datasets", "embeddings", "losses", "base_model", "DEVICE"]
