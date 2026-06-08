@@ -1,7 +1,5 @@
 import os, json, sys
 
-from test import vqvae_models
-
 sys.path.append('..')
 
 

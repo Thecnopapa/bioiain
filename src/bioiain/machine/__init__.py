@@ -21,8 +21,6 @@ def tensor_to_numpy(tensor):
 from .embeddings import *
 from .base_model import *
 from .datasets import *
-from ._deprecated_flows import *
 from .losses import *
-from .vqvae_models import *
 
-__all_ = ["datasets", "embeddings", "models", "flows", "losses", "base_model"]
+__all_ = ["datasets", "embeddings", "losses", "base_model"]
