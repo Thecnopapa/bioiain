@@ -1,0 +1,578 @@
+import os, json
+
+import torchvision.transforms.v2.functional
+
+from . import DEVICE, tensor_to_numpy
+
+from ..utilities.exceptions import *
+from ..utilities.sequences import *
+
+from .losses import *
+from .base_model import BaseModel
+from .base_model import BaseModel as CustomModel # Compatibility
+from .layers import *
+
+import matplotlib.pyplot as plt
+
+
+
+
+
+
+
+
+
+
+
+
+########################################################################################################################
+
+
+class Golden(BaseModel):
+    """
+    3 Linear Model
+    1280 -> 2560 -> 128
+    3M params
+    Custom Weighted MSE Loss
+    """
+    def __init__(self, *args, hidden_dims=[2560, 128], num_classes=4, dropout=0.2, weights=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.data["num_classes"] = num_classes
+        self.data["hidden_dims"] = hidden_dims
+        self.data["dropout"] = dropout
+        self.data["weights"] = weights
+
+        self.layers["default"] = {
+            "l1": nn.Linear(self.data["in_shape"][0], hidden_dims[0]),
+            "drop1": nn.Dropout(dropout),
+            "relu1": nn.LeakyReLU(),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "drop2": nn.Dropout(dropout),
+            "relu2": nn.LeakyReLU(),
+            "l3": nn.Linear(hidden_dims[1], num_classes),
+            "softmax": nn.Softmax(dim=0)
+        }
+
+        self.criterions["default"] = CustomWeighted(self.data["weights"])
+
+
+
+
+class GoldenTo1(Golden):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.criterions["default"] = CustomWeighted(self.data["weights"], addto1=True)
+
+
+class GoldenAdamW(Golden):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.optimisers["default"]["class"] = torch.optim.AdamW
+
+
+
+
+class GoldenDynamix(Golden):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.optimisers["default"]["LRS"] = customLRS
+
+class GoldenDynamixExtra(GoldenDynamix):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.optimisers["default"]["LRS_kwargs"] = {"use_original": False}
+
+
+
+
+
+
+
+### DEPRECATED #########################################################################################################
+
+
+
+
+
+
+class DUAL_MLP_MK9(CustomModel):
+    """
+    MK4 with Custom LR
+    """
+    def __init__(self, *args, hidden_dims=[2560, 128], num_classes=4, dropout=0.2, weights=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.data["num_classes"] = num_classes
+        self.data["hidden_dims"] = hidden_dims
+        self.data["dropout"] = dropout
+
+        self.layers["default"] = {
+            "l1": nn.Linear(self.data["in_shape"][0], hidden_dims[0]),
+            "drop1": nn.Dropout(dropout),
+            "relu1": nn.LeakyReLU(),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "drop2": nn.Dropout(dropout),
+            "relu2": nn.LeakyReLU(),
+            "l3": nn.Linear(hidden_dims[1], num_classes),
+            "softmax": nn.Softmax(dim=0)
+        }
+
+
+        self.optimisers["default"]["class"] = torch.optim.AdamW
+        self.optimisers["default"]["LRS"] = self.customLRS
+        self.optimisers["default"]["kwargs"]["fused"] = True
+
+
+        self.criterions["default"] = CustomHalfHalf(weights)
+        self.data["weights"] = list([w.item() for w in self.criterions["default"].weight])
+
+        self._mount_submodels()
+
+    class customLRS(torch.optim.lr_scheduler.LRScheduler):
+        def __init__(self, *args, optimiser, **kwargs):
+            self.o_lrs = [p["lr"] for p in optimiser.param_groups]
+            super().__init__(optimiser, *args, **kwargs)
+
+        def get_lr(self):
+            print("LRS: getting lrs")
+            print(self.lrs)
+            return torch.Tensor(np.array(self.lrs))
+
+
+        def step(self, running_loss=0.5):
+            print("LRS: stepping...")
+            print(running_loss)
+            self.lrs = []
+            for p, olr in zip(self.optimizer.param_groups, self.o_lrs):
+                old_log = math.log(olr, 10)
+                print("OLD_LOG", old_log)
+                new_log = old_log - ((1-running_loss)*4) +2
+                print("NEW_LOG", new_log)
+                new_lr = 10 ** new_log
+                print("NEW_LR", new_lr)
+                self.lrs.append(new_lr)
+                p["lr"] = torch.Tensor(np.array([new_lr]))
+            print(self.lrs)
+            return self.lrs
+
+
+
+
+class DUAL_MLP_MK8(CustomModel):
+    """
+    MK4 with AdamW
+    """
+    def __init__(self, *args, hidden_dims=[2560, 128], num_classes=4, dropout=0.2, weights=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.data["num_classes"] = num_classes
+        self.data["hidden_dims"] = hidden_dims
+        self.data["dropout"] = dropout
+
+        self.layers["default"] = {
+            "l1": nn.Linear(self.data["in_shape"][0], hidden_dims[0]),
+            "drop1": nn.Dropout(dropout),
+            "relu1": nn.LeakyReLU(),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "drop2": nn.Dropout(dropout),
+            "relu2": nn.LeakyReLU(),
+            "l3": nn.Linear(hidden_dims[1], num_classes),
+            "softmax": nn.Softmax(dim=0)
+        }
+
+
+        self.optimisers["default"]["class"] = torch.optim.AdamW
+        self.optimisers["default"]["kwargs"]["fused"] = True
+
+
+        self.criterions["default"] = CustomHalfHalf(weights)
+        self.data["weights"] = list([w.item() for w in self.criterions["default"].weight])
+
+        self._mount_submodels()
+
+
+
+
+
+class DUAL_MLP_MK7(CustomModel):
+    """
+    MK6 with splitted Linear 1
+    """
+    def __init__(self, *args, hidden_dims=[2560, 128], num_classes=4, dropout=0.2, weights=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.data["num_classes"] = num_classes
+        self.data["hidden_dims"] = hidden_dims
+        self.data["dropout"] = dropout
+
+        self.data["n_sublayers_l1"] = 10
+        self.data["l_subsize_l1"] = hidden_dims[0]//self.data["n_sublayers_l1"]
+
+        self.layers["default"] = {
+            "sl1": self.splitLinear(input_dim=self.data["in_shape"][0], layer_size=self.data["l_subsize_l1"], n_layers=self.data["n_sublayers_l1"]),
+            "drop1": nn.Dropout(dropout),
+            "relu1": nn.LeakyReLU(),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "drop2": nn.Dropout(dropout),
+            "relu2": nn.LeakyReLU(),
+            "l3": nn.Linear(hidden_dims[1], num_classes),
+            "softmax": nn.Softmax(dim=0)
+        }
+
+        self.criterions["default"] = CustomHalfHalf(weights)
+        self.data["weights"] = list([w.item() for w in self.criterions["default"].weight])
+
+
+
+        self.layers["no-dropout"] = self.layers["default"].copy()
+        self.layers["no-dropout"].pop("drop1")
+        self.layers["no-dropout"].pop("drop2")
+
+        self._mount_submodels()
+
+
+    class splitLinear(nn.Module):
+        def __init__(self, *args, input_dim=1280, layer_size=128, n_layers=20, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.layers = nn.ModuleList()
+            self.input_dim = input_dim
+            self.layer_size = layer_size
+            for i in range(n_layers):
+                self.layers.append(nn.Linear(self.input_dim, layer_size))
+
+
+        def forward(self, x):
+            #print("IN:", x.shape)
+            segments = []
+            for n, l in enumerate(self.layers):
+                segments.append(l(x))
+                #print(f"SEGMENT {n}:", segments[-1].shape)
+            r = torch.cat(segments)
+            #print("OUT:", r.shape)
+            return r
+
+
+
+
+class DUAL_MLP_MK6(CustomModel):
+    """
+    MK4 with no-dropout mode
+    """
+    def __init__(self, *args, hidden_dims=[2560, 128], num_classes=4, dropout=0.2, weights=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.data["num_classes"] = num_classes
+        self.data["hidden_dims"] = hidden_dims
+        self.data["dropout"] = dropout
+
+        self.layers["default"] = {
+            "l1": nn.Linear(self.data["in_shape"][0], hidden_dims[0]),
+            "drop1": nn.Dropout(dropout),
+            "relu1": nn.LeakyReLU(),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "drop2": nn.Dropout(dropout),
+            "relu2": nn.LeakyReLU(),
+            "l3": nn.Linear(hidden_dims[1], num_classes),
+            "softmax": nn.Softmax(dim=0)
+        }
+
+
+
+
+        self.criterions["default"] = CustomHalfHalf(weights)
+        self.data["weights"] = list([w.item() for w in self.criterions["default"].weight])
+
+
+
+        self.layers["no-dropout"] = self.layers["default"].copy()
+        self.layers["no-dropout"].pop("drop1")
+        self.layers["no-dropout"].pop("drop2")
+
+        self._mount_submodels()
+
+
+
+
+class DUAL_MLP_MK5(CustomModel):
+    """
+    6 Lienar model (massive)
+    """
+    def __init__(self, *args, hidden_dims=[2560, 1280, 128], num_classes=4, dropout=0.2, weights=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.data["num_classes"] = num_classes
+        self.data["hidden_dims"] = hidden_dims
+        self.data["dropout"] = dropout
+
+        self.layers["default"] = {
+            "l1": nn.Linear(self.data["in_shape"][0], hidden_dims[0]),
+            "drop1": nn.Dropout(dropout),
+            "relu1": nn.LeakyReLU(),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "relu2": nn.LeakyReLU(),
+            "l3": nn.Linear(hidden_dims[1], hidden_dims[0]),
+            "relu3": nn.LeakyReLU(),
+            "l4": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "relu4": nn.LeakyReLU(),
+            "l5": nn.Linear(hidden_dims[1], hidden_dims[0]),
+            "relu5": nn.LeakyReLU(),
+            "l6": nn.Linear(hidden_dims[0], hidden_dims[-1]),
+            "drop2": nn.Dropout(dropout),
+            "last": nn.Linear(hidden_dims[-1], num_classes),
+            "softmax": nn.Softmax(dim=0)
+        }
+
+
+
+        self.criterions["default"] = CustomHalfHalf(weights)
+        self.data["weights"] = list([w.item() for w in self.criterions["default"].weight])
+
+        self._mount_submodels()
+
+
+
+
+class DUAL_MLP_MK4(CustomModel):
+    """
+    3 Linear Model
+    1280 -> 2560 -> 128
+    3M params
+    Custom MSE Loss
+    """
+    def __init__(self, *args, hidden_dims=[2560, 128], num_classes=4, dropout=0.2, weights=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.data["num_classes"] = num_classes
+        self.data["hidden_dims"] = hidden_dims
+        self.data["dropout"] = dropout
+
+        self.layers["default"] = {
+            "l1": nn.Linear(self.data["in_shape"][0], hidden_dims[0]),
+            "drop1": nn.Dropout(dropout),
+            "relu1": nn.LeakyReLU(),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "drop2": nn.Dropout(dropout),
+            "relu2": nn.LeakyReLU(),
+            "l3": nn.Linear(hidden_dims[1], num_classes),
+            "softmax": nn.Softmax(dim=0)
+        }
+
+
+
+
+        self.criterions["default"] = CustomHalfHalf(weights)
+        self.data["weights"] = list([w.item() for w in self.criterions["default"].weight])
+
+        self._mount_submodels()
+
+
+
+class DUAL_MLP_MK3(CustomModel):
+    """
+    4 Linear model
+    Cross Entropy Loss
+    """
+    def __init__(self, *args, hidden_dims=[640, 1280, 128], num_classes=4, dropout=0.2, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.data["num_classes"] = num_classes
+        self.data["hidden_dims"] = hidden_dims
+        self.data["dropout"] = dropout
+
+        self.layers["default"] = {
+            "l1": nn.Linear(self.data["in_shape"][0], hidden_dims[0]),
+            "drop1": nn.Dropout(dropout),
+            "relu1": nn.ReLU(),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "drop2": nn.Dropout(dropout),
+            "relu2": nn.ReLU(),
+            "l3": nn.Linear(hidden_dims[1], hidden_dims[2]),
+            "drop3": nn.Dropout(dropout),
+            "relu3": nn.ReLU(),
+            "l4": nn.Linear(hidden_dims[2], num_classes),
+            "softmax": nn.Softmax(dim=0)
+        }
+
+        #self.criterions["default"] = self.DualLoss(self)
+        self.criterions["default"] = nn.CrossEntropyLoss()
+
+        self._mount_submodels()
+
+
+
+class DUAL_MLP_MK2(CustomModel):
+    """
+    4 Linear model
+    Dual Loss
+    """
+    def __init__(self, *args, hidden_dims=[2560, 1280, 128], num_classes=2, dropout=0.2, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+
+        self.layers["default"] = {
+            "l1": nn.Linear(self.in_shape[0], hidden_dims[0]),
+            "drop1": nn.Dropout(dropout),
+            "relu1": nn.ReLU(),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "drop2": nn.Dropout(dropout),
+            "relu2": nn.ReLU(),
+            "l3": nn.Linear(hidden_dims[1], hidden_dims[2]),
+            "drop3": nn.Dropout(dropout),
+            "relu3": nn.ReLU(),
+            "l4": nn.Linear(hidden_dims[2], num_classes),
+            "hardtahn": nn.Hardtanh(min_val=0.)
+        }
+
+        self.criterions["default"] = self.DualLoss(self)
+
+        self._mount_submodels()
+
+
+    class DualLoss(object):
+        def __init__(self, model):
+            self.writer = model.writer
+            self.model = model
+
+        def __name__(self):
+            return "DualLoss"
+
+        def __call__(self, o, t):
+            true_contact, true_outer = t[0], t[1]
+            out_contact, out_outer = o[0], o[1]
+
+            outer_loss = abs(true_outer - out_outer)
+            contact_loss = abs(true_contact - out_contact)
+            if "outer" not in self.model.running_loss: self.model.running_loss["outer"] = 0
+            if "contactability" not in self.model.running_loss: self.model.running_loss["contactability"] = 0
+            self.model.running_loss["outer"] += outer_loss
+            self.model.running_loss["contactability"] += contact_loss
+
+            return contact_loss * outer_loss
+
+
+
+class DUAL_MLP_MK1(CustomModel):
+    """
+    3 Linear
+    Dual Loss
+    """
+    def __init__(self, *args, hidden_dims=[128, 256], num_classes=2, dropout=0.2, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.layers["default"] = {
+            "l1": nn.Linear(self.in_shape[0], hidden_dims[0]),
+            "relu1": nn.LeakyReLU(),
+            #"drop1": nn.Dropout(dropout),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "relu2": nn.LeakyReLU(),
+            #"drop2": nn.Dropout(dropout),
+            "l3": nn.Linear(hidden_dims[1], num_classes),
+            # "softmax": nn.Softmax(dim=0)
+        }
+
+        self.criterions["default"] = self.DualLoss(self)
+
+        self._mount_submodels()
+
+
+    class DualLoss(object):
+        def __init__(self, model):
+            self.writer = model.writer
+            self.model = model
+
+        def __name__(self):
+            return "DualLoss"
+
+        def __call__(self, o, t):
+            true_contact, true_outer = t[0], t[1]
+            out_contact, out_outer = o[0], o[1]
+
+            outer_loss = abs(true_outer - out_outer)
+            contact_loss = abs(true_contact - out_contact)
+            if "outer" not in self.model.running_loss: self.model.running_loss["outer"] = 0
+            if "contactability" not in self.model.running_loss: self.model.running_loss["contactability"] = 0
+            self.model.running_loss["outer"] += outer_loss
+            self.model.running_loss["contactability"] += contact_loss
+
+            return contact_loss + outer_loss
+
+
+
+class MLP_MK3(CustomModel):
+    def __init__(self, *args, hidden_dims=[128 ,256], num_classes=8, dropout=0.2, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.layers["default"] = {
+            "l1": nn.Linear(self.in_shape[0], hidden_dims[0]),
+            "relu1": nn.LeakyReLU(),
+            "drop1": nn.Dropout(dropout),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "relu2": nn.LeakyReLU(),
+            "drop2": nn.Dropout(dropout),
+            "l3": nn.Linear(hidden_dims[1], num_classes),
+            #"softmax": nn.Softmax(dim=0)
+        }
+
+
+        self.criterions["default"] = self.simpleloss
+
+        self._mount_submodels()
+
+
+    @staticmethod
+    def simpleloss(o, t):
+            return abs(o-t)
+
+
+
+class MLP_MK2(CustomModel):
+    def __init__(self, *args, hidden_dims=[256 ,128], num_classes=8, dropout=0.2, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.layers["default"] = {
+            "l1": nn.Linear(self.in_shape[0], hidden_dims[0]),
+            "relu1": nn.LeakyReLU(),
+            #"drop1": nn.Dropout(dropout),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "relu2": nn.LeakyReLU(),
+            #"drop2": nn.Dropout(dropout),
+            "l3": nn.Linear(hidden_dims[1], num_classes),
+            #"softmax": nn.Softmax(dim=0)
+        }
+
+
+        self.criterions["default"] = self.simpleloss
+
+        self._mount_submodels()
+
+
+    @staticmethod
+    def simpleloss(o, t):
+            return abs(o-t)
+
+
+
+class MLP_MK1(CustomModel):
+    def __init__(self, *args, input_dim, hidden_dims=[256 ,128], num_classes=8, dropout=0.2, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.layers["default"] = {
+            "l1": nn.Linear(input_dim, hidden_dims[0]),
+            "relu1": nn.ReLU(),
+            "drop1": nn.Dropout(dropout),
+            "l2": nn.Linear(hidden_dims[0], hidden_dims[1]),
+            "relu2": nn.ReLU(),
+            "drop2": nn.Dropout(dropout),
+            "l3": nn.Linear(hidden_dims[1], num_classes)
+        }
+
+        self._mount_submodels()
+
+
+
+
+

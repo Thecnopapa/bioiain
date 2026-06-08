@@ -1,5 +1,7 @@
 import os, json, sys
 
+from test import vqvae_models
+
 sys.path.append('..')
 
 
@@ -15,6 +17,7 @@ from src.bioiain.base import *
 from src.bioiain.aleph import *
 from src.bioiain.machine import *
 from src.bioiain.utilities.parallel import *
+import vqvae_models as models
 
 import torch, random
 import  numpy as np

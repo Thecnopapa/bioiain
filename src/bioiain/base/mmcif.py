@@ -46,7 +46,6 @@ def fetchPDB(code:str, target_folder:str|None=None, data_folder_name:str|None=No
 
 
 # TODO: Fix mysterious prints in mmcif parsing
-# TODO: Fix loops missing the data in entity exporting
 
 
 def downloadPDBlist(data_dir:str, list_name:str, pdb_list:list=None, file_path:str = None, file_format="cif",

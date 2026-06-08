@@ -4,7 +4,7 @@ from .datasets import *
 from .embeddings import *
 from ..visualisation.pymol import PymolScript
 import numpy as np
-from ..machine import models
+from ..machine import vqvae_models
 
 
 

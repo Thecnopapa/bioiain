@@ -8,7 +8,7 @@ import asyncio
 import datetime
 
 
-log("title", "deprecated_pipeline_v1.py")
+log("title", "_deprecated_pipeline_v1.py")
 log("start", "SET UP")
 
 
@@ -113,7 +113,7 @@ dataset = EmbeddingDataset(name=data_name)
 if not REBUILD:
     dataset.load()
 
-from src.bioiain.machine import models
+from src.bioiain.machine import vqvae_models
 
 
 MODEL_NAME = "Golden"
@@ -465,7 +465,7 @@ SCRIPT = None
 TEMP = "--temp" in sys.argv
 if "-p" in sys.argv:
     log("title", "PREDICTING...")
-    from src.bioiain.machine.flows import predict
+    from src.bioiain.machine._deprecated_flows import predict
 
 
 
@@ -502,7 +502,7 @@ if "-p" in sys.argv:
 if "-w" in sys.argv:
     log("title", "VISUALISATION")
 
-    from src.bioiain.machine.flows import display_monomer_labels
+    from src.bioiain.machine._deprecated_flows import display_monomer_labels
 
 
 

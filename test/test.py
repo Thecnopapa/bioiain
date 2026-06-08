@@ -7,27 +7,8 @@ from src.bioiain.utilities import *
 log("start", "test.py")
 
 from src.bioiain.utilities.logging import *
-
-#tracemalloc_start()
-
-#from src.bioiain.aleph import *
 from src.bioiain.base import *
-from src.bioiain.machine import models
 
-#from src.bioiain.utilities.parallel import *
-
-#import torch, random
-#import numpy as np
-
-#torch.set_num_threads(avail_cpus)
-#log(1, f"Torch using {avail_cpus} threads")
-
-#seed = 6
-#random.seed(seed)
-#np.random.seed(seed)
-#torch.manual_seed(seed)
-#torch.cuda.manual_seed(seed)
-#torch.cuda.manual_seed_all(seed)
 
 if "monomers" in sys.argv:
     if not "--no-download" in sys.argv:

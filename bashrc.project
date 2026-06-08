@@ -129,8 +129,8 @@ else
 fi
 
 if [[ $* == "reset" ]]; then
-	echo "*Regenerating env..."
-	conda env create -n $CONDA_ENV --solver libmamba
+  echo "*Regenerating env..."
+  conda env create -n $CONDA_ENV --solver libmamba
 fi
 
 
