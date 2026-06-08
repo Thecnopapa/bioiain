@@ -2,6 +2,9 @@ import os, json, time, sys
 from .logging import log
 
 
+#PDB download related
+class DownloadError(Exception):
+	pass
 
 
 # Labelling related

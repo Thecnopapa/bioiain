@@ -31,43 +31,43 @@ torch.cuda.manual_seed_all(seed)
 
 if "monomers" in sys.argv:
     if not "--no-download" in sys.argv:
-        DATA_FOLDER = downloadPDB("./data", "cath-monomeric",
-                                  file_path="./data/cath-dataset-nonredundant-S20.monomeric.list",
-                                  file_format="cif",
-                                  overwrite=False)
+        DATA_FOLDER = downloadPDBlist("./data", "cath-monomeric",
+                                      file_path="./data/cath-dataset-nonredundant-S20.monomeric.list",
+                                      file_format="cif",
+                                      overwrite=False)
     else:
         DATA_FOLDER = "./data/cath-monomeric"
     DATA_NAME = "monomers"
 elif "receptors" in sys.argv:
     if not "--no-download" in sys.argv:
-        DATA_FOLDER = downloadPDB("./data", "receptors",
-                                  file_path="./data/receptors.txt",
-                                  file_format="cif",
-                                  overwrite=False)
+        DATA_FOLDER = downloadPDBlist("./data", "receptors",
+                                      file_path="./data/receptors.txt",
+                                      file_format="cif",
+                                      overwrite=False)
     else:
         DATA_FOLDER = "./data/receptors"
     DATA_NAME = "receptors"
 elif "lbds" in sys.argv:
     if not "--no-download" in sys.argv:
-        DATA_FOLDER = downloadPDB("./data", "lbds",
-                                  file_path="./data/LBDs.txt",
-                                  file_format="cif",
-                                  overwrite=False)
+        DATA_FOLDER = downloadPDBlist("./data", "lbds",
+                                      file_path="./data/LBDs.txt",
+                                      file_format="cif",
+                                      overwrite=False)
     else:
         DATA_FOLDER = "./data/lbds"
     DATA_NAME = "lbds"
 
 elif "consensus" in sys.argv:
     if not "--no-download" in sys.argv:
-        DATA_FOLDER = downloadPDB("./data", "consensus",
-                                  file_path="./data/consensus.txt",
-                                  file_format="cif",
-                                  overwrite=False)
+        DATA_FOLDER = downloadPDBlist("./data", "consensus",
+                                      file_path="./data/consensus.txt",
+                                      file_format="cif",
+                                      overwrite=False)
     else:
         DATA_FOLDER = "./data/consensus"
     DATA_NAME = "consensus"
 else:
-    DATA_FOLDER = downloadPDB( list_name="aleph", pdb_list=["1M2Z", "3HBB", "6F63", "5LXN", "3brf", "6e52", "7t2y", "3kg2", "2GEJ", "2bis"], data_dir="./data" )
+    DATA_FOLDER = downloadPDBlist(list_name="aleph", pdb_list=["1M2Z", "3HBB", "6F63", "5LXN", "3brf", "6e52", "7t2y", "3kg2", "2GEJ", "2bis"], data_dir="./data")
     DATA_NAME = "aleph"
 
 

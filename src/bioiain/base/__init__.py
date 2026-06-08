@@ -11,4 +11,4 @@ from .mmcif import *
 
 __all__ = ["entity", "structure", "chain", "residue", "atom", "mmcif", "ligand"]
 __all__.extend(["BIEntity", "BIStructure", "BIChain", "BIResidue", "BIAtom", "PseudoAtom", "Ligand", "Water"])
-__all__.extend(["downloadPDB", "MMCIF", "read_mmcif", "write_atoms"])
+__all__.extend(["downloadPDBlist", "MMCIF", "read_mmcif", "write_atoms"])

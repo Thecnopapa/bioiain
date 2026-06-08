@@ -2,14 +2,55 @@ import os, json, requests
 
 from ..utilities.strings import *
 from ..utilities.exceptions import *
+from .. import SUBDIR_NAME
 
-# TODO: A More simple download option
+
+def fetchPDB(code:str, target_folder:str|None=None, data_folder_name:str|None=None, dataset:str|None=None, base_url:str|None=None, file_format:str="cif", force=False):
+
+    if target_folder is None:
+        target_folder = SUBDIR_NAME
+
+    if data_folder_name is not None:
+        target_folder = os.path.join(target_folder, data_folder_name)
+
+    if dataset is not None:
+        target_folder = os.path.join(target_folder, dataset)
+
+    fname = f"{code}.{file_format.lower()}"
+    fpath = os.path.join(target_folder, fname)
+
+    if os.path.exists(fpath) and not force:
+        return fpath
+    if base_url is not None:
+        if file_format.lower() == "pdb":
+            base_url = "https://files.rcsb.org/download/{}.pdb"
+        elif file_format.lower() == "cif":
+            base_url = "https://files.rcsb.org/download/{}.cif"
+
+    url = base_url.format(code)
+    response = requests.get(url)
+    if response.status_code != 200:
+        log("Error", f"Failed to download {fname} from:", url)
+        raise DownloadError
+    else:
+        with open(fpath, "w") as f:
+            f.write(response.text)
+            log(2, f"PDB file: {fname} downloaded to: {fpath}")
+    return fpath
+
+
+
+
+
+
+
+
 # TODO: Fix mysterious prints in mmcif parsing
 # TODO: Fix loops missing the data in entity exporting
 
 
-def downloadPDB(data_dir:str, list_name:str, pdb_list:list=None, file_path:str = None, file_format="cif",
-                overwrite:bool=False) -> str:
+def downloadPDBlist(data_dir:str, list_name:str, pdb_list:list=None, file_path:str = None, file_format="cif",
+                    overwrite:bool=False) -> str:
     """
     Downloads a list of PDB files into a folder of given name within the data_dir. Creates a file containing all
     the file in the data_dir
