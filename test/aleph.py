@@ -10,12 +10,12 @@ from src.bioiain.utilities.logging import *
 tracemalloc_start()
 
 
-from src.bioiain.aleph import *
 from src.bioiain.base import *
 from src.bioiain.aleph import *
 from src.bioiain.machine import *
 from src.bioiain.utilities.parallel import *
 import vqvae_models as models
+from _deprecated import _deprecated_embeddings as embeddings
 
 import torch, random
 import  numpy as np
@@ -74,7 +74,7 @@ else:
 
 
 DATA_NAME += "_v4C"
-EMBEDDING_CLASS = CVEmbeddingV4C
+EMBEDDING_CLASS = embeddings.CVEmbeddingV4C
 
 log(1, "DATA NAME:", DATA_NAME)
 
@@ -212,7 +212,7 @@ if "-t" in sys.argv:
 
             #loss = model.train(item, i, n_items)
 
-            print(f"{i}/{n_items} LOSS: {loss.item():7.3f} ({encoder_loss.item():7.3f}/{decoder_loss.item():7.3f}) av:{model.running_loss[model.mode]/model.running_loss["total"]:7.3f}", end="\r")
+            print(f"{i}/{n_items} LOSS: {loss.item():7.3f} ({encoder_loss.item():7.3f}/{decoder_loss.item():7.3f}) av:{model.running_loss[model.mode]/model.running_loss['total']:7.3f}", end="\r")
 
 
             if (i+1) % 100000 == 0:

@@ -11,7 +11,7 @@ from src.bioiain.utilities.maths import *
 
 from src.bioiain.machine import DEVICE, tensor_to_numpy
 from src.bioiain.machine.losses import *
-from src.bioiain.machine.base_model import BaseModel
+from src.bioiain.machine.models import BaseModel
 from src.bioiain.machine.layers import *
 
 import matplotlib as mpl
@@ -193,7 +193,7 @@ class Summer(BaseModel):
     def _build_blossum(self, discretisation=10):
         distances, max_dist = self._latent_distance_matrix(normalise=True, discretise=discretisation)
         blossum_folder = os.path.join(self.data["folder"], "matrixes")
-        blossum_path = os.path.join(blossum_folder, f"matrix_{self}_E{self.data["epoch"]}.mat")
+        blossum_path = os.path.join(blossum_folder, f"matrix_{self}_E{self.data['epoch']}.mat")
         os.makedirs(blossum_folder, exist_ok=True)
         print("open", blossum_path)
         with open(blossum_path, "w") as f:
@@ -318,7 +318,7 @@ class Summer(BaseModel):
                     fig_dir = os.path.join(self.data["folder"], name)
                 os.makedirs(fig_dir, exist_ok=True)
                 fig_path = os.path.join(fig_dir,
-                                        f"{name}_{self}_E{self.data["epoch"]}{'_raw' if plot_raw else ''}.png")
+                                        f"{name}_{self}_E{self.data['epoch']}{'_raw' if plot_raw else ''}.png")
                 log(1, "Saving to: open", fig_path)
                 fig.savefig(fig_path)
             if show:
@@ -488,7 +488,7 @@ class Summer(BaseModel):
                 if fig_dir is None:
                     fig_dir = os.path.join(self.data["folder"], "latents")
                 os.makedirs(fig_dir, exist_ok=True)
-                fig_path = os.path.join(fig_dir, f"latent_{self}_E{self.data["epoch"]}.png")
+                fig_path = os.path.join(fig_dir, f"latent_{self}_E{self.data['epoch']}.png")
                 log(1, "Saving to: open", fig_path)
                 fig.savefig(fig_path)
             if show:
@@ -546,7 +546,7 @@ class Summer(BaseModel):
                 ax.set_title(
                     f"Token {n}: i:{i_length:3.2f} j:{j_length:3.2f} d:{i_j_length:3.1f} a:{i_j_angle:3.1f}°")
 
-            save_path = os.path.join(self.data["folder"], "tokens", f"tokens_{self}_E{self.data["epoch"]}.png")
+            save_path = os.path.join(self.data['folder'], "tokens", f"tokens_{self}_E{self.data['epoch']}.png")
             os.makedirs(os.path.dirname(save_path), exist_ok=True)
             fig.savefig(save_path)
             plt.close(fig)

@@ -129,6 +129,9 @@ class BIResidue(object):
     def __repr__(self):
         return f"<bi.{self.__class__.__name__} id={self.id}>"
 
+    def name(self):
+        return "_".join([str(v) for v in self.id])
+
     def to_atoms(self, key, value):
         for atom in self.atoms:
             atom.set_misc(key, value)

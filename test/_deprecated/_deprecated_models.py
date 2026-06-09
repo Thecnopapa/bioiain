@@ -11,7 +11,7 @@ from src.bioiain.utilities.maths import *
 
 from src.bioiain.machine import DEVICE, tensor_to_numpy
 from src.bioiain.machine.losses import *
-from src.bioiain.machine.base_model import BaseModel
+from src.bioiain.machine.models import BaseModel
 from src.bioiain.machine.layers import *
 
 import matplotlib as mpl

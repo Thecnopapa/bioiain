@@ -19,8 +19,8 @@ def tensor_to_numpy(tensor):
     return tensor.detach().cpu().numpy()
 
 from .embeddings import *
-from .base_model import *
+from .models import *
 from .datasets import *
 from .losses import *
 
-__all_ = ["datasets", "embeddings", "losses", "base_model", "DEVICE"]
+__all_ = ["datasets", "embeddings", "losses", "models", "DEVICE"]

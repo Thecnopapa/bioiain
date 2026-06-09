@@ -2,128 +2,139 @@ import os, json, time, sys
 from .logging import log
 
 
+# 3rd party related
+class MissingProgram(Exception):
+    pass
+
+class FoldseekError(Exception):
+    pass
+
+
 #PDB download related
 class DownloadError(Exception):
-	pass
+    pass
 
 
 # Labelling related
 class SequenceMissmatchException(Exception):
-	pass
+    pass
 
 
 class MisslabellingException(SequenceMissmatchException):
-	pass
+    pass
 
 
 # Dataset related
 class DeletedIndex(Exception):
-	def __init__(self, *args, next_n=None, **kwargs):
-		super().__init__(*args, **kwargs)
-		self.next_n = next_n
+    def __init__(self, *args, next_n=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.next_n = next_n
 
 
 # MMCIF related
 class MMCIFError(Exception):
-	pass
+    pass
 class MMCIFTypeError(MMCIFError):
-	pass
+    pass
 
 
 # Structure import related
 class StructureLoadException(Exception):
-	pass
+    pass
 
 class StructureRecoverException(StructureLoadException):
-	pass
+    pass
 class StructureNotFound(StructureRecoverException):
-	pass
+    pass
 
 class AlreadyLoaded(StructureLoadException):
-	pass
+    pass
 class UnknownFormat(StructureLoadException):
-	pass
+    pass
 
 
 # CCP4 related
 class CCP4Error(Exception):
-	pass
+    pass
 
 class CCP4NotEnabled(CCP4Error):
-	pass
+    pass
 
 class PISAError(CCP4Error):
-	pass
+    pass
 
 
 # Model related
 class ModelNotFound(Exception):
-	pass
+    pass
 
 # Residue related
 class NoCaFound(Exception):
-	pass
+    pass
 
 class NoBackbone(Exception):
-	pass
-	
+    pass
+
 class NoMatchingClass(Exception):
-	pass
+    pass
 
 
 
 # Crystal related
 class FractionalConversionError(Exception):
-	pass
+    pass
 
 class AlreadyFractional(FractionalConversionError):
-	pass
+    pass
 
 class AlreadyOrthogonal(FractionalConversionError):
-	pass
+    pass
 
 class CrystalError(Exception):
-	pass
+    pass
 
 class MissingCrystalInfo(CrystalError):
-	pass
+    pass
 
 # ALEPH related
 
 class ALEPHError(Exception):
-	pass
+    pass
 
 
 # CVector Related
 class CVMatrixError(Exception):
-	pass
+    pass
 class NoNeighboursFound(CVMatrixError):
-	pass
+    pass
 
 # PLINDER related
 
 class PLINDERError(Exception):
-	pass
+    pass
 
 class PLINDERSystemNotLoaded(PLINDERError):
-	pass
+    pass
 
 
 # MMSEQS2 related
 
 class MMSEQS2Error(Exception):
-	pass
+    pass
 
 class DatabaseError(MMSEQS2Error):
-	pass
+    pass
 
 class ClusteringError(MMSEQS2Error):
-	pass
+    pass
 
 
 # Embedding related
 class NoEmbeddingForThisResidue(Exception):
-	pass
+    pass
+
+class EmptyTensor(Exception):
+    pass
 
 
 
