@@ -45,6 +45,7 @@ test/predictions
 test/runs
 test/.models
 test/bioian.d
+test/ bioiain.d
 test/logs
 test/trash
 

@@ -1,5 +1,6 @@
 import os, json, time, shutil
 from copy import deepcopy
+
 from ..utilities import *
 from ..utilities import relative_path, MMSEQS2
 from ..utilities.exceptions import *
@@ -73,7 +74,7 @@ class Item(object):
             self.label_tensor = self.label_tensor.to(device)
 
 
-class EmbeddingDataset(Dataset):
+class EmbeddingDataset(object):
     def __init__(self,*args,  name, folder=None, **kwargs):
         fname = f"{name}.dataset"
         if folder is None:
@@ -107,9 +108,9 @@ class EmbeddingDataset(Dataset):
 
     def __repr__(self):
         if self.data["deleted_indexes"] > 0:
-            return f"<bi.{self.__class__.__name__}:{self.data["name"]} N={len(self)} ({self.n_ids()}) mode={self.mode} deleted={self.data.get('deleted',False)}>"
+            return f"<bi.{self.__class__.__name__}:{self.data['name']} N={len(self)} ({self.n_ids()}) mode={self.mode} deleted={self.data.get('deleted',False)}>"
         else:
-            return f"<bi.{self.__class__.__name__}:{self.data["name"]} N={len(self)} ({self.n_ids()}) mode={self.mode}>"
+            return f"<bi.{self.__class__.__name__}:{self.data['name']} N={len(self)} ({self.n_ids()}) mode={self.mode}>"
 
 
     def __len__(self):
@@ -264,22 +265,22 @@ class EmbeddingDataset(Dataset):
 
         if key is None:
             key = len(self.embeddings)
-        #print("ADDING:", embedding)
-        #print(embedding.path)
+        print("ADDING:", embedding)
+        print(embedding.path())
         self.embeddings[key] = {
             "key": key,
             "n": len(self.embeddings),
             "start": len(self),
-            "end": len(self)+embedding.length,
-            "embedding_path": relative_path(embedding.path),
+            "end": len(self)+len(embedding),
+            "embedding_path": relative_path(embedding.path()),
             "label_path": relative_path(label_path),
-            "length": embedding.length,
-            "iter_dim": embedding.iter_dim,
+            "length": len(embedding),
+            "iter_dim": getattr(embedding, "iter_dim", 0),
             "deleted": False,
-            "sequence":embedding.sequence,
+            "sequence":getattr(embedding, "sequence", None),
         }
 
-        self.data["length"] += embedding.length
+        self.data["length"] += len(embedding)
         if fasta and hasattr(embedding, "sequence"):
             if embedding.sequence is not None:
                 self._add_to_fasta(key, embedding.sequence)
@@ -613,15 +614,4 @@ class EmbeddingDataset(Dataset):
         else:
             log("error", f"No fasta path for: {self}")
             return None
-
-
-
-
-class EmbeddingDataloader(DataLoader):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, collate_fn=self.collate_fn, **kwargs)
-
-
-    def collate_fn(self, batch):
-        pass
 

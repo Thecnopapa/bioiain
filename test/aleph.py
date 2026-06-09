@@ -1,5 +1,6 @@
 import os, json, sys
 
+
 sys.path.append('..')
 
 
@@ -15,7 +16,7 @@ from src.bioiain.aleph import *
 from src.bioiain.machine import *
 from src.bioiain.utilities.parallel import *
 import vqvae_models as models
-from _deprecated import _deprecated_embeddings as embeddings
+import vqvae_embeddings as embeddings
 
 import torch, random
 import  numpy as np
@@ -72,9 +73,12 @@ else:
     DATA_NAME = "aleph"
 
 
+FORCE = "--force" in sys.argv or "-f" in sys.argv
+REBUILD = "--rebuild" in sys.argv or "-r" in sys.argv
 
-DATA_NAME += "_v4C"
-EMBEDDING_CLASS = embeddings.CVEmbeddingV4C
+EMBEDDING_CLASS = embeddings.ExpandedALEPHEmbedding0
+DATA_NAME += "_"+ EMBEDDING_CLASS.__name__
+
 
 log(1, "DATA NAME:", DATA_NAME)
 
@@ -97,7 +101,7 @@ if "-p" not in sys.argv:
 
     dataset = EmbeddingDataset(name=f"tokens_{DATA_NAME}")
 
-    if not ("--rebuild" in sys.argv or "--force" in sys.argv):
+    if not (REBUILD or FORCE):
         dataset.load()
     log(2, dataset)
     total_files = len(os.listdir(DATA_FOLDER))
@@ -115,6 +119,8 @@ if "-p" not in sys.argv:
                 log("header", f"{dataset.n_ids()+1:4d}/{total_files:4d} ({file.split('.')[0]}) ({EMBEDDING_CLASS.__name__})")
                 log("title", f"{dataset.n_ids()+1:3d}/{total_files:3d} ({EMBEDDING_CLASS.__name__})")
 
+                print(DATA_FOLDER)
+                print(file)
                 path = os.path.join(DATA_FOLDER, file)
                 try:
                     entity = FragmentedStructure.from_file(path)
@@ -125,7 +131,15 @@ if "-p" not in sys.argv:
                     log("Warning", "entity too large!")
                     continue
 
-                embedding = EMBEDDING_CLASS(entity=entity).embedding(force="--force" in sys.argv)
+
+                embedding = embeddings.ALEPHProteinEmbedding(entity=entity, residue_embedding_class=EMBEDDING_CLASS)
+                print(embedding)
+                if not embedding.exists() or FORCE:
+                    log(1, "Generating embedding...")
+                    embedding.generate()
+                    embedding.save()
+                else:
+                    log(1, "Embedding already generated")
 
 
                 entity.export()

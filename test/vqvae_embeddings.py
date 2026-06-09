@@ -1,5 +1,6 @@
 import os, json
 
+from src.bioiain.aleph import FragmentedStructure
 from src.bioiain.utilities import *
 from src.bioiain.utilities.parallel import avail_cpus
 from src.bioiain.utilities.sequences import d3
@@ -17,7 +18,7 @@ device = "cpu"
 
 
 class ALEPHEmbedding(ResidueEmbedding):
-    def __init__(self, cvector, modulo_norm=2.4, max_dist=20):
+    def __init__(self, *args, cvector, modulo_norm=2.4, max_dist=20, **kwargs):
         self.cvector = cvector
         self.modulo_norm = modulo_norm
         self.max_dist = max_dist
@@ -46,7 +47,7 @@ class ALEPHEmbedding(ResidueEmbedding):
 class ExpandedALEPHEmbedding0(ALEPHEmbedding):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.param_names.extend(["contactability", "dist_to_ligand"])
+        self.param_names.extend(["bfactor", "contactability", "dist_to_ligand"])
 
     def _generate(self) -> list:
         cv = self.cvector
@@ -57,86 +58,49 @@ class ExpandedALEPHEmbedding0(ALEPHEmbedding):
             is_contact = 1
         else:
             is_contact = 0
-
+        b = min(cv.res2.bfactor(), 100) /100
         dl = cv.dist_to_lig
         dl = min(1, dl / self.max_dist)
 
 
-        e.extend([is_contact, dl])
+        e.extend([b, is_contact, dl])
 
         return e
 
 
 
+class ALEPHProteinEmbedding(ProteinEmbedding):
+    residue_embedding_class = ALEPHEmbedding
 
-
-
-class CVEmbedding():
-    """
-    Default CV embedding: 4 params [l(i), l(j) , a(ij), d(ij)].
-    Normalised to 1 (2.4A, 10A by default).
-    Virtual center is CV start.
-    """
-    def __init__(self, *args, **kwargs):
-        super().__init__(self, *args, **kwargs)
-
-
-    def _cvectors_to_embedding(self, cvectors, modulo_norm, max_dist, **kwargs):
-        e = []
-        seq = ""
-        for cv in cvectors:
-            i = cv
-            j = cv.closest
-            i_j = cv.closest_vp
-
-            len_i = min(1, i.d / modulo_norm)
-            len_j = min(1, j.d / modulo_norm)
-            len_i_j = min(1, i_j.d/max_dist)
-            angle_i_j = min(1, i_j.a / 360)
-            rn, ri = d3(cv.resname)
-            seq += rn
-
-            e.append([len_i, len_j, angle_i_j, len_i_j])
-        return e, seq
-
-    def generate_embedding(self, *args, modulo_norm=2.4, max_dist=10, vc_mode=None, **kwargs):
-
+    def check_aleph(self, *args, vc_mode=None, in_place=True, **kwargs) -> bool:
         try:
-            self.entity = self.entity.fragment()
-            frag = self.entity
+            self.entity = self.entity.fragment(in_place=in_place)
         except ALEPHError:
-            return None
+            raise
 
         if self.entity.has_flag("missing_side_chains"):
-            return None
+            raise NoEmbeddingForThisProtein()
 
-        if frag.data["fragments"]["n_fragments"] <= 1:
-            return None
-        cvectors = frag.cvectors(vc_mode=vc_mode)
-        cvmatrix = frag.cvmatrix(vc_mode=vc_mode) # Not used but calculates closest neighbours
+        if  self.entity.data["fragments"]["n_fragments"] <= 1:
+            raise NoEmbeddingForThisProtein()
+        cvectors =  self.entity.cvectors(vc_mode=vc_mode)
+        cvmatrix =  self.entity.cvmatrix(vc_mode=vc_mode)  # Not used but calculates closest neighbours
         if cvmatrix is None:
-            return None
+            raise NoEmbeddingForThisProtein
 
-        e, seq = self._cvectors_to_embedding(cvectors,modulo_norm=modulo_norm, max_dist=max_dist, **kwargs)
+    def __init__(self, *args,  **kwargs):
+        super().__init__(*args, **kwargs)
 
-        final_e = []
-        final_seq = []
-        for emb, seq in zip(e, seq):
-            if any([ee is None for ee in emb]):
-                continue
-            final_e.append(emb)
-            if type(seq) is list:
-                seq = "".join(seq)
-            final_seq.append(seq)
+    def generate(self, *args, **kwargs) -> Tensor:
+        self.check_aleph(*args, **kwargs)
+        return super().generate(*args, **kwargs)
 
-        final_e = torch.Tensor(final_e)
-        torch.save(final_e, self.path)
-        #print(e, e.shape, len(seq))
-        self.sequence = final_seq
-        self.length = len(self.sequence)
-        self.exists = True
-        return self.path
-
-
-
-
+    def _generate(self, *args, **kwargs) -> list:
+        assert self.residue_embedding_class is not None
+        e = []
+        for n, cv in enumerate(self.entity.cvectors()):
+            try:
+                e.append(self.residue_embedding_class(*args, cvector=cv, **kwargs).tensor())
+            except NoEmbeddingForThisResidue:
+                self.missing_indexes.append(n)
+        return e

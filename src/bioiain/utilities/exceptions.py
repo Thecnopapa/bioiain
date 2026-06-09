@@ -2,6 +2,11 @@ import os, json, time, sys
 from .logging import log
 
 
+# Miscellaneous
+class NotAGoodIdea(Exception):
+    pass
+
+
 # 3rd party related
 class MissingProgram(Exception):
     pass
@@ -130,7 +135,13 @@ class ClusteringError(MMSEQS2Error):
 
 
 # Embedding related
-class NoEmbeddingForThisResidue(Exception):
+class EmbeddingGenerationError(Exception):
+    pass
+
+class NoEmbeddingForThisResidue(EmbeddingGenerationError):
+    pass
+
+class NoEmbeddingForThisProtein(EmbeddingGenerationError):
     pass
 
 class EmptyTensor(Exception):
