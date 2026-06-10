@@ -31,6 +31,32 @@ def debugpage(version=None, path=None, filename=None):
     else:
         version = secure_filename(version)
     print(version, version in version_list)
+    if version not in version_list:
+        return f"Version ({version}) not found"
+
+    filepath = os.path.join("/docs", version)
+    print(filepath)
+    if path is None or path == "":
+        print("No path provided")
+    else:
+        print(path)
+        path = secure_filename(path)
+        print(path)
+        filepath = os.path.join(filepath, path)
+    
+    print(filepath)
+    return os.listdir(filepath)
+
+    if filename is None or filename == ''
+        filename = "index.html"
+    else:
+        filename = secure_filename(filename)
+
+    filepath = os.path.join(filepath, filename)
+    return filepath, os.path.exists
+
+
+
 
     return f"{version, version in version_list}<br>{version}/{path}/{filename}"
 
@@ -69,4 +95,4 @@ def page(version=None, path=None, filename=None):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+    app.run(debug=False, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
