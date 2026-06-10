@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 VIRTUAL_ENV="./venv"
 PATH="./venv/bin:$PATH"
