@@ -14,18 +14,19 @@ print("Latest version: {}".format(latest_version))
 
 @app.route("/test")
 def test():
+    print("Test")
     return "Test"
 @app.route('/')
 def index():
     return flask.redirect(f"/{latest_version}/index.html")
 
 @app.route('/<version>/')
-def redirect_version_to_index(version):
-    return flask.redirect(f"/{version}/index.html")
+# def redirect_version_to_index(version):
+#     return flask.redirect(f"/{version}/index.html")
 
 @app.route('/<version>/<path:path>/')
-def redirect_to_index(version, path):
-    return flask.redirect(f"/{version}/{path}/index.html")
+# def redirect_to_index(version, path):
+#     return flask.redirect(f"/{version}/{path}/index.html")
 
 @app.route('/<version>/<filename>')
 @app.route('/<version>/<path:path>/<filename>')
