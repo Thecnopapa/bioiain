@@ -17,9 +17,10 @@ RUN which python
 RUN pwd
 RUN ls
 
+COPY ./app .
 RUN pip3 install -r ./requirements.txt
 
-COPY ./app .
+
 
 
 RUN chmod +x ./start-server.sh
