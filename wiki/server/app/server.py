@@ -52,7 +52,7 @@ def debugpage(version=None, path=None, filename=None):
         filename = secure_filename(filename)
 
     filepath = os.path.join(filepath, filename)
-    return filepath, os.path.exists(filepath)
+    return f"{filepath} {os.path.exists(filepath)}"
 
 
 
