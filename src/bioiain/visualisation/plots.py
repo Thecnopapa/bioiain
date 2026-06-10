@@ -13,10 +13,6 @@ from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
 
 
-from sklearn.decomposition import PCA
-from sklearn.metrics import confusion_matrix
-import matplotlib.pyplot as plt
-import seaborn as sb
 
 mpl_colours = ('blue', 'orange', 'green', 'red', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan')
 pymol_colours = ('green', 'cyan', 'red', 'yellow', 'violet','blue',
@@ -109,34 +105,6 @@ class Arrow3D(FancyArrowPatch):
         self.set_positions((xs[0],ys[0]),(xs[1],ys[1]))
 
         return np.min(zs)
-
-
-
-
-
-
-
-# Confusion matrices
-def plot_confusion(preds, labels, title, score=None, classes=None):
-    try:
-        log(1, "Plotting confusion...")
-        cm = confusion_matrix(labels, preds)
-        if classes is None:
-            classes = list(set(labels))
-        plt.figure(figsize=(1*len(classes) ,1*len(classes)))
-        sb.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=classes, yticklabels=classes)
-        plt.xlabel("Predicted")
-        plt.ylabel("True")
-        if score is not None:
-            title = f"{title}_S={score:.2f}"
-        plt.title(title)
-        os.makedirs("figs", exist_ok=True)
-        path = f"figs/{title}.confusion.png"
-        plt.savefig(path)
-        plt.close()
-        return cm, path
-    except Exception as e:
-        print(e)
 
 
 
