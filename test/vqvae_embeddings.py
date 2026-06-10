@@ -18,12 +18,13 @@ device = "cpu"
 
 
 class ALEPHEmbedding(ResidueEmbedding):
-    def __init__(self, *args, cvector, modulo_norm=2.4, max_dist=20, **kwargs):
+    param_names = ["len_i", "len_j", "len_ij", "angle_ij", "dihedral_ij", "theta_i", "theta_j"]
+
+    def __init__(self, *args, cvector=None, modulo_norm=2.4, max_dist=20, **kwargs):
         self.cvector = cvector
         self.modulo_norm = modulo_norm
         self.max_dist = max_dist
         super().__init__(name=self.cvector.full_id(), residue=self.cvector.res2)
-        self.param_names.extend(["len_i", "len_j", "len_ij", "angle_ij", "dihedral_ij", "theta_i", "theta_j"])
 
 
     def _generate(self) -> list:
@@ -45,9 +46,9 @@ class ALEPHEmbedding(ResidueEmbedding):
 
 
 class ExpandedALEPHEmbedding0(ALEPHEmbedding):
+    param_names = ["len_i", "len_j", "len_ij", "angle_ij", "dihedral_ij", "theta_i", "theta_j", "bfactor", "contactability", "dist_to_ligand"]
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.param_names.extend(["bfactor", "contactability", "dist_to_ligand"])
 
     def _generate(self) -> list:
         cv = self.cvector

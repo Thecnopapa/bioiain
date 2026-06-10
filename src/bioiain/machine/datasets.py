@@ -94,6 +94,9 @@ class EmbeddingDataset(object):
             aligned = False,
             fasta_path=None,
             has_fasta=False,
+            param_names = None,
+            residue_embedding_class = None,
+            embedding_class = None,
         )
         self.mode="normal"
         os.makedirs(self.data["folder"], exist_ok=True)
@@ -284,6 +287,12 @@ class EmbeddingDataset(object):
         if fasta and hasattr(embedding, "sequence"):
             if embedding.sequence is not None:
                 self._add_to_fasta(key, embedding.sequence)
+        if self.data["param_names"] is None:
+            self.data["param_names"] = getattr(embedding, "param_names", None)
+        if self.data["residue_embedding_class"] is None:
+            self.data["residue_embedding_class"] = getattr(embedding, "residue_embedding_class", None).__name__
+        if self.data["embedding_class"] is None:
+            self.data["embedding_class"] = embedding.__class__.__name__
 
         self.data["mapped"] = False
         self._lock = False

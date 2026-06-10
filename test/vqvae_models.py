@@ -261,8 +261,8 @@ class Summer(BaseModel):
                 positions=[0.5],
             )
 
-            names = ["len i", "len j", "angle ij", "dist ij", "dist lig", "contactability", "SASA", "dihedral",
-                     "t1", "t2"]
+            names = dataset.data["param_names"]
+
             for i, ax in enumerate(axes):
                 ax.set_title(f"Dimension {i}", size=10)
                 v = ax.violinplot([p[i] for p in points], **violin_settings)
@@ -382,8 +382,7 @@ class Summer(BaseModel):
             else:
                 latent = o_latent
 
-            names = ["tokens", "len i", "len j", "angle ij", "dist ij", "dist lig", "contactability", "SASA",
-                     "dihedral", "t1", "t2"]
+            names = ["tokens"] + dataset.data["param_names"]
 
             if mesh:
                 x_min = min([l[0] for l in latent])

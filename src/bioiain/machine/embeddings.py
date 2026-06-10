@@ -18,6 +18,7 @@ device = "cpu"
 
 
 class Embedding(object):
+    param_names = []
     def __init__(self, name=None, folder=None, subfolder=None,group_by_class=True, **kwargs):
         if name is not None:
             self.name = name
@@ -139,6 +140,7 @@ class ProteinEmbedding(Embedding):
         self.sequence = None
         if residue_embedding_class is not None:
             self.residue_embedding_class = residue_embedding_class
+            self.param_names = self.residue_embedding_class.param_names
         self.missing_indexes = []
         if self.entity is not None:
             if self.name == self.__class__.__name__:
