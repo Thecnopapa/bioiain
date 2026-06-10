@@ -21,15 +21,12 @@ def index():
     return flask.redirect(f"/{latest_version}/index.html")
 
 @app.route('/<version>/')
-# def redirect_version_to_index(version):
-#     return flask.redirect(f"/{version}/index.html")
-
 @app.route('/<version>/<path:path>/')
-# def redirect_to_index(version, path):
-#     return flask.redirect(f"/{version}/{path}/index.html")
-
 @app.route('/<version>/<filename>')
 @app.route('/<version>/<path:path>/<filename>')
+def debugpage(version=None, path=None, filename=None):
+    return f"{version}/{path}/{filename}"
+
 def page(version=None, path=None, filename=None):
     print("Fetching page...")
     if version is None:
