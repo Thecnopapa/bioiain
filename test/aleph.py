@@ -180,7 +180,7 @@ if "-t" in sys.argv:
     log("title", "Training")
 
 
-    epochs = 100
+    epochs = 50
 
     model = MODEL_CLASS(name=DATA_NAME, in_shape=dataset.get(0).t.shape, batch_size=0, lr=LR, embedding_class = EMBEDDING_CLASS)
     model.add_text("data", model.json())
