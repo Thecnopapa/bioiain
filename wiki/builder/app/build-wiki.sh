@@ -21,4 +21,4 @@ mkdir -p OUTPUT_FOLDER
 
 echo "OUTPUT_FOLDER=${OUTPUT_FOLDER}"
 
-python pdoc --html -o OUTPUT_FOLDER --skip-errors bioiain
+pdoc --html -o OUTPUT_FOLDER -f --skip-errors bioiain
