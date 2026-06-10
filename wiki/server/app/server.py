@@ -25,7 +25,14 @@ def index():
 @app.route('/<version>/<filename>')
 @app.route('/<version>/<path:path>/<filename>')
 def debugpage(version=None, path=None, filename=None):
-    return f"{version}/{path}/{filename}"
+    print("Fetching page...")
+    if version is None:
+        version = latest_version
+    else:
+        version = secure_filename(version)
+    print(version, version in version_list)
+
+    return f"{version, version in version_list}<br>{version}/{path}/{filename}"
 
 def page(version=None, path=None, filename=None):
     print("Fetching page...")
