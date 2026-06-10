@@ -26,8 +26,10 @@ def redirect_to_index(version, path):
 @app.route('/<version>/<filename>')
 @app.route('/<version>/<path:path>/<filename>')
 def page(version=None, path=None, filename=None):
-    version = version or latest_version
-    version = secure_filename(version)
+    if version is None:
+        version = latest_version
+    else:
+        version = secure_filename(version)
     print(version)
     if version not in version_list:
         print(f"Version ({version})not found")
