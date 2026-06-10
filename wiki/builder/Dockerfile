@@ -22,6 +22,7 @@ RUN pip3 install pdoc3
 COPY ./app .
 
 RUN chmod +x ./build-wiki.sh
+RUN ls
 
 RUN echo "executing: build-wiki.sh ..."
 CMD ["./build-wiki.sh"]
