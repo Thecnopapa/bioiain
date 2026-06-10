@@ -28,8 +28,8 @@ BIOIAIN_VERSION=${BIOIAIN_VERSION[1]}
 echo "BIOIAIN_VERSION=${BIOIAIN_VERSION}"
 
 OUTPUT_FOLDER="/docs/${BIOIAIN_VERSION}"
-mkdir -p OUTPUT_FOLDER
+mkdir -p $OUTPUT_FOLDER
 
 echo "OUTPUT_FOLDER=${OUTPUT_FOLDER}"
 
-pdoc --html -o OUTPUT_FOLDER -f --skip-errors bioiain
+pdoc --html -o $OUTPUT_FOLDER -f --skip-errors bioiain
