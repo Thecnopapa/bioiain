@@ -2,6 +2,7 @@
     "steps": [
         {
             "name": "gcr.io/cloud-builders/docker",
+            "dir": "wiki/builder",
             "args": [
                 "build",
                 "-t",
@@ -11,6 +12,7 @@
         },
         {
             "name": "gcr.io/cloud-builders/docker",
+            "dir": "wiki/builder",
             "args": [
                "push",
                "europe-west1-docker.pkg.dev/bioiain/images/wiki-builder"
