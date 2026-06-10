@@ -4,10 +4,9 @@ from werkzeug.exceptions import NotFound
 
 app = flask.Flask(__name__)
 app.secret_key = os.environ['FLASK_KEY']
-try:
-    version_list=sorted(os.listdir("/docs"), reverse=True)
-except FileNotFoundError:
-    version_list = ["0.2.0"]
+
+version_list=sorted(os.listdir("/docs"), reverse=True)
+
 latest_version=version_list[0]
 print("Version list: {}".format(version_list))
 print("Latest version: {}".format(latest_version))
