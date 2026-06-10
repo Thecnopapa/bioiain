@@ -52,12 +52,14 @@ def debugpage(version=None, path=None, filename=None):
         filename = secure_filename(filename)
 
     filepath = os.path.join(filepath, filename)
-    return f"{filepath} {os.path.exists(filepath)}"
 
+    if not os.path.exists(filename):
+        return f"File not found: {filepath}"
 
+    with open(filepath) as f:
+        resp = flask.make_response(f.read())
 
-
-    return f"{version, version in version_list}<br>{version}/{path}/{filename}"
+    return resp
 
 def page(version=None, path=None, filename=None):
     print("Fetching page...")
