@@ -53,7 +53,7 @@ def debugpage(version=None, path=None, filename=None):
 
     filepath = os.path.join(filepath, filename)
 
-    if not os.path.exists(filename):
+    if not os.path.exists(filepath):
         return f"File not found: {filepath}"
 
     with open(filepath) as f:
