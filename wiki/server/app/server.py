@@ -45,7 +45,6 @@ def debugpage(version=None, path=None, filename=None):
         filepath = os.path.join(filepath, path)
     
     print(filepath)
-    return os.listdir(filepath)
 
     if filename is None or filename == '':
         filename = "index.html"
@@ -53,7 +52,7 @@ def debugpage(version=None, path=None, filename=None):
         filename = secure_filename(filename)
 
     filepath = os.path.join(filepath, filename)
-    return filepath, os.path.exists
+    return filepath, os.path.exists(filepath)
 
 
 
