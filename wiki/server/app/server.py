@@ -34,7 +34,7 @@ def debugpage(version=None, path=None, filename=None):
     if version not in version_list:
         return f"Version ({version}) not found"
 
-    filepath = os.path.join("/docs", version)
+    filepath = os.path.join("/docs", version, "bioiain")
     print(filepath)
     if path is None or path == "":
         print("No path provided")
