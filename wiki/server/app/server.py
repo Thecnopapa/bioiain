@@ -47,7 +47,7 @@ def debugpage(version=None, path=None, filename=None):
     print(filepath)
     return os.listdir(filepath)
 
-    if filename is None or filename == ''
+    if filename is None or filename == '':
         filename = "index.html"
     else:
         filename = secure_filename(filename)
