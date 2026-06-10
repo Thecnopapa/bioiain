@@ -6,13 +6,23 @@ which python
 pwd
 ls
 
-echo "$(pip3 show bioiain)"
-echo "$(pip3 show bioiain | grep Version)"
+
+if [[ -z "$TARGET_VERSION" ]]; then
+  echo "Installing specific bioiain version: ${TARGET_VERSION}"
+  pip3 install bioiain=${TARGET_VERSION}
+else
+  echo "Updating bioiain to the newest version"
+  pip3 install bioiain -U
+fi
+
+#echo "$(pip3 show bioiain)"
+#echo "$(pip3 show bioiain | grep Version)"
+
 
 BIOIAIN_VERSION=$(pip3 show bioiain | grep Version)
-echo $BIOIAIN_VERSION
+#echo $BIOIAIN_VERSION
 BIOIAIN_VERSION=($BIOIAIN_VERSION)
-echo ${BIOIAIN_VERSION[1]}
+#echo ${BIOIAIN_VERSION[1]}
 BIOIAIN_VERSION=${BIOIAIN_VERSION[1]}
 echo "BIOIAIN_VERSION=${BIOIAIN_VERSION}"
 
