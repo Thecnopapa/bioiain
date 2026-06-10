@@ -11,6 +11,10 @@ latest_version=version_list[0]
 print("Version list: {}".format(version_list))
 print("Latest version: {}".format(latest_version))
 
+
+@app.route("/test")
+def test():
+    return "Test"
 @app.route('/')
 def index():
     return flask.redirect(f"/{latest_version}/index.html")
@@ -26,6 +30,7 @@ def redirect_to_index(version, path):
 @app.route('/<version>/<filename>')
 @app.route('/<version>/<path:path>/<filename>')
 def page(version=None, path=None, filename=None):
+    print("Fetching page...")
     if version is None:
         version = latest_version
     else:
@@ -46,14 +51,17 @@ def page(version=None, path=None, filename=None):
     if filename is None or filename == '':
         filename = "index.html"
 
-    print(version, filepath, filename)
+    filepath = os.path.join(filepath, filename)
 
-    try:
-        resp = flask.send_from_directory(filepath, filename)
-    except NotFound:
+    print(filepath)
+    if not os.path.exists(filepath):
         print(f"File ({filepath}/{filename}) not found")
         return flask.abort(404)
+
+    with open(filepath) as f:
+        resp = flask.make_response(f.read())
     return resp
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
