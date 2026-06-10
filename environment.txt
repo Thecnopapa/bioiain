@@ -48,3 +48,4 @@ setuptools >= 80,<= 81
 pdoc3
 twine
 build
+flask

@@ -1,0 +1,35 @@
+{
+    "steps": [
+        {
+            "name": "gcr.io/cloud-builders/docker",
+            "dir": "wiki/server",
+            "args": [
+                "build",
+                "-t",
+                "europe-west1-docker.pkg.dev/bioiain/images/wiki-server",
+                "."
+            ]
+        },
+        {
+            "name": "gcr.io/cloud-builders/docker",
+            "dir": "wiki/server",
+            "args": [
+               "push",
+               "europe-west1-docker.pkg.dev/bioiain/images/wiki-server"
+             ]
+        }
+    ],
+    "serviceAccount": "wiki-server@bioiain.iam.gserviceaccount.com",
+    "images": [
+
+    ],
+    "substitutions": {},
+    "options": {
+		"defaultLogsBucketBehavior": "REGIONAL_USER_OWNED_BUCKET"
+	},
+    "queueTtl": "3600s",
+    "secrets": [],
+    "timeout": "600s",
+    "tags": [],
+    "artifacts": {}
+}
