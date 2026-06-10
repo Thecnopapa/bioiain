@@ -8,11 +8,12 @@ ls
 
 
 if [[ -z "$TARGET_VERSION" ]]; then
-  echo "Installing specific bioiain version: ${TARGET_VERSION}"
-  pip3 install bioiain=${TARGET_VERSION}
-else
   echo "Updating bioiain to the newest version"
   pip3 install bioiain -U
+
+else
+  echo "Installing specific bioiain version: ${TARGET_VERSION}"
+  pip3 install bioiain==${TARGET_VERSION}
 fi
 
 #echo "$(pip3 show bioiain)"
