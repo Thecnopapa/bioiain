@@ -90,8 +90,8 @@ class FragmentedStructure(BIStructure):
             )
             print("### ALEPH end ###")
         except Exception as e:
-            print("### ALEPH failed ###")
             log("warning", e)
+            print("### ALEPH failed ###")
             raise ALEPHError(e)
 
         log(1, "Fragmented:", target_path)

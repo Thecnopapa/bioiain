@@ -133,13 +133,16 @@ if "-p" not in sys.argv:
 
 
                 embedding = embeddings.ALEPHProteinEmbedding(entity=entity, residue_embedding_class=EMBEDDING_CLASS)
-                print(embedding)
                 if not embedding.exists() or FORCE:
                     log(1, "Generating embedding...")
-                    embedding.generate()
-                    embedding.save()
+                    try:
+                        embedding.generate()
+                        embedding.save()
+                    except ALEPHError:
+                        embedding = None
                 else:
                     log(1, "Embedding already generated")
+                print(embedding)
 
 
                 entity.export()
