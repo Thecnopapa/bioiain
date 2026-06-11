@@ -300,8 +300,7 @@ class Summer(BaseModel):
                     a, b, c, d = (0, 0, 0, 0)
                     (d, c, b, a), r, rr, rrr, rrrr = np.polyfit(pp, dd, deg=3, full=True)
                     # print(r, rr, rrr, rrrr)
-
-                    if r[0] <= r_threshold:
+                    if len(r) > 0 and r[0] <= r_threshold:
                         x_seq = np.linspace(min(pp), max(pp), 100)
 
                         ax.plot(x_seq, a + b * x_seq + c * (x_seq ** 2) + d * (x_seq ** 3), color=f"C{f}",
