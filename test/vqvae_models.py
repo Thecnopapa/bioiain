@@ -63,15 +63,18 @@ class Summer(BaseModel):
 
         self.optimisers["encoder"] = {
             "class": torch.optim.Adam,
-            "layer_set": ["encoder"]
+            "layer_set": ["encoder"],
+            "kwargs": {"lr": self.data["lr"]},
         }
         self.optimisers["decoder"] = {
             "class": torch.optim.Adam,
-            "layer_set": ["decoder"]
+            "layer_set": ["decoder"],
+            "kwargs": {"lr": self.data["lr"]},
         }
         self.optimisers["autoencoder"] = {
             "class": torch.optim.Adam,
-            "layer_set": ["autoencoder"]
+            "layer_set": ["autoencoder"],
+            "kwargs": {"lr": self.data["lr"]},
         }
         self.criterions["autoencoder"] = VQLoss()
 

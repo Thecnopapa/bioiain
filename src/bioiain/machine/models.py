@@ -24,7 +24,7 @@ class BaseModel(nn.Module):
         super().__init__()
         self.data = getattr(self, "data", {})
         self.data["dataname"] = name
-
+        self.data["lr"] = lr
         self.data["folder"] = os.path.join(folder, self.__class__.__name__)
         self.data["epoch"] = 0
         self.data["path"] = False

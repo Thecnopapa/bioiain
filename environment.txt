@@ -18,8 +18,8 @@ psutil
 
 
 # ML ###################################################################
-#torch # install version for each machine
-#torchvision # install version for each machine
+torch # install version for each machine
+torchvision # install version for each machine
 transformers
 tensorboard
 

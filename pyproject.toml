@@ -10,7 +10,6 @@ build-backend = "setuptools.build_meta"
 
 dependencies = [
     "numpy >= 2.4.2",
-    "biopython >= 1.86",
     "pandas >= 2.3.3",
     "matplotlib >= 3.10.8",
     "scikit-learn >= 1.8.0",
@@ -20,7 +19,6 @@ dependencies = [
     "requests >= 2.32.5",
     "unidecode >= 1.4.0",
     "xmltodict >= 0.14.2",
-    "seaborn",
     "psutil"
 ]
 
@@ -62,7 +60,7 @@ conda = [
     "foldseek", #bioconda::foldseek
     "pymol-open-source", #conda-forge::pymol-open-source
     "clustalw", #bioconda::clustalw
-    "mmseqs2"
+    "mmseqs2" #bioconda::mmseqs2
 ]
 ml = [
     "torch",
@@ -73,7 +71,8 @@ ml = [
 aleph = [
     "future",
     "termcolor",
-    "igraph"
+    "igraph",
+    "biopython >= 1.86",
 ]
 db = [
     "plinder"
