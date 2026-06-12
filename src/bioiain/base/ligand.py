@@ -27,7 +27,7 @@ class Ligand(object):
 	def __init__(self, atoms, parent=None, relevance_threshold=15, **kwargs):
 		self.atoms = atoms
 
-		self.name = self.atoms[0].resname
+		self.name = str(self.atoms[0].resname)
 		self.chain = self.atoms[0].chain
 		self.complex = self.atoms[0].complex
 		self.entity = self.atoms[0].entity
