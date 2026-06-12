@@ -142,7 +142,7 @@ class ProteinEmbedding(Embedding):
             self.residue_embedding_class = residue_embedding_class
             self.param_names = self.residue_embedding_class.param_names
         self.missing_indexes = []
-        if self.entity is not None:
+        if self.entity is not None and not self.entity.has_flag("no_atoms"):
             if self.name == self.__class__.__name__:
                 self.name = self.entity.name()
                 self.entity_path = self.entity.path()

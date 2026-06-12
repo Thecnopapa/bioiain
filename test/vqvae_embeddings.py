@@ -74,17 +74,19 @@ class ALEPHProteinEmbedding(ProteinEmbedding):
     residue_embedding_class = ALEPHEmbedding
 
     def check_aleph(self, *args, vc_mode=None, in_place=True, **kwargs) -> bool:
-        try:
-            self.entity = self.entity.fragment(in_place=in_place)
-        except ALEPHError:
-            raise
 
-        if self.entity.has_flag("missing_side_chains"):
-            raise NoEmbeddingForThisProtein()
-
-        if  self.entity.data["fragments"]["n_fragments"] <= 1:
-            raise NoEmbeddingForThisProtein()
         if not self.entity.has_flag("no_atoms", True):
+            try:
+                self.entity = self.entity.fragment(in_place=in_place)
+            except ALEPHError:
+                raise
+
+            if self.entity.has_flag("missing_side_chains"):
+                raise NoEmbeddingForThisProtein()
+
+            if self.entity.data["fragments"]["n_fragments"] <= 1:
+                raise NoEmbeddingForThisProtein()
+
             cvectors =  self.entity.cvectors(vc_mode=vc_mode)
             cvmatrix =  self.entity.cvmatrix(vc_mode=vc_mode)  # Not used but calculates closest neighbours
             if cvmatrix is None:
