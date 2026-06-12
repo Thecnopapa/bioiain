@@ -52,6 +52,7 @@ class BIEntity(object):
         }
         self.flags = {
             "loaded": False,
+            "no_atoms": True,
         }
         self.exporting = ["data", "paths", "flags"]
 
@@ -96,7 +97,8 @@ class BIEntity(object):
     def __repr__(self):
         if self.is_symmetry():
             return "<{}:{} id={} op={}>".format(self.__class__.__name__, self.code(), self.id(), self.op())
-        return "<{}:{} id={} (len:{})>".format(self.__class__.__name__, self.code(), self.id(), len(self))
+        #return "<{}:{} id={} (len:{})>".format(self.__class__.__name__, self.code(), self.id(), len(self))
+        return "<{}:{} id={}>".format(self.__class__.__name__, self.code(), self.id())
 
     def __str__(self):
         return repr(self)
@@ -323,6 +325,7 @@ class BIEntity(object):
             #self.data["info"]["code"] = str(code)
         self.set_name(self.code())
         self.paths["top_folder"] = self.code()
+        self.set_flag("no_atoms", False)
 
         return self
 
@@ -404,6 +407,8 @@ class BIEntity(object):
         self.recover_cvectors()
 
         self.set_flag("loaded", True)
+        self.set_flag("no_atoms", no_atoms)
+
         if export:
             self.export()
         return self
@@ -436,6 +441,9 @@ class BIEntity(object):
         if filepath is None:
             filepath = self.paths.get("self", None)
 
+        if filepath is None:
+            filepath = self.paths.get("source", None)
+        print(filepath)
         if not hasattr(self, "_atoms"):
             force = True
         elif self._atoms is None:
@@ -443,10 +451,11 @@ class BIEntity(object):
 
         if force:
             if filepath is None:
-                self.export()
-            if not os.path.exists(filepath):
-                self.export()
-
+                filepath = self.export()
+            if not os.path.exists(filepath) and self.has_flag("no_atoms", False):
+                filepath = self.export()
+            filepath = filepath.strip()
+            print(filepath)
             log(1, "Reading atoms from CIF:", filepath)
             mmcif= read_mmcif(filepath, subset=["_atom_site", "_cell", "_symmetry"])
             atoms=mmcif("_atom_site")
@@ -463,6 +472,7 @@ class BIEntity(object):
             atoms = [BIAtom(a) for a in atoms]
 
             self._atoms = atoms
+        self.set_flag("no_atoms", False)
         return self._atoms
 
     def fix_headers(self):
@@ -544,8 +554,9 @@ class BIEntity(object):
             else:
                 #log("Warning", "Exporting all atoms and misc fields might corrupt the file (cleanup=True recommended)")
                 atoms = self._all_atoms()
+        filepath = filepath.strip()
         if as_pdb:
-            return write_pdb_atoms(atoms, filepath, mode=mode, end=True)
+            return write_pdb_atoms(atoms, filepath.strip(), mode=mode, end=True)
         else:
 
             full_headers = {}

@@ -123,30 +123,32 @@ if "-p" not in sys.argv:
                 print(file)
                 path = os.path.join(DATA_FOLDER, file)
                 try:
-                    entity = FragmentedStructure.from_file(path)
+                    entity = FragmentedStructure.from_file(path, no_atoms=True)
                 except Exception as e:
                     log("Warning", "Skipping embedding for:", file, f"({e})")
                     continue
-                if len(entity) > 2000:
-                    log("Warning", "entity too large!")
-                    continue
-
 
                 embedding = embeddings.ALEPHProteinEmbedding(entity=entity, residue_embedding_class=EMBEDDING_CLASS)
+
                 if not embedding.exists() or FORCE:
                     log(1, "Generating embedding...")
+                    if len(entity) > 2000:
+                        log("Warning", "entity too large!")
+                        continue
                     try:
                         embedding.generate()
                         embedding.save()
                     except (ALEPHError, NoEmbeddingForThisProtein) as e:
                         print(e)
                         embedding = None
+
+                    entity.export()
                 else:
                     log(1, "Embedding already generated")
                 print(embedding)
 
 
-                entity.export()
+
                 if embedding is None:
                     log("warning", "No embedding for file:", file)
                     continue
@@ -157,7 +159,7 @@ if "-p" not in sys.argv:
                 print(embedding)
                 dataset.add(embedding, key=entity.name())
                 print(dataset)
-                if (n+1) % 10 == 0:
+                if (n+1) % 100 == 0:
                     tracemalloc_top()
 
         if len(parts) == 1 or pool is None:

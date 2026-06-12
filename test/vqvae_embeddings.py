@@ -84,10 +84,11 @@ class ALEPHProteinEmbedding(ProteinEmbedding):
 
         if  self.entity.data["fragments"]["n_fragments"] <= 1:
             raise NoEmbeddingForThisProtein()
-        cvectors =  self.entity.cvectors(vc_mode=vc_mode)
-        cvmatrix =  self.entity.cvmatrix(vc_mode=vc_mode)  # Not used but calculates closest neighbours
-        if cvmatrix is None:
-            raise NoEmbeddingForThisProtein
+        if not self.entity.has_flag("no_atoms", True):
+            cvectors =  self.entity.cvectors(vc_mode=vc_mode)
+            cvmatrix =  self.entity.cvmatrix(vc_mode=vc_mode)  # Not used but calculates closest neighbours
+            if cvmatrix is None:
+                raise NoEmbeddingForThisProtein
 
     def __init__(self, *args,  **kwargs):
         super().__init__(*args, **kwargs)
