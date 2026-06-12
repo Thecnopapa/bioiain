@@ -43,6 +43,10 @@ class MMCIFTypeError(MMCIFError):
     pass
 
 
+# Sequence related
+class SequenceNotFound(Exception):
+    pass
+
 # Structure import related
 class StructureLoadException(Exception):
     pass
@@ -131,6 +135,12 @@ class DatabaseError(MMSEQS2Error):
     pass
 
 class ClusteringError(MMSEQS2Error):
+    pass
+
+class SearchError(MMSEQS2Error):
+    pass
+
+class TsvError(MMSEQS2Error):
     pass
 
 

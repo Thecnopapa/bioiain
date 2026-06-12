@@ -145,6 +145,7 @@ class ProteinEmbedding(Embedding):
         if self.entity is not None:
             if self.name == self.__class__.__name__:
                 self.name = self.entity.name()
+                self.entity_path = self.entity.path()
             self.sequence = self.entity.sequence()
 
     def _generate(self, *args, **kwargs) -> list:

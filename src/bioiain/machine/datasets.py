@@ -281,6 +281,8 @@ class EmbeddingDataset(object):
             "iter_dim": getattr(embedding, "iter_dim", 0),
             "deleted": False,
             "sequence":getattr(embedding, "sequence", None),
+            "chains":getattr(embedding, "chains", "*"),
+            "entity_path": getattr(embedding, "entity_path", None),
         }
 
         self.data["length"] += len(embedding)
@@ -335,7 +337,7 @@ class EmbeddingDataset(object):
             f.write(f"{sequence}\n")
 
 
-    def get(self, key, embedding=True, label=True, cache=True, label_key=None) -> Item:
+    def get(self, key, embedding=True, label=True, cache=True, label_key=None, only_data=False) -> Item:
         from torch import load as torch_load
 
         if label_key is None:
@@ -379,6 +381,8 @@ class EmbeddingDataset(object):
             print(f"label_path: {label_path}")
             raise
 
+        if only_data:
+            return e
 
         #print("REL_KEY:", rel_key)
 
@@ -570,6 +574,10 @@ class EmbeddingDataset(object):
             log(2, "Sequence DB already generated")
         return self
 
+
+    def db(self, **kwargs):
+        mmseqs = MMSEQS2(self.data["fasta_path"], **kwargs)
+        return mmseqs
 
     def _create_sequence_db(self, **kwargs):
         from ..utilities.sequences import MMSEQS2

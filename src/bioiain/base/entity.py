@@ -23,6 +23,8 @@ class BIEntity(object):
             "export_folder": export_folder.strip(), # Folder with all exports (default: "bioiain/exports")
             "top_folder": None, # Highest related folder
             "sub_folder": "", # Path of self under top_folder
+            "fasta": None, # Path to fasta
+            "db": None, #mmseqs DB path
         }
         self.data = {
             "info": {
@@ -100,6 +102,8 @@ class BIEntity(object):
         return repr(self)
 
     def __len__(self):
+        if self.has_flag("no_atoms", True):
+            return 0
         return len(self.residues())
 
     def name(self):
@@ -139,8 +143,10 @@ class BIEntity(object):
     def id(self):
         return str(self.data["info"]["code"])
 
-    def get_sequence(self, name="aa"):
-        return self.data["sequences"][name]
+    def get_sequence(self, name= None):
+        if name is None:
+            name = "aa"
+        return self.data["sequences"].get(name, None)
 
     def set_sequence(self, name, seq):
         self.data["sequences"][name] = seq
@@ -323,7 +329,7 @@ class BIEntity(object):
 
 
     @classmethod
-    def from_file(cls, filepath, code="auto", file_format="auto", force=False, check_existing=True, source=None, export=False, **kwargs):
+    def from_file(cls, filepath, code="auto", file_format="auto", force=False, check_existing=True, source=None, export=False, no_atoms=False, **kwargs):
         log(1, "Loading from file:", filepath)
         if not os.path.exists(filepath):
             raise FileNotFoundError(filepath)
@@ -334,12 +340,16 @@ class BIEntity(object):
 
         if file_format not in ["cif", "pdb"]:
             raise UnknownFormat(file_format)
-        try:
-            self._all_atoms(filepath=filepath, force=True, is_pdb=file_format == "pdb", **kwargs)
-        except (StructureLoadException, CrystalError) as e:
-            log("Error", f"Structure not loaded: {filepath}", e)
-            raise e
-            return None
+        if not no_atoms:
+            self.set_flag("no_atoms", False)
+            try:
+                self._all_atoms(filepath=filepath, force=True, is_pdb=file_format == "pdb", **kwargs)
+            except (StructureLoadException, CrystalError) as e:
+                log("Error", f"Structure not loaded: {filepath}", e)
+                raise e
+                return None
+        else:
+            self.set_flag("no_atoms", True)
 
         if code == "auto":
             code = str(read_mmcif(filepath, subset="_entry")["_entry.id"])
@@ -382,7 +392,7 @@ class BIEntity(object):
             if os.path.exists(prev_path):
                 log("warning", "Recovering previously exported file:", prev_path)
                 try:
-                    recovered_self = cls.from_file(prev_path, check_existing=False, source=filepath, **kwargs)
+                    recovered_self = cls.from_file(prev_path, check_existing=False, source=filepath, no_atoms=no_atoms, **kwargs)
                     if recovered_self is None:
                         raise StructureRecoverException()
                     return recovered_self
@@ -609,6 +619,32 @@ class BIEntity(object):
                 return cls.recover_from_path(path, **kwargs)
 
         raise StructureNotFound(path)
+
+    def write_fasta(self, seq_name=None, force=False):
+        folder = os.path.join(self.paths["export_folder"], self.paths.get("top_folder", self.code()), self.paths["sub_folder"]).strip()
+        if seq_name is None:
+            fasta_path = os.path.join(folder, f"{self.name()}.fasta")
+        else:
+            fasta_path = os.path.join(folder, f"{self.name()}.{seq_name}.fasta")
+        if os.path.exists(fasta_path) and not force:
+            return fasta_path
+        seq = self.get_sequence(name=seq_name)
+        if seq is None:
+            raise SequenceNotFound()
+        with open(fasta_path, "w") as f:
+            f.write(f"> {self.name()}\n")
+            f.write(seq)
+            f.write("\n")
+
+        if seq_name is None:
+            self.paths["fasta"] = fasta_path
+        return fasta_path
+
+    def db(self):
+        from ..utilities.sequences import MMSEQS2
+        mmseqs = MMSEQS2(self.write_fasta(), folder=self.folder())
+        self.paths["db"] = mmseqs.db_path()
+        return mmseqs
 
 
 

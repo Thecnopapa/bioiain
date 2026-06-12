@@ -1,4 +1,4 @@
-import os, sys, json, subprocess
+import os, sys, json, subprocess, shutil
 
 from ..utilities.exceptions import *
 from .logging import log
@@ -170,18 +170,23 @@ class MSA(object):
 
 
 class MMSEQS2(MSA):
-    def __init__(self, *args, mmseqs_cmd="mmseqs", db_name=None, verbosity=2, **kwargs):
+    def __init__(self, *args, mmseqs_cmd="mmseqs", db_name=None, verbosity=2, folder=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fasta.rewrite(key_start=">")
         self.tmp_folder = os.path.join(TEMP_FOLDER, "mmseqs2")
         os.makedirs(self.tmp_folder, exist_ok=True)
         self.databases = {}
         self.mmseqs_cmd = mmseqs_cmd
-        self.db_folder = None
+
         self.verbosity = verbosity
         self.name = self.name.replace(".dataset", "")
         if not self.name.endswith(".mmseqs"):
             self.name += ".mmseqs"
-        self.db_folder = os.path.join(SUBDIR_NAME, "mmseqs", self.name)
+
+        if folder is None:
+            folder = os.path.join(SUBDIR_NAME, "mmseqs")
+        self.db_folder = os.path.join(folder, self.name)
+
         os.makedirs(self.db_folder, exist_ok=True)
 
         if db_name is None:
@@ -202,7 +207,10 @@ class MMSEQS2(MSA):
 
     def _cmd(self, command, *args, **kwargs):
 
-        cmd = [self.mmseqs_cmd, command]
+        if type(command) is str:
+            command = [command]
+
+        cmd = [self.mmseqs_cmd, *command]
 
         for kwarg, value in kwargs.items():
             if not kwarg.startswith("--"):
@@ -229,12 +237,39 @@ class MMSEQS2(MSA):
         return self
 
 
+    def  write(self, query, target=None, result=None, output_file=None, mode="tsv", **kwargs):
+
+        if mode.lower() == "tsv":
+            cmd = ["createtsv"]
+        elif mode.lower() == "fasta":
+            cmd = ["result2flat"]
+        elif mode.lower() == "alis":
+            cmd = ["convertalis"]
+        else:
+            raise NotImplementedError
+
+        cmd.append(query)
+        if output_file is None:
+            output_file = ".".join(query.split(".")[:-1]) + ".tsv"
+        if target is not None:
+            cmd.append(target)
+        if result is not None:
+            cmd.append(result)
+        cmd.append(output_file)
+
+        try:
+            self._cmd(cmd, **kwargs)
+        except:
+            raise TsvError()
+        return output_file
+
     def cluster(self, reassign=False, force=False, linear=False, easy=False, **kwargs):
 
 
         self.databases["clustered"] = self.db_path("cluster")
-        out_path = self.databases["clustered"] + ".tsv"
-        data_path = self.databases["clustered"] + ".json"
+        out_path = self.db_path("cluster")+ ".tsv"
+        fasta_path = self.db_path("cluster")+ ".fasta"
+        data_path = self.db_path("cluster") + ".json"
 
         if linear:
             cmd = ["linclust"]
@@ -243,7 +278,7 @@ class MMSEQS2(MSA):
         if easy:
             cmd =  ["easy-"+cmd[0]]
 
-        cmd.extend([self.db_path(), self.databases["clustered"], self.tmp_folder])
+        cmd.extend([self.db_path(), self.db_path("cluster"), self.tmp_folder])
 
         if reassign and not linear:
             cmd.append("--cluster-reassign")
@@ -255,7 +290,7 @@ class MMSEQS2(MSA):
             "easy":easy,
         }
 
-        if not os.path.exists(self.databases["clustered"]) or not os.path.exists(data_path):
+        if not os.path.exists(self.db_path("cluster")) or not os.path.exists(data_path):
             force=True
         if os.path.exists(data_path):
             if json.load(open(data_path))["params"] != params:
@@ -272,12 +307,14 @@ class MMSEQS2(MSA):
 
         if force or not os.path.exists(out_path):
             try:
-                self._cmd("createtsv", self.db_path(), self.db_path(), self.databases["clustered"], out_path, v=self.verbosity)
+                tsv = self.write(self.db_path(), self.db_path(), self.db_path("cluster"), out_path)
+                fasta = self.write(self.db_path(), self.db_path(), self.db_path("cluster"), fasta_path, mode="fasta")
             except:
-                raise ClusteringError()
+                raise TsvError()
 
         try:
             clusters = {}
+            print(out_path)
             with open(out_path) as f:
                 for line in f:
                     c, i = line.strip().split("\t")
@@ -293,6 +330,40 @@ class MMSEQS2(MSA):
             raise ClusteringError()
         print("Cluster data:", data_path)
         return data_path
+
+    def search(self, query_db, exhaustive=True, **kwargs):
+
+        log(1, f"Searching({query_db}) in {self.db_path()}")
+
+        aligned_db = os.path.join(self.tmp_folder,"search", "temp.search")
+        shutil.rmtree(os.path.join(self.tmp_folder,"search"), ignore_errors=True)
+        os.makedirs(os.path.join(self.tmp_folder,"search"), exist_ok=True)
+        cmd = ["search", query_db, self.db_path(), aligned_db, self.tmp_folder]
+
+
+        params = {
+            "cmd": " ".join([str(c) for c in cmd]),
+            "gpu": 1,
+            "alignment-mode": 3,
+            "alignment-output-mode": 3
+        }
+        if exhaustive:
+            cmd.append("--exhaustive-search")
+        try:
+            from ..machine import DEVICE_N
+            params["gpu_server"] = DEVICE_N
+        except:
+            pass
+
+        try:
+            self._cmd(*cmd, v=self.verbosity)
+        except:
+            raise SearchError()
+
+        tsv = self.write(query_db, self.db_path(), aligned_db, output_file=".".join(query_db.split(".")[:-1]) + ".tab", mode="alis")
+        exit()
+
+
 
 
 
