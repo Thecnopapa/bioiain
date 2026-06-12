@@ -13,14 +13,14 @@ class BIEntity(object):
 
     def __init__(self, export_folder=None, parent=None, use_tmp=False, **kwargs):
         if export_folder is None:
-            export_folder = os.path.join(SUBDIR_NAME, "exports")
+            export_folder = os.path.join(SUBDIR_NAME, "exports").strip()
         self.children = []
         self.paths = {
             "self": None, # This entity cif path
             "source": None,
             "minimal": None, # This but only nice atoms (no headers or data)
             "parent": None, # Parent entity cif path
-            "export_folder": export_folder, # Folder with all exports (default: "bioiain/exports")
+            "export_folder": export_folder.strip(), # Folder with all exports (default: "bioiain/exports")
             "top_folder": None, # Highest related folder
             "sub_folder": "", # Path of self under top_folder
         }
@@ -73,8 +73,8 @@ class BIEntity(object):
 
 
         if parent is not None:
-            self.paths["export_folder"] = parent.paths["export_folder"]
-            self.paths["parent"] = parent.paths["self"]
+            self.paths["export_folder"] = parent.paths["export_folder"].strip()
+            self.paths["parent"] = parent.paths["self"].strip()
             self.data["info"]["parent"] = repr(parent)
             self.headers = parent.headers
 
@@ -115,11 +115,11 @@ class BIEntity(object):
         if not minimal:
             if self.paths.get("self", None) is None:
                 self.export()
-            return self.paths["self"]
+            return self.paths["self"].strip()
         else:
             if self.paths.get("minimal", None) is None:
                 self.export(minimal=True)
-            return self.paths["minimal"]
+            return self.paths["minimal"].strip()
 
     def folder(self):
 
@@ -131,7 +131,7 @@ class BIEntity(object):
         if self.paths["sub_folder"] is not None:
             folders.append(self.paths["sub_folder"])
 
-        return os.path.join(*folders)
+        return os.path.join(*folders).strip()
 
     def code(self):
         return str(self.data["info"]["code"])
@@ -323,7 +323,7 @@ class BIEntity(object):
 
 
     @classmethod
-    def from_file(cls, filepath, code="auto", file_format="auto", force=False, check_existing=True, source=None, **kwargs):
+    def from_file(cls, filepath, code="auto", file_format="auto", force=False, check_existing=True, source=None, export=False, **kwargs):
         log(1, "Loading from file:", filepath)
         if not os.path.exists(filepath):
             raise FileNotFoundError(filepath)
@@ -394,7 +394,8 @@ class BIEntity(object):
         self.recover_cvectors()
 
         self.set_flag("loaded", True)
-        self.export()
+        if export:
+            self.export()
         return self
 
 
@@ -464,6 +465,7 @@ class BIEntity(object):
         custom_folder = False
         if target_folder is None:
             target_folder = self.paths["export_folder"]
+            target_folder = target_folder.strip()
 
         else:
             custom_folder = True
@@ -480,7 +482,8 @@ class BIEntity(object):
         if minimal:
             fname += ".minimal"
         try:
-            base_folder = os.path.join(target_folder, self.paths.get("top_folder", self.code()), self.paths["sub_folder"].strip() )
+            base_folder = os.path.join(target_folder, self.paths.get("top_folder", self.code()), self.paths["sub_folder"]).strip()
+            print(base_folder)
         except TypeError:
             print(self.paths)
             raise

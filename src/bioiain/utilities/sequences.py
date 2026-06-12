@@ -1,5 +1,4 @@
 import os, sys, json, subprocess
-import tempfile
 
 from ..utilities.exceptions import *
 from .logging import log
@@ -175,21 +174,29 @@ class MMSEQS2(MSA):
         super().__init__(*args, **kwargs)
         self.tmp_folder = os.path.join(TEMP_FOLDER, "mmseqs2")
         os.makedirs(self.tmp_folder, exist_ok=True)
+        self.databases = {}
         self.mmseqs_cmd = mmseqs_cmd
-        self.db_name = None
         self.db_folder = None
         self.verbosity = verbosity
-        self.name = self.name.replace(".fasta", ".db")
+        self.name = self.name.replace(".dataset", "")
+        if not self.name.endswith(".mmseqs"):
+            self.name += ".mmseqs"
+        self.db_folder = os.path.join(SUBDIR_NAME, "mmseqs", self.name)
+        os.makedirs(self.db_folder, exist_ok=True)
+
         if db_name is None:
             db_name = self.name.split(".")[0]
-        if os.path.isdir(self.fasta_path):
+        self.db_name = db_name
+
+        if os.path.exists(self.db_path()):
             log(2, "Input is already DB, setup only")
-            self.db_folder = self.fasta_path
-            self.db_name = db_name
-            self.db_path = os.path.join(self.db_folder, self.db_name)
         else:
             log(2, "Input is a file, creating DB...")
             self.create_db(db_name=db_name, **kwargs)
+
+    def db_path(self, suffix="db"):
+        return os.path.join(self.db_folder, f"{self.db_name}.{suffix}")
+
 
 
 
@@ -216,32 +223,28 @@ class MMSEQS2(MSA):
         if fasta_path is None:
             self.fasta.rewrite(key_start=">")
             fasta_path = self.fasta_path
-        if db_name is None:
-            db_name = self.name.split(".")[0]
-        db_folder = os.path.join(SUBDIR_NAME, "mmseqs", self.name)
-        db_path = os.path.join(db_folder, db_name)
-        os.makedirs(db_folder, exist_ok=True)
-        self._cmd("createdb", fasta_path, db_path, createdb_mode=0)
-        self.db_name = db_name
-        self.db_folder = db_folder
-        self.db_path = db_path
+
+        self.databases["sequence"] = self.db_path()
+        self._cmd("createdb", fasta_path, self.databases["sequence"], createdb_mode=1, shuffle=0)
         return self
 
 
-    def cluster(self, db_name=None, reassign=False, force=False, linear=False, easy=False, **kwargs):
-        if db_name is None:
-            db_name = self.db_name
-        cluster_db_folder = os.path.join(self.db_folder.replace(".db", ".cluster"))
-        cluster_db_path = os.path.join(cluster_db_folder, db_name)
-        out_path = os.path.join(cluster_db_folder, f"{db_name}_clustered.tsv")
-        data_path = out_path.replace(".tsv", ".json")
+    def cluster(self, reassign=False, force=False, linear=False, easy=False, **kwargs):
+
+
+        self.databases["clustered"] = self.db_path("cluster")
+        out_path = self.databases["clustered"] + ".tsv"
+        data_path = self.databases["clustered"] + ".json"
+
         if linear:
             cmd = ["linclust"]
         else:
             cmd = ["cluster"]
         if easy:
             cmd =  ["easy-"+cmd[0]]
-        cmd.extend([self.db_path, cluster_db_path, self.tmp_folder])
+
+        cmd.extend([self.db_path(), self.databases["clustered"], self.tmp_folder])
+
         if reassign and not linear:
             cmd.append("--cluster-reassign")
 
@@ -251,9 +254,8 @@ class MMSEQS2(MSA):
             "linear":linear,
             "easy":easy,
         }
-        os.makedirs(cluster_db_folder, exist_ok=True)
 
-        if not os.path.exists(cluster_db_path) or not os.path.exists(data_path):
+        if not os.path.exists(self.databases["clustered"]) or not os.path.exists(data_path):
             force=True
         if os.path.exists(data_path):
             if json.load(open(data_path))["params"] != params:
@@ -270,7 +272,7 @@ class MMSEQS2(MSA):
 
         if force or not os.path.exists(out_path):
             try:
-                self._cmd("createtsv", self.db_path, self.db_path, cluster_db_path, out_path, v=self.verbosity)
+                self._cmd("createtsv", self.db_path(), self.db_path(), self.databases["clustered"], out_path, v=self.verbosity)
             except:
                 raise ClusteringError()
 
@@ -289,6 +291,7 @@ class MMSEQS2(MSA):
             json.dump(data, open(data_path, "w"), indent=4)
         except:
             raise ClusteringError()
+        print("Cluster data:", data_path)
         return data_path
 
 

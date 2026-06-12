@@ -564,7 +564,7 @@ class EmbeddingDataset(object):
             log("error", "Dataset has no fasta file")
             return None
         log(1, "Loading Sequence DB (mmseqs2)...")
-        if not self.data.get("mmseqs_db", False) or not os.path.exists(self.data.get("mmseqs_db_folder", None)):
+        if not self.data.get("mmseqs_db", False) or not os.path.exists(self.data.get("mmseqs_db_folder", None)) or force:
             self._create_sequence_db(**kwargs)
         else:
             log(2, "Sequence DB already generated")
@@ -576,6 +576,7 @@ class EmbeddingDataset(object):
         mmseqs = MMSEQS2(self.data["fasta_path"], **kwargs)
         self.data["mmseqs_db_name"] = mmseqs.db_name
         self.data["mmseqs_db_folder"] = mmseqs.db_folder
+        self.data["mmseqs_db_path"] = mmseqs.db_path()
         self.data["mmseqs_db"] = True
         return self
 
@@ -585,10 +586,12 @@ class EmbeddingDataset(object):
             self._create_sequence_db(**kwargs)
         if not self.data.get("clustered", False) or not os.path.exists(self.data.get("clustered_path", False)):
             force=True
-        if not self.data.get("clustered", False) or force:
-            mmseqs = MMSEQS2(self.data["mmseqs_db_folder"], **kwargs)
+        if (not self.data.get("clustered", False)) or force:
+            mmseqs = MMSEQS2(self.data["fasta_path"], **kwargs)
             self.data["clustered_path"] = mmseqs.cluster(force=force, **kwargs)
             self.data["clustered"] = True
+        else:
+            log("warning", "Cluster already generated")
 
         self._add_clusters_to_embeddings(**kwargs)
         return self.data["clustered_path"]
