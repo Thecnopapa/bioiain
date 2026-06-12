@@ -18,6 +18,13 @@ def calculate_relative_contactability(dataset):
 
         print(query, mmseqs)
         mmseqs.search(query)
+        # TODO: parse target ids
+        # TODO: fetch embeddings for each target
+        # TODO: parse aligned sequences
+        # TODO: match sequence to embeddings
+        # TODO: calculate relative contactability
+        # TODO: generate new embeddings
+
 
 
 

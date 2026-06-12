@@ -203,8 +203,6 @@ class MMSEQS2(MSA):
         return os.path.join(self.db_folder, f"{self.db_name}.{suffix}")
 
 
-
-
     def _cmd(self, command, *args, **kwargs):
 
         if type(command) is str:
@@ -247,6 +245,7 @@ class MMSEQS2(MSA):
             cmd = ["convertalis"]
         else:
             raise NotImplementedError
+
 
         cmd.append(query)
         if output_file is None:
@@ -308,7 +307,7 @@ class MMSEQS2(MSA):
         if force or not os.path.exists(out_path):
             try:
                 tsv = self.write(self.db_path(), self.db_path(), self.db_path("cluster"), out_path)
-                fasta = self.write(self.db_path(), self.db_path(), self.db_path("cluster"), fasta_path, mode="fasta")
+
             except:
                 raise TsvError()
 
@@ -341,27 +340,19 @@ class MMSEQS2(MSA):
         cmd = ["search", query_db, self.db_path(), aligned_db, self.tmp_folder]
 
 
-        params = {
-            "cmd": " ".join([str(c) for c in cmd]),
-            "gpu": 1,
-            "alignment-mode": 3,
-            "alignment-output-mode": 3
-        }
+
         if exhaustive:
             cmd.append("--exhaustive-search")
-        try:
-            from ..machine import DEVICE_N
-            params["gpu_server"] = DEVICE_N
-        except:
-            pass
+        cmd.append("-a")
+        cmd.extend(["--alignment-mode","3"])
 
         try:
             self._cmd(*cmd, v=self.verbosity)
         except:
             raise SearchError()
 
-        tsv = self.write(query_db, self.db_path(), aligned_db, output_file=".".join(query_db.split(".")[:-1]) + ".tab", mode="alis")
-        exit()
+        columns = "query,target,evalue,raw,bits,fident,alnlen,pident,qcov,tcov,qlen,tlen,qstart,tstart,qaln,taln"
+        tsv = self.write(query_db, self.db_path(), aligned_db, output_file=".".join(query_db.split(".")[:-1]) + ".tab", mode="alis", format_mode=4, format_output=columns)
 
 
 
