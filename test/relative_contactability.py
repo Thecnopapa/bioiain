@@ -25,8 +25,8 @@ def calculate_relative_contactability(dataset:EmbeddingDataset,
     print(dataset)
     print(dataset.data["embedding_class"], embedding_class.__name__)
     assert dataset.data["embedding_class"] == embedding_class.__name__
-    dataset.sequence_db(force=True)
-    dataset.cluster(reassign=True, verbosity=3, force=True, linear=True)
+    dataset.sequence_db(force=False)
+    dataset.cluster(reassign=True, force=False, linear=True)
     mmseqs = dataset.db()
     new_dataset = dataset.__class__(name=dataset.data["name"]+"_relative")
     for e in dataset.embeddings.values():
@@ -46,7 +46,7 @@ def calculate_relative_contactability(dataset:EmbeddingDataset,
 
 
         print(query, mmseqs)
-        df = mmseqs.search(query)
+        df = mmseqs.search(query, dataset_name=str(dataset))
         print(json.dumps(e, indent=4))
         embedding = embedding_class.from_file(e["embedding_data"])
         print(embedding)
@@ -115,6 +115,7 @@ def calculate_relative_contactability(dataset:EmbeddingDataset,
 
         else:
             new_embedding = embeddings.RelativeALEPHEmbedding.from_tensor(tensor)
+        new_embedding.name = embedding.name
         new_embedding.entity_path = embedding.entity_path
         new_embedding.sequence = embedding.sequence
         new_embedding.entity = embedding.entity

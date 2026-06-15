@@ -358,7 +358,7 @@ class MMSEQS2(MSA):
         kwargs.pop("map", None)
         return self.search(*args, map=True, **kwargs)
 
-    def search(self, query_db, exhaustive=True, map=False, **kwargs) -> pl.DataFrame:
+    def search(self, query_db, exhaustive=True, map=False, dataset_name=None, **kwargs) -> pl.DataFrame:
 
         if map:
             cmd = ["map"]
@@ -373,9 +373,12 @@ class MMSEQS2(MSA):
         log(1, f"Searching({query_db}) in {self.db_path()} cmd={folder_name}")
 
 
-        aligned_db = os.path.join(self.tmp_folder, folder_name, f"temp.{folder_name}")
-        shutil.rmtree(os.path.join(self.tmp_folder, folder_name), ignore_errors=True)
-        os.makedirs(os.path.join(self.tmp_folder, folder_name), exist_ok=True)
+
+        aligned_db = os.path.join(self.tmp_folder, folder_name, str(dataset_name))
+        shutil.rmtree(aligned_db, ignore_errors=True)
+        os.makedirs(aligned_db, exist_ok=True)
+        aligned_db = os.path.join(aligned_db, f"temp.{folder_name}")
+
 
 
         cmd.extend([query_db, self.db_path(), aligned_db, self.tmp_folder])
