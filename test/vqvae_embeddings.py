@@ -21,7 +21,11 @@ class ALEPHEmbedding(ResidueEmbedding):
         self.cvector = cvector
         self.modulo_norm = modulo_norm
         self.max_dist = max_dist
-        super().__init__(name=self.cvector.full_id(), residue=self.cvector.res2)
+        if self.cvector is None:
+            raise NoEmbeddingForThisResidue()
+        name = self.cvector.full_id()
+
+        super().__init__(name=name, residue=self.cvector.res2)
 
 
     def _generate(self) -> list:
@@ -72,7 +76,7 @@ class ALEPHProteinEmbedding(ProteinEmbedding):
 
     def check_aleph(self, *args, vc_mode=None, in_place=True, **kwargs) -> bool:
 
-        if not self.entity.has_flag("no_atoms", True):
+        if (not self.entity.has_flag("no_atoms", True)) and not self.dry:
             try:
                 self.entity = self.entity.fragment(in_place=in_place)
             except ALEPHError:
@@ -87,7 +91,7 @@ class ALEPHProteinEmbedding(ProteinEmbedding):
             cvectors =  self.entity.cvectors(vc_mode=vc_mode)
             cvmatrix =  self.entity.cvmatrix(vc_mode=vc_mode)  # Not used but calculates closest neighbours
             if cvmatrix is None:
-                raise NoEmbeddingForThisProtein
+                raise NoEmbeddingForThisProtein()
 
     def __init__(self, *args,  **kwargs):
         super().__init__(*args, **kwargs)
@@ -100,12 +104,19 @@ class ALEPHProteinEmbedding(ProteinEmbedding):
         assert self.residue_embedding_class is not None
         e = []
         seq = ""
+        print("Generating embeddings")
+        print("cvectors:", len(self.entity.cvectors()))
         for n, cv in enumerate(self.entity.cvectors()):
+            print(n, cv, end="\r")
             try:
-                e.append(self.residue_embedding_class(*args, cvector=cv, **kwargs).tensor())
+                e.append(self.residue_embedding_class(*args, cvector=cv, **kwargs).tensor(force=True))
                 seq += d3(cv.res2.resname)[0]
             except NoEmbeddingForThisResidue:
                 seq += "-"
                 self.missing_indexes.append(n)
         self.sequence = seq
+        print()
         return e
+
+class RelativeALEPHEmbedding(ALEPHProteinEmbedding):
+    pass

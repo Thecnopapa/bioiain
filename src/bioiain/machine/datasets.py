@@ -276,6 +276,7 @@ class EmbeddingDataset(object):
             "start": len(self),
             "end": len(self)+len(embedding),
             "embedding_path": relative_path(embedding.path()),
+            "embedding_data": relative_path(embedding.json()),
             "label_path": relative_path(label_path),
             "length": len(embedding),
             "iter_dim": getattr(embedding, "iter_dim", 0),
@@ -569,7 +570,7 @@ class EmbeddingDataset(object):
             return None
         log(1, "Loading Sequence DB (mmseqs2)...")
         if not self.data.get("mmseqs_db", False) or not os.path.exists(self.data.get("mmseqs_db_folder", None)) or force:
-            self._create_sequence_db(**kwargs)
+            self._create_sequence_db(force=force, **kwargs)
         else:
             log(2, "Sequence DB already generated")
         return self

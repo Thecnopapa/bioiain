@@ -171,7 +171,7 @@ class MSA(object):
 
 
 class MMSEQS2(MSA):
-    def __init__(self, *args, mmseqs_cmd="mmseqs", db_name=None, verbosity=2, folder=None, **kwargs):
+    def __init__(self, *args, mmseqs_cmd="mmseqs", db_name=None, verbosity=2, folder=None, force=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.fasta.rewrite(key_start=">")
         self.tmp_folder = os.path.join(TEMP_FOLDER, "mmseqs2")
@@ -190,6 +190,9 @@ class MMSEQS2(MSA):
 
         os.makedirs(self.db_folder, exist_ok=True)
 
+        if force:
+            self.delete()
+
         if db_name is None:
             db_name = self.name.split(".")[0]
         self.db_name = db_name
@@ -202,6 +205,16 @@ class MMSEQS2(MSA):
 
     def db_path(self, suffix="db"):
         return os.path.join(self.db_folder, f"{self.db_name}.{suffix}")
+
+    def delete(self, db_name=None, make_dir=True):
+        if db_name is None:
+            shutil.rmtree(self.db_folder, ignore_errors=True)
+        else:
+            for file in self.db_folder:
+                prefix = self.db_path(suffix=db_name)
+                if file.startswith(prefix):
+                    os.remove(os.path.join(self.db_folder, file))
+        os.makedirs(self.db_folder, exist_ok=True)
 
 
     def _cmd(self, command, *args, **kwargs):
@@ -228,7 +241,9 @@ class MMSEQS2(MSA):
 
 
 
-    def create_db(self, db_name=None, fasta_path=None, **kwargs):
+    def create_db(self, force=False, fasta_path=None, **kwargs):
+        if force:
+            self.delete()
         if fasta_path is None:
             self.fasta.rewrite(key_start=">")
             fasta_path = self.fasta_path
@@ -305,6 +320,7 @@ class MMSEQS2(MSA):
                 force = True
 
         if force:
+            self.delete("cluster")
             try:
                 self._cmd(*cmd)
             except:

@@ -17,6 +17,7 @@ from src.bioiain.machine import *
 from src.bioiain.utilities.parallel import *
 import vqvae_models as models
 import vqvae_embeddings as embeddings
+from relative_contactability import calculate_relative_contactability
 
 import torch, random
 import  numpy as np
@@ -98,8 +99,8 @@ if "-p" not in sys.argv:
     MODEL_CLASS = getattr(models, MODEL_NAME)
     log(1, f"Model: {MODEL_CLASS}")
 
-
-    dataset = EmbeddingDataset(name=f"tokens_{DATA_NAME}")
+    DATASET_NAME = f"DATASET_{DATA_NAME}"
+    dataset = EmbeddingDataset(name=DATASET_NAME)
 
     if not (REBUILD or FORCE):
         dataset.load()
@@ -129,7 +130,7 @@ if "-p" not in sys.argv:
                     log("Warning", "Skipping embedding for:", file, f"({e})")
                     continue
 
-                embedding = embeddings.ALEPHProteinEmbedding(entity=entity, residue_embedding_class=EMBEDDING_CLASS)
+                embedding = embeddings.ALEPHProteinEmbedding(entity=entity, residue_embedding_class=EMBEDDING_CLASS, dry=True)
 
                 if not embedding.exists() or FORCE:
                     entity = FragmentedStructure.from_file(path)
@@ -150,8 +151,10 @@ if "-p" not in sys.argv:
                     entity.export()
                 else:
                     log(1, "Embedding already generated")
-                    embedding.reload()
+                    embedding = embedding.reload()
                 print(embedding)
+                print(embedding.sequence)
+                print("#####")
 
 
 
@@ -177,13 +180,33 @@ if "-p" not in sys.argv:
 
 
         dataset.save()
+        dataset.sequence_db(force=True)
+        dataset.cluster(reassign=True, verbosity=3, force=True)
+        #dataset.align(verbose=True, build_tree=True, force=True)
+        dataset.save()
+
+
     dataset.sequence_db()
     dataset.cluster(reassign=True, verbosity=3)
-
-    dataset.save()
-    dataset.align(verbose=True, build_tree=True)
     dataset.save()
     log("end", "Embeddings")
+
+    RELATIVE_DATASET_NAME = DATASET_NAME+"_relative"
+    relative = EmbeddingDataset(name=RELATIVE_DATASET_NAME)
+    log(2, relative)
+
+    if not (REBUILD or FORCE):
+        relative.load()
+
+    if len(dataset) == 0:
+        log("start", "Relative Embeddings")
+        relative = calculate_relative_contactability(dataset)
+        relative.save()
+        relative.sequence_db(force=True)
+        relative.cluster(reassign=True, verbosity=3, force=True)
+        relative.save()
+        log(2, relative)
+        log("end", "Relative Embeddings")
 
 
 model = None

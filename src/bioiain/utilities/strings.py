@@ -115,7 +115,7 @@ def str_to_list_with_literals(str, delimiter=" ", literal_delimiters=["\"","\'"]
         if s == "":
             if in_literal:
                 literal += delimiter
-                print(repr(literal))
+                #print(repr(literal))
             continue
         if s[0] in literal_delimiters and not in_literal:
             in_literal = True

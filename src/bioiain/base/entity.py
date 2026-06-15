@@ -485,10 +485,11 @@ class BIEntity(object):
         custom_folder = False
         if target_folder is None:
             target_folder = self.paths["export_folder"]
-            target_folder = target_folder.strip()
+            target_folder = str(target_folder).strip()
 
         else:
             custom_folder = True
+            target_folder = str(custom_folder)
 
         fname = str(self.name())
         if sufix is not None:

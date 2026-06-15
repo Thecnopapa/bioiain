@@ -19,7 +19,8 @@ device = "cpu"
 
 class Embedding(object):
     param_names = []
-    def __init__(self, name=None, folder=None, subfolder=None,group_by_class=True, **kwargs):
+    def __init__(self, name=None, folder=None, subfolder=None,group_by_class=True, dry=False, **kwargs):
+        self.dry = dry
         if name is not None:
             self.name = name
         else:
@@ -77,6 +78,7 @@ class Embedding(object):
 
     def tensor(self, force=False, generate=True) -> Tensor|None:
         if self._tensor is not None and not force:
+            print("Tensor cached")
             return self._tensor
 
         if self.exists():
@@ -84,7 +86,7 @@ class Embedding(object):
         elif generate:
             tensor = self.generate()
         else:
-            return None
+            raise NoTensorAvailable()
         self._tensor = tensor
         return tensor
 
@@ -99,7 +101,7 @@ class Embedding(object):
             raise EmptyTensor()
 
     def length(self) -> int:
-        return len(self.tensor())
+        return self.tensor().shape[0]
 
     def __len__(self):
         return self.length()
@@ -121,12 +123,20 @@ class Embedding(object):
         self = cls()
         data = json.load(open(path))
         for k, v in data.items():
+            if k == "length":
+                continue
             setattr(self, k, v)
         return self
 
     @classmethod
     def from_tensor(cls, tensor, **kwargs):
         self = cls(**kwargs)
+        if type(tensor) is torch.Tensor:
+            pass
+        elif type(tensor) is str:
+            tensor = torch.load(self.path())
+        elif type(tensor) in (list, tuple, np.ndarray):
+            tensor = torch.tensor(np.array(tensor))
         self._tensor = tensor
         return self
 
@@ -190,7 +200,12 @@ class ProteinEmbedding(Embedding):
                 self.entity_path = self.entity.path()
 
     def dict(self, extra={}):
-        return super().dict({"sequence": self.sequence, "entity":str(self.entity), "entity_path":self.entity_path, "chains":self.chains}|extra)
+        return super().dict({"sequence": self.sequence,
+                             "entity":str(self.entity),
+                             "entity_path":self.entity_path,
+                             "chains":self.chains,
+                             "missing_indexes":self.missing_indexes,
+                             }|extra)
 
     def _generate(self, *args, **kwargs) -> list:
         assert self.residue_embedding_class is not None
@@ -198,7 +213,7 @@ class ProteinEmbedding(Embedding):
         seq = ""
         for n, res in enumerate(self.entity.residues()):
             try:
-                e.append(self.residue_embedding_class(*args, residue=res,  **kwargs).tensor())
+                e.append(self.residue_embedding_class(*args, residue=res,  **kwargs).tensor(force=True))
                 seq += d3(res.resname)[0]
             except NoEmbeddingForThisResidue:
                 seq += "-"

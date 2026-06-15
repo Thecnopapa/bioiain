@@ -160,6 +160,9 @@ class EmptyTensor(Exception):
 class EmbeddingLoadError(Exception):
     pass
 
+class NoTensorAvailable(EmbeddingLoadError):
+    pass
+
 class UnknownEmbeddingFormat(EmbeddingLoadError):
     pass
 
