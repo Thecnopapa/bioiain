@@ -54,7 +54,7 @@ class Embedding(object):
 
     def exists(self, check_json=True):
         if check_json:
-            os.path.exists(self.json())
+            return os.path.exists(self.json()) and os.path.exists(self.path())
         return os.path.exists(self.path())
 
     def json(self):
