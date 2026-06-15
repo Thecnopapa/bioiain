@@ -1,9 +1,9 @@
 import os, json
 
 from ..utilities import *
-from ..utilities.parallel import avail_cpus
 from ..utilities.sequences import d3
 from ..utilities.exceptions import *
+from ..utilities.files import relative_path
 
 import torch
 from torch import Tensor
@@ -36,8 +36,31 @@ class Embedding(object):
     def __repr__(self):
         return f"<bi.{self.__class__.__name__}:{self.name} N={self.length()} at: {self.path()}>"
 
-    def exists(self):
+
+    def dict(self, extra:dict={}):
+        return {
+            "name": self.name,
+            "folder": relative_path(self.folder),
+            "subfolder": relative_path(self.subfolder),
+            "group_by_class": self.group_by_class,
+            "embedding_path": relative_path(self.path()),
+            "length": len(self),
+            "iter_dim": getattr(self, "iter_dim", 0),
+
+            "param_names": getattr(self, "param_names", None),
+        } | extra
+
+
+    def exists(self, check_json=True):
+        if check_json:
+            os.path.exists(self.json())
         return os.path.exists(self.path())
+
+    def json(self):
+        return self.path().replace(".pt", ".json")
+
+    def reload(self):
+        return self.__class__.from_json(self.json())
 
     def path(self, force=False) -> str:
         if self._path is not None and not force:
@@ -70,6 +93,7 @@ class Embedding(object):
         if tensor is not None:
             os.makedirs(os.path.dirname(self.path()), exist_ok=True)
             torch.save(tensor, self.path())
+            json.dump(self.dict(), open(self.json(), "w"), indent=4)
             return self
         else:
             raise EmptyTensor()
@@ -81,9 +105,23 @@ class Embedding(object):
         return self.length()
 
     @classmethod
-    def from_file(cls, path, **kwargs):
-        self = cls(**kwargs)
-        self._path = path
+    def from_file(cls, path, force_as_tensor=False, force_as_json=False, **kwargs):
+        if path.endswith(".pt") or force_as_tensor:
+            self = cls.from_tensor(path, **kwargs)
+            self._path = path
+        elif path.endswith(".json") or force_as_json:
+            self = cls.from_json(path, **kwargs)
+        else:
+            raise UnknownEmbeddingFormat()
+        return self
+
+
+    @classmethod
+    def from_json(cls, path, **kwargs):
+        self = cls()
+        data = json.load(open(path))
+        for k, v in data.items():
+            setattr(self, k, v)
         return self
 
     @classmethod
@@ -131,6 +169,9 @@ class ResidueEmbedding(Embedding):
     def save(self):
         raise NotAGoodIdea()
 
+    def dict(self, extra:dict={}):
+        return super().dict({"residue": self.residue, "entity":str(self.param_names), "entity_path":self.entity_path}|extra)
+
 
 class ProteinEmbedding(Embedding):
     residue_embedding_class = None
@@ -138,6 +179,7 @@ class ProteinEmbedding(Embedding):
         super().__init__(**kwargs)
         self.entity = entity
         self.sequence = None
+        self.chains = "*"
         if residue_embedding_class is not None:
             self.residue_embedding_class = residue_embedding_class
             self.param_names = self.residue_embedding_class.param_names
@@ -146,16 +188,22 @@ class ProteinEmbedding(Embedding):
             if self.name == self.__class__.__name__:
                 self.name = self.entity.name()
                 self.entity_path = self.entity.path()
-            self.sequence = self.entity.sequence()
+
+    def dict(self, extra={}):
+        return super().dict({"sequence": self.sequence, "entity":str(self.entity), "entity_path":self.entity_path, "chains":self.chains}|extra)
 
     def _generate(self, *args, **kwargs) -> list:
         assert self.residue_embedding_class is not None
         e = []
+        seq = ""
         for n, res in enumerate(self.entity.residues()):
             try:
                 e.append(self.residue_embedding_class(*args, residue=res,  **kwargs).tensor())
+                seq += d3(res.resname)[0]
             except NoEmbeddingForThisResidue:
+                seq += "-"
                 self.missing_indexes.append(n)
+        self.sequence = seq
         return e
 
 

@@ -157,6 +157,12 @@ class NoEmbeddingForThisProtein(EmbeddingGenerationError):
 class EmptyTensor(Exception):
     pass
 
+class EmbeddingLoadError(Exception):
+    pass
+
+class UnknownEmbeddingFormat(EmbeddingLoadError):
+    pass
+
 
 
 

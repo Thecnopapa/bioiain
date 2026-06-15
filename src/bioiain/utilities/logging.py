@@ -95,8 +95,21 @@ def log(level:int|str=1, *args, **kwargs):
     :param kwargs: kwargs for print function
     """
     v = int(os.environ.get("BI_VERBOSE", 10))
+    try:
+        from .dataframes import print_df
+        from polars import DataFrame
+        if type(level) is DataFrame:
+            print_df(level, *args, **kwargs)
+            return level
+    except:
+        pass
     if type(level) is str:
-        level = level.lower()
+        try:
+            level = int(level)
+        except:
+            level = level.lower()
+
+
     if v > -2:
         if level == "error":
             if isinstance(kwargs.get("error", None), Exception):

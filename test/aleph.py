@@ -132,7 +132,7 @@ if "-p" not in sys.argv:
                 embedding = embeddings.ALEPHProteinEmbedding(entity=entity, residue_embedding_class=EMBEDDING_CLASS)
 
                 if not embedding.exists() or FORCE:
-
+                    entity = FragmentedStructure.from_file(path)
                     if len(entity) > 2000:
                         log("Warning", "entity too large!")
                         continue
@@ -150,6 +150,7 @@ if "-p" not in sys.argv:
                     entity.export()
                 else:
                     log(1, "Embedding already generated")
+                    embedding.reload()
                 print(embedding)
 
 

@@ -1,13 +1,10 @@
 import os, json
 
-from src.bioiain.aleph import FragmentedStructure
 from src.bioiain.utilities import *
-from src.bioiain.utilities.parallel import avail_cpus
 from src.bioiain.utilities.sequences import d3
 from src.bioiain.utilities.exceptions import *
 from src.bioiain.machine.embeddings import *
 
-import torch
 from torch import Tensor
 
 
@@ -102,9 +99,13 @@ class ALEPHProteinEmbedding(ProteinEmbedding):
     def _generate(self, *args, **kwargs) -> list:
         assert self.residue_embedding_class is not None
         e = []
+        seq = ""
         for n, cv in enumerate(self.entity.cvectors()):
             try:
                 e.append(self.residue_embedding_class(*args, cvector=cv, **kwargs).tensor())
+                seq += d3(cv.res2.resname)[0]
             except NoEmbeddingForThisResidue:
+                seq += "-"
                 self.missing_indexes.append(n)
+        self.sequence = seq
         return e

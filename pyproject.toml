@@ -10,10 +10,10 @@ build-backend = "setuptools.build_meta"
 
 dependencies = [
     "numpy >= 2.4.2",
-    "pandas >= 2.3.3",
     "matplotlib >= 3.10.8",
     "scikit-learn >= 1.8.0",
     "scipy >= 1.17.0",
+    "polars",
 
     "typing-extensions >= 4.15.0",
     "requests >= 2.32.5",
@@ -73,6 +73,7 @@ aleph = [
     "termcolor",
     "igraph",
     "biopython >= 1.86",
+    "pandas >= 2.3.3",
 ]
 db = [
     "plinder"

@@ -3,6 +3,7 @@ import os, sys, json, subprocess, shutil
 from ..utilities.exceptions import *
 from .logging import log
 from .. import TEMP_FOLDER, SUBDIR_NAME
+import polars as pl
 
 
 d3to1 = {'CYS': 'C', 'ASP': 'D', 'SER': 'S', 'GLN': 'Q', 'LYS': 'K',
@@ -209,6 +210,8 @@ class MMSEQS2(MSA):
             command = [command]
 
         cmd = [self.mmseqs_cmd, *command]
+        if "v" not in kwargs:
+            kwargs["v"] = kwargs.pop("verbosity", self.verbosity)
 
         for kwarg, value in kwargs.items():
             if not kwarg.startswith("--"):
@@ -235,21 +238,26 @@ class MMSEQS2(MSA):
         return self
 
 
-    def  write(self, query, target=None, result=None, output_file=None, mode="tsv", **kwargs):
+    def  write(self, query, target=None, result=None, output_file=None, mode="tab", **kwargs):
 
         if mode.lower() == "tsv":
             cmd = ["createtsv"]
+            extension = "tsv"
         elif mode.lower() == "fasta":
             cmd = ["result2flat"]
-        elif mode.lower() == "alis":
+            extension = "fasta"
+        elif mode.lower() == "tab" or mode.lower() == "alis":
             cmd = ["convertalis"]
+            extension = "tab"
         else:
             raise NotImplementedError
 
 
         cmd.append(query)
         if output_file is None:
-            output_file = ".".join(query.split(".")[:-1]) + ".tsv"
+            if not output_file.endswith(f".{extension}"):
+                output_file += f".{extension}"
+            output_file = ".".join(query.split(".")[:-1])
         if target is not None:
             cmd.append(target)
         if result is not None:
@@ -298,7 +306,7 @@ class MMSEQS2(MSA):
 
         if force:
             try:
-                self._cmd(*cmd, v=self.verbosity)
+                self._cmd(*cmd)
             except:
                 raise ClusteringError()
         else:
@@ -306,7 +314,7 @@ class MMSEQS2(MSA):
 
         if force or not os.path.exists(out_path):
             try:
-                tsv = self.write(self.db_path(), self.db_path(), self.db_path("cluster"), out_path)
+                tsv = self.write(self.db_path(), self.db_path(), self.db_path("cluster"), out_path, mode="tsv")
 
             except:
                 raise TsvError()
@@ -330,30 +338,47 @@ class MMSEQS2(MSA):
         print("Cluster data:", data_path)
         return data_path
 
-    def search(self, query_db, exhaustive=True, **kwargs):
+    def map(self, *args, **kwargs) -> pl.DataFrame:
+        kwargs.pop("map", None)
+        return self.search(*args, map=True, **kwargs)
 
-        log(1, f"Searching({query_db}) in {self.db_path()}")
+    def search(self, query_db, exhaustive=True, map=False, **kwargs) -> pl.DataFrame:
 
-        aligned_db = os.path.join(self.tmp_folder,"search", "temp.search")
-        shutil.rmtree(os.path.join(self.tmp_folder,"search"), ignore_errors=True)
-        os.makedirs(os.path.join(self.tmp_folder,"search"), exist_ok=True)
-        cmd = ["search", query_db, self.db_path(), aligned_db, self.tmp_folder]
+        if map:
+            cmd = ["map"]
+            folder_name = "map"
+        else:
+            cmd = ["search"]
+            folder_name = "search"
+            if exhaustive:
+                cmd.append("--exhaustive-search")
+                cmd.extend(["--alignment-mode", "3"])
+
+        log(1, f"Searching({query_db}) in {self.db_path()} cmd={folder_name}")
+
+
+        aligned_db = os.path.join(self.tmp_folder, folder_name, f"temp.{folder_name}")
+        shutil.rmtree(os.path.join(self.tmp_folder, folder_name), ignore_errors=True)
+        os.makedirs(os.path.join(self.tmp_folder, folder_name), exist_ok=True)
+
+
+        cmd.extend([query_db, self.db_path(), aligned_db, self.tmp_folder])
 
 
 
-        if exhaustive:
-            cmd.append("--exhaustive-search")
+
         cmd.append("-a")
-        cmd.extend(["--alignment-mode","3"])
 
         try:
-            self._cmd(*cmd, v=self.verbosity)
+            self._cmd(*cmd, **kwargs)
         except:
             raise SearchError()
 
         columns = "query,target,evalue,raw,bits,fident,alnlen,pident,qcov,tcov,qlen,tlen,qstart,tstart,qaln,taln"
-        tsv = self.write(query_db, self.db_path(), aligned_db, output_file=".".join(query_db.split(".")[:-1]) + ".tab", mode="alis", format_mode=4, format_output=columns)
-
+        tsv = self.write(query_db, self.db_path(), aligned_db, output_file=".".join(query_db.split(".")[:-1]) + f".{folder_name}.tab", mode="alis", format_mode=4, format_output=columns)
+        df = pl.read_csv(tsv, separator="\t")
+        log(df)
+        return df
 
 
 

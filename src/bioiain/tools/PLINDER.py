@@ -1,5 +1,4 @@
 import os, sys
-import pandas as pd
 
 from ..utilities import *
 from ..utilities.exceptions import *
