@@ -119,4 +119,9 @@ class ALEPHProteinEmbedding(ProteinEmbedding):
         return e
 
 class RelativeALEPHEmbedding(ALEPHProteinEmbedding):
-    pass
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "contactability" in self.param_names:
+            self.param_names[self.param_names.index("contactability")] = "rel_contactability"
+

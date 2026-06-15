@@ -36,23 +36,23 @@ def calculate_relative_contactability(dataset:EmbeddingDataset,
         print(query, mmseqs)
         df = mmseqs.search(query)
         print(json.dumps(e, indent=4))
-        embedding = embedding_class.from_file(e["embedding_path"])
+        embedding = embedding_class.from_file(e["embedding_data"])
         print(embedding)
-        t = embedding.tensor()
-        print(t)
-        print(t.shape)
+        tensor = embedding.tensor()
+        print(tensor)
+        print(tensor.shape)
         print("####")
 
         similar_ids = [i for i in df.get_column("target") if i != e["key"]]
         print("Similar IDs:", similar_ids)
-        print(t)
-        contactability = [float(r[contactability_pos]) for r in t]
+        print(tensor)
+        contactability = [float(r[contactability_pos]) for r in tensor]
         print(len(contactability))
         ps, pe = padding
         for key in similar_ids:
             row = df.row(by_predicate=pl.col("target") == key, named=True)
             print(row)
-            target_embedding = embedding_class.from_file(dataset.embeddings[key]["embedding_path"])
+            target_embedding = embedding_class.from_file(dataset.embeddings[key]["embedding_data"])
             target_contactability = [float(r[contactability_pos]) for r in target_embedding.tensor()]
             print(len(target_contactability))
             qn = row["qstart"] - 1
@@ -87,7 +87,9 @@ def calculate_relative_contactability(dataset:EmbeddingDataset,
             print(len(contactability))
             print(contactability)
 
-            new_tensor = np.array(t)
+            print(tensor)
+            new_tensor = np.array(tensor)
+            print(new_tensor)
             for r, c in zip(new_tensor, contactability):
                 print(r, c)
                 r[contactability_pos] = c
@@ -96,7 +98,7 @@ def calculate_relative_contactability(dataset:EmbeddingDataset,
 
 
         else:
-            new_embedding = embeddings.RelativeALEPHEmbedding.from_tensor(t)
+            new_embedding = embeddings.RelativeALEPHEmbedding.from_tensor(tensor)
         new_embedding.entity_path = embedding.entity_path
         new_embedding.sequence = embedding.sequence
         new_embedding.entity = embedding.entity

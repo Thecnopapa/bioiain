@@ -392,7 +392,7 @@ class MMSEQS2(MSA):
 
         columns = "query,target,evalue,raw,bits,fident,alnlen,pident,qcov,tcov,qlen,tlen,qstart,tstart,qaln,taln"
         tsv = self.write(query_db, self.db_path(), aligned_db, output_file=".".join(query_db.split(".")[:-1]) + f".{folder_name}.tab", mode="alis", format_mode=4, format_output=columns)
-        df = pl.read_csv(tsv, separator="\t")
+        df = pl.read_csv(tsv, separator="\t", schema_overrides={"query":pl.String, "target":pl.String})
         log(df)
         return df
 

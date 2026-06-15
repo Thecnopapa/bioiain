@@ -76,6 +76,7 @@ else:
 
 FORCE = "--force" in sys.argv or "-f" in sys.argv
 REBUILD = "--rebuild" in sys.argv or "-r" in sys.argv
+RELATIVE = "--relative" in sys.argv or "--rel" in sys.argv
 
 EMBEDDING_CLASS = embeddings.ExpandedALEPHEmbedding0
 DATA_NAME += "_"+ EMBEDDING_CLASS.__name__
@@ -181,31 +182,35 @@ if "-p" not in sys.argv:
 
         dataset.save()
         dataset.sequence_db(force=True)
-        dataset.cluster(reassign=True, verbosity=3, force=True)
+        dataset.cluster(reassign=True, force=True)
         #dataset.align(verbose=True, build_tree=True, force=True)
         dataset.save()
 
 
     dataset.sequence_db()
-    dataset.cluster(reassign=True, verbosity=3)
+    dataset.cluster(reassign=True)
     dataset.save()
     log("end", "Embeddings")
 
-    RELATIVE_DATASET_NAME = DATASET_NAME+"_relative"
-    relative = EmbeddingDataset(name=RELATIVE_DATASET_NAME)
-    log(2, relative)
 
-    if not (REBUILD or FORCE):
-        relative.load()
-
-    if len(dataset) == 0:
-        log("start", "Relative Embeddings")
-        relative = calculate_relative_contactability(dataset)
-        relative.save()
-        relative.sequence_db(force=True)
-        relative.cluster(reassign=True, verbosity=3, force=True)
-        relative.save()
+    if RELATIVE:
+        DATASET_NAME = DATASET_NAME+"_relative"
+        EMBEDDING_CLASS = embeddings.RelativeALEPHEmbedding
+        relative = EmbeddingDataset(name=DATASET_NAME)
         log(2, relative)
+
+        log("start", "Relative Embeddings")
+        if not (REBUILD or FORCE):
+            relative.load()
+
+        if len(relative) == 0:
+
+            relative = calculate_relative_contactability(dataset)
+            relative.save()
+            relative.sequence_db(force=True)
+            relative.cluster(reassign=True, force=True)
+            relative.save()
+            log(2, relative)
         log("end", "Relative Embeddings")
 
 
