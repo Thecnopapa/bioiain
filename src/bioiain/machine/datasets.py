@@ -433,8 +433,14 @@ class EmbeddingDataset(object):
             target_tensor = tensor
             for i in range(iter_dim):
                 target_tensor = target_tensor[0]
-            target_tensor = target_tensor[rel_key]
-            #print("tensor", target_tensor.shape)
+            try:
+                target_tensor = target_tensor[rel_key]
+            except IndexError:
+                print("tensor", target_tensor)
+                print(target_tensor.shape)
+                print(key, rel_key)
+                print(json.dumps(e, indent=4))
+                raise
 
         if label:
             if label_data is not None:

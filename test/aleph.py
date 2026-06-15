@@ -181,13 +181,13 @@ if "-p" not in sys.argv:
 
         dataset.save()
         dataset.sequence_db(force=True)
-        dataset.cluster(reassign=True, force=True)
+        dataset.cluster(reassign=True, force=True, linear=True)
         #dataset.align(verbose=True, build_tree=True, force=True)
         dataset.save()
 
 
     dataset.sequence_db()
-    dataset.cluster(reassign=True)
+    dataset.cluster(reassign=True, force=False, linear=True)
     dataset.save()
     log("end", "Embeddings")
 
@@ -197,7 +197,8 @@ if "-p" not in sys.argv:
         EMBEDDING_CLASS = embeddings.RelativeALEPHEmbedding
         relative = EmbeddingDataset(name=DATASET_NAME)
         log(2, relative)
-
+        
+        log("title", "Relative Embeddings")
         log("start", "Relative Embeddings")
         if not (REBUILD or FORCE):
             relative.load()
