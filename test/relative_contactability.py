@@ -11,6 +11,8 @@ import vqvae_embeddings as embeddings
 import polars as pl
 import numpy as np
 from torch import Tensor
+from src.bioiain.utilities.exceptions import *
+from src.bioiain import log
 
 
 
@@ -31,7 +33,17 @@ def calculate_relative_contactability(dataset:EmbeddingDataset,
         entity = entity_class.from_file(e["entity_path"], no_atoms=True)
         print(entity)
         print(len(entity.cvectors()))
-        query = entity.db().db_path()
+        try:
+            query = entity.db().db_path()
+        except SequenceNotFound:
+            entity = entity_class.from_file(e["entity_path"], no_atoms=False)
+            try:
+                query = entity.db().db_path()
+            except:
+                log("warning", "No sequence for:", entity)
+                continue
+
+
 
         print(query, mmseqs)
         df = mmseqs.search(query)
@@ -55,8 +67,10 @@ def calculate_relative_contactability(dataset:EmbeddingDataset,
             target_embedding = embedding_class.from_file(dataset.embeddings[key]["embedding_data"])
             target_contactability = [float(r[contactability_pos]) for r in target_embedding.tensor()]
             print(len(target_contactability))
-            qn = row["qstart"] - 1
-            tn = row["tstart"] - 1
+            #qn = row["qstart"] - 1
+            #tn = row["tstart"] - 1
+            qn, tn = 0, 0
+            print(len(row["qaln"][ps:-pe]), len(row["taln"][ps:-pe]))
             for q, t in zip(row["qaln"][ps:-pe], row["taln"][ps:-pe]):
 
                 #print(qn, tn , q, t)
@@ -68,10 +82,12 @@ def calculate_relative_contactability(dataset:EmbeddingDataset,
 
                 if addq and addt:
                     extra_cont = target_contactability[tn]
-                    #print(qn, current_cont, tn, extra_cont)
-                    contactability[qn] = contactability[qn] + extra_cont
-
-
+                    print(qn, len(contactability), end="\r")
+                    try:
+                        contactability[qn] = contactability[qn] + extra_cont
+                    except IndexError:
+                        print(qn, len(contactability))
+                        raise
                 if addq:
                     qn += 1
                 if addt:

@@ -68,6 +68,7 @@ def downloadPDBlist(data_dir:str, list_name:str, pdb_list:list=None, file_path:s
     if file_path is not None:
         with open(file_path) as f:
             for line in f:
+                line = line.split("#")[0]
                 new = string_to_list(line, delimiter=",")
                 for n in new:
                     n = clean_string(n)

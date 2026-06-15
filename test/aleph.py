@@ -154,7 +154,6 @@ if "-p" not in sys.argv:
                     log(1, "Embedding already generated")
                     embedding = embedding.reload()
                 print(embedding)
-                print(embedding.sequence)
                 print("#####")
 
 
@@ -212,6 +211,7 @@ if "-p" not in sys.argv:
             relative.save()
             log(2, relative)
         log("end", "Relative Embeddings")
+        dataset = relative
 
 
 model = None
