@@ -182,13 +182,13 @@ if "-p" not in sys.argv:
 
         dataset.save()
         dataset.sequence_db(force=True)
-        dataset.cluster(reassign=True, force=True, linear=True)
+        dataset.cluster(reassign=True, force=True)
         #dataset.align(verbose=True, build_tree=True, force=True)
         dataset.save()
 
 
     dataset.sequence_db()
-    dataset.cluster(reassign=True, force=False, linear=True)
+    dataset.cluster(reassign=True)
     dataset.save()
     log("end", "Embeddings")
 
@@ -199,7 +199,6 @@ if "-p" not in sys.argv:
         relative = EmbeddingDataset(name=DATASET_NAME)
         log(2, relative)
 
-        log("title", "Relative Embeddings")
         log("start", "Relative Embeddings")
         if not (REBUILD or FORCE):
             relative.load()
@@ -209,7 +208,7 @@ if "-p" not in sys.argv:
             relative = calculate_relative_contactability(dataset)
             relative.save()
             relative.sequence_db(force=True)
-            relative.cluster(reassign=True, force=True, linear=True)
+            relative.cluster(reassign=True, force=True)
             relative.save()
             log(2, relative)
         log("end", "Relative Embeddings")
