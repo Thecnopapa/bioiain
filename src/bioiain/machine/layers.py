@@ -26,7 +26,7 @@ class Codebook(nn.Module):
         self.n_tokens = n_tokens
         self.latent_dims = latent_dims
         self.codebook = nn.Embedding(n_tokens, latent_dims)
-        self.codebook.weight.data.uniform_(-1/self.n_tokens, 1/self.n_tokens)
+        self.codebook.weight.data.uniform_(0, 1)
         self.MSE = nn.MSELoss()
         self.last_loss = None
         self.last_index = None
