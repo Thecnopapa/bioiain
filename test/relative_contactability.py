@@ -20,7 +20,6 @@ def calculate_relative_contactability(dataset:EmbeddingDataset,
                                       contactability_pos:int=8,
                                       entity_class:type[BIEntity]=FragmentedStructure,
                                       embedding_class:type[ProteinEmbedding]=embeddings.ALEPHProteinEmbedding,
-                                      padding:tuple[int, int]=(1,1)
                                       ) -> EmbeddingDataset:
     print(dataset)
     print(dataset.data["embedding_class"], embedding_class.__name__)
@@ -31,8 +30,8 @@ def calculate_relative_contactability(dataset:EmbeddingDataset,
     new_dataset = dataset.__class__(name=dataset.data["name"]+"_relative")
     for e in dataset.embeddings.values():
         entity = entity_class.from_file(e["entity_path"], no_atoms=True)
-        print(entity)
-        print(len(entity.cvectors()))
+        #print(entity)
+        #print(len(entity.cvectors()))
         try:
             query = entity.db().db_path()
         except SequenceNotFound:
@@ -45,47 +44,60 @@ def calculate_relative_contactability(dataset:EmbeddingDataset,
 
 
 
-        print(query, mmseqs)
+        #print(query, mmseqs)
         df = mmseqs.search(query, dataset_name=str(dataset))
         print(json.dumps(e, indent=4))
         embedding = embedding_class.from_file(e["embedding_data"])
-        print(embedding)
+        #print(embedding)
         tensor = embedding.tensor()
-        print(tensor)
+        #print(tensor)
         print(tensor.shape)
-        print("####")
+        #print("####")
 
         similar_ids = [i for i in df.get_column("target") if i != e["key"]]
         print("Similar IDs:", similar_ids)
-        print(tensor)
+        #print(tensor)
         contactability = [float(r[contactability_pos]) for r in tensor]
-        print(len(contactability))
-        ps, pe = padding
+        #print(len(contactability))
         for key in similar_ids:
             row = df.row(by_predicate=pl.col("target") == key, named=True)
-            print(row)
+            #print(row)
             target_embedding = embedding_class.from_file(dataset.embeddings[key]["embedding_data"])
             target_contactability = [float(r[contactability_pos]) for r in target_embedding.tensor()]
-            print(len(target_contactability))
-            #qn = row["qstart"] - 1
-            #tn = row["tstart"] - 1
-            qn, tn = 0, 0
-            print(len(row["qaln"][ps:-pe]), len(row["taln"][ps:-pe]))
-            for q, t in zip(row["qaln"][ps:-pe], row["taln"][ps:-pe]):
-
+            #print(len(target_contactability))
+            #qn, tn = 0, 0
+            qn = row["qstart"] - 1
+            tn = row["tstart"] - 1
+            #print(len(row["qaln"]), len(row["taln"]))
+            for q, t in zip(row["qaln"], row["taln"]):
                 #print(qn, tn , q, t)
+
                 addq, addt = True, True
+                skip = False
+
+                if qn in embedding.missing_indexes:
+                    skip = True
+                    addq = False
+                if tn in target_embedding.missing_indexes:
+                    skip = True
+                    addt = False
+
                 if q == "-":
                     addq=False
                 if t == "-":
                     addt=False
 
-                if addq and addt:
+                if addq and addt and (not skip):
                     extra_cont = target_contactability[tn]
-                    print(qn, len(contactability), end="\r")
+                    print(qn, len(contactability), tn, len(target_contactability), end="\r")
                     try:
                         contactability[qn] = contactability[qn] + extra_cont
                     except IndexError:
+                        print()
+                        print("qn/tn", qn, tn)
+                        print("seq_len", len(embedding.sequence), len(target_embedding.sequence))
+                        print("seq", embedding.sequence)
+                        print("missing", embedding.missing_indexes, target_embedding.missing_indexes)
                         print(qn, len(contactability))
                         raise
                 if addq:
@@ -94,20 +106,20 @@ def calculate_relative_contactability(dataset:EmbeddingDataset,
                     tn += 1
 
 
-            print(len(contactability))
-            print(contactability)
+            #print(len(contactability))
+            #print(contactability)
 
         if len(similar_ids) > 0:
             contactability = np.array(contactability)
             contactability = contactability / (len(similar_ids)+1)
-            print(len(contactability))
-            print(contactability)
+            #print(len(contactability))
+            #print(contactability)
 
-            print(tensor)
+            #print(tensor)
             new_tensor = np.array(tensor)
-            print(new_tensor)
+            #print(new_tensor)
             for r, c in zip(new_tensor, contactability):
-                print(r, c)
+                print(r, c, end="\r")
                 r[contactability_pos] = c
             new_tensor = Tensor(new_tensor)
             new_embedding = embeddings.RelativeALEPHEmbedding.from_tensor(new_tensor)
@@ -125,7 +137,7 @@ def calculate_relative_contactability(dataset:EmbeddingDataset,
 
 
         new_embedding.save()
-        print(new_embedding)
+        #print(new_embedding)
         new_dataset.add(new_embedding)
     return new_dataset
 

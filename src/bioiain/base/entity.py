@@ -62,6 +62,7 @@ class BIEntity(object):
 
         #CVectors
         self._cvectors = None
+        self._missing_cvectors = None
 
         # Children
         self._chains = None
@@ -93,6 +94,7 @@ class BIEntity(object):
         self._atoms = None
         self._mates = None
         self._cvectors = None
+        self._missing_cvectors = None
 
     def __repr__(self):
         if self.is_symmetry():
@@ -190,11 +192,13 @@ class BIEntity(object):
     def ligands(self, relevant_only=True):
         return [l for l in self.atoms(ca_only=False, ligands=True) if l.relevant]
 
-    def cvectors(self, vc_mode=None):
+    def cvectors(self, vc_mode=None, return_missing=False):
         if self._cvectors is None or vc_mode != getattr(self, "_vc_mode", None):
             self._calculate_cvectors(vc_mode=vc_mode)
         else:
             log(1, f"Using previously saved CVectors ({vc_mode})...")
+        if return_missing:
+            return self._cvectors, self._missing_cvectors
         return self._cvectors
 
     def _calculate_cvectors(self, vc_mode=None):
@@ -203,15 +207,19 @@ class BIEntity(object):
         residues = self.residues()
         n_res = len(residues)
         cvector_list = []
+        missing_cvectors = []
         for n, res in enumerate(residues):
             if n == 0 or n == n_res -1:
+                missing_cvectors.append(n)
                 continue
             print(f"{n:4d}/{len(residues)-2:4d}", end="\r")
             cvector = CVector(residues[n-1], res, residues[n+1], params=self.params(), symops=self.symops(), entity_centre=self.com(), vc_mode=vc_mode)
             if cvector.trash:
+                missing_cvectors.append(n)
                 continue
             cvector_list.append(cvector)
         log(2, f"n CVectors: {len(cvector_list)}")
+        self._missing_cvectors = missing_cvectors
         self._cvectors = cvector_list
         self._vc_mode = vc_mode
         return cvector_list
@@ -652,9 +660,9 @@ class BIEntity(object):
             self.paths["fasta"] = fasta_path
         return fasta_path
 
-    def db(self):
+    def db(self, force=False):
         from ..utilities.sequences import MMSEQS2
-        mmseqs = MMSEQS2(self.write_fasta(), folder=self.folder())
+        mmseqs = MMSEQS2(self.write_fasta(), folder=self.folder(), force=force)
         self.paths["db"] = mmseqs.db_path()
         return mmseqs
 

@@ -136,7 +136,12 @@ if "-p" not in sys.argv:
                 if not embedding.exists() or FORCE:
                     entity = FragmentedStructure.from_file(path)
                     if len(entity) > 2000:
-                        log("Warning", "entity too large!")
+                        log("Warning", "Entity too large!")
+                        continue
+                    try:
+                        entity.db(force=True)
+                    except SequenceNotFound:
+                        log("Warning", "Entity has no seuquence!")
                         continue
                     log(1, "Generating embedding...")
 
@@ -149,7 +154,7 @@ if "-p" not in sys.argv:
                         print(e)
                         embedding = None
 
-                    entity.db()
+
                     entity.export()
                 else:
                     log(1, "Embedding already generated")
@@ -194,12 +199,13 @@ if "-p" not in sys.argv:
 
 
     if RELATIVE:
+        log("start", "Relative Embeddings")
+
         DATASET_NAME = DATASET_NAME+"_relative"
         EMBEDDING_CLASS = embeddings.RelativeALEPHEmbedding
         relative = EmbeddingDataset(name=DATASET_NAME)
         log(2, relative)
 
-        log("start", "Relative Embeddings")
         if not (REBUILD or FORCE):
             relative.load()
 
@@ -222,6 +228,8 @@ if "-t" in sys.argv:
 
 
     epochs = 50
+    if "--epochs" in sys.argv:
+        epochs = int(sys.argv[sys.argv.index("--epochs") + 1])
 
     model = MODEL_CLASS(name=DATA_NAME, in_shape=dataset.get(0).t.shape, batch_size=0, lr=LR, embedding_class = EMBEDDING_CLASS)
     model.add_text("data", model.json())

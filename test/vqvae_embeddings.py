@@ -106,14 +106,15 @@ class ALEPHProteinEmbedding(ProteinEmbedding):
         seq = ""
         print("Generating embeddings")
         print("cvectors:", len(self.entity.cvectors()))
-        for n, cv in enumerate(self.entity.cvectors()):
+        cvs, missing_cvs =  self.entity.cvectors(return_missing=True)
+        for n, cv in enumerate(cvs):
             print(n, cv, end="\r")
             try:
                 e.append(self.residue_embedding_class(*args, cvector=cv, **kwargs).tensor(force=True))
                 seq += d3(cv.res2.resname)[0]
             except NoEmbeddingForThisResidue:
                 seq += "-"
-                self.missing_indexes.append(n)
+        self.missing_indexes.extend(missing_cvs)
         self.sequence = seq
         print()
         return e

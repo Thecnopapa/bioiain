@@ -78,7 +78,7 @@ class Embedding(object):
 
     def tensor(self, force=False, generate=True) -> Tensor|None:
         if self._tensor is not None and not force:
-            print("Tensor cached")
+            #print("Tensor cached")
             return self._tensor
 
         if self.exists():
