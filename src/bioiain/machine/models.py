@@ -126,9 +126,10 @@ class BaseModel(nn.Module):
                     for layer_set in self.optimisers[o]["layer_set"]:
                         params.extend([p for p in self.submodels[layer_set].parameters()])
                 #print(params)
-                self.optimisers[o] = self.optimisers[o]["class"](params, **self.optimisers[o].get("kwargs", {}))
-                if op_data.get("LRS", None) is not None:
-                    self.schedulers[o] = op_data["LRS"](optimiser=self.optimisers[o], **op_data.get("LRS_kwargs", {}))
+                op = self.optimisers[o]
+                self.optimisers[o] = op["class"](params, **self.optimisers[o].get("kwargs", {}))
+                if op.get("LRS", None) is not None:
+                    self.schedulers[o] = op["LRS"](optimiser=self.optimisers[o], **op.get("LRS_kwargs", {}))
 
         self.mounted = True
 
@@ -268,7 +269,7 @@ class BaseModel(nn.Module):
         av_losses = self.write_loss()
 
         if self.data["epoch"] not in (None, 0):
-            self.step_schedulers(running_loss=av_losses)
+            self.step_schedulers(running_loss=av_losses, scheduler_name="all")
         self.reset_loss()
         if self.data["epoch"] is None: self.data["epoch"] = 1
         else: self.data["epoch"] += 1
@@ -609,7 +610,8 @@ class BaseModel(nn.Module):
     def step_schedulers(self, scheduler_name:str|None="mode", running_loss=None) -> bool:
         if scheduler_name is None: return False
         if scheduler_name == "mode": scheduler_name = self.mode
-        if scheduler_name not in self.schedulers: scheduler_name = "default"
+        if scheduler_name not in self.schedulers and scheduler_name not in ["mode", "all"]: scheduler_name = "default"
+        log(1, f"Stepping schedulers... ({scheduler_name})")
 
         if running_loss is None:
             running_loss = self.running_loss.get("default", 0.5)
@@ -617,11 +619,16 @@ class BaseModel(nn.Module):
         if scheduler_name == "all":
             for name, scheduler in self.schedulers.items():
                 if scheduler is not None:
-                    scheduler.step(running_loss=running_loss.get(name, 0.5))
+                    lr = scheduler.step(running_loss=running_loss.get(name, 0.5))
+                    self.writer.add_scalar(f"learning_rate/{name}", torch.Tensor(lr), self.data["epoch"])
+                    log(2, name, lr)
+
         else:
             if self.schedulers[scheduler_name] is not None:
                 lr = self.schedulers[scheduler_name].step(running_loss=running_loss.get(scheduler_name, 0.5))
                 self.writer.add_scalar(f"learning_rate/{scheduler_name}", torch.Tensor(lr), self.data["epoch"])
+                log(2, scheduler_name, lr)
+
 
         return True
 

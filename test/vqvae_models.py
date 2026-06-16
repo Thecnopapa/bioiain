@@ -600,6 +600,13 @@ class Summer(BaseModel):
 
         return msa.msa_path
 
+class SummerSolstice(Summer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.optimisers["autoencoder"]["LRS"] = customLRS
+
+
+
 
 
 

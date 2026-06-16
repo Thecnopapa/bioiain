@@ -235,9 +235,12 @@ if "-t" in sys.argv and not ("-p" in sys.argv):
     log(1, "EMBEDDING_CLASS:", EMBEDDING_CLASS)
     log(1, "DATASET:", dataset)
 
-    for k, e in dataset.embeddings.items():
-        print(k, set([float(dataset[i].t[8].item()) for i in range(e["start"], e["end"])]))
-    exit()
+    try:
+        assert RELATIVE
+        for k, e in dataset.embeddings.items():
+            print(k, set([float(dataset[i].t[8].item()) for i in range(e["start"], e["end"])]))
+    except:
+        pass
 
 
     model = MODEL_CLASS(name=DATASET_NAME, in_shape=dataset.get(0).t.shape, batch_size=0, lr=LR, embedding_class = EMBEDDING_CLASS)
@@ -257,12 +260,13 @@ if "-t" in sys.argv and not ("-p" in sys.argv):
 
     model.set_mode("autoencoder")
     model.mount()
+
     total_params = sum(p.numel() for p in model.submodels["autoencoder"].parameters())
     log(1, "Number of parameters in the model:", total_params)
 
     for n in range(epochs):
-        log("start", "EPOCH", n, model.__class__.__name__, DATA_NAME)
-        log("title", "EPOCH", n, model.__class__.__name__, DATA_NAME)
+        log("start", "EPOCH", n, model.__class__.__name__, DATASET_NAME)
+        log("title", "EPOCH", n, model.__class__.__name__, DATASET_NAME)
         model.set_mode("autoencoder")
 
         if "--no-plot" in sys.argv:

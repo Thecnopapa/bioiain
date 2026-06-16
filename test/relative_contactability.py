@@ -136,7 +136,7 @@ def calculate_relative_contactability(dataset:EmbeddingDataset,
 
         new_embedding.save()
         #print(new_embedding)
-        new_dataset.add(new_embedding)
+        new_dataset.add(new_embedding, key=entity.name())
     return new_dataset
 
 
