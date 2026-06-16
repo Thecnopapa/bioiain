@@ -518,7 +518,7 @@ class EmbeddingDataset(object):
         return self.export(*args, **kwargs)
 
 
-    def export(self, folder=None, save_split=False):
+    def export(self, folder=None, save_split=False, temp=False):
         if folder is None:
             assert self.data["folder"] is not None
             folder = self.data["folder"]
@@ -531,8 +531,11 @@ class EmbeddingDataset(object):
         self.data["n_structures"] = sum([1 for e in self.embeddings.values() if not e["deleted"]])
         os.makedirs(folder, exist_ok=True)
         path = os.path.join(folder, self.data["fname"])
-        if self.data.get("fasta_path", None) is not None:
-            self._save_fasta(target_path=path.replace(".json", ".fasta"))
+        if not temp:
+            if self.data.get("fasta_path", None) is not None:
+                self._save_fasta(target_path=path.replace(".json", ".fasta"))
+        else:
+            path += ".tmp"
         json.dump(data, open(path, "w"), indent=4)
         return path
 

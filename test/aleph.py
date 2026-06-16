@@ -173,6 +173,7 @@ if "-p" not in sys.argv:
 
                 print(embedding)
                 dataset.add(embedding, key=entity.name())
+                dataset.save(temp=True)
                 print(dataset)
                 if (n+1) % 100 == 0:
                     tracemalloc_top()
