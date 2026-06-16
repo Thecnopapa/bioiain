@@ -106,9 +106,6 @@ def calculate_relative_contactability(dataset:EmbeddingDataset,
                     tn += 1
 
 
-            #print(len(contactability))
-            #print(contactability)
-
         if len(similar_ids) > 0:
             contactability = np.array(contactability)
             contactability = contactability / (len(similar_ids)+1)
@@ -132,6 +129,7 @@ def calculate_relative_contactability(dataset:EmbeddingDataset,
         new_embedding.sequence = embedding.sequence
         new_embedding.entity = embedding.entity
         new_embedding.param_names = embedding.param_names
+        new_embedding.param_names[new_embedding.param_names.index("contactability")] = "rel_contactability"
         new_embedding.missing_indexes = embedding.missing_indexes
         new_embedding.residue_embedding_class = embedding.residue_embedding_class
 

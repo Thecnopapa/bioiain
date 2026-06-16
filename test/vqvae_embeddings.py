@@ -69,10 +69,14 @@ class ExpandedALEPHEmbedding0(ALEPHEmbedding):
 
         return e
 
+class RelativeExpandedALEPHEmbedding0(ExpandedALEPHEmbedding0):
+    param_names = ["len_i", "len_j", "len_ij", "angle_ij", "dihedral_ij", "theta_i", "theta_j", "bfactor", "rel_contactability", "dist_to_ligand"]
+
+
 
 
 class ALEPHProteinEmbedding(ProteinEmbedding):
-    residue_embedding_class = ALEPHEmbedding
+    residue_embedding_class = ExpandedALEPHEmbedding0
 
     def check_aleph(self, *args, vc_mode=None, in_place=True, **kwargs) -> bool:
 
@@ -120,6 +124,7 @@ class ALEPHProteinEmbedding(ProteinEmbedding):
         return e
 
 class RelativeALEPHEmbedding(ALEPHProteinEmbedding):
+    residue_embedding_class = RelativeExpandedALEPHEmbedding0
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

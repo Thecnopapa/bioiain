@@ -223,7 +223,7 @@ if "-p" not in sys.argv:
 
 
 model = None
-if "-t" in sys.argv:
+if "-t" in sys.argv and not ("-p" in sys.argv):
     log("start", "Training")
     log("title", "Training")
 
@@ -232,7 +232,15 @@ if "-t" in sys.argv:
     if "--epochs" in sys.argv:
         epochs = int(sys.argv[sys.argv.index("--epochs") + 1])
 
-    model = MODEL_CLASS(name=DATA_NAME, in_shape=dataset.get(0).t.shape, batch_size=0, lr=LR, embedding_class = EMBEDDING_CLASS)
+    log(1, "EMBEDDING_CLASS:", EMBEDDING_CLASS)
+    log(1, "DATASET:", dataset)
+
+    for k, e in dataset.embeddings.items():
+        print(k, set([float(dataset[i].t[8].item()) for i in range(e["start"], e["end"])]))
+    exit()
+
+
+    model = MODEL_CLASS(name=DATASET_NAME, in_shape=dataset.get(0).t.shape, batch_size=0, lr=LR, embedding_class = EMBEDDING_CLASS)
     model.add_text("data", model.json())
     model.add_text("hparams", json.dumps({
         "model_name": model.__class__.__name__,
@@ -246,7 +254,6 @@ if "-t" in sys.argv:
         "target_epochs": epochs,
         "device": DEVICE,
         }, indent=4))
-
 
     model.set_mode("autoencoder")
     model.mount()
