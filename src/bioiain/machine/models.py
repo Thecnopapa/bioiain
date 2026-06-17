@@ -1,3 +1,4 @@
+import torch
 import torchvision.transforms.v2.functional
 import PIL
 
@@ -53,20 +54,22 @@ class BaseModel(nn.Module):
                 "kwargs":{"lr":lr},
             }
         }
-        self.schedulers = {
-            "default": None
-        }
 
         self.layers = {
             "default": {
             }
         }
-        self.submodels = {
-        }
+        self.submodels = {}
+        
         self.running_loss = {"total":0, "default":0}
         self.batch_loss = {"current_n":0, "current_list":[], "cumulative":0, "n_batches": 0}
 
         self.data["name"] = str(self)
+        self._optimisers = {}
+        self.criterions = {}
+        self._schedulers = {}
+
+        
 
         log("header", f"Model initialised: {self.data["name"]}")
 
@@ -79,14 +82,14 @@ class BaseModel(nn.Module):
 
 
     def __repr__(self):
-        try: optim = self.optimisers[self.mode]
-        except KeyError: optim = self.optimisers['default']
         try: crit = self.criterions[self.mode]
-        except KeyError: crit = self.criterions['default']
+        except KeyError: crit = self.criterions.get('default', None)
+        try: optim = self._optimisers[self.mode]
+        except KeyError: optim = self.optimisers.get(self.mode, None)
         try: layers = self.layers[self.mode]
-        except KeyError: layers = self.layers['default']
+        except KeyError: layers = self.layers.get("default", None)
         try: loss = self.running_loss[self.mode]
-        except KeyError: loss = self.running_loss['default']
+        except KeyError: loss = self.running_loss.get('default', None)
 
         return f"<bi.{self.__class__.__name__}: {self.data['name']}\n - MODE: {self.mode}\n - optimiser: {optim.__class__.__name__}\n - criterion: {crit.__class__.__name__}\n - current epoch: {self.data['epoch']}\n - running loss: {loss}\n - layers: {[f'{k}({v.__class__.__name__})' for k, v in layers.items()]}>\n"
 
@@ -114,22 +117,21 @@ class BaseModel(nn.Module):
             self.submodels[k] = nn.Sequential(*[l.to(DEVICE) for l in layer_set.values()]).to(DEVICE)
         if not self.inference:
             for o, op_data in self.optimisers.items():
-                if type(self.optimisers[o]["layer_set"]) is str:
+                if type(op_data["layer_set"]) is str:
                     #print("single layer")
-                    params = self.submodels[self.optimisers[o]["layer_set"]].parameters()
-                elif self.optimisers[o]["layer_set"] is None:
+                    params = self.submodels[op_data["layer_set"]].parameters()
+                elif op_data["layer_set"] is None:
                     #print("default_layer")
-                    params = self.submodels[self.optimisers[o]["default"]].parameters()
+                    params = self.submodels[op_data["default"]].parameters()
                 else:
                     #print("multiple latyers")
                     params = []
-                    for layer_set in self.optimisers[o]["layer_set"]:
+                    for layer_set in op_data["layer_set"]:
                         params.extend([p for p in self.submodels[layer_set].parameters()])
                 #print(params)
-                op = self.optimisers[o]
-                self.optimisers[o] = op["class"](params, **self.optimisers[o].get("kwargs", {}))
-                if op.get("LRS", None) is not None:
-                    self.schedulers[o] = op["LRS"](optimiser=self.optimisers[o], **op.get("LRS_kwargs", {}))
+                self._optimisers[o] = op_data["class"](params, **op_data.get("kwargs", {}))
+                if self.optimisers[o].get("LRS", None) is not None:
+                    self._schedulers[o] = op_data["LRS"](optimiser=self._optimisers[o], **op_data.get("LRS_kwargs", {}))
 
         self.mounted = True
 
@@ -138,10 +140,11 @@ class BaseModel(nn.Module):
 
         if self.writer is None:
             self._create_writer()
-        #self.writer.add_graph(self, torch.rand(self.data["in_shape"]))
+        #with torch.no_grad():
+        #    self.writer.add_graph(self, torch.rand(self.data["in_shape"]))
 
 
-        print(repr(self))
+        log(1, str(self))
         self.to(DEVICE)
 
 
@@ -610,22 +613,22 @@ class BaseModel(nn.Module):
     def step_schedulers(self, scheduler_name:str|None="mode", running_loss=None) -> bool:
         if scheduler_name is None: return False
         if scheduler_name == "mode": scheduler_name = self.mode
-        if scheduler_name not in self.schedulers and scheduler_name not in ["mode", "all"]: scheduler_name = "default"
+        if scheduler_name not in self._schedulers and scheduler_name not in ["mode", "all"]: scheduler_name = "default"
         log(1, f"Stepping schedulers... ({scheduler_name})")
 
         if running_loss is None:
             running_loss = self.running_loss.get("default", 0.5)
 
         if scheduler_name == "all":
-            for name, scheduler in self.schedulers.items():
+            for name, scheduler in self._schedulers.items():
                 if scheduler is not None:
                     lr = scheduler.step(running_loss=running_loss.get(name, 0.5))
                     self.writer.add_scalar(f"learning_rate/{name}", torch.Tensor(lr), self.data["epoch"])
                     log(2, name, lr)
 
         else:
-            if self.schedulers[scheduler_name] is not None:
-                lr = self.schedulers[scheduler_name].step(running_loss=running_loss.get(scheduler_name, 0.5))
+            if self._schedulers[scheduler_name] is not None:
+                lr = self._schedulers[scheduler_name].step(running_loss=running_loss.get(scheduler_name, 0.5))
                 self.writer.add_scalar(f"learning_rate/{scheduler_name}", torch.Tensor(lr), self.data["epoch"])
                 log(2, scheduler_name, lr)
 
@@ -636,28 +639,28 @@ class BaseModel(nn.Module):
     def step(self, optimizer_name:str|None="mode") -> bool:
         if optimizer_name is None: return False
         if optimizer_name == "mode": optimizer_name = self.mode
-        if optimizer_name not in self.optimisers: optimizer_name = "default"
+        if optimizer_name not in self._optimisers: optimizer_name = "default"
 
 
         if optimizer_name == "all":
-            for optimizer in self.optimisers.values():
+            for optimizer in self._optimisers.values():
                 optimizer.step()
         else:
             #[[print(p, pp.grad) for pp in p.parameters()] for p in self.submodels.values()]
-            self.optimisers[optimizer_name].step()
+            self._optimisers[optimizer_name].step()
         return True
 
 
     def zero_grad(self, optimizer_name:str|None="mode", set_to_none=True) -> bool:
         if optimizer_name is None: return False
         if optimizer_name == "mode": optimizer_name = self.mode
-        if optimizer_name not in self.optimisers: optimizer_name = "default"
+        if optimizer_name not in self._optimisers: optimizer_name = "default"
 
         if optimizer_name == "all":
-            for optimizer in self.optimisers.values():
+            for optimizer in self._optimisers.values():
                 optimizer.zero_grad(set_to_none=set_to_none)
         else:
-            self.optimisers[optimizer_name].zero_grad(set_to_none=set_to_none)
+            self._optimisers[optimizer_name].zero_grad(set_to_none=set_to_none)
         return True
 
 

@@ -341,7 +341,10 @@ class BIEntity(object):
 
     @classmethod
     def from_file(cls, filepath, code="auto", file_format="auto", force=False, check_existing=True, source=None, export=False, no_atoms=False, **kwargs):
-        log(1, "Loading from file:", filepath)
+        if check_existing:
+            log(1, "Loading from file:", filepath, f"(atoms={not no_atoms})")
+        else:
+            log(2, "Loading from file:", filepath, f"(atoms={not no_atoms})")
         if not os.path.exists(filepath):
             raise FileNotFoundError(filepath)
         self = cls(**kwargs)
@@ -399,9 +402,10 @@ class BIEntity(object):
 
 
         if check_existing and not force:
+            log(2, "Checking previous exported data...")
             prev_path = self.export(dry=True)
             if os.path.exists(prev_path):
-                log("warning", "Recovering previously exported file:", prev_path)
+                log(3, "Recovering previously exported file...")
                 try:
                     recovered_self = cls.from_file(prev_path, check_existing=False, source=filepath, no_atoms=no_atoms, **kwargs)
                     if recovered_self is None:
@@ -464,7 +468,7 @@ class BIEntity(object):
                 filepath = self.export()
             filepath = filepath.strip()
             print(filepath)
-            log(1, "Reading atoms from CIF:", filepath)
+            log(2, "Reading atoms from CIF:", filepath)
             mmcif= read_mmcif(filepath, subset=["_atom_site", "_cell", "_symmetry"])
             atoms=mmcif("_atom_site")
             if atoms is None:
@@ -512,13 +516,14 @@ class BIEntity(object):
             fname += ".minimal"
         try:
             base_folder = os.path.join(target_folder, self.paths.get("top_folder", self.code()), self.paths["sub_folder"]).strip()
-            print(base_folder)
         except TypeError:
             print(self.paths)
             raise
         os.makedirs(base_folder, exist_ok=True)
         base_path = os.path.join(base_folder, fname)
-        if dry: return base_path+".cif"
+        if dry:
+            log(3, "Calculating export path...")
+            return base_path+".cif"
 
         log(2, f"Exporting: {self} to {base_path}")
         if self.has_flag("is_fractional", True):

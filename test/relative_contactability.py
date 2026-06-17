@@ -46,7 +46,7 @@ def calculate_relative_contactability(dataset:EmbeddingDataset,
 
         #print(query, mmseqs)
         df = mmseqs.search(query, dataset_name=str(dataset))
-        print(json.dumps(e, indent=4))
+        #print(json.dumps(e, indent=4))
         embedding = embedding_class.from_file(e["embedding_data"])
         #print(embedding)
         tensor = embedding.tensor()
@@ -116,7 +116,7 @@ def calculate_relative_contactability(dataset:EmbeddingDataset,
             new_tensor = np.array(tensor)
             #print(new_tensor)
             for r, c in zip(new_tensor, contactability):
-                print(r, c, end="\r")
+                #print(r, c, end="\r")
                 r[contactability_pos] = c
             new_tensor = Tensor(new_tensor)
             new_embedding = embeddings.RelativeALEPHEmbedding.from_tensor(new_tensor)

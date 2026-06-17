@@ -106,7 +106,26 @@ if "-p" not in sys.argv:
     if not (REBUILD or FORCE):
         dataset.load()
     log(2, dataset)
-    total_files = len(os.listdir(DATA_FOLDER))
+
+
+    BLACKLIST = []
+    blacklist_file = os.path.join(DATA_FOLDER, "BLACK.list")
+    if os.path.exists(blacklist_file):
+        with open(blacklist_file, "r") as bl:
+            for line in bl:
+                BLACKLIST.append(line.strip().replace("\n", "").split(":")[0].strip())
+    else:
+        with open(blacklist_file, "w") as bl:
+            bl.write("BLACK.list\n")
+
+
+    file_list = os.listdir(DATA_FOLDER)
+    total_files = len(file_list) - 1
+    if not FORCE:
+        log(1, "BLACKLIST:", BLACKLIST)
+        file_list = [fl for fl in file_list if fl not in BLACKLIST]
+        total_files = len(file_list)
+
     if len(dataset) == 0:
         pool = None
         if "--thread" not in sys.argv:
@@ -118,32 +137,45 @@ if "-p" not in sys.argv:
         def generate_embeddings(file_list=None):
             log("header", f"Generating embeddings... ({len(file_list)})")
             for n, file in enumerate(file_list):
+                if file == "BLACK.list":
+                    continue
+
                 log("header", f"{dataset.n_ids()+1:4d}/{total_files:4d} ({file.split('.')[0]}) ({EMBEDDING_CLASS.__name__})")
                 log("title", f"{dataset.n_ids()+1:3d}/{total_files:3d} ({EMBEDDING_CLASS.__name__})")
 
-                print(DATA_FOLDER)
-                print(file)
-                path = os.path.join(DATA_FOLDER, file)
-                try:
-                    # TODO: save all embedding data to file so that no atoms are needed (e.g. sequence)
-                    entity = FragmentedStructure.from_file(path, no_atoms=False)
-                except Exception as e:
-                    log("Warning", "Skipping embedding for:", file, f"({e})")
+                if file in BLACKLIST and not FORCE:
+                    log("warning", f"File in blacklist: {file}")
                     continue
 
+
+                path = os.path.join(DATA_FOLDER, file)
+                try:
+                    entity = FragmentedStructure.from_file(path, no_atoms=True)
+                except Exception as e:
+                    log("Warning", "Skipping embedding for:", file, f"({e})")
+                    with open(blacklist_file, "a") as f:
+                        f.write(f"{file}:Entity load error\n")
+                    continue
+                log(1, "Pre-loading embedding...")
                 embedding = embeddings.ALEPHProteinEmbedding(entity=entity, residue_embedding_class=EMBEDDING_CLASS, dry=True)
+                log(2, embedding, f"EXISTS={embedding.exists()}")
 
                 if not embedding.exists() or FORCE:
+                    log(1, "Generating embedding...")
+
                     entity = FragmentedStructure.from_file(path)
                     if len(entity) > 2000:
                         log("Warning", "Entity too large!")
+                        with open(blacklist_file, "a") as f:
+                            f.write(f"{file}:Too large\n")
                         continue
                     try:
                         entity.db(force=True)
                     except SequenceNotFound:
-                        log("Warning", "Entity has no seuquence!")
+                        log("Warning", "Entity has no sequence!")
+                        with open(blacklist_file, "a") as f:
+                            f.write(f"{file}:No sequence\n")
                         continue
-                    log(1, "Generating embedding...")
 
                     embedding = embeddings.ALEPHProteinEmbedding(entity=entity, residue_embedding_class=EMBEDDING_CLASS)
 
@@ -159,22 +191,24 @@ if "-p" not in sys.argv:
                 else:
                     log(1, "Embedding already generated")
                     embedding = embedding.reload()
-                print(embedding)
-                print("#####")
+                log(2, embedding)
+                #print("#####")
 
 
 
                 if embedding is None:
                     log("warning", "No embedding for file:", file)
+                    with open(blacklist_file, "a") as f:
+                        f.write(f"{file}:No embedding\n")
                     continue
                 if "1M2Z" in file:
                     [print(r, e) for r, e in zip(entity.residues(), embedding.tensor())]
                     # entity.fragment().show_cvectors()
 
-                print(embedding)
+                #print(embedding)
                 dataset.add(embedding, key=entity.name())
                 dataset.save(temp=True)
-                print(dataset)
+                log(2, dataset)
                 if (n+1) % 100 == 0:
                     tracemalloc_top()
 
@@ -272,9 +306,9 @@ if "-t" in sys.argv and not ("-p" in sys.argv):
         if "--no-plot" in sys.argv:
             model.plot_latent_space(dataset=None)
         else:
-            model.plot_latent_space(dataset=dataset, max_points=1000, mesh_points=20)
-            model.plot_latent_dimensions(dataset=dataset, max_points=1000, r_threshold=5)
-            model.plot_latent_dimensions(dataset=dataset, max_points=1000, r_threshold=100 , plot_raw=False)
+            model.plot_latent_space(dataset=dataset, max_points=500, mesh_points=15)
+            model.plot_latent_dimensions(dataset=dataset, max_points=500, r_threshold=5)
+            model.plot_latent_dimensions(dataset=dataset, max_points=500, r_threshold=100 , plot_raw=False)
 
         model.plot_tokens()
 

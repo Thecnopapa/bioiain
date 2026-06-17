@@ -268,8 +268,8 @@ class EmbeddingDataset(object):
 
         if key is None:
             key = len(self.embeddings)
-        print("ADDING:", embedding)
-        print(embedding.path())
+        log(1, "Adding to dataset:", embedding)
+        #print(embedding.path())
         self.embeddings[key] = {
             "key": key,
             "n": len(self.embeddings),
@@ -537,6 +537,10 @@ class EmbeddingDataset(object):
         else:
             path += ".tmp"
         json.dump(data, open(path, "w"), indent=4)
+        try:
+            os.remove(path + ".tmp")
+        except FileNotFoundError:
+            pass
         return path
 
 

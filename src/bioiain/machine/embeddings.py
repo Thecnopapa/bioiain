@@ -101,6 +101,8 @@ class Embedding(object):
             raise EmptyTensor()
 
     def length(self) -> int:
+        if self.dry:
+            return 0
         return self.tensor().shape[0]
 
     def __len__(self):
@@ -194,10 +196,12 @@ class ProteinEmbedding(Embedding):
             self.residue_embedding_class = residue_embedding_class
             self.param_names = self.residue_embedding_class.param_names
         self.missing_indexes = []
-        if self.entity is not None and not self.entity.has_flag("no_atoms", True):
+
+        if self.entity is not None :
             if self.name == self.__class__.__name__:
                 self.name = self.entity.name()
-                self.entity_path = self.entity.path()
+                if not self.entity.has_flag("no_atoms", True):
+                    self.entity_path = self.entity.path()
 
     def dict(self, extra={}):
         return super().dict({"sequence": self.sequence,

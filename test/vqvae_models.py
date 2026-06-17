@@ -545,7 +545,7 @@ class Summer(BaseModel):
                 ax.text(*cv2_start, "J")
 
                 ax.set_title(
-                    f"Token {n}: i:{i_length:3.2f} j:{j_length:3.2f} d:{i_j_length:3.1f} a:{i_j_angle:3.1f}°")
+                    f"Token {intto1(n)}")
 
             save_path = os.path.join(self.data['folder'], "tokens", f"tokens_{self}_E{self.data['epoch']}.png")
             os.makedirs(os.path.dirname(save_path), exist_ok=True)
@@ -605,6 +605,27 @@ class SummerSolstice(Summer):
         super().__init__(*args, **kwargs)
         self.optimisers["autoencoder"]["LRS"] = customLRS
 
+
+class Autumn(Summer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.layers["encoder"] = {
+            "en_linear": nn.Linear(self.data["in_shape"][0], self.data["hidden_dims"][-1]),
+            "en_linear2": nn.Linear(self.data["hidden_dims"][-1], self.data["hidden_dims"][-1])
+
+        }
+        self.layers["decoder"] = {
+            "de_linear": nn.Linear(self.data["hidden_dims"][-1], self.data["hidden_dims"][-1]),
+            "de_linear2": nn.Linear(self.data["hidden_dims"][-1], self.data["in_shape"][0])
+        }
+
+        self.layers["autoencoder"] = {
+            **self.layers["encoder"],
+            **self.layers["codebook"],
+            **self.layers["decoder"],
+        }
+        self.codebook_index = list(self.layers["autoencoder"].keys()).index("codebook")
 
 
 

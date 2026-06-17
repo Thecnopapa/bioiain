@@ -58,7 +58,7 @@ class customLRS(torch.optim.lr_scheduler.LRScheduler):
             new_lr = 10 ** new_log
             print("NEW_LR", new_lr)
             self.lrs.append(new_lr)
-            p["lr"] = torch.Tensor(np.array([new_lr]))
+            p["lr"] = tuple([float(nlr) for nlr in [new_lr]])
 
         self.loss_list.append(running_loss)
         print(self.lrs)
