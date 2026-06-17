@@ -515,7 +515,7 @@ class BIEntity(object):
         if minimal:
             fname += ".minimal"
         try:
-            base_folder = os.path.join(target_folder, self.paths.get("top_folder", self.code()), self.paths["sub_folder"]).strip()
+            base_folder = os.path.join(target_folder, str(self.paths.get("top_folder", self.code())), self.paths["sub_folder"]).strip()
         except TypeError:
             print(self.paths)
             raise
@@ -646,7 +646,7 @@ class BIEntity(object):
         raise StructureNotFound(path)
 
     def write_fasta(self, seq_name=None, force=False):
-        folder = os.path.join(self.paths["export_folder"], self.paths.get("top_folder", self.code()), self.paths["sub_folder"]).strip()
+        folder = os.path.join(self.paths["export_folder"], str(self.paths.get("top_folder", self.code())), self.paths["sub_folder"]).strip()
         if seq_name is None:
             fasta_path = os.path.join(folder, f"{self.name()}.fasta")
         else:

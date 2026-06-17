@@ -377,8 +377,9 @@ class Summer(BaseModel):
                 log(3, "PCA components:")
                 pca_text = ""
                 for n, c in enumerate(pca.components_):
-                    pca_text += f"PC{n + 1}: " + ", ".join([f"{x:3.2f}" for x in c]) + "\n"
-                    log(4, f"PC{n + 1}: {c}")
+                    pt = f"PC{n + 1}: " + ", ".join([f" {x:3.2f}" if x>=0 else f"{x:3.2f}" for x in c])
+                    pca_text += pt + "\n"
+                    log(4, pt)
                 self.add_text("pca/components", pca_text)
                 # print(latent)
             else:
@@ -604,6 +605,7 @@ class SummerSolstice(Summer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.optimisers["autoencoder"]["LRS"] = customLRS
+        self.optimisers["autoencoder"]["LRS_kwargs"] = {"use_original":False}
 
 
 class Autumn(Summer):

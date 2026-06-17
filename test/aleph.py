@@ -110,7 +110,7 @@ if "-p" not in sys.argv:
 
     BLACKLIST = []
     blacklist_file = os.path.join(DATA_FOLDER, "BLACK.list")
-    if os.path.exists(blacklist_file):
+    if os.path.exists(blacklist_file) and not FORCE:
         with open(blacklist_file, "r") as bl:
             for line in bl:
                 BLACKLIST.append(line.strip().replace("\n", "").split(":")[0].strip())
@@ -163,7 +163,12 @@ if "-p" not in sys.argv:
                 if not embedding.exists() or FORCE:
                     log(1, "Generating embedding...")
 
-                    entity = FragmentedStructure.from_file(path)
+                    try:
+                        entity = FragmentedStructure.from_file(path)
+                    except Exception as e:
+                        log("Warning", "Skipping embedding for:", file, f"({e})")
+                        with open(blacklist_file, "a") as f:
+                            f.write(f"{file}:Entity load error\n")
                     if len(entity) > 2000:
                         log("Warning", "Entity too large!")
                         with open(blacklist_file, "a") as f:

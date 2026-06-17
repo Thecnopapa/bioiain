@@ -19,7 +19,7 @@ from ..utilities.maths import *
 
 
 class customLRS(torch.optim.lr_scheduler.LRScheduler):
-    def __init__(self, *args, optimiser, use_original=True, range=4, **kwargs):
+    def __init__(self, *args, optimiser, use_original=False, range=4, **kwargs):
         self.o_lrs = [p["lr"] for p in optimiser.param_groups]
         self.use_original = use_original
         self.loss_list = []
@@ -30,6 +30,17 @@ class customLRS(torch.optim.lr_scheduler.LRScheduler):
         print(self.lrs)
         return torch.Tensor(np.array(self.lrs))
 
+    def current(self):
+        try:
+            return self.lrs
+        except AttributeError:
+            return self.o_lrs
+
+    def last(self):
+        try:
+            return self._last_lrs
+        except AttributeError:
+            return self.o_lrs
 
     def step(self, running_loss=None):
         print("LRS: stepping...")
@@ -41,28 +52,32 @@ class customLRS(torch.optim.lr_scheduler.LRScheduler):
         if len(self.loss_list) == 0:
             self.loss_list.append(running_loss)
         print("Previous loss", self.loss_list[-1])
+        if hasattr(self, "lrs"):
+            self._last_lrs = self.lrs
         self.lrs = []
         for p, olr in zip(self.optimizer.param_groups, self.o_lrs):
-            if self.use_original:
-                old_log = math.log(olr, 10)
-                new_log = old_log - ((1-running_loss)*4) + 2
-            else:
-                old_log = math.log(p["lr"], 10)
-                delta = self.loss_list[-1] / running_loss
-                new_log = old_log - delta + 1 # -0.5
-
+            old_log = math.log(olr, 10)
 
             print("OLD_LOG", old_log)
+
+            if self.use_original:
+                new_log = old_log - ((1-running_loss)*4) + 2
+            else:
+                delta = self.loss_list[-1] / running_loss
+                new_log = old_log + (delta - 1) #+ 1 # -0.5
+                print("DELTA", delta)
+
+
 
             print("NEW_LOG", new_log)
             new_lr = 10 ** new_log
             print("NEW_LR", new_lr)
             self.lrs.append(new_lr)
-            p["lr"] = tuple([float(nlr) for nlr in [new_lr]])
+            p["lr"] = float(new_lr)
 
         self.loss_list.append(running_loss)
         print(self.lrs)
-        return self.lrs
+        return self
 
 
 
