@@ -119,11 +119,11 @@ def calculate_relative_contactability(dataset:EmbeddingDataset,
                 #print(r, c, end="\r")
                 r[contactability_pos] = c
             new_tensor = Tensor(new_tensor)
-            new_embedding = embeddings.RelativeALEPHEmbedding.from_tensor(new_tensor)
+            new_embedding = embeddings.RelativeALEPHEmbedding.from_tensor(new_tensor, residue_embedding_class=embeddings.RelativeExpandedALEPHEmbedding0)
 
 
         else:
-            new_embedding = embeddings.RelativeALEPHEmbedding.from_tensor(tensor)
+            new_embedding = embeddings.RelativeALEPHEmbedding.from_tensor(tensor, residue_embedding_class=embeddings.RelativeExpandedALEPHEmbedding0)
         new_embedding.name = embedding.name
         new_embedding.entity_path = embedding.entity_path
         new_embedding.sequence = embedding.sequence
@@ -131,7 +131,8 @@ def calculate_relative_contactability(dataset:EmbeddingDataset,
         new_embedding.param_names = embedding.param_names
         new_embedding.param_names[new_embedding.param_names.index("contactability")] = "rel_contactability"
         new_embedding.missing_indexes = embedding.missing_indexes
-        new_embedding.residue_embedding_class = embedding.residue_embedding_class
+        #new_embedding.residue_embedding_class = embedding.residue_embedding_class
+        #new_embedding.residue_embedding_name = embedding.residue_embedding_name
 
 
         new_embedding.save()

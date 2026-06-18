@@ -293,7 +293,7 @@ class EmbeddingDataset(object):
         if self.data["param_names"] is None:
             self.data["param_names"] = getattr(embedding, "param_names", None)
         if self.data["residue_embedding_class"] is None:
-            self.data["residue_embedding_class"] = getattr(embedding, "residue_embedding_class", None).__name__
+            self.data["residue_embedding_class"] = getattr(embedding, "residue_embedding_name", None)
         if self.data["embedding_class"] is None:
             self.data["embedding_class"] = embedding.__class__.__name__
 

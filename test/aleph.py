@@ -77,8 +77,10 @@ else:
 FORCE = "--force" in sys.argv or "-f" in sys.argv
 REBUILD = "--rebuild" in sys.argv or "-r" in sys.argv
 RELATIVE = "--relative" in sys.argv or "--rel" in sys.argv
-
-EMBEDDING_CLASS = embeddings.ExpandedALEPHEmbedding0
+if RELATIVE:
+    EMBEDDING_CLASS = embeddings.ExpandedALEPHEmbedding0
+else:
+    EMBEDDING_CLASS = embeddings.ALEPHEmbedding
 DATA_NAME += "_"+ EMBEDDING_CLASS.__name__
 
 
@@ -408,6 +410,7 @@ if "-p" in sys.argv:
 
         print(entity)
         print(len(entity.residues()))
+        print(embeddings)
         if model.data["embedding_class"] is not None:
             if EMBEDDING_CLASS.__name__ != model.data["embedding_class"]:
                 log("warning", f"Embedding class ({EMBEDDING_CLASS.__name__}) does not match the model embedding class ({model.data['embedding_class']})")

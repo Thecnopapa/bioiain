@@ -69,6 +69,8 @@ class Embedding(object):
         path = self.folder
         if self.group_by_class:
             path = os.path.join(path, self.__class__.__name__)
+            if getattr(self, "residue_embedding_name", None) is not None:
+                path = os.path.join(path, self.residue_embedding_name)
         os.makedirs(path, exist_ok=True)
         if self.subfolder is not None:
             path = os.path.join(path, self.subfolder)
@@ -187,6 +189,7 @@ class ResidueEmbedding(Embedding):
 
 class ProteinEmbedding(Embedding):
     residue_embedding_class = None
+    residue_embedding_name = None
     def __init__(self, entity=None, residue_embedding_class=None, **kwargs):
         super().__init__(**kwargs)
         self.entity = entity
@@ -195,7 +198,10 @@ class ProteinEmbedding(Embedding):
         if residue_embedding_class is not None:
             self.residue_embedding_class = residue_embedding_class
             self.param_names = self.residue_embedding_class.param_names
+            self.residue_embedding_name = self.residue_embedding_class.__name__
+
         self.missing_indexes = []
+
 
         if self.entity is not None :
             if self.name == self.__class__.__name__:
@@ -209,6 +215,7 @@ class ProteinEmbedding(Embedding):
                              "entity_path":self.entity_path,
                              "chains":self.chains,
                              "missing_indexes":self.missing_indexes,
+                             "residue_embedding_name":self.residue_embedding_class.__name__,
                              }|extra)
 
     def _generate(self, *args, **kwargs) -> list:
