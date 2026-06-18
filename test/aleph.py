@@ -187,12 +187,12 @@ if "-p" not in sys.argv:
                     try:
                         embedding.generate()
                         embedding.save()
+                        entity.export()
                     except (ALEPHError, NoEmbeddingForThisProtein, StructureLoadException) as e:
                         print(e)
                         embedding = None
 
 
-                    entity.export()
                 else:
                     log(1, "Embedding already generated")
                     embedding = embedding.reload()
