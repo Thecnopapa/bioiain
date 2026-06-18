@@ -187,7 +187,7 @@ if "-p" not in sys.argv:
                     try:
                         embedding.generate()
                         embedding.save()
-                    except (ALEPHError, NoEmbeddingForThisProtein) as e:
+                    except (ALEPHError, NoEmbeddingForThisProtein, StructureLoadException) as e:
                         print(e)
                         embedding = None
 
