@@ -273,6 +273,13 @@ if "-t" in sys.argv and not ("-p" in sys.argv):
     if "--epochs" in sys.argv:
         epochs = int(sys.argv[sys.argv.index("--epochs") + 1])
 
+    n_dots = 500
+    if "--n-dots" in sys.argv:
+        epochs = int(sys.argv[sys.argv.index("--n-dots") + 1])
+    n_squares = 15
+    if "--n-squares" in sys.argv:
+        epochs = int(sys.argv[sys.argv.index("--n-squares") + 1])
+
     log(1, "EMBEDDING_CLASS:", EMBEDDING_CLASS)
     log(1, "DATASET:", dataset)
 
@@ -313,9 +320,9 @@ if "-t" in sys.argv and not ("-p" in sys.argv):
         if "--no-plot" in sys.argv:
             model.plot_latent_space(dataset=None)
         else:
-            model.plot_latent_space(dataset=dataset, max_points=500, mesh_points=15)
-            model.plot_latent_dimensions(dataset=dataset, max_points=500, r_threshold=5)
-            model.plot_latent_dimensions(dataset=dataset, max_points=500, r_threshold=100 , plot_raw=False)
+            model.plot_latent_space(dataset=dataset, max_points=n_dots, mesh_points=n_squares)
+            model.plot_latent_dimensions(dataset=dataset, max_points=n_dots, r_threshold=5)
+            model.plot_latent_dimensions(dataset=dataset, max_points=n_dots, r_threshold=100 , plot_raw=False)
 
         model.plot_tokens()
 
