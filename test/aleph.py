@@ -275,10 +275,10 @@ if "-t" in sys.argv and not ("-p" in sys.argv):
 
     n_dots = 500
     if "--n-dots" in sys.argv:
-        epochs = int(sys.argv[sys.argv.index("--n-dots") + 1])
+        n_dots = int(sys.argv[sys.argv.index("--n-dots") + 1])
     n_squares = 15
     if "--n-squares" in sys.argv:
-        epochs = int(sys.argv[sys.argv.index("--n-squares") + 1])
+        n_squares = int(sys.argv[sys.argv.index("--n-squares") + 1])
 
     log(1, "EMBEDDING_CLASS:", EMBEDDING_CLASS)
     log(1, "DATASET:", dataset)
@@ -304,6 +304,8 @@ if "-t" in sys.argv and not ("-p" in sys.argv):
         "batch_size": 0,
         "target_epochs": epochs,
         "device": DEVICE,
+        "n_dots": n_dots,
+        "n_squares": n_squares,
         }, indent=4))
 
     model.set_mode("autoencoder")
