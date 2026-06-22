@@ -15,6 +15,40 @@ from src.bioiain.utilities.exceptions import *
 from src.bioiain import log
 
 
+
+
+
+
+
+
+
+
+class ContactactStructure(BIEntity):
+    pass
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class RelativeContactabilityError(Exception):
     pass
 

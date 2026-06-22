@@ -130,7 +130,7 @@ class PymolScript(object):
             for cmd in self.commands:
                 f.write(repr(cmd)+"\n")
         self.path = os.path.abspath(filepath)
-        log(1, f"PyMol Session saved at: pymol {self.path}")
+        log(1, f"PyMol Session saved at:\npymol {self.path}")
         try:
             os.chmod(self.path, 0o755)
         except:

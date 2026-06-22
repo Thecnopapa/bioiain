@@ -289,3 +289,13 @@ def rotate2D(origin, point, angle, to_radians=True):
     qx = ox + math.cos(angle) * (px - ox) - math.sin(angle) * (py - oy)
     qy = oy + math.sin(angle) * (px - ox) + math.cos(angle) * (py - oy)
     return qx, qy
+
+
+
+
+def clamp(value, min_value:int|float|None=None, max_value:int|float|None=None):
+    if min_value is None:
+        min_value = -math.inf
+    if max_value is None:
+        max_value = math.inf
+    return max(min(value, max_value), min_value)

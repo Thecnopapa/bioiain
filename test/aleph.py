@@ -17,7 +17,7 @@ from src.bioiain.machine import *
 from src.bioiain.utilities.parallel import *
 import vqvae_models as models
 import vqvae_embeddings as embeddings
-from relative_contactability import calculate_relative_contactability
+from contactability import calculate_relative_contactability
 
 import torch, random
 import  numpy as np
@@ -424,7 +424,7 @@ if "-p" in sys.argv:
             if EMBEDDING_CLASS.__name__ != model.data["embedding_class"]:
                 log("warning", f"Embedding class ({EMBEDDING_CLASS.__name__}) does not match the model embedding class ({model.data['embedding_class']})")
 
-        embedding = embeddings.ALEPHProteinEmbedding(entity=entity, residue_embedding_class=EMBEDDING_CLASS)
+        embedding = embeddings.ALEPHProteinEmbedding(entity=entity, residue_embedding_class=EMBEDDING_CLASS, folder=prediction_folder).save()
         dd = EmbeddingDataset(name = prediction_name, folder=prediction_folder)
         dd.add(embedding)
         print(embedding)

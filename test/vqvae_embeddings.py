@@ -1,6 +1,7 @@
 import os, json
 
 from src.bioiain.utilities import *
+from src.bioiain.utilities import clamp
 from src.bioiain.utilities.sequences import d3
 from src.bioiain.utilities.exceptions import *
 from src.bioiain.machine.embeddings import *
@@ -17,7 +18,7 @@ device = "cpu"
 class ALEPHEmbedding(ResidueEmbedding):
     param_names = ["len_i", "len_j", "len_ij", "angle_ij", "dihedral_ij", "theta_i", "theta_j"]
 
-    def __init__(self, *args, cvector=None, modulo_norm=2.4, max_dist=20, **kwargs):
+    def __init__(self, *args, cvector=None, modulo_norm=2.4, max_dist=30, **kwargs):
         self.cvector = cvector
         self.modulo_norm = modulo_norm
         self.max_dist = max_dist
@@ -34,13 +35,13 @@ class ALEPHEmbedding(ResidueEmbedding):
         j = cv.closest
         i_j = cv.closest_vp
 
-        len_i = min(1, i.d / self.modulo_norm)
-        len_j = min(1, j.d / self.modulo_norm)
-        len_i_j = min(1, i_j.d / self.max_dist)
-        angle_i_j = min(1, i_j.a / 360)
-        da = min(1, i_j.da / 360)
-        t1 = min(1, i_j.t1 / 360)
-        t2 = min(1, i_j.t2 / 360)
+        len_i = clamp((i.d / self.modulo_norm * 2) -1, 0, 1)
+        len_j = clamp((j.d / self.modulo_norm * 2) -1, 0, 1)
+        len_i_j = clamp(i_j.d / self.max_dist, 0, 1)
+        angle_i_j = clamp((i_j.a / 180) -1, 0, 1)
+        da = clamp(i_j.da / 360, 0, 1)
+        t1 = clamp((i_j.t1 / 180) -1, 0, 1)
+        t2 = clamp((i_j.t2 / 180) -1, 0, 1)
 
         e = [len_i, len_j, len_i_j, angle_i_j, da, t1, t2]
         return e
