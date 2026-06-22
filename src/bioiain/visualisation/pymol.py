@@ -124,7 +124,7 @@ class PymolScript(object):
             f.write(f"#!{self.pymol_path}\n\n")
             #f.write(f"try:\n\tcd os.path.dirname(sys.argv[1])\nexcept:\n\tpass\n")
             #f.write("import os\n")
-            #f.write(f"os.chdir({self.folder})")
+            f.write(f"os.chdir('{self.subfolder}')\n")
 
             #f.write("import {} as bi\n\n\n".format(self._bioiain))
             for cmd in self.commands:

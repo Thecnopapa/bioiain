@@ -290,7 +290,7 @@ class FragmentedStructure(BIStructure):
         script.color("cvectors_sym", "green")
         script.color("ca_vc", "yellow")
         script.color("ca_cv", "red")
-        print(self.export())
+        print(self.export(minimal=True))
         script.load(self.path(), self.name())
         script.color(self.name(), "white")
         script.hide(self.name())

@@ -492,7 +492,7 @@ class BIEntity(object):
             self.headers["symmetry"]["space_group_name_H-M"] = f"\'{self.headers["symmetry"]["space_group_name_H-M"]}\'"
 
 
-    def export(self, minimal=False, cleanup=False, as_pdb=False, target_folder=None, sufix=None, dry=False, all_headers=True):
+    def export(self, minimal=False, cleanup=False, as_pdb=False, target_folder=None, sufix=None, dry=False, all_headers=True, cvmatrix=True, cvectors=True):
 
         custom_folder = False
         if target_folder is None:
@@ -534,12 +534,12 @@ class BIEntity(object):
             orth = self
 
         if minimal:
-            minimal_path= orth._export_structure(base_path, headers=False, all_headers=False, misc_fields=True, cleanup=True, as_pdb=as_pdb)
+            minimal_path= orth._export_structure(base_path, headers=False, all_headers=False, misc_fields=True, cleanup=True, as_pdb=as_pdb, cvectors=False, cvmatrix=False)
             if not custom_folder:
                 self.paths["minimal"] = minimal_path
             return minimal_path
         else:
-            path = orth._export_structure(base_path, headers=True, all_headers=all_headers, misc_fields=True, cleanup=cleanup, as_pdb=as_pdb)
+            path = orth._export_structure(base_path, headers=True, all_headers=all_headers, misc_fields=True, cleanup=cleanup, as_pdb=as_pdb, cvmatrix=cvmatrix, cvectors=cvectors)
             if not custom_folder:
                 self.paths["self"] = path
                 if not as_pdb:

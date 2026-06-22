@@ -71,7 +71,7 @@ class CVector(object):
             closest_resnum=f"{self.closest.resnum:3d}" if self.closest is not None else " . ",
             closest_chain=self.closest.chain if self.closest is not None else None,
             closest_fragment=self.closest.fragment if self.closest is not None else None,
-            closest_opn=f"{self.closest_opn:2d}",
+            closest_opn=f"{self.closest_opn:2d}" if self.closest_opn is not None else " .",
             closest_lig_name=f"{self.closest_lig.name:3s}" if self.closest_lig is not None else " . ",
             closest_lig_chain=f"{self.closest_lig.chain}" if self.closest_lig is not None else " . ",
             dist_to_lig=f"{self.dist_to_lig:8.3f}" if self.dist_to_lig is not None else "       .",

@@ -409,7 +409,7 @@ if "-p" in sys.argv:
         prediction_folder = os.path.join(SUBDIR_NAME, f"predictions/{prediction_name}")
         os.makedirs(prediction_folder, exist_ok=True)
 
-        entity = BIEntity.from_file(filepath, code=name, force=True, export_folder=prediction_folder)
+        entity = FragmentedStructure.from_file(filepath, code=name, force=True, export_folder=prediction_folder)
 
         entity.export()
 
@@ -424,7 +424,7 @@ if "-p" in sys.argv:
             if EMBEDDING_CLASS.__name__ != model.data["embedding_class"]:
                 log("warning", f"Embedding class ({EMBEDDING_CLASS.__name__}) does not match the model embedding class ({model.data['embedding_class']})")
 
-        embedding = EMBEDDING_CLASS(entity=entity).embedding(force=True)
+        embedding = embeddings.ALEPHProteinEmbedding(entity=entity, residue_embedding_class=EMBEDDING_CLASS)
         dd = EmbeddingDataset(name = prediction_name, folder=prediction_folder)
         dd.add(embedding)
         print(embedding)
@@ -450,8 +450,7 @@ if "-p" in sys.argv:
         decoded = [model._decode(pred[3].detach()) for pred in preds]
         discretised = [model._decode(pred[2].detach()) for pred in preds]
 
-        names = ["len i", "len j", "angle ij", "dist ij", "dist lig", "contactability", "SASA", "dihedral",
-                 "t1", "t2"]
+        names = EMBEDDING_CLASS.param_names
 
 
         for i in range(t.shape[-1]):
@@ -460,7 +459,7 @@ if "-p" in sys.argv:
             for cv, emb in zip(cvectors, t):
                 res = cv.res2
                 res.set_bfactor(emb[i])
-            paths_emb.append(entity.export(sufix=f"EMB_{names[i]}"))
+            paths_emb.append(entity.export(sufix=f"EMB_{names[i]}", minimal=True))
             script.load(paths_emb[-1])
 
             for res in residues:
@@ -469,7 +468,7 @@ if "-p" in sys.argv:
                 res = cv.res2
                 #print(dec)
                 res.set_bfactor(dec[i])
-            paths_dec.append(entity.export(sufix=f"DEC_{names[i]}"))
+            paths_dec.append(entity.export(sufix=f"DEC_{names[i]}", minimal=True))
             script.load(paths_dec[-1])
 
             for res in residues:
@@ -478,7 +477,7 @@ if "-p" in sys.argv:
                 res = cv.res2
                 #print(dis)
                 res.set_bfactor(dis[0][i])
-            paths_disc.append(entity.export(sufix=f"DIS_{names[i]}"))
+            paths_disc.append(entity.export(sufix=f"DIS_{names[i]}", minimal=True))
             script.load(paths_disc[-1])
 
 
@@ -518,7 +517,7 @@ if "-p" in sys.argv:
             # atoms = [*cv_chain.all_atoms(), *closest_chain.all_atoms()]
             # script.load(write_atoms(atoms, os.path.join(TEMP_FOLDER, "trash", rname)), rname)
 
-        path_tok = entity.export(sufix="tokens")
+        path_tok = entity.export(sufix="tokens", minimal=True)
         script.load(path_tok)
         script.spectrum("*tokens", color="_".join(mpl_colours)+"_"+"_".join(mpl_colours), minimum=0, maximum=19)
 
