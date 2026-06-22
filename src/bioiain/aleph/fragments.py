@@ -49,9 +49,16 @@ class FragmentedStructure(BIStructure):
     def from_file(cls, *args, **kwargs):
         self = super().from_file(*args, **kwargs)
         # if not self.has_flag("fragmented", True):
-        #     self.fragment(in_place=True)
+        self.fragment(in_place=True)
         if self is not None:
             self.recover_cvmatrix()
+        return self
+
+    @classmethod
+    def from_atoms(cls, *args, **kwargs):
+        self = super().from_atoms(*args, **kwargs)
+        # if not self.has_flag("fragmented", True):
+        self.fragment(in_place=True)
         return self
 
     def recover_cvmatrix(self):
@@ -208,12 +215,11 @@ class FragmentedStructure(BIStructure):
 
 
 
-    def _map_cvectors(self, with_ligands=True, vc_mode=None):
+    def _map_cvectors(self, with_ligands=False, vc_mode=None):
         log(1, "Generating CVMatrix for:", self.name(), f"({vc_mode})")
         from . import CVMatrix
-        matrix = CVMatrix(self.cvectors(vc_mode=vc_mode), vc_mode=vc_mode, entity=self)
         try:
-            matrix.calculate_neighbours()
+            matrix = CVMatrix(self.cvectors(vc_mode=vc_mode), vc_mode=vc_mode, calculate_neighbours=True, entity=self)
         except NoNeighboursFound as e:
             log("warning", e)
             self.set_flag("cvmatrix_error", True)
@@ -226,6 +232,7 @@ class FragmentedStructure(BIStructure):
 
         self._cvmatrix = matrix
         self._matrix_vc_mode = vc_mode
+        print("CVMATRIX done")
         return self._cvmatrix
 
     def cvmatrix(self, vc_mode=None, **kwargs):

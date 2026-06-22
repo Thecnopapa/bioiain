@@ -47,8 +47,9 @@ else:
 
 from src.bioiain.aleph import *
 
-entity = BIEntity.from_file(os.path.join(DATA_FOLDER, "7C2X.cif"), code="TEST", force=True)
+entity = FragmentedStructure.from_file(os.path.join(DATA_FOLDER, "1M2Z.cif"), code="TEST", force=False)
 print(entity)
+print(entity.cvmatrix())
 
 
 

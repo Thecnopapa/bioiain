@@ -223,6 +223,28 @@ class KDT(object):
 
         self.tree = KDTree(self.coords, leaf_size=leaf_size)
 
+
+    def neighbours(self, coords, n_neighbours=2, distances=False, unique=False):
+
+        if isinstance(coords, PseudoAtom) or np.isscalar(coords[0]):
+            coords = [coords]
+        coords = np.array([a.coord if isinstance(a, PseudoAtom) else a for a in coords])
+        neigh_indexes = []
+        out = self.nearest(coords, n_neighbours=n_neighbours, distances=distances)
+        if distances:
+            neigh_distances = []
+            [neigh_indexes.extend(n) for n in out[1]]
+            [neigh_distances.extend(n) for n in out[0]]
+            return neigh_indexes, neigh_distances
+        else:
+            if unique:
+                [neigh_indexes.extend(n) for n in out]
+                neigh_indexes = [int(i) for i in set(neigh_indexes)]
+                return neigh_indexes
+            else:
+                return out
+
+
     def of(self, coords, radius=10, distances=False, unique=False):
 
         if isinstance(coords, PseudoAtom) or np.isscalar(coords[0]):
@@ -259,6 +281,10 @@ class KDT(object):
 
     def __call__(self, item, radius, distances=False):
         return self.tree.query_radius(item, r=radius, return_distance=distances)
+
+    def nearest(self, item, n_neighbours,  distances=False):
+        return self.tree.query(item, k=n_neighbours, return_distance=distances)
+
 
 
 

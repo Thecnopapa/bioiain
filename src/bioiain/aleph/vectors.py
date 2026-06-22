@@ -253,7 +253,7 @@ class CVPair(object):
 
 
 class CVMatrix(object):
-    def __init__(self, cvector_list, vc_mode=None, complete=False, max_distance=30, **kwargs):
+    def __init__(self, cvector_list, vc_mode=None, complete=False, max_distance=30, calculate_neighbours=True,**kwargs):
         self.vectors = cvector_list
         self.matrix = None
         self.length = len(self.vectors)
@@ -262,7 +262,8 @@ class CVMatrix(object):
         self.entity = kwargs.get("entity", None)
 
         self.reset_matrix()
-        self.calculate_neighbours(max_distance=max_distance)
+        if calculate_neighbours:
+            self.calculate_neighbours(max_distance=max_distance)
 
     def __repr__(self):
         return f"<{self.__class__.__name__} of {self.entity} N={self.length}>"
@@ -353,7 +354,7 @@ class CVMatrix(object):
 
 
 
-    def calculate_neighbours(self, use_fragments=True, max_distance=30, n_neighbours=1):
+    def calculate_neighbours(self, use_fragments=True, max_distance=30, n_neighbours=1, use_radius=True):
         log(2, "Calculating neighbours for:", self)
         from ..tools.SASA import KDT
 
@@ -372,13 +373,18 @@ class CVMatrix(object):
             cv = v["cv"]
             vc = v["vc"]
 
-
+            nn = n_neighbours +1
             radius = 10
             neighs_found=False
             while radius <= max_distance:
-                neighbors, distances = tree.of(vc, radius=radius, distances=True)
-                #print(neighbors)
-                #print(distances)
+                if use_radius:
+                    neighbors, distances = tree.of(vc, radius=radius, distances=True)
+                else:
+                    neighbors, distances = tree.neighbours(vc, n_neighbours=nn,distances=True)
+
+                #print("N:", neighbors)
+                #print("D:", distances)
+
                 if len(neighbors) == 0:
                     log("error", f"No neighbours found radius={radius}, even itself")
                     raise Exception()
@@ -398,7 +404,10 @@ class CVMatrix(object):
                     pfrag = data[k]["cv"].fragment
                     pop = p[2]
                     ppos = p[3]
-                    if (pfrag == cv.fragment) and (pop ==1):
+
+
+                    if (pfrag == cv.fragment) and (pop ==1 or pop is None):
+                        #print(pfrag, cv.fragment, data[k]["cv"].res2.ca.get_misc("fragment"), cv.res2.ca.get_misc("fragment"))
                         #print("Same fragment")
                         continue
 
@@ -409,15 +418,16 @@ class CVMatrix(object):
 
 
                 if len(targets) < n_neighbours:
+                    nn += 1
                     radius += 5
-                    #log("warning", "Expanding search to:", radius)
+                    log("warning", "Expanding search to:", radius, f"{nn}")
                     continue
 
                 neighs_found = True
 
                 targets = sorted(targets, key=lambda x: x[-1])
-                #print("sorted targets:")
-                #print(targets)
+                #print("sorted targets:", cv)
+                #[print(t) for t in targets]
 
                 for t in targets[:n_neighbours]:
                     k2 = t[0]
