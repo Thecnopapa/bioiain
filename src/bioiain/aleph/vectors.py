@@ -356,7 +356,7 @@ class CVMatrix(object):
 
     def calculate_neighbours(self, use_fragments=True, max_distance=30, n_neighbours=1, use_radius=True):
         log(2, "Calculating neighbours for:", self)
-        from ..tools.SASA import KDT
+        from ..utilities.kdtree import KDT
 
 
         data = {k: {"vc":cv.vc, "cv":cv} for k, cv in enumerate(self.vectors)}

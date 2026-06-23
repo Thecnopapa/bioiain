@@ -12,6 +12,6 @@ from .files import *
 from .. import WD, FD, TEMP_FOLDER, SUBDIR_NAME
 
 
-__all__ = ["log", "logging", "strings", "maths", "sequences", "parallel", "exceptions", "files"]
+__all__ = ["log", "logging", "strings", "maths", "sequences", "parallel", "exceptions", "files", "kdtree"]
 
 __all__.extend(["WD", "FD", "TEMP_FOLDER", "SUBDIR_NAME"])

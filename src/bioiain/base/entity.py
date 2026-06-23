@@ -58,7 +58,8 @@ class BIEntity(object):
 
         #Properties
         self._com = None
-        self._kdtree = None
+        self._kdtrees = {}
+
 
         #CVectors
         self._cvectors = None
@@ -88,7 +89,7 @@ class BIEntity(object):
 
     def clear_cahces(self):
         self._com = None
-        self._kdtree = None
+        self._kdtrees = {}
         self._chains = None
         self._residues = None
         self._atoms = None
@@ -455,7 +456,7 @@ class BIEntity(object):
 
         if filepath is None:
             filepath = self.paths.get("source", None)
-        print(filepath)
+        #print(filepath)
         if not hasattr(self, "_atoms"):
             force = True
         elif self._atoms is None:
@@ -467,7 +468,7 @@ class BIEntity(object):
             if not os.path.exists(filepath) and self.has_flag("no_atoms", False):
                 filepath = self.export()
             filepath = filepath.strip()
-            print(filepath)
+            #print(filepath)
             log(2, "Reading atoms from CIF:", filepath)
             mmcif= read_mmcif(filepath, subset=["_atom_site", "_cell", "_symmetry"])
             atoms=mmcif("_atom_site")
@@ -501,7 +502,7 @@ class BIEntity(object):
 
         else:
             custom_folder = True
-            target_folder = str(custom_folder)
+            target_folder = str(target_folder).strip()
 
         fname = str(self.name())
         if sufix is not None:

@@ -1,9 +1,9 @@
 import os, sys, math, json
 
 import numpy as np
-from sklearn.neighbors import KDTree
+from ..utilities.kdtree import KDT
 
-from ..base import PseudoAtom, BIAtom
+from ..base import PseudoAtom
 from ..utilities import log
 
 atomic_radii = {
@@ -96,12 +96,12 @@ class SASA(object):
         if not quiet:
             log(2, "Computing SASA...")
 
-        if getattr(entity, "_kdtree", None) is not None and not force:
+        if getattr(entity, "_kdtrees", {}).get("atom", None) is not None and not force:
             if not quiet:
-                log(3, "Recovering saved KDTree")
-            kdt = entity._kdtree
+                log(3, "Recovering saved KDTree (atom)")
+            kdt = entity._kdtrees["atom"]
         else:
-            kdt = KDT(entity, quiet=quiet, **kwargs)
+            kdt = KDT(entity, quiet=quiet, kdtree_name="atom", **kwargs)
 
         radii_list = []
         n_atoms = 0
@@ -180,112 +180,6 @@ class SASA(object):
             entity.data["SASA"]["radii_dict"] = self.radii_dict_name
             entity.data["SASA"]["average"] = None
         return asa_array
-
-
-class KDT(object):
-    def __init__(self, coords_or_entity, leaf_size=10, quiet=False, force=False, params=None, symops=None, com=None, **kwargs):
-        if not quiet:
-            log(3, "Building KDT...")
-        from ..base import BIEntity
-        if isinstance(coords_or_entity, BIEntity):
-            if not quiet:
-                log(4, f"Entity: {coords_or_entity.name()}")
-
-            coords_or_entity._kdtree = self
-            atoms = coords_or_entity.atoms(hetatm=True)
-            coords = np.array([a.coord for a in atoms], dtype=np.float64)
-        else:
-            atoms = [PseudoAtom(c) if not isinstance(c, PseudoAtom) else c for c in coords_or_entity]
-            coords = np.array([a.coord if isinstance(a, PseudoAtom) else a for a in atoms])
-
-        operations = [1]*len(coords)
-        positions = [None]*len(coords)
-
-        if params is not None and symops is not None:
-            asu_atoms = atoms
-            atoms = []
-            coords = []
-            operations = []
-            positions = []
-            for atom in asu_atoms:
-                for op, (coord, pos) in atom.all(centre=com, params=params, symops=symops).items():
-                    atoms.append(atom)
-                    coords.append(coord)
-                    operations.append(op)
-                    positions.append(pos)
-
-
-
-        self.atoms = atoms
-        self.coords = coords
-        self.operations = operations
-        self.positions = positions
-
-        self.tree = KDTree(self.coords, leaf_size=leaf_size)
-
-
-    def neighbours(self, coords, n_neighbours=2, distances=False, unique=False):
-
-        if isinstance(coords, PseudoAtom) or np.isscalar(coords[0]):
-            coords = [coords]
-        coords = np.array([a.coord if isinstance(a, PseudoAtom) else a for a in coords])
-        neigh_indexes = []
-        out = self.nearest(coords, n_neighbours=n_neighbours, distances=distances)
-        if distances:
-            neigh_distances = []
-            [neigh_indexes.extend(n) for n in out[1]]
-            [neigh_distances.extend(n) for n in out[0]]
-            return neigh_indexes, neigh_distances
-        else:
-            if unique:
-                [neigh_indexes.extend(n) for n in out]
-                neigh_indexes = [int(i) for i in set(neigh_indexes)]
-                return neigh_indexes
-            else:
-                return out
-
-
-    def of(self, coords, radius=10, distances=False, unique=False):
-
-        if isinstance(coords, PseudoAtom) or np.isscalar(coords[0]):
-            coords = [coords]
-        coords = np.array([a.coord if isinstance(a, PseudoAtom) else a for a in coords])
-        neigh_indexes = []
-        out = self(coords, radius=radius, distances=distances)
-        if distances:
-            neigh_distances = []
-            [neigh_indexes.extend(n) for n in out[0]]
-            [neigh_distances.extend(n) for n in out[1]]
-            return neigh_indexes, neigh_distances
-        else:
-            if unique:
-                [neigh_indexes.extend(n) for n in out]
-                neigh_indexes = [int(i) for i in set(neigh_indexes)]
-                return neigh_indexes
-
-            else:
-                return out
-
-
-    def atom_of(self, item):
-        return self.atoms[item]
-
-    def coord_of(self, item):
-        return self.coords[item]
-
-    def pos_of(self, item):
-        return self.positions[item]
-
-    def op_of(self, item):
-        return self.operations[item]
-
-    def __call__(self, item, radius, distances=False):
-        return self.tree.query_radius(item, r=radius, return_distance=distances)
-
-    def nearest(self, item, n_neighbours,  distances=False):
-        return self.tree.query(item, k=n_neighbours, return_distance=distances)
-
-
 
 
 
