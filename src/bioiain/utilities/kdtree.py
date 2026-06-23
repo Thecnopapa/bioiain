@@ -81,7 +81,7 @@ class KDT(object):
             coords = [coords]
         coords = np.array([a.coord if isinstance(a, PseudoAtom) else a for a in coords])
         neigh_indexes = []
-        out = self.nearest(coords, n_neighbours=n_neighbours, distances=distances)
+        out = self._nearest(coords, n_neighbours=n_neighbours, distances=distances)
         if distances:
             neigh_distances = []
             [neigh_indexes.extend(n) for n in out[1]]
@@ -95,14 +95,16 @@ class KDT(object):
             else:
                 return out
 
+    def of(self, *args, **kwargs):
+        return self.radius(*args, **kwargs)
 
-    def of(self, coords, radius=10, distances=False, unique=False):
+    def radius(self, coords, radius=10, distances=False, unique=False):
         from ..base import PseudoAtom
         if isinstance(coords, PseudoAtom) or np.isscalar(coords[0]):
             coords = [coords]
         coords = np.array([a.coord if isinstance(a, PseudoAtom) else a for a in coords])
         neigh_indexes = []
-        out = self(coords, radius=radius, distances=distances)
+        out = self._radius(coords, radius=radius, distances=distances)
         if distances:
             neigh_distances = []
             [neigh_indexes.extend(n) for n in out[0]]
@@ -145,10 +147,10 @@ class KDT(object):
     def op_of(self, item):
         return self.operations[item]
 
-    def __call__(self, item, radius, distances=False):
+    def _radius(self, item, radius, distances=False):
         return self.tree.query_radius(item, r=radius, return_distance=distances)
 
-    def nearest(self, item, n_neighbours,  distances=False):
+    def _nearest(self, item, n_neighbours,  distances=False):
         return self.tree.query(item, k=n_neighbours, return_distance=distances)
 
 

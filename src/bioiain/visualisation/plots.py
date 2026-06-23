@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, math
 
 
 from ..utilities.logging import log
@@ -20,6 +20,11 @@ pymol_colours = ('green', 'cyan', 'red', 'yellow', 'violet','blue',
                'olive', 'purple', 'teal', 'forest', 'firebrick', 'chocolate',
                'wheat', 'white', 'grey')
 
+def plasma(value, scale=256):
+    cm = mpl.colormaps["plasma"]
+    value = round((value / scale) * 256)
+    return cm(value)
+
 
 try:
     mpl.use('QtAgg')
@@ -31,6 +36,11 @@ except:
 
 
 
+def close(fig):
+    plt.close(fig)
+
+def show(**kwargs):
+    plt.show(**kwargs)
 
 def grid2D(rows, columns, height=5, width=5, as_grid=False):
     log(2, f"Creating {rows}x{columns} (rxc) grid...")
@@ -49,6 +59,9 @@ def fig2D(**kwargs):
     ax.set_aspect('equal')
     return fig, ax
 
+
+def line(start, end):
+    return list(zip(start, end))
 
 
 
