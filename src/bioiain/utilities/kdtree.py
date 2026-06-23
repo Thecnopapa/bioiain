@@ -69,9 +69,9 @@ class KDT(object):
 
     def __repr__(self):
         if self.entity is not None:
-            return f"<bi.KDT: {self.entity} ({self.mode}) N={len(self.coords)} symmetries={self.has_symmetries}>"
+            return f"<bi.{self.__class__.__name__}: {self.entity} ({self.mode}) N={len(self.coords)} symmetries={self.has_symmetries}>"
         else:
-            return f"<bi.KDT: N={len(self.coords)} symmetries={self.has_symmetries}>>"
+            return f"<bi.{self.__class__.__name__}: N={len(self.coords)} symmetries={self.has_symmetries}>>"
 
 
     def neighbours(self, coords, n_neighbours=2, distances=False, unique=False):

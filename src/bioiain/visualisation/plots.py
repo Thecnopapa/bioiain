@@ -20,10 +20,16 @@ pymol_colours = ('green', 'cyan', 'red', 'yellow', 'violet','blue',
                'olive', 'purple', 'teal', 'forest', 'firebrick', 'chocolate',
                'wheat', 'white', 'grey')
 
-def plasma(value, scale=256):
+def plasma(value, scale=256, as_hex=False, as_pymol_hex=False):
     cm = mpl.colormaps["plasma"]
     value = round((value / scale) * 256)
-    return cm(value)
+    col = cm(value)
+    if as_hex or as_pymol_hex:
+        from matplotlib.colors import rgb2hex
+        col = rgb2hex(col)
+    if as_pymol_hex:
+        col = col.replace("#", "0x")
+    return col
 
 
 try:

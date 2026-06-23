@@ -10,11 +10,11 @@ from src.bioiain.utilities.logging import *
 from src.bioiain.base import *
 from compactness import *
 
-entity = CompactStructure.from_file(os.path.join(".", "1M2Z.cif"), code="TEST", force=False)
+entity = CompactStructure.from_file(os.path.join(".", "3sg0.cif"), export_folder="trash", force=False)
 print(entity)
 
 
-entity._calculate_compactness()
+entity._calculate_compactness(session="--session" in sys.argv, plot="--plot" in sys.argv)
 
 
 
