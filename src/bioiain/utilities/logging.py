@@ -1,13 +1,7 @@
 
-import os, sys, shutil
-import warnings
-import time, datetime
-import math
-import requests
-import tracemalloc
+import os, sys, shutil, time, datetime, requests
 
 from .. import SUBDIR_NAME, TEMP_FOLDER, WD, FD
-
 
 class Log(object):
     def __init__(self):
@@ -276,9 +270,12 @@ def send_tensorboard_run(host, folder, run, file, key, epoch=0, protocol="https"
 
 
 def tracemalloc_start():
+    log(1, f"Starting tracemalloc")
+    import tracemalloc
     tracemalloc.start()
 
 def tracemalloc_top(top=15):
+    import tracemalloc
     snapshot = tracemalloc.take_snapshot()
     top_stats = snapshot.statistics('lineno')
 

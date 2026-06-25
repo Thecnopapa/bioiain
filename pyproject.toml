@@ -19,7 +19,8 @@ dependencies = [
     "requests",
     "unidecode",
     "xmltodict",
-    "psutil"
+    "psutil",
+    "requests"
 ]
 
 name = "bioiain"

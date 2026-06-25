@@ -33,46 +33,34 @@ torch.cuda.manual_seed(seed)
 torch.cuda.manual_seed_all(seed)
 
 if "monomers" in sys.argv:
-    if not "--no-download" in sys.argv:
-        DATA_FOLDER = downloadPDBlist("./data", "cath-monomeric",
-                                      file_path="./data/cath-dataset-nonredundant-S20.monomeric.list",
-                                      file_format="cif",
-                                      overwrite=False)
-    else:
-        DATA_FOLDER = "./data/cath-monomeric"
-    DATA_NAME = "monomers"
+        structures = StructureDataset.from_list("./data/cath-dataset-nonredundant-S20.monomeric.list", name="monomers")
+
+elif "multimers" in sys.argv:
+        structures = StructureDataset.from_list("./data/cath-dataset-nonredundant-S20.multimeric.list", name="multimers")
+
+elif "pisa" in sys.argv:
+        structures = StructureDataset.from_list("./data/cath-dataset-nonredundant-S20.multimeric.list", name="pisa")
+        structures.add_list("./data/cath-dataset-nonredundant-S20.multimeric.list")
+
 elif "receptors" in sys.argv:
-    if not "--no-download" in sys.argv:
-        DATA_FOLDER = downloadPDBlist("./data", "receptors",
-                                      file_path="./data/receptors.txt",
-                                      file_format="cif",
-                                      overwrite=False)
-    else:
-        DATA_FOLDER = "./data/receptors"
-    DATA_NAME = "receptors"
+    structures = StructureDataset.from_list("./data/receptors.list", name="receptors")
+
 elif "lbds" in sys.argv:
-    if not "--no-download" in sys.argv:
-        DATA_FOLDER = downloadPDBlist("./data", "lbds",
-                                      file_path="./data/LBDs.txt",
-                                      file_format="cif",
-                                      overwrite=False)
-    else:
-        DATA_FOLDER = "./data/lbds"
-    DATA_NAME = "lbds"
+    structures = StructureDataset.from_list("./data/lbds.list", name="lbds")
+
 
 elif "consensus" in sys.argv:
-    if not "--no-download" in sys.argv:
-        DATA_FOLDER = downloadPDBlist("./data", "consensus",
-                                      file_path="./data/consensus.txt",
-                                      file_format="cif",
-                                      overwrite=False)
-    else:
-        DATA_FOLDER = "./data/consensus"
-    DATA_NAME = "consensus"
-else:
-    DATA_FOLDER = downloadPDBlist(list_name="aleph", pdb_list=["1M2Z", "3HBB", "6F63", "5LXN", "3brf", "6e52", "7t2y", "3kg2", "2GEJ", "2bis"], data_dir="./data")
-    DATA_NAME = "aleph"
+    structures = StructureDataset.from_list("./data/consensus.list", name="consensus")
 
+else:
+    structures = StructureDataset.from_list(["1M2Z", "3HBB", "6F63", "5LXN", "3brf", "6e52", "7t2y", "3kg2", "2GEJ", "2bis"], name="aleph")
+
+
+DATA_FOLDER = structures.folder
+DATA_NAME = structures.name
+
+log(1, "DATA_NAME:", DATA_NAME)
+log(1, "DATA_FOLDER:", DATA_FOLDER)
 
 FORCE = "--force" in sys.argv or "-f" in sys.argv
 REBUILD = "--rebuild" in sys.argv or "-r" in sys.argv
@@ -121,8 +109,8 @@ if "-p" not in sys.argv:
             bl.write("BLACK.list\n")
 
 
-    file_list = os.listdir(DATA_FOLDER)
-    total_files = len(file_list) - 1
+    file_list = structures.paths()
+    total_files = len(structures) - 1
     if not FORCE:
         log(1, "BLACKLIST:", BLACKLIST)
         file_list = [fl for fl in file_list if fl not in BLACKLIST]
@@ -131,16 +119,15 @@ if "-p" not in sys.argv:
     if len(dataset) == 0:
         pool = None
         if "--thread" not in sys.argv:
-            parts = [os.listdir(DATA_FOLDER)]
+            parts = [structures]
         else:
-            parts = split_iterable(os.listdir(DATA_FOLDER), n_parts="half")
+            parts = split_iterable(structures, n_parts="half")
             pool = ThreadPool()
 
-        def generate_embeddings(file_list=None):
-            log("header", f"Generating embeddings... ({len(file_list)})")
-            for n, file in enumerate(file_list):
-                if file == "BLACK.list":
-                    continue
+        def generate_embeddings(struc_list=None):
+            log("header", f"Generating embeddings... ({len(struc_list)})")
+            for n, struc in enumerate(struc_list):
+                file = os.path.basename(struc.path)
 
                 log("header", f"{dataset.n_ids()+1:4d}/{total_files:4d} ({file.split('.')[0]}) ({EMBEDDING_CLASS.__name__})")
                 log("title", f"{dataset.n_ids()+1:3d}/{total_files:3d} ({EMBEDDING_CLASS.__name__})")
@@ -150,7 +137,7 @@ if "-p" not in sys.argv:
                     continue
 
 
-                path = os.path.join(DATA_FOLDER, file)
+                path = struc.path
                 try:
                     entity = FragmentedStructure.from_file(path, no_atoms=True)
                 except Exception as e:
@@ -428,7 +415,7 @@ if "-p" in sys.argv:
         dd = EmbeddingDataset(name = prediction_name, folder=prediction_folder)
         dd.add(embedding)
         print(embedding)
-        
+
         entity = embedding.entity
         print(entity)
         residues = entity.residues()

@@ -1,7 +1,11 @@
-import os, sys, shutil, json
-from .logging import log
-from .. import WD
+import os, sys, shutil, json, requests
 
+from . import string_to_list, clean_string
+from .logging import log
+from .. import WD, SUBDIR_NAME, TEMP_FOLDER
+
+rcsb_pdb_url = "https://files.rcsb.org/download/{}.pdb"
+rcsb_cif_url = "https://files.rcsb.org/download/{}.cif"
 
 
 def relative_path(path, relative_to=None):
@@ -19,6 +23,178 @@ def relative_path(path, relative_to=None):
 
 
 
+class StructureDataset(object):
+    def __init__(self, name="dataset", folder=None):
+        self.data = {}
+        self.name = name
+        log(1, "Initialising dataset:", self.name)
 
+        if folder is None:
+            folder = os.path.join(SUBDIR_NAME, "data", name)
+        self.folder = folder
+        os.makedirs(self.folder, exist_ok=True)
+
+    class Entry(object):
+        def __init__(self, data):
+            self.code = data.get("code", "XXXX")
+            self.name = data.get("name", None)
+            self.path = data.get("path", None)
+            self.url = data.get("url", None)
+            self.source = data.get("source", None)
+            self.extension = data.get("extension", None)
+
+
+        def __repr__(self):
+            return f"<bi.{super().__class__.__name__}.{self.__class__.__name__}: {self.code} ({self.name}) at {self.path if self.path is not None else self.url} from {self.source}>"
+
+    def codes(self):
+        return list(self.data.keys())
+
+    def urls(self):
+        return [e.get("url", None) for e in self.data.values()]
+
+    def paths(self):
+        return [e.get("path", None) for e in self.data.values()]
+
+    def __repr__(self):
+        return f"<bi.{self.__class__.__name__}: {self.name} N={len(self)}>"
+
+    def __getitem__(self, item):
+        return self.Entry(self.data[self.codes()[self.i]])
+
+    def __len__(self):
+        return len(self.data)
+
+    def __iter__(self):
+        self.i = 0
+        return self
+
+    def __next__(self):
+        if self.i < len(self):
+            return self[self.i]
+        else:
+            raise StopIteration
+
+    def add(self, code, name=None, path=None, url=None, source="manual", extension="cif", replace=True):
+        if code in self.codes():
+            if replace:
+                log("warning", f"Replacing entry {code} in dataset: {self}")
+            else:
+                log("warning", f"Ignoring entry {code}, already in dataset: {self}")
+                return self
+
+        self.data[code] = {
+            "code": code,
+            "name": name,
+            "path": path,
+            "url": url,
+            "source": source,
+            "extension": extension,
+        }
+        return self
+
+    def add_dir(self, folder, exclude:str|list|None=None, replace=True, allowed_extensions=("cif", "pdb")):
+        log(2, f"Adding directory files: {folder} to {self}")
+        if exclude is None:
+            exclude = []
+        elif type(exclude) is str:
+            exclude = [exclude]
+        counter = 0
+        for file in os.listdir(folder):
+            if file in exclude:
+                continue
+            extension = file.split(".")[-1]
+            if extension not in allowed_extensions:
+                continue
+            code = file.split(".")[0]
+            name = code
+            path = relative_path(os.path.join(folder, file))
+            self.add(code, name=name, path=path, url=None, source="dir", extension=extension, replace=replace)
+            counter += 1
+        log(2, f"Added {counter} files to {self}")
+
+        return self
+
+    @classmethod
+    def from_dir(cls, folder, name=None, exclude:str|list|None=None, replace=True):
+        if name is None:
+            name = os.path.dirname(os.path.abspath(folder))
+        self = cls(name=name)
+        self.add_dir(folder, exclude=exclude, replace=replace)
+        return self
+
+
+    def add_list(self, file_or_list:str|list, download_as="cif", base_url=None, force=False, replace=True):
+        log(2, f"Adding list: {file_or_list} to {self}")
+        pdb_links = []
+        pdbs_to_download = []
+        if type(file_or_list) is list:
+            pdbs_to_download = file_or_list
+        else:
+            file_path = file_or_list
+            with open(file_path) as f:
+                for line in f:
+                    line = line.split("#")[0]
+                    new = string_to_list(line, delimiter=",")
+                    for n in new:
+                        if "http" in n:
+                            pdb_links.append(n)
+                        else:
+                            n = clean_string(n.split(".")[0])
+                            pdbs_to_download.append(n.upper())
+
+        if base_url is None:
+            if download_as.lower() == "pdb":
+                base_url = rcsb_pdb_url
+            elif download_as.lower() == "cif":
+                base_url = rcsb_cif_url
+        url_file = os.path.join(TEMP_FOLDER, "urls")
+        os.makedirs(url_file, exist_ok=True)
+        url_file = os.path.join(url_file, f"{self.name}.url.list")
+        with open(url_file, "w") as f:
+            for url in pdb_links:
+                f.write(url+"\n")
+            for code in pdbs_to_download:
+                url = base_url.format(code)
+                f.write(url+"\n")
+
+        with open(url_file) as lf:
+            counter = 0
+            failed_counter = 0
+            skipped_counter = 0
+            for line in lf:
+                line = line.replace("\n", "")
+                f_name = line.split("/")[-1]
+                f_path = os.path.join(self.folder, f_name)
+                code = f_name.split(".")[0]
+                extension = f_name.split(".")[-1]
+                if not os.path.exists(f_path) or force:
+                    url = line
+                    log(3, f"Downloading {url}...", end="\r")
+                    response = requests.get(url)
+                    if response.status_code != 200:
+                        log("Error", "Failed to download from:", line)
+                        failed_counter += 1
+                    else:
+                        with open(f_path, "w") as f:
+                            f.write(response.text)
+                        counter += 1
+                else:
+                    skipped_counter += 1
+                self.add(code, name=code, path=f_path, url=url, source="downloaded", extension=extension, replace=replace)
+        print()
+        log(2, f"{counter} files downloaded, {failed_counter} failed, {skipped_counter} skipped")
+        return self
+
+    @classmethod
+    def from_list(cls, file_or_list:str|list, name=None, download_as="cif", base_url=None, force=False, replace=True):
+        if name is None:
+            if type(file_or_list) is list:
+                name = "pdb_list"
+            elif type(file_or_list) is str:
+                name = os.path.basename(file_or_list).split(".")[0]
+        self = cls(name=name)
+        self.add_list(file_or_list, download_as=download_as, base_url=base_url, force=force, replace=replace)
+        return self
 
 
