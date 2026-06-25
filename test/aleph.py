@@ -76,8 +76,7 @@ log(1, "DATA NAME:", DATA_NAME)
 
 if "-p" not in sys.argv:
 
-    log("start", "Embeddings")
-    log("title", "Embeddings")
+
 
     LR = 0.0001
     if "--lr" in sys.argv:
@@ -89,6 +88,10 @@ if "-p" not in sys.argv:
         MODEL_NAME = sys.argv[sys.argv.index("--model") + 1]
     MODEL_CLASS = getattr(models, MODEL_NAME)
     log(1, f"Model: {MODEL_CLASS}")
+
+
+    log("start", "Embeddings")
+    log("title", "Embeddings")
 
     DATASET_NAME = f"DATASET_{DATA_NAME}"
     dataset = EmbeddingDataset(name=DATASET_NAME)
@@ -110,10 +113,10 @@ if "-p" not in sys.argv:
 
 
     file_list = structures.paths()
-    total_files = len(structures) - 1
+    total_files = len(structures)
     if not FORCE:
         log(1, "BLACKLIST:", BLACKLIST)
-        file_list = [fl for fl in file_list if fl not in BLACKLIST]
+        file_list = [os.path.basename(fl) for fl in file_list if fl not in BLACKLIST]
         total_files = len(file_list)
 
     if len(dataset) == 0:
@@ -126,11 +129,14 @@ if "-p" not in sys.argv:
 
         def generate_embeddings(struc_list=None):
             log("header", f"Generating embeddings... ({len(struc_list)})")
+            #print(struc_list)
             for n, struc in enumerate(struc_list):
+                #print(struc.__dict__)
                 file = os.path.basename(struc.path)
+                #print(file)
 
-                log("header", f"{dataset.n_ids()+1:4d}/{total_files:4d} ({file.split('.')[0]}) ({EMBEDDING_CLASS.__name__})")
-                log("title", f"{dataset.n_ids()+1:3d}/{total_files:3d} ({EMBEDDING_CLASS.__name__})")
+                log("header", f"{n+1:4d}/{total_files:4d} ({file.split('.')[0]}) ({EMBEDDING_CLASS.__name__})")
+                log("title", f"{n+1:3d}/{total_files:3d} ({EMBEDDING_CLASS.__name__})")
 
                 if file in BLACKLIST and not FORCE:
                     log("warning", f"File in blacklist: {file}")
@@ -138,6 +144,7 @@ if "-p" not in sys.argv:
 
 
                 path = struc.path
+                #print(path)
                 try:
                     entity = FragmentedStructure.from_file(path, no_atoms=True)
                 except Exception as e:
@@ -167,6 +174,7 @@ if "-p" not in sys.argv:
                         entity.db(force=True)
                     except SequenceNotFound:
                         log("Warning", "Entity has no sequence!")
+                        raise
                         with open(blacklist_file, "a") as f:
                             f.write(f"{file}:No sequence\n")
                         continue

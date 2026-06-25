@@ -9,7 +9,7 @@ class BIEntity(object):
     extension = "structure"
     level = "structure"
     tmp_folder = "/tmp"
-    excluded_from_headers = ["_bi_*", "_atom_site", "_aleph_*","_cell", "_symmetry"]
+    excluded_from_headers = ["_bi_*", "_atom_site", "_aleph_*","_cell", "_symmetry","_entry"]
 
     def __init__(self, export_folder=None, parent=None, use_tmp=False, **kwargs):
         if export_folder is None:
@@ -148,9 +148,9 @@ class BIEntity(object):
     def id(self):
         return str(self.data["info"]["code"])
 
-    def get_sequence(self, name= None):
+    def get_sequence(self, name=None):
         if name is None:
-            name = "aa"
+            return self.sequence()
         return self.data["sequences"].get(name, None)
 
     def set_sequence(self, name, seq):
@@ -167,10 +167,10 @@ class BIEntity(object):
         self.flags[flag] = value
 
     def sequence(self, force=False):
-        if self.get_sequence() is None or force:
+        if self.get_sequence("aa") is None or force:
             seq = "".join([r.rn1 for r in self.residues()])
             self.data["sequences"]["aa"] = seq
-        return self.get_sequence()
+        return self.get_sequence("aa")
 
     def structure(self, code=None):
         from .structure import BIStructure
@@ -632,7 +632,7 @@ class BIEntity(object):
             if not os.path.exists(path):
                 raise StructureNotFound(path)
             for file in os.listdir(path):
-                ext = file.split(".")[-1] 
+                ext = file.split(".")[-1]
                 if ext != "json":
                     continue
                 extension= file.split(".")[-2]
@@ -656,6 +656,7 @@ class BIEntity(object):
             return fasta_path
         seq = self.get_sequence(name=seq_name)
         if seq is None:
+            log("Warning", f"Sequence {seq_name} not found")
             raise SequenceNotFound()
         with open(fasta_path, "w") as f:
             f.write(f"> {self.name()}\n")

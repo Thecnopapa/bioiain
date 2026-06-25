@@ -270,7 +270,7 @@ def send_tensorboard_run(host, folder, run, file, key, epoch=0, protocol="https"
 
 
 def tracemalloc_start():
-    log(1, f"Starting tracemalloc")
+    log("header", f"Starting tracemalloc")
     import tracemalloc
     tracemalloc.start()
 

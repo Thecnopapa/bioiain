@@ -1,8 +1,10 @@
 import os, sys, shutil, json, requests
+from io import TextIOWrapper
 
 from . import string_to_list, clean_string
 from .logging import log
 from .. import WD, SUBDIR_NAME, TEMP_FOLDER
+from itertools import accumulate
 
 rcsb_pdb_url = "https://files.rcsb.org/download/{}.pdb"
 rcsb_cif_url = "https://files.rcsb.org/download/{}.cif"
@@ -35,17 +37,18 @@ class StructureDataset(object):
         os.makedirs(self.folder, exist_ok=True)
 
     class Entry(object):
-        def __init__(self, data):
+        def __init__(self, data, dataset):
             self.code = data.get("code", "XXXX")
             self.name = data.get("name", None)
             self.path = data.get("path", None)
             self.url = data.get("url", None)
             self.source = data.get("source", None)
             self.extension = data.get("extension", None)
+            self.dataset = dataset
 
 
         def __repr__(self):
-            return f"<bi.{super().__class__.__name__}.{self.__class__.__name__}: {self.code} ({self.name}) at {self.path if self.path is not None else self.url} from {self.source}>"
+            return f"<bi.{self.dataset.__class__.__name__}.{self.__class__.__name__}: {self.code} ({self.name}) at {self.path if self.path is not None else self.url} from {self.source}>"
 
     def codes(self):
         return list(self.data.keys())
@@ -60,7 +63,7 @@ class StructureDataset(object):
         return f"<bi.{self.__class__.__name__}: {self.name} N={len(self)}>"
 
     def __getitem__(self, item):
-        return self.Entry(self.data[self.codes()[self.i]])
+        return self.Entry(self.data[self.codes()[self.i]], dataset=self)
 
     def __len__(self):
         return len(self.data)
@@ -71,7 +74,8 @@ class StructureDataset(object):
 
     def __next__(self):
         if self.i < len(self):
-            return self[self.i]
+            self.i += 1
+            return self[self.i-1]
         else:
             raise StopIteration
 
@@ -128,20 +132,28 @@ class StructureDataset(object):
         log(2, f"Adding list: {file_or_list} to {self}")
         pdb_links = []
         pdbs_to_download = []
+        pdb_paths = []
         if type(file_or_list) is list:
-            pdbs_to_download = file_or_list
+            f = sorted(file_or_list)
         else:
-            file_path = file_or_list
-            with open(file_path) as f:
-                for line in f:
-                    line = line.split("#")[0]
-                    new = string_to_list(line, delimiter=",")
-                    for n in new:
-                        if "http" in n:
-                            pdb_links.append(n)
-                        else:
-                            n = clean_string(n.split(".")[0])
-                            pdbs_to_download.append(n.upper())
+            f = open(file_or_list)
+
+        for line in f:
+            line = line.split("#")[0].replace("\n", "")
+            new = string_to_list(line, delimiter=",")
+
+            for n in new:
+                if n.strip == "":
+                    continue
+                if "http" in n:
+                    pdb_links.append(n)
+                elif os.path.exists(n):
+                    pdb_paths.append(n)
+                else:
+                    n = clean_string(n.split(".")[0])
+                    pdbs_to_download.append(n.upper())
+        if type(f) is TextIOWrapper:
+            f.close()
 
         if base_url is None:
             if download_as.lower() == "pdb":
@@ -152,9 +164,9 @@ class StructureDataset(object):
         os.makedirs(url_file, exist_ok=True)
         url_file = os.path.join(url_file, f"{self.name}.url.list")
         with open(url_file, "w") as f:
-            for url in pdb_links:
+            for url in sorted(pdb_links):
                 f.write(url+"\n")
-            for code in pdbs_to_download:
+            for code in sorted(pdbs_to_download):
                 url = base_url.format(code)
                 f.write(url+"\n")
 
@@ -168,8 +180,8 @@ class StructureDataset(object):
                 f_path = os.path.join(self.folder, f_name)
                 code = f_name.split(".")[0]
                 extension = f_name.split(".")[-1]
+                url = line
                 if not os.path.exists(f_path) or force:
-                    url = line
                     log(3, f"Downloading {url}...", end="\r")
                     response = requests.get(url)
                     if response.status_code != 200:
@@ -181,9 +193,13 @@ class StructureDataset(object):
                         counter += 1
                 else:
                     skipped_counter += 1
-                self.add(code, name=code, path=f_path, url=url, source="downloaded", extension=extension, replace=replace)
+                self.add(code, name=code, path=f_path, url=url, source="list_downloaded", extension=extension, replace=replace)
         print()
         log(2, f"{counter} files downloaded, {failed_counter} failed, {skipped_counter} skipped")
+        for path in pdb_paths:
+            code = os.path.basename(path.split(".")[0])
+            extension = f_name.split(".")[-1]
+            self.add(code, name=code, path=path, url=None, source="list_path", extension=extension, replace=replace)
         return self
 
     @classmethod
