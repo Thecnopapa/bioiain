@@ -225,6 +225,8 @@ checkout(){
 
 # PROJECT SPECIFIC AFTER THIS
 
+cd test
+
 testing(){
   cd $FOLDER_PATH/test && python test.py "$@"
 }

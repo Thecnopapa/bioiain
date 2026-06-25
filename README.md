@@ -17,10 +17,32 @@ Can be downloaded from the [PiPy repository](https://pypi.org/project/bioiain/) 
 
 `pip install bioiain`
 
+`pip install bioiain[ml]` for machine learning dependencies (pytorch).
+
+`pip isntall bioiain[aleph]` to use ALEPH dependant functions.
+
+> [!NOTE]
+> `pip install bioiain[ml,aleph]` will install all dependencies at once.
+
+> [!WARNING]
+> Some dependencies must be installed through conda and are not automatically installed.
+> Although not needed for most modules, the can be installed through the following commands as needed:
+> 
+> `conda install -c conda-forge pymol-open-source` (>=2.5.0 tested)
+> 
+> `conda install -c bioconda clustalw` (==2.1 tested)
+> 
+> `conda install -c bioconda mmseqs2`
+> 
+> `conda install -c bioconda foldseek` (>=8 tested)
+
+
 If you were to use this and find any issue I'll be happy to fix it :D
 
 
 # INFO
+
+Module wiki can be found at [wiki.bioiain.com](https://wiki.bioiain.com) .
 
 Relevant python code can be found in the `src` folder within their relevant folders.
 The `test` is for development use, and it's contents will be **probably** deleted/modified at some point, and are not included in the package.
