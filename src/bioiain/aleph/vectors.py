@@ -30,7 +30,8 @@ class CVector(object):
         self.vc_mode = vc_mode
         self.vc = None
 
-        self.ss = None
+        self.ss1 = None
+        self.ss2 = None
 
         self.d = None
         self.v = None
@@ -49,6 +50,10 @@ class CVector(object):
         self.symops = symops
         self.entity_centre = entity_centre
 
+
+        # ALEPH calcluations
+        self._unified_score=None
+
         self.calculate()
 
     def full_id(self):
@@ -62,7 +67,7 @@ class CVector(object):
             resseq=f"{self.resseq:3d}",
             resname=f"{self.resname:3s}",
             resnum=f"{self.resnum:3d}",
-            ss=f"{self.ss:2s}" if self.ss is not None else ". ",
+            ss=f"{self.ss():2s}" if self.ss is not None else ". ",
             d=f"{self.d:8.3f}",
             start_x=f"{self.start.coord[0]:8.3f}", start_y=f"{self.start.coord[1]:8.3f}", start_z=f"{self.start.coord[2]:8.3f}",
             end_x=f"{self.end.coord[0]:8.3f}", end_y=f"{self.end.coord[1]:8.3f}", end_z=f"{self.end.coord[2]:8.3f}",
@@ -122,10 +127,17 @@ class CVector(object):
             self.is_gap = True
             self.trash = True
 
-        self.ss = self._calculate_ss()
+        self.ss1 = self._calculate_ss()
 
 
         return self
+
+    def ss(self):
+        if self.ss2 is not None:
+            return self.ss2
+        if self.ss1 is not None:
+            return self.ss1
+        return self._calculate_ss()
 
 
     def _calculate_ss(self, delta_cvla = 0.2, delta_cvlb = 0.05):

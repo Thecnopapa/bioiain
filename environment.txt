@@ -3,7 +3,7 @@
 
 
 # Critical ############################################################
-numpy >= 2.4.2
+numpy
 polars
 matplotlib >= 3.10.8
 scikit-learn >= 1.8.0
@@ -26,6 +26,7 @@ tensorboard
 
 
 # ALEPH ###############################################################
+numpy >= 2.4.2
 biopython >= 1.86
 future
 termcolor

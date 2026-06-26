@@ -82,6 +82,7 @@ ml = [
     "tensorboard"
 ]
 aleph = [
+    "numpy >= 2.4.2",
     "future",
     "termcolor",
     "igraph",

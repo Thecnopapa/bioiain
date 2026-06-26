@@ -79,7 +79,7 @@ class BIEntity(object):
 
         if parent is not None:
             self.paths["export_folder"] = parent.paths["export_folder"].strip()
-            self.paths["parent"] = parent.paths["self"].strip()
+            self.paths["parent"] = parent.paths["self"]
             self.data["info"]["parent"] = repr(parent)
             self.headers = parent.headers
 
@@ -792,7 +792,7 @@ class BIEntity(object):
         self._parameters = parameters
         return self._parameters
 
-    def fragment(self, in_place=False, force=False):
+    def fragment(self, in_place=False, force=False, aleph_mode="original"):
         from ..aleph.fragments import FragmentedStructure
         if isinstance(self, FragmentedStructure):
             if not in_place:
@@ -800,7 +800,7 @@ class BIEntity(object):
             else:
                 frag = self
         else:
-            frag = FragmentedStructure.from_atoms(self.all_atoms(), parent=self, share=in_place, export_folder=self.paths["export_folder"])
+            frag = FragmentedStructure.from_atoms(self.all_atoms(), parent=self, share=in_place, export_folder=self.paths["export_folder"], aleph_mode=aleph_mode)
 
 
         frag.fragments(force=force)
