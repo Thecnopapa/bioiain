@@ -178,23 +178,23 @@ class BIEntity(object):
             code = str(self.data["info"]["code"])
         return BIStructure.from_atoms(self._atoms, code, parent=self)
 
-    def chains(self):
-        return self.atoms(as_chains=True, hetatm=True)
+    def chains(self, **kwargs):
+        return self.atoms(as_chains=True, hetatm=True, **kwargs)
 
-    def residues(self):
-        return self.atoms(ca_only=False, residues=True)
+    def residues(self, **kwargs):
+        return self.atoms(ca_only=False, residues=True, **kwargs)
 
-    def waters(self):
-        return self.atoms(ca_only=False, water=True)
+    def waters(self, **kwargs):
+        return self.atoms(ca_only=False, water=True, **kwargs)
 
-    def dna(self):
-        return self.atoms(ca_only=False, dna=True)
+    def dna(self, **kwargs):
+        return self.atoms(ca_only=False, dna=True, **kwargs)
 
-    def ligands(self, relevant_only=True):
-        return [l for l in self.atoms(ca_only=False, ligands=True) if l.relevant]
+    def ligands(self, relevant_only=True, **kwargs):
+        return [l for l in self.atoms(ca_only=False, ligands=True, **kwargs) if l.relevant]
 
-    def cvectors(self, vc_mode=None, return_missing=False):
-        if self._cvectors is None or vc_mode != getattr(self, "_vc_mode", None):
+    def cvectors(self, vc_mode=None, return_missing=False, force=False):
+        if self._cvectors is None or (vc_mode != getattr(self, "_vc_mode", None)) or force:
             self._calculate_cvectors(vc_mode=vc_mode)
         else:
             log(1, f"Using previously saved CVectors ({vc_mode})...")
@@ -205,7 +205,7 @@ class BIEntity(object):
     def _calculate_cvectors(self, vc_mode=None):
         log(1, "Calculating CVectors for:", self.name(), f"({vc_mode})")
         from ..aleph.vectors import CVector
-        residues = self.residues()
+        residues = self.residues(hetatm=True)
         n_res = len(residues)
         cvector_list = []
         missing_cvectors = []
@@ -217,13 +217,15 @@ class BIEntity(object):
             cvector = CVector(residues[n-1], res, residues[n+1], params=self.params(), symops=self.symops(), entity_centre=self.com(), vc_mode=vc_mode)
             if cvector.trash:
                 missing_cvectors.append(n)
+                print()
+                print(cvector)
                 continue
             cvector_list.append(cvector)
-        log(2, f"n CVectors: {len(cvector_list)}")
+        log(2, f"n CVectors: {len(cvector_list)}, trash={len(missing_cvectors)} ")
         self._missing_cvectors = missing_cvectors
         self._cvectors = cvector_list
         self._vc_mode = vc_mode
-        return cvector_list
+        return self._cvectors
 
 
     def atoms(self, ca_only=False, hetatm=False, ligands=False, residues=False, dna=False, water=False, hydrogens=False, force=False, group_by_residue=False, disordered=False, as_residues=False, chain=None, group_by_chain=False, as_chains=False, **kwargs):
@@ -490,7 +492,7 @@ class BIEntity(object):
 
     def fix_headers(self):
         if self.headers["symmetry"].get("space_group_name_H-M", None) is not None:
-            self.headers["symmetry"]["space_group_name_H-M"] = f"\'{self.headers["symmetry"]["space_group_name_H-M"]}\'"
+            self.headers["symmetry"]["space_group_name_H-M"] = f"\'{self.headers['symmetry']['space_group_name_H-M']}\'"
 
 
     def export(self, minimal=False, cleanup=False, as_pdb=False, target_folder=None, sufix=None, dry=False, all_headers=True, cvmatrix=True, cvectors=True):
@@ -925,26 +927,3 @@ class BIEntity(object):
     def _calculate_pisa(self, **kwargs):
         from ..tools.PISA import PISA
         pisa = PISA(pisa_id=self.name(), **kwargs)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

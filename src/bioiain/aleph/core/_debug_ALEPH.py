@@ -1573,7 +1573,7 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
 
     print(cvs_list[0]) # [n, len, (start), (end), (res1, res2, res3)
     a = [[lis[1], get_ss_from_cvl(lis[1]), lis[4], lis[0]] for lis in cvs_list] # [len, ss, (res1, res2, res3), n]
-    print(a[0])
+    [print(aa) for aa in a[0:5]]
 
     dimap = {value[0]: i for (i, value) in enumerate(cvs_list)}
     print("dimap")
@@ -1589,13 +1589,13 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
 
     def __check_by_unified_score_step2(uno, due, dizio3d, take_first=True, validate=["bs", "coil"], min_num_bs=1.0):
         ###value1 = compute_instruction(cvs_list[dimap[uno[3]]], cvs_list[dimap[due[3]]])
-        print("uno")
-        print(uno) # res id
+        #print("uno")
+        #print(uno) # res id
         sup = tuple(sorted([dimap[uno[3]], dimap[due[3]]]))
         print(sup)
         value1 = matrix[sup]
         print(value1) # [?, cv1.d, cv2.d, CA-CA-dist, ???]
-        print(value1[0])
+        #print(value1[0])
         if value1[0] != 1:
             return uno, due, True
 
@@ -1642,8 +1642,6 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
                 ###print("UNO: NUMLINKS BS",len(listuno))
 
 
-            print("@@@@")
-            print(uno)
             if len(uno) == 4:
                 uno.append(numpy.abs(alpha_score_uno - beta_score_uno))
             else:
@@ -1659,7 +1657,6 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
                 uno[1] = "coil"
             else:
                 uno[1] = "coil"
-            print("@@@@")
             #if uno[3] == 134:
             #    print("ANNOTATION UNO IS:",uno)
 
@@ -2347,12 +2344,24 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
         #     print(abs(matrix[tuple(sorted([dimap[zenne[3]], dimap[z[p - 2][3]]]))][2] - angle_mean_bs))
         # print("==========================")
         # Checking if the current enne is annotated as ah or bs and if it exists a previous cv at p-3 with the same annotation
+        print("Checking impossible angle...")
+        print("ENNE", enne)
+        print("ZENNE", zenne)
+        if p - 3 >= 0:
+            print("###")
+            print(matrix[tuple(sorted([dimap[enne[3]], dimap[z[p - 3][3]]]))])
+            print(matrix[tuple(sorted([dimap[enne[3]], dimap[z[p - 3][3]]]))][2])
+            print(matrix[tuple(sorted([dimap[enne[3]], dimap[z[p - 3][3]]]))][3])
+
+
+            exit()
         if enne[1] in ["ah", "bs"] and p - 3 >= 0 and z[p - 3][1] == enne[1]:
             # checking if the two CV are representing two tripetides continous but not overlapping
             resaN = Bioinformatics.get_residue(strucc, enne[2][0][1], enne[2][0][2], enne[2][0][3])
             prevResC = Bioinformatics.get_residue(strucc, z[p - 3][2][-1][1], z[p - 3][2][-1][2], z[p - 3][2][-1][3])
             if Bioinformatics.check_continuity(resaN, prevResC):
                 # checking if their angle is not too far away from the standard mean of the annotation
+
                 if (enne[1] == "bs" and abs(
                         matrix[tuple(sorted([dimap[enne[3]], dimap[z[p - 3][3]]]))][2] - angle_mean_bs) > 50) \
                         or (enne[1] == "ah" and abs(
@@ -2393,23 +2402,14 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
         return z
 
     z = [0 for y in range(len(a))] # [0]*len(a)
+    print(z)
     tf = True
     for p in range(len(a) - 1):
-        print(">>>")
-        print(p)
-        print(a[p])
-        print(a[p+1])
         enne, zenne, tf = __check_by_unified_score_step2(a[p], a[p + 1], None, take_first=tf)
-        print("enne")
-        print(enne)
-        print("zenne")
-        print(zenne)
         z = __check_impossible_angle(z, p, a, enne, zenne, cvs_list, dimap, matrix, angle_mean_bs, angle_mean_ah, strucc)
-        print("<<<")
 
-        exit()
     a = z
-    print(a[0])
+    print(a)
     exit()
 
     text = ""

@@ -9,28 +9,32 @@ from ..utilities import d3to1
 
 
 def build_res(atoms, ignore_errors=True, **kwargs):
-    for a in atoms:
-        try:
-            if a.type == "HETATM":
-                if a.resname == "HOH":
-                    return Water(atoms, **kwargs)
-                else:
-                    return Ligand(atoms, **kwargs)
-            elif a.type == "ATOM":
-                if len(a.resname) < 3:
-                    return BINucleoutide(atoms, **kwargs)
-                else:
-                    return BIResidue(atoms, **kwargs)
-            else:
-                log("warning", "No matching class for atom:", a)
-                raise NoMatchingClass()
-        except (NoCaFound, NoBackbone, NotImplementedError) as e:
-            log("warning", str(e))
-            if ignore_errors:
-                return None
-            else:
-                raise
-    return None
+    try:
+        resnames = list(set([a.resname for a in atoms]))
+        if resnames == ["HOH"]:
+            return Water(atoms, **kwargs)
+
+        if max(len(r) for r in resnames) < 3:
+            return BINucleoutide(atoms, **kwargs)
+
+        atomnames = list(set([a.name for a in atoms]))
+        if "CA" in atomnames:
+            return BIResidue(atoms, **kwargs)
+
+        atomtypes = list(set([a.type for a in atoms]))
+        if atomtypes == ["HETATM"]:
+            return Ligand(atoms, **kwargs)
+
+        log("warning", "No matching class for atoms:")
+        [log("warning", a) for a in atoms]
+        raise NoMatchingClass()
+
+    except (NoCaFound, NoBackbone, NotImplementedError) as e:
+        log("warning", str(e))
+        if ignore_errors:
+            return None
+        else:
+            raise
 
 
 

@@ -122,10 +122,13 @@ class CVector(object):
         if len({self.res1.chain, self.res2.chain, self.res3.chain}) > 1:
             self.across_chains = True
             self.trash = True
+            log("Warning", "CV across chains")
 
         if abs(self.res1.resnum - self.res2.resnum) != 1 or abs(self.res2.resnum - self.res3.resnum) != 1:
             self.is_gap = True
             self.trash = True
+            log("Warning", "CV is gap:", self.res1.resnum, self.res2.resnum, self.res3.resnum)
+
 
         self.ss1 = self._calculate_ss()
 
@@ -459,10 +462,3 @@ class CVMatrix(object):
                 raise NoNeighboursFound()
 
         return self
-
-
-
-
-
-
-

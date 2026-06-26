@@ -279,8 +279,8 @@ class BIAtom(PseudoAtom):
             self.name2 = self.name2.replace("'", "").strip()
 
         #RES
-        self.resname = data["label_comp_id"] # Auto
-        self.resname2 = data["auth_comp_id"] # Given
+        self.resname = str(data["label_comp_id"]) # Auto
+        self.resname2 = str(data["auth_comp_id"]) # Given
         self.resseq = data["label_seq_id"] # Auto
         if self.resseq is not None: self.resseq = int(self.resseq)
         self.resnum = data["auth_seq_id"] # Given

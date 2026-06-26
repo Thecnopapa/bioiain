@@ -21,9 +21,8 @@ entity = BIEntity.from_file(os.path.join(".", "3sg0.cif"), export_folder="trash"
 print(entity)
 
 if "v2" in sys.argv:
-    from src.bioiain.aleph.ALEPH2 import ALEPH2
 
-    ALEPH2().calculate_secondary_structure(entity)
+    entity.fragment(aleph_mode="ALEPH2", in_place=True)
 elif "original" in  sys.argv:
     entity.fragment(in_place=True)
 else:
@@ -44,4 +43,3 @@ dataset = StructureDataset.from_list("./data/cath-dataset-nonredundant-S20.monom
 
 print(dataset)
 exit()
-
