@@ -26,13 +26,16 @@ def relative_path(path, relative_to=None):
 
 
 class StructureDataset(object):
-    def __init__(self, name="dataset", folder=None):
+    def __init__(self, name="dataset", folder=None, shared_source=True):
         self.data = {}
         self.name = name
         log(1, "Initialising dataset:", self.name)
 
         if folder is None:
-            folder = os.path.join(SUBDIR_NAME, "data", name)
+            if shared_source:
+                folder = os.path.join(SUBDIR_NAME, "data", "shared")
+            else:
+                folder = os.path.join(SUBDIR_NAME, "data", name)
         self.folder = folder
         os.makedirs(self.folder, exist_ok=True)
 
@@ -63,7 +66,7 @@ class StructureDataset(object):
         return f"<bi.{self.__class__.__name__}: {self.name} N={len(self)}>"
 
     def __getitem__(self, item):
-        return self.Entry(self.data[self.codes()[self.i]], dataset=self)
+        return self.Entry(self.data[self.codes()[item]], dataset=self)
 
     def __len__(self):
         return len(self.data)
@@ -177,7 +180,9 @@ class StructureDataset(object):
             for line in lf:
                 line = line.replace("\n", "")
                 f_name = line.split("/")[-1]
-                f_path = os.path.join(self.folder, f_name)
+                subfolder = os.path.join(self.folder, f_name[0])
+                os.makedirs(subfolder, exist_ok=True)
+                f_path = os.path.join(subfolder, f_name)
                 code = f_name.split(".")[0]
                 extension = f_name.split(".")[-1]
                 url = line

@@ -354,27 +354,27 @@ if "-t" in sys.argv and not ("-p" in sys.argv):
 if "--tokenise" in sys.argv or "-t" in sys.argv:
     log("start", "Tokenisation")
     log("title", "Tokenisation")
+    with torch.no_grad():
+        if model is None:
+            log("header", "Loading saved model...")
+            model_data_path = sys.argv[sys.argv.index("--md") + 1]
+            log(1, "Model path:", model_data_path)
+            data = json.load(open(model_data_path))
+            log(1, "Model class (data):", data.get("model"))
+            model_class = getattr(models, data.get("model"))
 
-    if model is None:
-        log("header", "Loading saved model...")
-        model_data_path = sys.argv[sys.argv.index("--md") + 1]
-        log(1, "Model path:", model_data_path)
-        data = json.load(open(model_data_path))
-        log(1, "Model class (data):", data.get("model"))
-        model_class = getattr(models, data.get("model"))
+            model = model_class(name="inference", in_shape=data.get("in_shape"), inference=True)
+            model.load(model_data_path)
+        else:
+            log("header", "Using loaded model...")
 
-        model = model_class(name="inference", in_shape=data.get("in_shape"), inference=True)
-        model.load(model_data_path)
-    else:
-        log("header", "Using loaded model...")
+        log(1, "Model:", model)
+        log(1, "Dataset:", dataset)
 
-    log(1, "Model:", model)
-    log(1, "Dataset:", dataset)
-
-    tok_fasta = model._tokenise(dataset)
-    matrix_path = model._build_blossum()
-    model._align_tokens(dataset, tok_fasta, matrix="path", matrix_path=matrix_path, force=True)
-    #model._align_tokens(dataset, tok_fasta)
+        tok_fasta = model._tokenise(dataset)
+        matrix_path = model._build_blossum()
+        model._align_tokens(dataset, tok_fasta, matrix="path", matrix_path=matrix_path, force=True)
+        #model._align_tokens(dataset, tok_fasta)
 
 
 

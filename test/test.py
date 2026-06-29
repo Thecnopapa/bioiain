@@ -8,14 +8,22 @@ from src.bioiain.utilities import *
 log("start", "test.py")
 
 
-
-
-
-
-
 from src.bioiain.utilities.logging import *
 from src.bioiain.base import *
 from compactness import *
+
+
+
+
+dataset = StructureDataset.from_list("./data/consensus.list")
+print(dataset)
+
+FoldseekDB(dataset.name, dataset, foldseek_command="/cri4/iain/bin/foldseek/bin/foldseek")
+
+exit()
+
+
+
 
 entity = BIEntity.from_file(os.path.join(".", "3sg0.cif"), export_folder="trash", force=True)
 print(entity)
@@ -38,8 +46,3 @@ exit()
 
 
 
-
-dataset = StructureDataset.from_list("./data/cath-dataset-nonredundant-S20.monomeric.list", name="monomers")
-
-print(dataset)
-exit()

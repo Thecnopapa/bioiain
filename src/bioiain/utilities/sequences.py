@@ -403,10 +403,6 @@ class MMSEQS2(MSA):
 
 
 
-
-
-
-
 class CLUSTAL(MSA):
     def __init__(self, *args, verbose=False, run_msa=True, build_tree=False, matrix_path=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -547,7 +543,6 @@ class CLUSTAL(MSA):
 
         log(3, f"Found {len(neighbours)} neighbours")
         return neighbours
-
 
 
 

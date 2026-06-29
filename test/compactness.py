@@ -1,4 +1,4 @@
-import os, sys, json
+import os, sys, json, subprocess
 
 sys.path.append('..')
 
@@ -11,6 +11,64 @@ from src.bioiain import log
 from src.bioiain.utilities import *
 from src.bioiain.utilities.maths import *
 from src.bioiain.utilities.kdtree import KDT
+from src.bioiain.utilities.files import StructureDataset
+
+
+
+
+
+
+class FoldseekDB(object):
+    def __init__(self,name, list_dir_or_dataset, folder=None, foldseek_command="foldseek", force=False):
+        self.foldseek_command = foldseek_command
+        if folder is None:
+            folder = os.path.join(SUBDIR_NAME, "foldseek")
+        self.folder = os.path.join(folder, name)
+        self.db_path = os.path.join(self.folder, name)
+        os.makedirs(self.folder, exist_ok=True)
+        self.name = name
+        self.list_dir_or_dataset = list_dir_or_dataset
+        self.create_db(force=force)
+        self.generate_tokens(force=force)
+
+    def create_db(self, force=False):
+        tsv_path = os.path.join(self.folder, f"{self.name}.list.tsv")
+        with open(tsv_path, "w") as f:
+            iterable = self.list_dir_or_dataset
+            if type(self.list_dir_or_dataset) is list:
+                iterable = self.list_dir_or_dataset
+            elif type(self.list_dir_or_dataset) is str:
+                assert os.path.exists(self.list_dir_or_dataset), f"Folder {self.list_dir_or_dataset} does not exist"
+                assert os.path.isdir(self.list_dir_or_dataset), f"{self.list_dir_or_dataset} is not a folder"
+                iterable = os.listdir(self.list_dir_or_dataset)
+            elif isinstance(self.list_dir_or_dataset, StructureDataset):
+                iterable = self.list_dir_or_dataset.paths()
+
+            for path in iterable:
+                line = path+"\n"
+                f.write(line)
+
+        cmd = [self.foldseek_command, "createdb", tsv_path, self.db_path, "-v", "3"]
+        print(" ".join(cmd))
+        subprocess.run(cmd)
+        return self.folder
+
+    def generate_tokens(self, force=False):
+        cmd = [self.foldseek_command, "lndb", self.db_path+"_h", self.db_path+"ss_h", "-v", "3"]
+        print(" ".join(cmd))
+        subprocess.run(cmd)
+        cmd = [self.foldseek_command, "createindex", self.db_path, os.path.join(TEMP_FOLDER, "foldseekk"), "-v", "3"]
+        print(" ".join(cmd))
+        subprocess.run(cmd)
+        cmd = [self.foldseek_command, "convert2fasta", self.db_path+"_ss", self.db_path+".tokens.fasta", "-v", "3"]
+        print(" ".join(cmd))
+        subprocess.run(cmd)
+        return self.folder
+
+
+
+
+
 
 
 
