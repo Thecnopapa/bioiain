@@ -5,6 +5,7 @@ from . import string_to_list, clean_string
 from .logging import log
 from .. import WD, SUBDIR_NAME, TEMP_FOLDER
 from itertools import accumulate
+from ..base import BIEntity
 
 rcsb_pdb_url = "https://files.rcsb.org/download/{}.pdb"
 rcsb_cif_url = "https://files.rcsb.org/download/{}.cif"
@@ -53,14 +54,23 @@ class StructureDataset(object):
         def __repr__(self):
             return f"<bi.{self.dataset.__class__.__name__}.{self.__class__.__name__}: {self.code} ({self.name}) at {self.path if self.path is not None else self.url} from {self.source}>"
 
-    def codes(self):
+    def codes(self) -> list:
         return list(self.data.keys())
 
-    def urls(self):
+    def urls(self) -> list:
         return [e.get("url", None) for e in self.data.values()]
 
-    def paths(self):
+    def paths(self) -> list:
         return [e.get("path", None) for e in self.data.values()]
+
+    def entities(self, entity_class=BIEntity, **kwargs):
+        for entry in self:
+            
+            entity = entity_class.from_file(entry.path, code=entry.name, **kwargs)
+
+            yield entity
+            
+
 
     def __repr__(self):
         return f"<bi.{self.__class__.__name__}: {self.name} N={len(self)}>"
@@ -81,6 +91,9 @@ class StructureDataset(object):
             return self[self.i-1]
         else:
             raise StopIteration
+
+    def get(self, code):
+        return self.data.get(code)
 
     def add(self, code, name=None, path=None, url=None, source="manual", extension="cif", replace=True):
         if code in self.codes():

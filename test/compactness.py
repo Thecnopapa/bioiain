@@ -12,6 +12,7 @@ from src.bioiain.utilities import *
 from src.bioiain.utilities.maths import *
 from src.bioiain.utilities.kdtree import KDT
 from src.bioiain.utilities.files import StructureDataset
+from src.bioiain.utilities.sequences import FASTA
 
 
 
@@ -28,8 +29,13 @@ class FoldseekDB(object):
         os.makedirs(self.folder, exist_ok=True)
         self.name = name
         self.list_dir_or_dataset = list_dir_or_dataset
+
+        self.token_fasta_path = None
+
+
         self.create_db(force=force)
         self.generate_tokens(force=force)
+
 
     def create_db(self, force=False):
         tsv_path = os.path.join(self.folder, f"{self.name}.list.tsv")
@@ -51,19 +57,26 @@ class FoldseekDB(object):
         cmd = [self.foldseek_command, "createdb", tsv_path, self.db_path, "-v", "3"]
         print(" ".join(cmd))
         subprocess.run(cmd)
-        return self.folder
+        return self
 
     def generate_tokens(self, force=False):
-        cmd = [self.foldseek_command, "lndb", self.db_path+"_h", self.db_path+"ss_h", "-v", "3"]
+        cmd = [self.foldseek_command, "lndb", self.db_path+"_h", self.db_path+"_ss_h", "-v", "3"]
         print(" ".join(cmd))
         subprocess.run(cmd)
-        cmd = [self.foldseek_command, "createindex", self.db_path, os.path.join(TEMP_FOLDER, "foldseekk"), "-v", "3"]
+        #cmd = [self.foldseek_command, "createindex", self.db_path, os.path.join(TEMP_FOLDER, "foldseekk"), "-v", "3"]
+        #print(" ".join(cmd))
+        #subprocess.run(cmd)
+        fasta_path = self.db_path+".tokens.fasta"
+        cmd = [self.foldseek_command, "convert2fasta", self.db_path+"_ss", fasta_path, "-v", "3"]
         print(" ".join(cmd))
         subprocess.run(cmd)
-        cmd = [self.foldseek_command, "convert2fasta", self.db_path+"_ss", self.db_path+".tokens.fasta", "-v", "3"]
-        print(" ".join(cmd))
-        subprocess.run(cmd)
-        return self.folder
+        self.token_fasta_path = fasta_path
+        return self
+
+    def tokens_fasta(self, force=False):
+        if self.token_fasta_path is None or force:
+            self.generate_tokens(force=force)
+        return FASTA(self.token_fasta_path)
 
 
 
