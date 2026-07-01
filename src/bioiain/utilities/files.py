@@ -40,6 +40,8 @@ class StructureDataset(object):
         self.folder = folder
         os.makedirs(self.folder, exist_ok=True)
 
+
+
     class Entry(object):
         def __init__(self, data, dataset):
             self.code = data.get("code", "XXXX")
@@ -53,6 +55,8 @@ class StructureDataset(object):
 
         def __repr__(self):
             return f"<bi.{self.dataset.__class__.__name__}.{self.__class__.__name__}: {self.code} ({self.name}) at {self.path if self.path is not None else self.url} from {self.source}>"
+
+
 
     def codes(self) -> list:
         return list(self.data.keys())
@@ -70,7 +74,11 @@ class StructureDataset(object):
 
             yield entity
             
+    def export(self, **kwargs):
+        [e.export() for e in self.entities(**kwargs)]
 
+    def load(self, **kwargs):
+        [e.atoms() for e in self.entities(**kwargs)]
 
     def __repr__(self):
         return f"<bi.{self.__class__.__name__}: {self.name} N={len(self)}>"

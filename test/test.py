@@ -16,6 +16,7 @@ from compactness import *
 
 
 dataset = StructureDataset.from_list("./data/consensus.list")
+dataset.load(entity_class=CompactStructure)
 print(dataset)
 
 #fs_cmd = "/cri4/iain/bin/foldseek/bin/foldseek"
@@ -23,28 +24,13 @@ fs_cmd="foldseek"
 
 fs = FoldseekDB(dataset.name, dataset, foldseek_command=fs_cmd)
 
-fs.prost5_derive()
-fs.prost5_derive(from_tokens=True)
+for data, tensor in fs.match_dataset(dataset, atoms=False, entity_class=CompactStructure):
+    print("DATA", data)
+    print("TENSOR", tensor[1])
+    print("ENTITY:", data["entity"])
 
 
-print("done")
-os.system('kill %d' % os.getpid())
-sys.exit()
-
-exit()
-print(fs.tokens_fasta().get_names())
-
-
-
-
-for entity in dataset.entities():
-    print(entity)
-    for chain in entity.chains():
-        print(chain.sequence())
-    print()
-
-
-
+print("DONE")
 exit()
 
 

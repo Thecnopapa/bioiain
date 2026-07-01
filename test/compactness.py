@@ -123,15 +123,19 @@ class FoldseekDB(object):
 
 
 
-    def match_dataset(self, dataset):
+    def match_dataset(self, dataset, saprot=True, atoms=True, entity_class=BIEntity):
 
-        fasta = self.tokens_fasta()
+
+        iterables = [self.tokens_fasta(), self.sequences_fasta()]
+        if saprot:
+            iterables.append(self.saprot_embeddings())
 
         entity = None
-        for name, t_seq in fasta.parse().items():
+        for (name, t_seq), (_, aa_seq), *data in zip(*iterables):
 
+            #print(name)
             name = name.split(" ")[0]
-            print(name.split("_"))
+            #print(name.split("_"))
             if len(name.split("_")) == 1:
                 code = name.split("_")[0]
                 chain = "*"
@@ -139,44 +143,46 @@ class FoldseekDB(object):
                 code, chain = name.split("_")
             else:
                 raise Exception(f"Unable to fetch name and code from {name}")
-            print(code, chain)
+            #print(code, chain)
             t_seq = t_seq[0]
-            print(code, chain, len(t_seq))
+            aa_seq = aa_seq[0]
+            #print(code, chain, len(t_seq), len(aa_seq))
                 
             try:
                 entry = dataset.get(code)
-                print(entry)
+                #print(entry)
 
                 try:
                     assert entity is not None
                     assert entity.code() == code
                 except:
-                    entity = BIEntity.from_file(entry["path"], code=code)
-                print(entity)
+                    entity = entity_class.from_file(entry["path"], code=code, no_atoms=not atoms)
+                #print(entity)
 
                 chains = entity.chains(chain)
                 for chain_entity in chains:
-                    print(chain, chain_entity, chain_entity.id(), chain_entity.complex())
+                    #print(chain, chain_entity, chain_entity.id(), chain_entity.complex())
+                    pass
                 assert len(chains) == 1
                 ch = chains[0]
 
-                print(len(ch.sequence()), len(t_seq))
-                print()
+                #print(len(ch.sequence()), len(t_seq))
+                #print()
             except:
                 yield {
                     "t_seq": t_seq,
-                    "error": true,
+                    "error": True,
                     "chain_id": chain,
-                }
+                }, *data
             yield {
                 "t_seq": t_seq,
-                "error": false,
+                "error": False,
                 "aa_seq": ch.sequence(),
                 "match_len": len(ch.sequence()) == len(t_seq),
                 "chain_id": chain,
                 "chain": chain_entity,
                 "entity": entity,
-            }
+            }, *data
 
     @staticmethod
     def zip(aas, toks, tokens_first=False):
@@ -190,6 +196,65 @@ class FoldseekDB(object):
                 l.append(f"{a.upper()}{t.lower()}")
         return l
 
+
+    def saprot_embeddings(self, sequence_only=False, model_name="westlake-repl/SaProt_650M_PDB", force=False):
+
+        log(2, "Generating SaProt Embeddings...")
+        from transformers import EsmTokenizer, EsmForMaskedLM
+        import torch
+        from src.bioiain.machine import DEVICE
+
+
+        tokenizer_name = model_name
+        model_name = model_name
+
+
+        tokenizer_path = os.path.join(SUBDIR_NAME, "hf", "saprot", f"tok_{tokenizer_name}")
+        if not os.path.exists(tokenizer_path):
+            log(3, "Downloading tokeniser:", model_name)
+            tokenizer = EsmTokenizer.from_pretrained(tokenizer_name)
+            os.makedirs(os.path.dirname(tokenizer_path), exist_ok=True)
+            tokenizer.save_pretrained(tokenizer_path)
+        tokenizer = EsmTokenizer.from_pretrained(tokenizer_path)
+
+        model_path = os.path.join(SUBDIR_NAME, "hf", "saprot", f"mod_{model_name}")
+        if not os.path.exists(model_path):
+            log(3, "Downloading model:", model_name)
+            model = EsmForMaskedLM.from_pretrained(model_name)
+            os.makedirs(os.path.dirname(model_path), exist_ok=True)
+            model.save_pretrained(model_path)
+        model = EsmForMaskedLM.from_pretrained(model_path)
+        
+        model.eval()
+        model.to(DEVICE)
+
+
+        for entry in self:
+            save_path = os.path.join(SUBDIR_NAME, "embeddings", "saprot", model_name)
+            os.makedirs(save_path, exist_ok=True)
+            save_path = os.path.join(save_path, entry["name"].split(" ")[0]+".pt")
+            if not force and os.path.exists(save_path):
+                yield entry, torch.load(save_path)
+                continue
+            if sequence_only:
+                seq = [f"{aa.upper()}#" for aa in entry["aa_seq"]]
+            else:
+                seq = self.zip(entry["aa_seq"], entry["tok_seq"])
+            log(3, "LEN SEQ", len(seq))
+            
+            inputs = tokenizer(seq, return_tensors="pt")
+            inputs = {k: v.to(DEVICE) for k, v in inputs.items()}
+            with torch.no_grad():
+                log(3, "Generating output...")
+                outputs = model(**inputs, output_hidden_states=True)
+                log(3, "Output ready")
+                last_hidden = outputs.hidden_states[-1]
+                log(3, "LEN EMBEDDING", last_hidden.shape)
+
+                torch.save(last_hidden, save_path)
+
+                yield entry, last_hidden
+                continue
 
 
     def prost5_derive(self, from_tokens=False):
