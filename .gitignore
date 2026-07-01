@@ -64,4 +64,5 @@ test/cvmaps
 html
 
 *.geany
-*.sublime-workspace
+*.sublime-*
+
