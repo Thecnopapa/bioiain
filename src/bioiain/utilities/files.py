@@ -92,8 +92,12 @@ class StructureDataset(object):
         else:
             raise StopIteration
 
-    def get(self, code):
-        return self.data.get(code)
+    def get(self, code, exception="raise"):
+        if exception == "raise":
+            return self.data.get(code)
+        else:
+            return self.data.get(code, exception)
+
 
     def add(self, code, name=None, path=None, url=None, source="manual", extension="cif", replace=True):
         if code in self.codes():

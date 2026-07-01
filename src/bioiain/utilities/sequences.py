@@ -38,72 +38,85 @@ def intto1(i):
 
 
 class FASTA(object):
-    def __init__(self, fasta_path):
+    def __init__(self, fasta_path, force=False, use_cache=True):
         self.fasta_path = fasta_path
         self.single_line = None
+        self._cache = None
+        self.force = force
+        self.use_cahce = use_cache
 
 
     def __repr__(self):
         return f"<bi.{self.__class__.__name__}: {self.fasta_path}>"
 
 
-    def _parse_fasta(self, names=True, sequences=True, key=None):
+    def _parse_fasta(self, names=True, sequences=True, key=None, use_cache=None, force=None):
         assert names or sequences
 
-        if key is not None:
-            if type(key) is str:
-                key = [key]
-            elif type is not list:
-                key = list(key)
+        if force is None:
+            force = self.force
+            use_cache = False
+        if use_cache is None:
+            use_cache = self.use_cache
 
-        fasta_dict = {}
-        with open(self.fasta_path) as f:
-            next_seq = False
-            last_key = None
-            wait_key = False
-            for line in f.readlines():
-                line = line.replace("\n", "").strip()
-                if line.startswith("#"):
-                    next_seq = True
-                    continue
-                if line.startswith(">"):
-                    wait_key = False
-                    name = line[1:].strip()
-                    if key is not None:
-                        if len(key) == 0:
-                            break
-                        #print(name, key, name in key)
-                        if name in key:
-                            key.remove(name)
-                        else:
-                            wait_key = True
-                            continue
-                    if name not in fasta_dict:
-                        fasta_dict[name] = []
-                    next_seq = True
-                    last_key = name
-                    continue
-                elif wait_key:
-                    continue
-                if not sequences:
-                    continue
-                if line.strip() == "":
-                    next_seq = True
-                    continue
-                else:
-                    if last_key is None:
+        if use_cache and self._cache is not None and key is None:
+            fasta_dict = self._cache
+        else:
+            if key is not None:
+                if type(key) is str:
+                    key = [key]
+                elif type is not list:
+                    key = list(key)
+
+            fasta_dict = {}
+            with open(self.fasta_path) as f:
+                next_seq = False
+                last_key = None
+                wait_key = False
+                for line in f.readlines():
+                    line = line.replace("\n", "").strip()
+                    if line.startswith("#"):
+                        next_seq = True
                         continue
-                    if next_seq:
-                        fasta_dict[last_key].append(line)
-                        next_seq = False
+                    if line.startswith(">"):
+                        wait_key = False
+                        name = line[1:].strip()
+                        if key is not None:
+                            if len(key) == 0:
+                                break
+                            #print(name, key, name in key)
+                            if name in key:
+                                key.remove(name)
+                            else:
+                                wait_key = True
+                                continue
+                        if name not in fasta_dict:
+                            fasta_dict[name] = []
+                        next_seq = True
+                        last_key = name
+                        continue
+                    elif wait_key:
+                        continue
+                    if not sequences:
+                        continue
+                    if line.strip() == "":
+                        next_seq = True
+                        continue
                     else:
-                        fasta_dict[last_key][-1] += line
+                        if last_key is None:
+                            continue
+                        if next_seq:
+                            fasta_dict[last_key].append(line)
+                            next_seq = False
+                        else:
+                            fasta_dict[last_key][-1] += line
 
-        if key is not None:
-            #print(key)
-            assert len(key) == 0
+            if key is not None:
+                #print(key)
+                assert len(key) == 0
 
-
+            if use_cache:
+                self._cahche = fasta_dict
 
         #print(names, sequences)
         if names and sequences:
@@ -139,13 +152,50 @@ class FASTA(object):
     def get_names(self, key=None):
         return self._parse_fasta(names=True, sequences=False, key=key)
 
-
     def get_sequences(self, key=None):
         return self._parse_fasta(names=False, sequences=True, key=key)
 
 
     def parse(self, key=None):
         return self._parse_fasta(key=key)
+
+    def keys(self):
+        return self.get_names()
+
+    def values(self):
+        return self.get_sequences()
+
+    def sequences():
+        return self.get_sequences()
+
+    def dict():
+        return self.parse()
+
+    def items():
+        return self.dict().items()
+
+    def index(self, key):
+        return self.keys().index(key)
+
+    def at(self, index):
+        key = self.keys()[index]
+        return key, self.get_sequences(key)
+
+    def __len__(self):
+        return len(self.keys())
+
+    def __iter__(self):
+        self.i = 0
+        return self
+
+    def __next__(self):
+        if self.i < len(self.keys()):
+            self.i += 1
+            return self.at(self.i-1)
+        else:
+            raise StopIteration()
+
+
 
 
 

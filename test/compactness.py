@@ -19,6 +19,10 @@ from src.bioiain.utilities.sequences import FASTA
 
 
 
+
+
+
+
 class FoldseekDB(object):
     def __init__(self,name, list_dir_or_dataset, folder=None, foldseek_command="foldseek", force=False):
         self.foldseek_command = foldseek_command
@@ -31,6 +35,7 @@ class FoldseekDB(object):
         self.list_dir_or_dataset = list_dir_or_dataset
 
         self.token_fasta_path = None
+        self.sequence_fasta_path = None
 
 
         self.create_db(force=force)
@@ -60,23 +65,118 @@ class FoldseekDB(object):
         return self
 
     def generate_tokens(self, force=False):
-        cmd = [self.foldseek_command, "lndb", self.db_path+"_h", self.db_path+"_ss_h", "-v", "3"]
-        print(" ".join(cmd))
-        subprocess.run(cmd)
-        #cmd = [self.foldseek_command, "createindex", self.db_path, os.path.join(TEMP_FOLDER, "foldseekk"), "-v", "3"]
-        #print(" ".join(cmd))
-        #subprocess.run(cmd)
-        fasta_path = self.db_path+".tokens.fasta"
-        cmd = [self.foldseek_command, "convert2fasta", self.db_path+"_ss", fasta_path, "-v", "3"]
-        print(" ".join(cmd))
-        subprocess.run(cmd)
-        self.token_fasta_path = fasta_path
+        if force or self.token_fasta_path is None:
+            cmd = [self.foldseek_command, "lndb", self.db_path+"_h", self.db_path+"_ss_h", "-v", "3"]
+            print(" ".join(cmd))
+            subprocess.run(cmd)
+            #cmd = [self.foldseek_command, "createindex", self.db_path, os.path.join(TEMP_FOLDER, "foldseekk"), "-v", "3"]
+            #print(" ".join(cmd))
+            #subprocess.run(cmd)
+            fasta_path = self.db_path+".tokens.fasta"
+            cmd = [self.foldseek_command, "convert2fasta", self.db_path+"_ss", fasta_path, "-v", "3"]
+            print(" ".join(cmd))
+            subprocess.run(cmd)
+            self.token_fasta_path = fasta_path
         return self
 
     def tokens_fasta(self, force=False):
         if self.token_fasta_path is None or force:
             self.generate_tokens(force=force)
         return FASTA(self.token_fasta_path)
+
+    def sequences_fasta(self, force=False):
+        if force or self.sequence_fasta_path is None:
+            fasta_path = self.db_path+".aa.fasta"
+
+            cmd = [self.foldseek_command, "convert2fasta", self.db_path, fasta_path, "-v", "3"]
+            print(" ".join(cmd))
+            subprocess.run(cmd)
+            self.sequence_fasta_path = fasta_path
+        
+        return FASTA(self.sequence_fasta_path)
+
+    def __iter__(self):
+        self._cached_token_fasta = self.tokens_fasta()
+        self._cached_aa_fasta = self.sequences_fasta()
+        assert len(self._cached_token_fasta) == len(self._cached_aa_fasta), f"Token entries ({len(self._cached_token_fasta)}) and sequence entries ({len(self._cached_aa_fasta)}) do not match"
+        self.i = 0
+        self.max_i = len(self._cached_token_fasta)
+        return self
+
+    def __next__(self):
+        if self.i < self.max_i:
+            tok_name, tok_seq = self._cached_token_fasta.at(self.i)
+            tok_seq = tok_seq[0]
+            aa_name, aa_seq = self._cached_aa_fasta.at(self.i)
+            aa_seq = aa_seq[0]
+        else:
+            raise StopIteration()
+        self.i += 1
+        assert aa_name == tok_name, f"Sequence id ({aa_name}) and Token id ({tok_name}) do not match"
+        assert len(aa_seq) == len(tok_seq), f"Sequence len ({len(aa_seq)}) and Token len ({len(tok_seq)}) do not match"
+
+        return {
+            "name": aa_name,
+            "tok_seq": tok_seq,
+            "aa_seq": aa_seq,
+        }
+
+
+
+    def match_dataset(self, dataset):
+
+        fasta = self.tokens_fasta()
+
+        entity = None
+        for name, t_seq in fasta.parse().items():
+
+            name = name.split(" ")[0]
+            print(name.split("_"))
+            if len(name.split("_")) == 1:
+                code = name.split("_")[0]
+                chain = "*"
+            elif len(name.split("_")) == 2:
+                code, chain = name.split("_")
+            else:
+                raise Exception(f"Unable to fetch name and code from {name}")
+            print(code, chain)
+            t_seq = t_seq[0]
+            print(code, chain, len(t_seq))
+                
+            try:
+                entry = dataset.get(code)
+                print(entry)
+
+                try:
+                    assert entity is not None
+                    assert entity.code() == code
+                except:
+                    entity = BIEntity.from_file(entry["path"], code=code)
+                print(entity)
+
+                chains = entity.chains(chain)
+                for chain_entity in chains:
+                    print(chain, chain_entity, chain_entity.id(), chain_entity.complex())
+                assert len(chains) == 1
+                ch = chains[0]
+
+                print(len(ch.sequence()), len(t_seq))
+                print()
+            except:
+                yield {
+                    "t_seq": t_seq,
+                    "error": true,
+                    "chain_id": chain,
+                }
+            yield {
+                "t_seq": t_seq,
+                "error": false,
+                "aa_seq": ch.sequence(),
+                "match_len": len(ch.sequence()) == len(t_seq),
+                "chain_id": chain,
+                "chain": chain_entity,
+                "entity": entity,
+            }
 
 
 

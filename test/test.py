@@ -23,25 +23,12 @@ fs_cmd="foldseek"
 
 fs = FoldseekDB(dataset.name, dataset, foldseek_command=fs_cmd)
 
+fasta = fs.sequences_fasta()
 
-fasta = fs.tokens_fasta()
-
-for name, t_seq in fasta.parse().items():
-    name = name.split(" ")[0]
-    print(name.split("_"))
-    if len(name.split("_")) == 1:
-        code = name.split("_")[0]
-        chain = "*"
-    elif len(name.split("_")) == 2:
-        code, chain = name.split("_")
-    else:
-        raise Exception(f"Unable to fetch name and code from {name}")
-    print(code, chain)
-    t_seq = t_seq[0]
-    print(code, chain, len(t_seq))
-    
-    entry = dataset.get(code)
+for entry in fs:
     print(entry)
+    print()
+
 
 exit()
 print(fs.tokens_fasta().get_names())

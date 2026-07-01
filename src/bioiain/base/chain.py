@@ -19,6 +19,8 @@ class BIChain(BIEntity):
             chain_id = method
         return chain_id
 
+    def complex(self):
+        return self.data["info"]["complex_id"]
 
     def id(self):
         return self.data["info"]["chain_id"]
@@ -35,6 +37,8 @@ class BIChain(BIEntity):
             log(f"warning", "CHAIN ID is longer than 1: {chain_id}")
             self.set_flag("unconventional_chain_id", True)
         self.data["info"]["chain_id"] = chain_id
+        if complex:
+            self.data["info"]["complex_id"] = chain_id
         if self.has_flag("has_chain_id", True):
             old_name = self.name().split("_")
             for n, o in enumerate(old_name):
@@ -46,10 +50,26 @@ class BIChain(BIEntity):
             self.set_name(chain_id, append=True)
             self.set_flag("has_chain_id", True)
 
+        complexes = []
         for a in self.all_atoms():
             a.chain = chain_id
             if complex:
                 a.complex = chain_id
+            else:
+                complexes.append(a.complex)
+        complexes = set(complexes)
+        if not complex:
+            if len(complexes) == 0:
+                complexes = None
+            elif len(complexes) == 1:
+                complexes = list(complexes)[0]
+            else:
+                complexes = list(complexes)
+            self.data["info"]["complex_id"] = complexes
+
+
+        if complex:
+            return self.complex()
         return self.id()
 
 

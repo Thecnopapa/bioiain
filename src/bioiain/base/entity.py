@@ -178,8 +178,8 @@ class BIEntity(object):
             code = str(self.data["info"]["code"])
         return BIStructure.from_atoms(self._atoms, code, parent=self)
 
-    def chains(self, **kwargs):
-        return self.atoms(as_chains=True, hetatm=True, **kwargs)
+    def chains(self, sele:list|str=None, **kwargs):  
+        return self.atoms(as_chains=True, hetatm=True, chain_sele=sele, **kwargs)
 
     def residues(self, **kwargs):
         return self.atoms(ca_only=False, residues=True, **kwargs)
@@ -271,6 +271,9 @@ class BIEntity(object):
             atoms = [a for a in atoms if a.chain == chain]
 
         if as_chains or group_by_chain:
+            chain_sele = kwargs.get("chain_sele", None)
+            if chain_sele in ["*", "", "-"]:
+                chain_sele = None
             from .chain import BIChain
             chain_list = {}
             for atom in atoms:
@@ -281,7 +284,8 @@ class BIEntity(object):
             if as_chains:
                 for ch, atms in chain_list.items():
                     chain_list[ch] = BIChain().from_atoms(atms, self.code(), ch, parent=self)
-                chain_list = [ch for ch in chain_list.values()]
+                chain_list = [ch for ch in chain_list.values() if (chain_sele is None) or (ch.id() in chain_sele)]
+
             return chain_list
 
         if group_by_residue or len(target_entities) > 0:
