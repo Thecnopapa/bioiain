@@ -178,6 +178,64 @@ class FoldseekDB(object):
                 "entity": entity,
             }
 
+    @staticmethod
+    def zip(aas, toks, tokens_first=False):
+        assert len(aas) == len(toks), f"AAs ({len(aas)}) and Tokens ({len(toks)}) length do not match"
+        l = []
+        z = zip(aas, toks)
+        for a, t in z:
+            if tokens_first:
+                l.append(f"{t.lower()}{a.upper()}")
+            else:
+                l.append(f"{a.upper()}{t.lower()}")
+        return l
+
+
+
+    def prost5_derive(self, from_tokens=False):
+        from transformers import T5Tokenizer, T5EncoderModel
+        from src.bioiain.machine import DEVICE
+        import torch
+        import re
+
+        tokenizer = T5Tokenizer.from_pretrained('Rostlab/ProstT5', do_lower_case=False)
+
+        print("TOKENISER", tokenizer)
+
+
+
+
+        seqs = []
+        for entry in self:
+            print(entry)
+            if from_tokens:
+                seqs.append(f"<fold2AA> {"".join([s.lower() for s in entry["tok_seq"]])}")
+            else:
+                seqs.append(f"<AA2fold> {"".join([s.upper() for s in entry["aa_seq"]])}")
+
+            ids = tokenizer.batch_encode_plus(seqs,
+                add_special_tokens=True,
+                padding="longest",
+                return_tensors='pt').to(DEVICE)
+            print(ids.input_ids)
+
+
+        model = T5EncoderModel.from_pretrained("Rostlab/ProstT5").to(DEVICE)
+        print("MODEL", model)
+
+        model.float() if DEVICE=='cpu' else model.half()
+        with torch.no_grad():
+            embedding_repr = model(
+                ids.input_ids, 
+                attention_mask=ids.attention_mask
+                )
+            for n in range(embedding_repr.last_hidden_state.shape[0]):
+                emb = embedding_repr.last_hidden_state[n]
+                print("Embedding", n)
+                print(emb)
+
+
+
 
 
 

@@ -23,12 +23,13 @@ fs_cmd="foldseek"
 
 fs = FoldseekDB(dataset.name, dataset, foldseek_command=fs_cmd)
 
-fasta = fs.sequences_fasta()
+fs.prost5_derive()
+fs.prost5_derive(from_tokens=True)
 
-for entry in fs:
-    print(entry)
-    print()
 
+print("done")
+os.system('kill %d' % os.getpid())
+sys.exit()
 
 exit()
 print(fs.tokens_fasta().get_names())
@@ -41,6 +42,8 @@ for entity in dataset.entities():
     for chain in entity.chains():
         print(chain.sequence())
     print()
+
+
 
 exit()
 
