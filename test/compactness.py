@@ -157,11 +157,15 @@ class FoldseekDB(object):
                     assert entity is not None
                     assert entity.code() == code
                 except:
-                    entity = entity_class.from_file(entry["path"], code=code, no_atoms=not atoms)
+                    try:
+                        entity = entity_class.from_file(entry["path"], code=code, no_atoms=not atoms)
+                    except CrystalError as e:
+                        dataset.add_to_blacklist(entry["path"], error=e.__class__.__name__)
+                        continue
                 #print(entity)
-                print(chain)
+                #print(chain)
                 chains = entity.chains(chain, by_complex=True)
-                print(chains)
+                #print(chains)
                 for chain_entity in chains:
                     #print(chain, chain_entity, chain_entity.id(), chain_entity.complex())
                     pass
@@ -270,7 +274,7 @@ class FoldseekDB(object):
 
         tokenizer = T5Tokenizer.from_pretrained('Rostlab/ProstT5', do_lower_case=False)
 
-        print("TOKENISER", tokenizer)
+        #print("TOKENISER", tokenizer)
 
 
 
@@ -336,7 +340,7 @@ class CompactStructure(FragmentedStructure):
         if (not force) and self.has_flag("compactness_calculated", True):
             try:
                 self._compactness = []
-                for res in chain.residues():
+                for res in self.residues():
                     self._compactness.append(res.ca.get_misc("compactness"))
                 log(2, "Compactness already generated")
 

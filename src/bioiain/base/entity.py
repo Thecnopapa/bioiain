@@ -303,7 +303,10 @@ class BIEntity(object):
             if len(target_entities) > 0:
                 entities = []
                 for resatms in atoms_by_res.values():
-                    e = build_res(resatms, parent=self)
+                    try:
+                        e = build_res(resatms, parent=self)
+                    except NoMatchingClass:
+                        continue
                     if getattr(e, "type", None) in target_entities:
                         entities.append(e)
                 return entities

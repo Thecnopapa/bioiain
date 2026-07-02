@@ -27,9 +27,10 @@ def relative_path(path, relative_to=None):
 
 
 class StructureDataset(object):
-    def __init__(self, name="dataset", folder=None, shared_source=True):
+    def __init__(self, name="dataset", folder=None, shared_source=True, ignore_blacklist=False):
         self.data = {}
         self.name = name
+        self.blacklist = []
         log(1, "Initialising dataset:", self.name)
 
         if folder is None:
@@ -39,6 +40,15 @@ class StructureDataset(object):
                 folder = os.path.join(SUBDIR_NAME, "data", name)
         self.folder = folder
         os.makedirs(self.folder, exist_ok=True)
+        self.blacklist_file = os.path.join(self.folder, f"{self.name}.black.list")
+        if os.path.exists(self.blacklist_file) and not ignore_blacklist:
+            with open(self.blacklist_file, "r") as bl:
+                for line in bl:
+                    self.blacklist.append(line.strip().replace("\n", "").split(":")[0].strip())
+        else:
+            with open(self.blacklist_file, "w") as bl:
+                bl.write(f"{self.blacklist_file}\n")
+
 
 
 
@@ -56,16 +66,28 @@ class StructureDataset(object):
         def __repr__(self):
             return f"<bi.{self.dataset.__class__.__name__}.{self.__class__.__name__}: {self.code} ({self.name}) at {self.path if self.path is not None else self.url} from {self.source}>"
 
+        def blacklist(self, error=None, reason=None):
+            self.dataset.add_to_blacklist(self.path, reason=reason)
 
+
+    def add_to_blacklist(self, path, error=None, reason=None, ):
+        log("warning", f"Blacklisted: {path} ({error.__class__.__name}) {error}:{reason}")
+        with open(self.blacklist_file, "a") as bl:
+            bl.write(f"{path}: {reason}\n")
+        self.blacklist.append(path)
+
+    def check_blacklist(self, path):
+        bl = set(self.blacklist)
+        return path in bl
 
     def codes(self) -> list:
-        return list(self.data.keys())
+        return [e.get("code", None) for e in self.data.values() if not self.check_blacklist(e["path"])]
 
     def urls(self) -> list:
-        return [e.get("url", None) for e in self.data.values()]
+        return [e.get("url", None) for e in self.data.values() if not self.check_blacklist(e["path"])]
 
     def paths(self) -> list:
-        return [e.get("path", None) for e in self.data.values()]
+        return [e.get("path", None) for e in self.data.values() if not self.check_blacklist(e["path"])]
 
     def entities(self, entity_class=BIEntity, **kwargs):
         for entry in self:
@@ -87,16 +109,18 @@ class StructureDataset(object):
         return self.Entry(self.data[self.codes()[item]], dataset=self)
 
     def __len__(self):
-        return len(self.data)
+        return sum([1 for e in self.data.values() if not self.check_blacklist(e["path"])])
 
     def __iter__(self):
+        self._codes = self.codes()
         self.i = 0
         return self
 
     def __next__(self):
-        if self.i < len(self):
+        if self.i < len(self._codes):
+            c = self._codes[self.i]
             self.i += 1
-            return self[self.i-1]
+            return self.get[c]
         else:
             raise StopIteration
 
@@ -108,6 +132,9 @@ class StructureDataset(object):
 
 
     def add(self, code, name=None, path=None, url=None, source="manual", extension="cif", replace=True):
+        if path in self.blacklist:
+            log("warning", f"Path: {path} in blacklist: {self.blacklist_file}")
+            return self
         if code in self.codes():
             if replace:
                 log("warning", f"Replacing entry {code} in dataset: {self}")
@@ -118,7 +145,7 @@ class StructureDataset(object):
         self.data[code] = {
             "code": code,
             "name": name,
-            "path": path,
+            "path": relative_path(path),
             "url": url,
             "source": source,
             "extension": extension,
@@ -242,5 +269,3 @@ class StructureDataset(object):
         self = cls(name=name)
         self.add_list(file_or_list, download_as=download_as, base_url=base_url, force=force, replace=replace)
         return self
-
-

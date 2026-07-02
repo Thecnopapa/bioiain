@@ -1,5 +1,6 @@
 import os, json, sys
 
+import torch
 
 sys.path.append('..')
 
@@ -52,6 +53,9 @@ print(dataset)
 
 
 DATASET_NAME = f"{dataset.name}_foldseek"
+
+log("start", "EMBEDDINGS")
+
 embeddings = EmbeddingDataset(DATASET_NAME)
 if not FORCE:
     embeddings.load()
@@ -68,12 +72,12 @@ if len(embeddings) == 0 or FORCE:
         chain = data["chain"]
         t = tensor[0]
         saprot_name = tensor[1]
-        print(t.shape)
+        #print(t.shape)
 
         #print("DATA", data)
         #print("TENSOR", t.shape)
         #print("ENTITY:", entity)
-        print("CHAIN:", chain)
+        #print("CHAIN:", chain)
 
         #print(len(t), len(chain.sequence()))
         try:
@@ -92,11 +96,11 @@ if len(embeddings) == 0 or FORCE:
 
             entity.compactness(with_symmetry=True, force=FORCE)
             chain = entity.chains(chain.complex(), by_complex=False)[0]
-            print("CHAIN 2:", chain)
+            #print("CHAIN 2:", chain)
 
             label_header="#"
             label_value=" "
-            print(len(chain.residues()))
+            #print(len(chain.residues()))
 
             assert t.shape[-2] == len(chain.sequence()), f"Sequence len ({len(chain.sequence())}) and token len ({t.shape[-2]}) missmatch."
 
@@ -119,21 +123,24 @@ if len(embeddings) == 0 or FORCE:
         embeddings.add(embedding, label_path=label_path)
         embeddings.save(temp=True)
 
+        total += 1
         print()
 
 
-        total += 1
 
-
-    print(f"Chains processed ok: {total-n_missmatches}, missmatches:{n_missmatches}")
+    log("header", f"Chains processed ok: {total-n_missmatches}, missmatches:{n_missmatches}")
     embeddings.save()
 
-print(embeddings)
+log("end", "EMBEDDINGS")
+
+log("start", "TRAINING")
+
+log("header", embeddings)
 
 
 model = CompactnessMLPmk1(name=DATASET_NAME, in_shape=[1280], hidden_dims=[])
 model.mount()
-print(model)
+#print(model)
 
 epochs = 100
 for epoch in range(epochs):
@@ -141,14 +148,17 @@ for epoch in range(epochs):
 
     max_n = len(embeddings)
     for n, item in enumerate(embeddings):
-        print(2, f"{n:6d}/{max_n:6d}", end = " ")
+        if n % 100 == 0:
+            log(2, f"{n:6d}/{max_n:6d}", end = " ")
         if item.l is None:
             continue
         out = model.forward(item.t)
+        out = torch.clamp(out,0, 10)
         loss = model.loss(out, item)
-        print(f"loss: {loss:7.3f} ({model.running_loss['default']/model.running_loss['total']:7.3f})                     ", end="\r")
+        if n % 100 == 0:
+            print(f"loss: {model.running_loss['default']/model.running_loss['total']:7.3f}    last: loss={loss:7.3f} out={out.item():7.3f} l={item.l:<7.3f}                                                                                       ", end="\r")
 
-
+    print()
     model.add_epoch()
     log("end", f"EPOCH: {epoch}", print_timer=True, reset_timer=False)
 
