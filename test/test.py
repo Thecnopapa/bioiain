@@ -153,7 +153,7 @@ for epoch in range(epochs):
         if item.l is None:
             continue
         out = model.forward(item.t)
-        out = torch.clamp(out,0, 10)
+        #out = torch.clamp(out,0, 10)
         loss = model.loss(out, item)
         if n % 100 == 0:
             print(f"loss: {model.running_loss['default']/model.running_loss['total']:7.3f}    last: loss={loss:7.3f} out={out.item():7.3f} l={item.l:<7.3f}                                                                                       ", end="\r")

@@ -36,8 +36,11 @@ class CompactnessMLPmk1(BaseModel):
         self.data["hidden_dims"] = [n*2, n*2, n]
         self.layers["default"] = {
             "linear1": nn.Linear(self.data["in_shape"][0], self.data["hidden_dims"][-3]),
+            "en_relu1": nn.ReLU(),
             "linear2": nn.Linear(self.data["hidden_dims"][-3], self.data["hidden_dims"][-2]),
+            "en_relu2": nn.ReLU(),
             "linear3": nn.Linear(self.data["hidden_dims"][-2], self.data["hidden_dims"][-1]),
+            "en_relu3": nn.ReLU(),
             "linear4": nn.Linear(self.data["hidden_dims"][-1], 1),
 
         }
