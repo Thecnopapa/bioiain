@@ -20,7 +20,8 @@ dataset.load(entity_class=CompactStructure)
 print(dataset)
 
 #fs_cmd = "/cri4/iain/bin/foldseek/bin/foldseek"
-fs_cmd="foldseek"
+#fs_cmd="foldseek"
+fs_cmd = os.environ.get("FOLDSEEK_PATH", "foldseek")
 
 fs = FoldseekDB(dataset.name, dataset, foldseek_command=fs_cmd)
 
