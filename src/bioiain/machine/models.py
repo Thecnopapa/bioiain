@@ -255,7 +255,6 @@ class BaseModel(nn.Module):
                 self.loss(force_backpropagation=True)
 
     def add_epoch(self):
-        print()
         self.leftover_batch()
 
         if self.writer is not None:

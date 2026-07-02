@@ -69,8 +69,29 @@ class Log(object):
         self.logging = False
 
 
+def colour(colour:str|None=None, string:str|None=None, end:bool=True):
+    if colour is None:
+        colour="end"
+    if string is None:
+        return f"\033[{colour_list.get(colour, 0)}m"
+    else:
+        s = f"\033[{colour_list.get(colour, 0)}m{string}"
+        if end:
+            s+=f"\033[0m"
 
+        return s
 
+colour_list = {
+    "end":0,
+    "black":90,
+    "red":91,
+    "green":92,
+    "yellow":93,
+    "blue":94,
+    "magenta":95,
+    "cyan":96,
+    "white":97,
+}
 
 
 
@@ -112,17 +133,17 @@ def log(level:int|str=1, *args, **kwargs):
             elif kwargs.get("raise_exception", False):
                 raise Exception(" ".join([str(a) for a in args]))
             else:
-                print("\033[91m")
+                print(colour("red"))
                 print("ERROR: ", end="")
                 print(*args, **kwargs)
-                print("\033[0m")
+                print(colour("end"))
 
         elif v > -1:
             if level == "warning":
-                print("\033[93m",end="")
+                print(colour("yellow"),end="")
                 print("WARNING: ", end="")
                 print(*args, **kwargs)
-                print("\033[0m",end="")
+                print(colour("end"),end="")
             elif level == "debug":
                 print(*args, **kwargs)
             elif level == "title":
@@ -135,7 +156,9 @@ def log(level:int|str=1, *args, **kwargs):
                 elif level == "start":
                     tprint(*args, **kwargs)
                 elif level == "header":
+                    print(colour("white"), end="")
                     sprint(*args, **kwargs)
+                    print(colour("end"), end="")
                 elif level == "end":
                     eprint(*args, **kwargs)
                 elif type(level) is int:
@@ -165,7 +188,7 @@ def tprint(*strings:str, head:int=10, style:str="#", end:str="\n", sep:str=" ", 
         tail2=""
     tail1 = style*tail1_len
 
-    out = "\n{}{}{}{}{}{}{}".format(style*head, sep, string, sep, tail1, timer, tail2 )
+    out = "\n{}{}{}{}{}{}{}".format(style*head, sep, colour("white", string), sep, tail1, timer, tail2 )
     print(out, end=end)
     if reset_timer:
         start_time = time.time()

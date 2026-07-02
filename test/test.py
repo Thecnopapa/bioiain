@@ -158,11 +158,13 @@ for epoch in range(epochs):
         #out = torch.clamp(out,0, 10)
         loss = model.loss(out, item)
         if n % 100 == 0:
-            print(f"loss: {model.running_loss['default']/model.running_loss['total']:7.3f}    last: loss={loss:7.3f} out={out.item():7.3f} l={item.l:<7.3f}                                                                                       ", end="\r")
-        model.save(temp=True)
-    model.save()
+            loss_str = f"{model.running_loss['default']/model.running_loss['total']:7.3f}"
+            print(f"loss: {colour('yellow', loss_str)} \tlast: loss={loss:7.3f} out={out.item():7.3f} l={item.l:<7.3f}", end="\r")
+    print()
+    model.save(temp=True)
     model.add_epoch()
     log("end", f"EPOCH: {epoch}", print_timer=True, reset_timer=False)
+model.save()
 
 
 
