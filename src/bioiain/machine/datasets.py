@@ -1,6 +1,8 @@
 import os, json, time, shutil
 from copy import deepcopy
 
+import numpy as np
+
 from ..utilities import *
 from ..utilities import relative_path, MMSEQS2
 from ..utilities.exceptions import *
@@ -17,7 +19,7 @@ class Item(object):
         self.label = label
         self.t = self.tensor
         self.l = self.label
-        if label_to_index is not None and len(label_to_index) > 1:
+        if (label_to_index is not None) and len(label_to_index) > 1:
             if type(self.label) in [int, str]:
                 #print("LABEL IS INT/STR")
                 self.label_index = label_to_index[self.label]
@@ -26,7 +28,7 @@ class Item(object):
                 self.label_tensor = Tensor(self.label_tensor)
                 self.li = self.label_index
                 self.lt = self.label_tensor
-            elif type(self.label) in (list, tuple):
+            elif type(self.label) in (list, tuple, ):
                 #print("LABEL IS LIST/TUPLE")
                 self.label_tensor = Tensor(self.label)
                 self.lt = self.label_tensor
@@ -50,7 +52,7 @@ class Item(object):
             raise KeyError(item)
 
     def __repr__(self):
-        return f"<bi.{self.__class__.__name__}:{self.key} T:{self.tensor.shape}, L=\"{self.label}\", from: {self.dataset}>"
+        return f"<bi.{self.__class__.__name__}:{self.key} T:{self.tensor.shape}, L={self.label}, dataset={self.dataset.name}>"
 
     def __iter__(self):
         self.i = 0
@@ -76,18 +78,20 @@ class Item(object):
 
 class EmbeddingDataset(object):
     def __init__(self, name, folder=None, **kwargs):
-        fname = f"{name}.dataset"
+        self.name = name
+        self.fname = f"{self.name}.dataset"
         if folder is None:
-            folder = os.path.join(SUBDIR_NAME, "datasets", fname)
-        fname = fname + ".json"
-        path = os.path.join(folder, fname)
+            folder = os.path.join(SUBDIR_NAME, "datasets", self.fname)
+        self.folder = folder
+        self.fname += ".json"
+        self.path = os.path.join(folder, self.fname)
         self.data = dict(
             name = name,
-            folder = folder,
+            folder = self.folder,
             length = 0,
             test_length = 0,
-            fname = fname,
-            path = path,
+            fname = self.fname,
+            path = self.path,
             mapped = False,
             label_key = "label_path",
             deleted_indexes = 0,
@@ -420,7 +424,7 @@ class EmbeddingDataset(object):
                                 label_data[n] = [float(ll) for ll in l.split(":")]
                             else:
                                 if l in [None, ".", "none", "None", "-"]:
-                                    l = None
+                                    label_data[n] = None
                                 else:
                                     try:
                                         label_data[n] = float(l)
@@ -574,6 +578,10 @@ class EmbeddingDataset(object):
         raw = json.load(open(path, "r"))
         self.data = raw["data"]
         self.embeddings = raw["embeddings"]
+        self.path = self.data["path"]
+        self.folder = self.data["folder"]
+        self.fname =  self.data["fname"]
+        self.name = self.data["name"]
         if load_split:
             try: self.splitted = raw["splitted"]
             except KeyError: log("warning", f"Dataset split info not found at: {path}")
@@ -665,4 +673,3 @@ class EmbeddingDataset(object):
         else:
             log("error", f"No fasta path for: {self}")
             return None
-

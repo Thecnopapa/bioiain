@@ -62,21 +62,21 @@ class FoldseekDB(object):
 
         cmd = [self.foldseek_command, "createdb", tsv_path, self.db_path, "-v", self.verbose]
         print(" ".join(cmd))
-        subprocess.run(cmd)
+        subprocess.run(cmd, check=True)
         return self
 
     def generate_tokens(self, force=False):
         if force or self.token_fasta_path is None:
             cmd = [self.foldseek_command, "lndb", self.db_path+"_h", self.db_path+"_ss_h", "-v", self.verbose]
             print(" ".join(cmd))
-            subprocess.run(cmd)
+            subprocess.run(cmd , check=True)
             #cmd = [self.foldseek_command, "createindex", self.db_path, os.path.join(TEMP_FOLDER, "foldseekk"), "-v", self.verbose]
             #print(" ".join(cmd))
             #subprocess.run(cmd)
             fasta_path = self.db_path+".tokens.fasta"
             cmd = [self.foldseek_command, "convert2fasta", self.db_path+"_ss", fasta_path, "-v", self.verbose]
             print(" ".join(cmd))
-            subprocess.run(cmd)
+            subprocess.run(cmd, check=True)
             self.token_fasta_path = fasta_path
         return self
 
@@ -91,7 +91,7 @@ class FoldseekDB(object):
 
             cmd = [self.foldseek_command, "convert2fasta", self.db_path, fasta_path, "-v", self.verbose]
             print(" ".join(cmd))
-            subprocess.run(cmd)
+            subprocess.run(cmd, check=True)
             self.sequence_fasta_path = fasta_path
         
         return FASTA(self.sequence_fasta_path)
@@ -279,9 +279,9 @@ class FoldseekDB(object):
         for entry in self:
             print(entry)
             if from_tokens:
-                seqs.append(f"<fold2AA> {"".join([s.lower() for s in entry["tok_seq"]])}")
+                seqs.append(f"<fold2AA> {''.join([s.lower() for s in entry['tok_seq']])}")
             else:
-                seqs.append(f"<AA2fold> {"".join([s.upper() for s in entry["aa_seq"]])}")
+                seqs.append(f"<AA2fold> {''.join([s.upper() for s in entry['aa_seq']])}")
 
             ids = tokenizer.batch_encode_plus(seqs,
                 add_special_tokens=True,
@@ -443,16 +443,3 @@ class CompactStructure(FragmentedStructure):
         self.export()
         log(3, "Compactness calculated")
         return self._compactness
-
-
-
-
-
-
-
-
-
-
-
-
-

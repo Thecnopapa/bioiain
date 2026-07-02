@@ -20,7 +20,31 @@ FORCE = ("--force" in sys.argv) or ("-f" in sys.argv)
 print(f"FORCE={FORCE}")
 
 
-dataset = StructureDataset.from_list("./data/consensus.list")
+
+if "monomers" in sys.argv:
+    dataset = StructureDataset.from_list("./data/cath-dataset-nonredundant-S20.monomeric.list", name="monomers")
+
+elif "multimers" in sys.argv:
+    dataset = StructureDataset.from_list("./data/cath-dataset-nonredundant-S20.multimeric.list", name="multimers")
+
+elif "pisa" in sys.argv:
+    dataset = StructureDataset.from_list("./data/cath-dataset-nonredundant-S20.multimeric.list", name="pisa")
+    dataset.add_list("./data/cath-dataset-nonredundant-S20.multimeric.list")
+
+elif "receptors" in sys.argv:
+    dataset = StructureDataset.from_list("./data/receptors.list", name="receptors")
+
+elif "lbds" in sys.argv:
+    dataset = StructureDataset.from_list("./data/lbds.list", name="lbds")
+
+elif "consensus" in sys.argv:
+    dataset = StructureDataset.from_list("./data/consensus.list", name="consensus")
+
+else:
+    dataset = StructureDataset.from_list(["1M2Z", "3HBB", "6F63", "5LXN", "3brf", "6e52", "7t2y", "3kg2", "2GEJ", "2bis"], name="aleph")
+
+
+#dataset = StructureDataset.from_list("./data/consensus.list")
 print(dataset)
 #dataset.load(entity_class=CompactStructure, check_existing=not FORCE)
 #dataset.export()
@@ -104,27 +128,30 @@ if len(embeddings) == 0 or FORCE:
     print(f"Chains processed ok: {total-n_missmatches}, missmatches:{n_missmatches}")
     embeddings.save()
 
-for e in embeddings:
-    print(e)
-
 print(embeddings)
 
 
-exit()
-
-
-
-
-
-
-
-
-model = CompactnessMLPmk1()
+model = CompactnessMLPmk1(name=DATASET_NAME, in_shape=[1280], hidden_dims=[])
+model.mount()
 print(model)
 
 epochs = 100
 for epoch in range(epochs):
-    print(f"EPOCH: {epoch}")
+    log("start", f"EPOCH: {epoch}", print_timer=True, reset_timer=False)
+
+    max_n = len(embeddings)
+    for n, item in enumerate(embeddings):
+        print(2, f"{n:6d}/{max_n:6d}", end = " ")
+        if item.l is None:
+            continue
+        out = model.forward(item.t)
+        loss = model.loss(out, item)
+        print(f"loss: {loss:7.3f} ({model.running_loss['default']/model.running_loss['total']:7.3f})                     ", end="\r")
+
+
+    model.add_epoch()
+    log("end", f"EPOCH: {epoch}", print_timer=True, reset_timer=False)
+
 
 
 print("DONE")
@@ -151,6 +178,3 @@ entity._calculate_compactness(session="--session" in sys.argv, plot="--plot" in 
 
 
 exit()
-
-
-

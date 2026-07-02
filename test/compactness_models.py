@@ -30,19 +30,14 @@ class SaProtEmbedding(Embedding):
     pass
 
 class CompactnessMLPmk1(BaseModel):
-    def __init__(self):
-
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        n = self.data["in_shape"][0]
+        self.data["hidden_dims"] = [n*2, n*2, n]
         self.layers["default"] = {
-            "linear1": nn.Linear(self.data["in_shape"][0], self.data["hidden_dims"][-1]),
-            "linear2": nn.Linear(self.data["in_shape"][0], self.data["hidden_dims"][-1]),
-            "linear3": nn.Linear(self.data["in_shape"][0], self.data["hidden_dims"][-1]),
+            "linear1": nn.Linear(self.data["in_shape"][0], self.data["hidden_dims"][-3]),
+            "linear2": nn.Linear(self.data["hidden_dims"][-3], self.data["hidden_dims"][-2]),
+            "linear3": nn.Linear(self.data["hidden_dims"][-2], self.data["hidden_dims"][-1]),
+            "linear4": nn.Linear(self.data["hidden_dims"][-1], 1),
 
         }
-
-
-
-
-
-
-
-

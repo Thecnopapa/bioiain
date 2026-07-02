@@ -170,8 +170,8 @@ def tprint(*strings:str, head:int=10, style:str="#", end:str="\n", sep:str=" ", 
     if reset_timer:
         start_time = time.time()
 
-def eprint(*strings, style = "^", **kwargs):  # Print end of section
-    tprint(*strings, style=style, end="\n\n", print_timer=True, **kwargs)
+def eprint(*strings, style = "^", print_timer=True, **kwargs):  # Print end of section
+    tprint(*strings, style=style, end="\n\n", print_timer=print_timer, **kwargs)
 
 
 

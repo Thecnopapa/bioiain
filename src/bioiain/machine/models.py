@@ -22,6 +22,7 @@ class BaseModel(nn.Module):
             dry=False,
             embedding_class=None,
             **kwargs):
+        log(1, "Initialising model...")
         super().__init__()
         self.data = getattr(self, "data", {})
         self.data["dataname"] = name
@@ -66,12 +67,10 @@ class BaseModel(nn.Module):
 
         self.data["name"] = str(self)
         self._optimisers = {}
-        self.criterions = {}
         self._schedulers = {}
 
-        
 
-        log("header", f"Model initialised: {self.data["name"]}")
+        log(2, f"BaseModel initialised: {self.data['name']}")
 
 
     def __str__(self):
@@ -112,7 +111,7 @@ class BaseModel(nn.Module):
         return self
 
     def _mount_submodels(self):
-        log(1, "Mounting submodels...")
+        log(2, "Mounting submodels...")
         for k, layer_set in self.layers.items():
             self.submodels[k] = nn.Sequential(*[l.to(DEVICE) for l in layer_set.values()]).to(DEVICE)
         if not self.inference:
@@ -144,7 +143,7 @@ class BaseModel(nn.Module):
         #    self.writer.add_graph(self, torch.rand(self.data["in_shape"]))
 
 
-        log(1, str(self))
+        log(3, f"Model mounted: {list(self.layers.keys())}")
         self.to(DEVICE)
 
 
@@ -188,7 +187,7 @@ class BaseModel(nn.Module):
         if self.dry or self.inference:
             self.writer = SummaryWriter(log_dir=os.path.join(TEMP_FOLDER, "trash"))
         else:
-            self.writer = SummaryWriter(log_dir=f"runs/{self.__class__.__name__}/{str(self)}_{datetime.datetime.now().strftime("%m-%d_%H-%M-%S")}")
+            self.writer = SummaryWriter(log_dir=f"runs/{self.__class__.__name__}/{str(self)}_{datetime.datetime.now().strftime('%m-%d_%H-%M-%S')}")
 
 
     def reset_loss(self):
@@ -256,7 +255,7 @@ class BaseModel(nn.Module):
                 self.loss(force_backpropagation=True)
 
     def add_epoch(self):
-
+        print()
         self.leftover_batch()
 
         if self.writer is not None:
@@ -513,7 +512,8 @@ class BaseModel(nn.Module):
 
     def _calculate_loss(self, output:torch.Tensor, item:Item, criterion_name:str="mode") -> torch.Tensor|float:
 
-        if criterion_name == "mode": criterions = [self.mode]
+        if criterion_name == "mode":
+            criterions = [self.mode]
 
         elif criterion_name == "all":
             criterions = [n for n in self.criterions.keys()]
@@ -524,6 +524,7 @@ class BaseModel(nn.Module):
         losses = []
 
         for n, criterion in enumerate(criterions):
+
             if criterion not in self.criterions: criterions[n] = "default"; criterion = "default"
             if isinstance(self.criterions[criterion], CustomLoss) or not isinstance(item, Item):
                 losses.append(self.criterions[criterion](output, item))
@@ -531,11 +532,11 @@ class BaseModel(nn.Module):
 
             elif hasattr(item, "lt"):
                 print("LT", item.lt)
-                losses.append(self.criterions[criterion](output, item.lt))
+                losses.append(self.criterions[criterion](output, item.lt.to(DEVICE)))
             elif item.l is not None:
                 #print("L", item.l)
                 try:
-                    losses.append(self.criterions[criterion](output, torch.Tensor([item.l])))
+                    losses.append(self.criterions[criterion](output, torch.Tensor([item.l]).to(DEVICE)))
                 except:
                     print(item)
                     print(item.l)
@@ -543,7 +544,7 @@ class BaseModel(nn.Module):
                     raise
             else:
                 try:
-                    losses.append(self.criterions[criterion](output, torch.Tensor(item.t)))
+                    losses.append(self.criterions[criterion](output, torch.Tensor(item.t).to(DEVICE)))
                 except:
                     print(item)
                     print(item.t)
@@ -623,7 +624,7 @@ class BaseModel(nn.Module):
         else:
             schedulers = {scheduler_name:self._schedulers[scheduler_name]}
 
-        print(schedulers)
+        #print(schedulers)
 
         for name, scheduler in schedulers.items():
             if scheduler is not None:
@@ -662,7 +663,3 @@ class BaseModel(nn.Module):
         else:
             self._optimisers[optimizer_name].zero_grad(set_to_none=set_to_none)
         return True
-
-
-
-

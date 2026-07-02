@@ -48,7 +48,6 @@ elif "receptors" in sys.argv:
 elif "lbds" in sys.argv:
     structures = StructureDataset.from_list("./data/lbds.list", name="lbds")
 
-
 elif "consensus" in sys.argv:
     structures = StructureDataset.from_list("./data/consensus.list", name="consensus")
 
@@ -541,12 +540,3 @@ if "-p" in sys.argv:
 
 
 log("end", "DONE")
-
-
-
-
-
-
-
-
-
