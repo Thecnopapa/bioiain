@@ -27,7 +27,7 @@ class KDT(object):
                 atoms = coords_or_entity.atoms(hetatm=True)
                 coords_or_entity._kdtrees["atom"] = self
             elif mode == "ca":
-                atoms = coords_or_entity.atoms(ca_only=True)
+                atoms = [res.ca for res in coords_or_entity.residues()]
                 coords_or_entity._kdtrees["ca"] = self
             coords = np.array([a.coord for a in atoms], dtype=np.float64)
             if auto_parse_symmetry:

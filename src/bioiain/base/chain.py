@@ -25,6 +25,9 @@ class BIChain(BIEntity):
     def id(self):
         return self.data["info"]["chain_id"]
 
+    def __repr__(self):
+        return f"<bi.{self.__class__.__name__}: {self.code()}:{self.id()}/{self.complex()}>"
+
 
 
     def set_chain_id(self, chain_id=None, complex=False):

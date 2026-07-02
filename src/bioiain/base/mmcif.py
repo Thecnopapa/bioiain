@@ -480,7 +480,7 @@ def write_atoms(atoms, file_path, name=None, include_misc=True, preserve_ids=Fal
                 if not preserve_ids:
                     d["id"] = f"{n:4d}"
                 if len(d.values()) != len(labels):
-                    log("Warning", f"Atom with inconsistent ({d.values()}/{len(labels)}) labels")
+                    log("Warning", f"Atom with inconsistent ({len(d.values())}v/{len(labels)}l) labels")
                     continue
                 f.write("  ".join(d.values()) + "\n")
                 n+=1

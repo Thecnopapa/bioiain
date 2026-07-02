@@ -30,7 +30,7 @@ def build_res(atoms, ignore_errors=True, **kwargs):
         raise NoMatchingClass()
 
     except (NoCaFound, NoBackbone, NotImplementedError) as e:
-        log("warning", str(e))
+        log("warning", e)
         if ignore_errors:
             return None
         else:
@@ -99,7 +99,7 @@ class BIResidue(object):
                 if require_ca:
                     log("error", "Trying to initialise residue with no CA")
                     print([a.name for a in self.atoms])
-                    raise NoCaFound()
+                    raise NoCaFound("Trying to initialise residue with no CA")
 
             self.set_fragment()
 
@@ -128,7 +128,7 @@ class BIResidue(object):
                 log("error", "Trying to initialise residue with no backbone")
                 print(self.backbone)
                 print(self)
-                raise NoBackbone()
+                raise NoBackbone("Trying to initialise residue with no backbone")
 
     def __repr__(self):
         return f"<bi.{self.__class__.__name__} id={self.id}>"
@@ -142,6 +142,12 @@ class BIResidue(object):
 
     def bfactor(self):
         return self.ca.b
+
+    def set_misc(self, key, value):
+        for a in self.atoms:
+            a.set_misc(key, value)
+        return self
+
     def set_bfactor(self, bfactor):
         for a in self.atoms:
             a.set_bfactor(bfactor)

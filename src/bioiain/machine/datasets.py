@@ -75,7 +75,7 @@ class Item(object):
 
 
 class EmbeddingDataset(object):
-    def __init__(self,*args,  name, folder=None, **kwargs):
+    def __init__(self, name, folder=None, **kwargs):
         fname = f"{name}.dataset"
         if folder is None:
             folder = os.path.join(SUBDIR_NAME, "datasets", fname)
@@ -269,7 +269,7 @@ class EmbeddingDataset(object):
         if key is None:
             key = len(self.embeddings)
         log(1, "Adding to dataset:", embedding)
-        #print(embedding.path())
+        print(embedding.path())
         self.embeddings[key] = {
             "key": key,
             "n": len(self.embeddings),
@@ -340,7 +340,6 @@ class EmbeddingDataset(object):
 
     def get(self, key, embedding=True, label=True, cache=True, label_key=None, only_data=False) -> Item:
         from torch import load as torch_load
-
         if label_key is None:
             label_key = self.data["label_key"]
         embedding_path = None
@@ -356,7 +355,7 @@ class EmbeddingDataset(object):
 
 
         for e in emb_list.values():
-            #print(e)
+            #print(e["start"], key ,e["end"])
             #print(key < e["start"], key >= e["end"])
             if key < e["start"]: continue
             if key >= e["end"]: continue
@@ -411,15 +410,22 @@ class EmbeddingDataset(object):
                     label_data = json.load(open(label_path))
                 elif label_path.endswith(".csv"):
                     with open(label_path, "r") as f:
-                        label_data = [l for l in f.read().strip().split(",")]
+                        label_data = []
+                        for line in f:
+                            line = line.strip().replace("\n", "")
+                            if line.startswith("#"): continue
+                            label_data.extend([l.strip() for l in line.split(",") if l.strip() != ""])
                         for n, l in enumerate(label_data):
                             if ":" in l:
                                 label_data[n] = [float(ll) for ll in l.split(":")]
                             else:
-                                try:
-                                    label_data[n] = float(l)
-                                except ValueError:
-                                    label_data[n] = l.strip()
+                                if l in [None, ".", "none", "None", "-"]:
+                                    l = None
+                                else:
+                                    try:
+                                        label_data[n] = float(l)
+                                    except ValueError:
+                                        label_data[n] = l.strip()
 
                 elif label_path.endswith(".txt") or label_path.endswith(".label") or "." not in label_path:
                     with open(label_path, "r", encoding="utf-8") as f:
@@ -431,7 +437,9 @@ class EmbeddingDataset(object):
         target_label=None
         if embedding:
             target_tensor = tensor
+            #print(iter_dim)
             for i in range(iter_dim):
+                #print(target_tensor.shape, i)
                 target_tensor = target_tensor[0]
             try:
                 target_tensor = target_tensor[rel_key]
@@ -444,8 +452,17 @@ class EmbeddingDataset(object):
 
         if label:
             if label_data is not None:
-                target_label = label_data[rel_key]
-            #print("label", target_label)
+                try:
+                    target_label = label_data[rel_key]
+                except IndexError:
+                    print(f"key: {key}")
+                    print(f"rel_key: {rel_key}")
+                    print(f"embedding_path: {embedding_path}")
+                    print(f"label_path: {label_path}")
+                    print(f"tensor shape: {target_tensor.shape}")
+                    print(label_data, len(label_data))
+                    print(rel_key)
+                    raise
 
         if cache:
             self.cache = {"label_data":None, "label_path":None, "tensor":None, "embedding_path":None}

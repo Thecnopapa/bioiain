@@ -9,7 +9,7 @@ from src.bioiain.utilities.sequences import *
 
 from src.bioiain.utilities.maths import *
 
-from src.bioiain.machine import DEVICE, tensor_to_numpy
+from src.bioiain.machine import DEVICE, tensor_to_numpy, Embedding
 from src.bioiain.machine.losses import *
 from src.bioiain.machine.models import BaseModel
 from src.bioiain.machine.layers import *
@@ -24,6 +24,10 @@ from sklearn.decomposition import PCA
 
 
 
+
+class SaProtEmbedding(Embedding):
+    iter_dim = 1
+    pass
 
 class CompactnessMLPmk1(BaseModel):
     def __init__(self):

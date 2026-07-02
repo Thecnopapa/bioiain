@@ -24,8 +24,9 @@ from src.bioiain.utilities.sequences import FASTA
 
 
 class FoldseekDB(object):
-    def __init__(self,name, list_dir_or_dataset, folder=None, foldseek_command="foldseek", force=False):
+    def __init__(self,name, list_dir_or_dataset, folder=None, foldseek_command="foldseek", force=False, verbose=2):
         self.foldseek_command = foldseek_command
+        self.verbose = str(verbose)
         if folder is None:
             folder = os.path.join(SUBDIR_NAME, "foldseek")
         self.folder = os.path.join(folder, name)
@@ -59,21 +60,21 @@ class FoldseekDB(object):
                 line = path+"\n"
                 f.write(line)
 
-        cmd = [self.foldseek_command, "createdb", tsv_path, self.db_path, "-v", "3"]
+        cmd = [self.foldseek_command, "createdb", tsv_path, self.db_path, "-v", self.verbose]
         print(" ".join(cmd))
         subprocess.run(cmd)
         return self
 
     def generate_tokens(self, force=False):
         if force or self.token_fasta_path is None:
-            cmd = [self.foldseek_command, "lndb", self.db_path+"_h", self.db_path+"_ss_h", "-v", "3"]
+            cmd = [self.foldseek_command, "lndb", self.db_path+"_h", self.db_path+"_ss_h", "-v", self.verbose]
             print(" ".join(cmd))
             subprocess.run(cmd)
-            #cmd = [self.foldseek_command, "createindex", self.db_path, os.path.join(TEMP_FOLDER, "foldseekk"), "-v", "3"]
+            #cmd = [self.foldseek_command, "createindex", self.db_path, os.path.join(TEMP_FOLDER, "foldseekk"), "-v", self.verbose]
             #print(" ".join(cmd))
             #subprocess.run(cmd)
             fasta_path = self.db_path+".tokens.fasta"
-            cmd = [self.foldseek_command, "convert2fasta", self.db_path+"_ss", fasta_path, "-v", "3"]
+            cmd = [self.foldseek_command, "convert2fasta", self.db_path+"_ss", fasta_path, "-v", self.verbose]
             print(" ".join(cmd))
             subprocess.run(cmd)
             self.token_fasta_path = fasta_path
@@ -88,7 +89,7 @@ class FoldseekDB(object):
         if force or self.sequence_fasta_path is None:
             fasta_path = self.db_path+".aa.fasta"
 
-            cmd = [self.foldseek_command, "convert2fasta", self.db_path, fasta_path, "-v", "3"]
+            cmd = [self.foldseek_command, "convert2fasta", self.db_path, fasta_path, "-v", self.verbose]
             print(" ".join(cmd))
             subprocess.run(cmd)
             self.sequence_fasta_path = fasta_path
@@ -123,12 +124,12 @@ class FoldseekDB(object):
 
 
 
-    def match_dataset(self, dataset, saprot=True, atoms=True, entity_class=BIEntity):
+    def match_dataset(self, dataset, saprot=True, atoms=True, entity_class=BIEntity, **kwargs):
 
 
-        iterables = [self.tokens_fasta(), self.sequences_fasta()]
+        iterables = [self.tokens_fasta(**kwargs), self.sequences_fasta(**kwargs)]
         if saprot:
-            iterables.append(self.saprot_embeddings())
+            iterables.append(self.saprot_embeddings(**kwargs))
 
         entity = None
         for (name, t_seq), (_, aa_seq), *data in zip(*iterables):
@@ -158,8 +159,9 @@ class FoldseekDB(object):
                 except:
                     entity = entity_class.from_file(entry["path"], code=code, no_atoms=not atoms)
                 #print(entity)
-
-                chains = entity.chains(chain)
+                print(chain)
+                chains = entity.chains(chain, by_complex=True)
+                print(chains)
                 for chain_entity in chains:
                     #print(chain, chain_entity, chain_entity.id(), chain_entity.complex())
                     pass
@@ -169,6 +171,7 @@ class FoldseekDB(object):
                 #print(len(ch.sequence()), len(t_seq))
                 #print()
             except:
+                raise
                 yield {
                     "t_seq": t_seq,
                     "error": True,
@@ -228,32 +231,34 @@ class FoldseekDB(object):
         model.eval()
         model.to(DEVICE)
 
+        model_name = model_name.split("/")[-1]
 
         for entry in self:
             save_path = os.path.join(SUBDIR_NAME, "embeddings", "saprot", model_name)
             os.makedirs(save_path, exist_ok=True)
             save_path = os.path.join(save_path, entry["name"].split(" ")[0]+".pt")
-            if not force and os.path.exists(save_path):
-                yield entry, torch.load(save_path)
+            if (not force) and os.path.exists(save_path):
+                yield torch.load(save_path), model_name
                 continue
+            log(2, "Running SaProt model...")
             if sequence_only:
-                seq = [f"{aa.upper()}#" for aa in entry["aa_seq"]]
+                seq = "".join([f"{aa.upper()}#" for aa in entry["aa_seq"]])
             else:
-                seq = self.zip(entry["aa_seq"], entry["tok_seq"])
+                seq = "".join(self.zip(entry["aa_seq"], entry["tok_seq"]))
             log(3, "LEN SEQ", len(seq))
-            
+            tokens = tokenizer.tokenize(seq)
             inputs = tokenizer(seq, return_tensors="pt")
             inputs = {k: v.to(DEVICE) for k, v in inputs.items()}
             with torch.no_grad():
                 log(3, "Generating output...")
                 outputs = model(**inputs, output_hidden_states=True)
                 log(3, "Output ready")
-                last_hidden = outputs.hidden_states[-1]
+                last_hidden = outputs.hidden_states[-1][:,1:-1,:]
                 log(3, "LEN EMBEDDING", last_hidden.shape)
 
                 torch.save(last_hidden, save_path)
 
-                yield entry, last_hidden
+                yield last_hidden, model_name
                 continue
 
 
@@ -314,43 +319,79 @@ class FoldseekDB(object):
 
 
 class CompactStructure(FragmentedStructure):
-
+    extension = "cstructure"
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.data["compactness"] = {}
+        self._compactness = None
 
-    def ca_kdtree(self, force=False, **kwargs):
-        if force or getattr(self, "_kdtrees", {}).get("ca", None) is None:
-            KDT(self, mode="ca", auto_parse_symmetry=True, **kwargs)
+
+    def ca_kdtree(self, force=False, auto_parse_symmetry=True, **kwargs):
+        if force or getattr(self, "_kdtrees", {}).get("ca", None) is None or (self._kdtrees["ca"].has_symmetries != auto_parse_symmetry):
+            KDT(self, mode="ca", auto_parse_symmetry=auto_parse_symmetry, **kwargs)
         return self._kdtrees["ca"]
 
-    def _calculate_compactness(self, radius=10, plot=False, session=False):
-        kdtree = self.ca_kdtree()
-        print(kdtree)
+    def compactness(self, force=False, with_symmetry=True, **kwargs):
+        if (not force) and self.has_flag("compactness_calculated", True):
+            try:
+                self._compactness = []
+                for res in chain.residues():
+                    self._compactness.append(res.ca.get_misc("compactness"))
+                log(2, "Compactness already generated")
+
+            except:
+                log("warning", "Failed to obtain entire completeness list from residues")
+                self._compactness = None
+        if force or self._compactness is None: # self.has_flag("compactness_calculated", True):
+            self._calculate_compactness(with_symmetry=with_symmetry, **kwargs)
+
+
+        return self._compactness
+
+    def _calculate_compactness(self, radius=10, plot=False, session=False, with_symmetry=True):
+        log(2, "Calculating compactness...")
+        kdtree = self.ca_kdtree(auto_parse_symmetry=with_symmetry)
+        residues = self.residues()
+        self.set_misc("compactness", None)
+
         from src.bioiain.visualisation.plots import plasma
 
         if plot:
+            log(2, "Including 3D mpl plot")
             from src.bioiain.visualisation.plots import fig3D, close, show, line
             fig, ax = fig3D()
-            print(fig, ax)
+            #print(fig, ax)
 
         if session:
+            log(2, "Including pymol session")
             from src.bioiain.visualisation.pymol import PymolScript
             script = PymolScript(name=f"compactness_{self.name()}", folder = self.folder())
             minimal = self.path(minimal=True)
             entity_name = script.load(minimal)
-            print(script ,entity_name)
+            #print(script ,entity_name)
 
 
-        max_frags = max([k["atom"].get_misc("fragment", 0) for k in kdtree])
+        max_frags = self.data["fragments"]["n_fragments"]
+        assert max_frags is not None
+
+        all_compactness = []
+        rn = -1
         for n, k in enumerate(kdtree):
             if k["op"] != 1:
                 continue
-            # print(n, k)
+            rn += 1
+            #print(n, k, rn)
             fragment = k["atom"].get_misc("fragment", 0)
+            if fragment is None:
+                fragment = 0
             color = plasma(fragment, scale=max_frags)
             coord = k["coord"]
             atom = k["atom"]
+            residue = residues[rn]
+            #print(n, rn, atom, residue)
+            assert atom.resseq == residue.resseq, f"{atom.resseq}, {residue.resseq}"
+
             neighs = list(kdtree.radius(k["coord"], radius=radius)[0])
             # print(neighs)
             final_vector = np.array([0., 0., 0.])
@@ -367,25 +408,29 @@ class CompactStructure(FragmentedStructure):
                 final_vector += np.array(vector(coord, kdtree.coord_of(nn)))
 
 
-
             if valid_nn > 0:
                 final_vector /= valid_nn
                 final_vector *= -1
                 compactness = length(final_vector)
                 # print(final_vector, compactness)
-                ccol = plasma(compactness, scale=10)
-                hexccol = plasma(compactness, scale=10, as_pymol_hex=True)
                 vector_end = coord + final_vector
-                if plot:
+                all_compactness.append(compactness)
+                residue.set_misc("compactness", float(compactness))
+                if  plot:
+                    ccol = plasma(compactness, scale=10)
                     ax.scatter(*coord, c=ccol, s=valid_nn + 1)
                     ax.plot(*line(coord, vector_end), c=ccol)
                 if session:
+                    hexccol = plasma(compactness, scale=10, as_pymol_hex=True)
+
                     r1 = f"({entity_name} and i. {atom.resnum} and c. {atom.complex})"
                     #print(r1)
                     a1 = f"({r1} and n. ca)"
                     script.line(name="compactness", sele1=a1, coord2=vector_end)
                     script.color(r1, color=hexccol)
 
+
+        self.set_flag("compactness_calculated", True)
 
         if plot:
             show()
@@ -394,6 +439,10 @@ class CompactStructure(FragmentedStructure):
         if session:
             script.compile()
             script.execute()
+        self._compactness = all_compactness
+        self.export()
+        log(3, "Compactness calculated")
+        return self._compactness
 
 
 

@@ -105,7 +105,7 @@ class Embedding(object):
     def length(self) -> int:
         if self.dry:
             return 0
-        return self.tensor().shape[0]
+        return self.tensor().shape[getattr(self, "iter_dim", 0)]
 
     def __len__(self):
         return self.length()

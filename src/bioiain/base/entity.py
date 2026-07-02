@@ -120,6 +120,10 @@ class BIEntity(object):
         else:
             self.data["info"]["name"] = str(name)
 
+    def set_misc(self, key, value):
+        for a in self.all_atoms():
+            a.set_misc(key, value)
+
     def path(self, minimal=False):
         if not minimal:
             if self.paths.get("self", None) is None:
@@ -178,8 +182,8 @@ class BIEntity(object):
             code = str(self.data["info"]["code"])
         return BIStructure.from_atoms(self._atoms, code, parent=self)
 
-    def chains(self, sele:list|str=None, **kwargs):  
-        return self.atoms(as_chains=True, hetatm=True, chain_sele=sele, **kwargs)
+    def chains(self, sele:list|str=None, by_complex=False, **kwargs):
+        return self.atoms(as_chains=True, hetatm=True, chain_sele=sele, by_complex=by_complex, **kwargs)
 
     def residues(self, **kwargs):
         return self.atoms(ca_only=False, residues=True, **kwargs)
@@ -228,7 +232,7 @@ class BIEntity(object):
         return self._cvectors
 
 
-    def atoms(self, ca_only=False, hetatm=False, ligands=False, residues=False, dna=False, water=False, hydrogens=False, force=False, group_by_residue=False, disordered=False, as_residues=False, chain=None, group_by_chain=False, as_chains=False, **kwargs):
+    def atoms(self, ca_only=False, hetatm=False, ligands=False, residues=False, dna=False, water=False, hydrogens=False, force=False, group_by_residue=False, disordered=False, as_residues=False, chain=None, group_by_chain=False, as_chains=False, by_complex=False, **kwargs):
         from .atom import _fix_disordered
         from .residue import build_res
 
@@ -284,7 +288,7 @@ class BIEntity(object):
             if as_chains:
                 for ch, atms in chain_list.items():
                     chain_list[ch] = BIChain().from_atoms(atms, self.code(), ch, parent=self)
-                chain_list = [ch for ch in chain_list.values() if (chain_sele is None) or (ch.id() in chain_sele)]
+                chain_list = [ch for ch in chain_list.values() if (chain_sele is None) or ((ch.id() if not by_complex else ch.complex()) in chain_sele)]
 
             return chain_list
 
@@ -404,6 +408,8 @@ class BIEntity(object):
 
         if self.paths["self"] != filepath:
             self.paths["source"] = filepath
+        if self.paths["sub_folder"] is None:
+            self.paths["sub_folder"] = ""
         elif source is not None:
             self.paths["source"] = source
 

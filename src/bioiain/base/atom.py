@@ -226,9 +226,12 @@ class PseudoAtom(object):
 
 
 class BIAtom(PseudoAtom):
-    def __init__(self, data):
+    def __init__(self, data, residue=None, entity=None):
         if len(data) == 1:
             data = data[0]
+
+        self._residue = residue
+        self._entity = entity
         for k, v in data.items():
             if v == "." or v == "?" or v=="None":
                 #print(k, "is empty for:", data["id"])
@@ -468,11 +471,11 @@ class BIAtom(PseudoAtom):
     def _none_point(val):
         if val is None:
             return "."
-        if type(val) == float:
+        if isinstance(val, float):
             return f"{val:7.3f}"
-        elif type(val) == int:
+        elif isinstance(val, int):
             return f"{val:>3d}"
-        elif type(val) in [list, tuple, dict]:
+        elif type(val) in [list, tuple, dict, np.ndarray]:
             log("warning", "Data type not insertable in mmcif:", type(val))
             return "."
         else:
