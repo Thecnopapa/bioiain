@@ -140,6 +140,8 @@ log("header", embeddings)
 
 model = CompactnessMLPmk1(name=DATASET_NAME, in_shape=[1280], hidden_dims=[])
 model.mount()
+total_params = sum(p.numel() for p in model.submodels["default"].parameters())
+log(1, "Number of parameters in the model:", total_params)
 #print(model)
 
 epochs = 100
@@ -149,7 +151,7 @@ for epoch in range(epochs):
     max_n = len(embeddings)
     for n, item in enumerate(embeddings):
         if n % 100 == 0:
-            log(2, f"{n:6d}/{max_n:6d}", end = " ")
+            log(1, f"{n:6d}/{max_n:6d}", end = " ")
         if item.l is None:
             continue
         out = model.forward(item.t)
@@ -157,8 +159,8 @@ for epoch in range(epochs):
         loss = model.loss(out, item)
         if n % 100 == 0:
             print(f"loss: {model.running_loss['default']/model.running_loss['total']:7.3f}    last: loss={loss:7.3f} out={out.item():7.3f} l={item.l:<7.3f}                                                                                       ", end="\r")
-
-    print()
+        model.save(temp=True)
+    model.save()
     model.add_epoch()
     log("end", f"EPOCH: {epoch}", print_timer=True, reset_timer=False)
 
