@@ -10,23 +10,28 @@ from ..utilities import d3to1
 
 def build_res(atoms, ignore_errors=True, **kwargs):
     try:
-        resnames = list(set([a.resname for a in atoms]))
+        resnames = [a.resname for a in atoms]
+        atomnames = [a.name for a in atoms]
+
         if resnames == ["HOH"]:
             return Water(atoms, **kwargs)
 
         if max(len(r) for r in resnames) < 3:
-            return BINucleoutide(atoms, **kwargs)
+            return BINucleotide(atoms, **kwargs)
 
-        atomnames = list(set([a.name for a in atoms]))
+
         if "CA" in atomnames:
             return BIResidue(atoms, **kwargs)
 
-        atomtypes = list(set([a.type for a in atoms]))
+        elif "C6" in atomnames:
+            return BIHexose(atoms, **kwargs)
+        elif "C5" in atomnames:
+            return BIRibose(atoms, **kwargs)
+
+        atomtypes = [a.type for a in atoms]
         if atomtypes == ["HETATM"]:
             return Ligand(atoms, **kwargs)
 
-        log("warning", "No matching class for atoms:")
-        [log("warning", a) for a in atoms]
         raise NoMatchingClass()
 
     except (NoCaFound, NoBackbone, NotImplementedError) as e:
@@ -45,6 +50,7 @@ def build_res(atoms, ignore_errors=True, **kwargs):
 class BIResidue(object):
     child_class = BIAtom
     type="residue"
+    main_atom_name = "CA"
     def __init__(self, atoms, require_ca=True, **kwargs):
         if type(atoms) == dict:
             atoms = atoms.values()
@@ -72,13 +78,8 @@ class BIResidue(object):
             
 
         for a in self.atoms:
-            if len(a.resname) == 2:
-                log("Warning", "(DEPRECATED use to initialise a nucleotide. Use build res instead")
-                self.__class__ = BINucleoutide
-                self.__init__(self.atoms)
-                break
 
-            if a.name == "CA":
+            if a.name == self.main_atom_name:
                 self.ca = a
             elif a.name == "CB":
                 self.cb = a
@@ -97,8 +98,8 @@ class BIResidue(object):
                 self.ca = self.atoms[0]
             if self.ca is None:
                 if require_ca:
-                    log("error", "Trying to initialise residue with no CA")
                     print([a.name for a in self.atoms])
+                    print([a.atomnum for a in self.atoms])
                     raise NoCaFound("Trying to initialise residue with no CA")
 
             self.set_fragment()
@@ -121,10 +122,9 @@ class BIResidue(object):
 
 
             if any([a is None for a in self.backbone]):
-                log("error", "Trying to initialise residue with no backbone")
-                print(self.backbone)
                 print(self)
-                raise NoBackbone("Trying to initialise residue with no backbone")
+                print(self.backbone)
+                raise NoBackbone(f"Trying to initialise {self.__class__.__name__} with no backbone")
 
     def id(self): return self.resname, self.resnum, self.resseq, self.chain, self.entity, self.complex, self.fragment
 
@@ -190,14 +190,15 @@ class BIResidue(object):
 
 
 
-class BINucleoutide(object):
+class BISugar(object):
     child_class = BIAtom
-    type="dna"
+    type="ligand"
+    main_atom_name="C1"
     def __init__(self, atoms, **kwargs):
         if type(atoms) == dict:
             atoms = atoms.values()
         self.atoms = atoms
-        self.p = None
+        self.main = None
         self.resnum = None
         self.resname = None
         self.resseq = None
@@ -205,25 +206,25 @@ class BINucleoutide(object):
         self.fragment = None
         self.is_residue = False
 
+
+
         for a in self.atoms:
-            #print(a)
-            #print(a.name)
-            if a.name == "P":
-                self.p = a
+            if a.name == self.main_atom_name:
+                self.main = a
                 break
 
-        if self.p is None:
-            log("error", "Trying to initialise nucleotide with no P")
+        if self.main is None:
             print([a.name for a in self.atoms])
-            print()
-            raise NoCaFound()
+            print([a.atomnum for a in self.atoms])
+            [print(a, a.id4()) for a in self.atoms]
+            raise NoMainAtomFound(f"Trying to initialise {self.__class__.__name__} with no {self.main_atom_name}")
 
-        self.fragment = self.p.get_misc("fragment", None)
+        self.fragment = self.main.get_misc("fragment", None)
 
-        self.resnum = self.p.resnum
-        self.resname = self.p.resname
-        self.resseq = self.p.resseq
-        self.chain = self.p.chain
+        self.resnum = self.main.resnum
+        self.resname = self.main.resname
+        self.resseq = self.main.resseq
+        self.chain = self.main.chain
 
 
     def id(self): return self.resname, self.resnum, self.resseq, self.chain, self.fragment
@@ -234,3 +235,20 @@ class BINucleoutide(object):
     def to_atoms(self, key, value):
         for atom in self.atoms:
             atom.set_misc(key, value)
+
+
+class BIRibose(BISugar):
+    pass
+
+class BIHexose(BISugar):
+    pass
+
+class BINucleotide(BIHexose):
+    type="nucleotide"
+    main_atom_name="N1"
+
+class BIRNA(BINucleotide):
+    pass
+
+class BIDBNA(BINucleotide):
+    pass

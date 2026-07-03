@@ -294,7 +294,7 @@ class BIEntity(object):
             target_entities.append("residue")
 
         if dna:
-            target_entities.append("dna")
+            target_entities.append("nucleotide")
 
 
         if water or ligands:
@@ -353,17 +353,24 @@ class BIEntity(object):
         if group_by_residue or len(target_entities) > 0:
             atoms_by_res = {}
             for atom in atoms:
-                if atom.id2()[1:] in atoms_by_res:
-                    atoms_by_res[atom.id2()[1:]].append(atom)
+                if atom.id2()[1:-1] in atoms_by_res:
+                    atoms_by_res[atom.id2()[1:-1]].append(atom)
                 else:
-                    atoms_by_res[atom.id2()[1:]] = [atom]
+                    atoms_by_res[atom.id2()[1:-1]] = [atom]
 
             if len(target_entities) > 0:
                 entities = []
-                for resatms in atoms_by_res.values():
+                for k, resatms in atoms_by_res.items():
+
                     try:
                         e = build_res(resatms, parent=self)
                     except NoMatchingClass:
+                        log("warning", "No matching class for atoms:")
+                        [log("warning", ra) for ra in resatms]
+                        continue
+                    except NoMainAtomFound:
+                        log("warning", "Non main atom for:", k)
+                        [log("warning", ra) for ra in resatms]
                         continue
                     if getattr(e, "type", None) in target_entities:
                         entities.append(e)

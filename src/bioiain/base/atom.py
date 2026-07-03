@@ -547,9 +547,9 @@ def _fix_disordered(atoms):
                         assert a.disordered
                     except:
                         print(">>>")
-                        print(a, a.resseq, a.resnum, a.atomnum, a.id4())
+                        print(atom, atom.resseq, atom.resnum, atom.atomnum,atom.id3(), atom.id4())
                         print("###")
-                        print(atom, atom.resseq, atom.resnum, atom.atomnum, a.id4())
+                        print(a, a.resseq, a.resnum, a.atomnum, a.id3(), a.id4())
                         print("<<<")
                         raise
                     a.doppelgangers.append(atom)

@@ -79,8 +79,12 @@ class ModelSaveError(Exception):
 class TryingToSaveInferenceModel(ModelSaveError):
     pass
 
+
 # Residue related
-class NoCaFound(Exception):
+class NoMainAtomFound(Exception):
+    pass
+
+class NoCaFound(NoMainAtomFound):
     pass
 
 class NoBackbone(Exception):
@@ -88,6 +92,8 @@ class NoBackbone(Exception):
 
 class NoMatchingClass(Exception):
     pass
+
+# Nucleotide related
 
 
 
