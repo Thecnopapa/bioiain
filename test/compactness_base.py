@@ -204,7 +204,7 @@ class FoldseekDB(object):
         return l
 
 
-    def saprot_embeddings(self, sequence_only=False, model_name="westlake-repl/SaProt_650M_PDB", force=False):
+    def saprot_embeddings(self, sequence_only=False, model_name="westlake-repl/SaProt_650M_PDB", force=False, save_folder=False):
 
         log(2, "Generating SaProt Embeddings...")
         from transformers import EsmTokenizer, EsmForMaskedLM
@@ -238,11 +238,13 @@ class FoldseekDB(object):
         model_name = model_name.split("/")[-1]
 
         for entry in self:
-            save_path = os.path.join(SUBDIR_NAME, "embeddings", "saprot", model_name)
+            if save_folder is None:
+                save_folder = os.path.join(SUBDIR_NAME, "embeddings")
+            save_path = os.path.join(save_folder, "saprot", model_name)
             os.makedirs(save_path, exist_ok=True)
             save_path = os.path.join(save_path, entry["name"].split(" ")[0]+".pt")
             if (not force) and os.path.exists(save_path):
-                yield torch.load(save_path), model_name
+                yield torch.load(save_path), model_name, save_path, entry
                 continue
             log(2, "Running SaProt model...")
             if sequence_only:
@@ -262,7 +264,7 @@ class FoldseekDB(object):
 
                 torch.save(last_hidden, save_path)
 
-                yield last_hidden, model_name
+                yield last_hidden, model_name, save_path, entry
                 continue
 
 

@@ -33,11 +33,12 @@ test/cvmaps
 
 
 # Bioiain V3
-test/runs
 */bioiain.d/
 test/bioian.d
 test/ bioiain.d
+test/runs
 test/logs
+test/inference
 
 # Docs
 html

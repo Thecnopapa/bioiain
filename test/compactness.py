@@ -56,13 +56,15 @@ print(dataset)
 
 
 ENTITY_CLASS = CompactStructure
+EMBEDDING_CLASS = SaProtEmbedding
 
 DATASET_NAME = f"{dataset.name}_foldseek"
 log("title", DATASET_NAME)
 
 IN_SHAPE=[1280]
 FOLDSEEK = os.environ.get("FOLDSEEK_PATH", "foldseek")
-
+INFERENCE = "-i" in sys.argv
+TRAIN = "-t" in sys.argv
 
 log("start", "EMBEDDINGS")
 
@@ -70,7 +72,7 @@ embeddings = EmbeddingDataset(DATASET_NAME)
 if (not FORCE) or "--rebuild" in sys.argv:
     embeddings.load()
 
-if len(embeddings) == 0 or FORCE:
+if (len(embeddings) == 0 or FORCE) and not INFERENCE:
     n_missmatches = 0
     total = 0
     fs = FoldseekDB(dataset.name, dataset, foldseek_command=FOLDSEEK)
@@ -83,15 +85,6 @@ if len(embeddings) == 0 or FORCE:
         t = tensor[0]
         saprot_name = tensor[1]
 
-
-        #print(t.shape)
-
-        #print("DATA", data)
-        #print("TENSOR", t.shape)
-        #print("ENTITY:", entity)
-        #print("CHAIN:", chain)
-
-        #print(len(t), len(chain.sequence()))
         try:
             assert t.shape[-2] == len(chain.sequence()), f"Sequence len ({len(chain.sequence())}) and token len ({t.shape[-2]}) missmatch."
         except AssertionError as e:
@@ -131,7 +124,7 @@ if len(embeddings) == 0 or FORCE:
             log(1, "Compactness label already generated")
         log(2, label_path, saprot_name)
 
-        embedding = SaProtEmbedding.from_tensor(t, name=name, subfolder=saprot_name).save()
+        embedding = EMBEDDING_CLASS.from_tensor(t, name=name, subfolder=saprot_name).save()
         embeddings.add(embedding, label_path=label_path)
         embeddings.save(temp=True)
 
@@ -150,7 +143,7 @@ MODEL_CLASS = CompactnessMLPmk1
 log("header", f"MODEL_CLASS={MODEL_CLASS}")
 
 
-if "-t" in sys.argv:
+if TRAIN:
     log("start", "TRAINING")
 
     epochs = 100
@@ -192,21 +185,32 @@ if "-t" in sys.argv:
 
 
 
-if "-i" in sys.argv:
+if INFERENCE:
     log("start", "INFERENCE")
 
     with torch.no_grad():
-        filepath = sys.argv[sys.argv.index("--file") + 1]
-        log(1, f"File path: {filepath}")
+        try:
+            filepath = sys.argv[sys.argv.index("--file") + 1]
+            log(1, f"File path: {filepath}")
+        except:
+            raise
+
+
         try:
             model_path = sys.argv[sys.argv.index("--model") + 1]
         except:
             model_path = None
         log(1, f"Model path: {model_path}")
 
+        model = MODEL_CLASS(name=DATASET_NAME, in_shape=IN_SHAPE, inference=True)
+        log(1, f"Model:", model)
+        model.load(model_path)
+
 
         log(1, "Loading entity...")
         entity = ENTITY_CLASS.from_file(filepath, export_folder="inference")
+        entity.compactness(with_symmetry=True)
+
         entity.export()
         log(2, "Entity loaded:", entity)
 
@@ -214,14 +218,77 @@ if "-i" in sys.argv:
         inference_folder = os.path.join(entity.folder(), "inference", inference_name)
         os.makedirs(inference_folder, exist_ok=False)
 
-        fs = FoldseekDB(entity.code(), [entity.path(source=True)], folder=entity.folder(), foldseek_command=FOLDSEEK)
+
+
+        fs = FoldseekDB("db_"+entity.code(), [entity.path(source=True)], folder=entity.folder(), foldseek_command=FOLDSEEK)
         print(fs)
 
+        for tensor, saprot_name, tensor_path, entry in fs.saprot_embeddings(save_folder=entity.folder()):
+            name = entry["name"].split(" ")[0]
+            try:
+                code, chain = name.split("_")
+            except:
+                code = name
+                chain = "*"
+            log("header", f"Infering {code} chain {chain}")
+
+            chain_entity = entity.chains(chain, use_complex=True)[0]
+
+            tensor = tensor.to(DEVICE)
+            log(1, "N res:\t", len(chain_entity.residues()))
+            log(1, "Tensor:\t", tensor.shape)
+
+            out = model(tensor)
+            log(1, "Out:\t", out.shape)
+            #print(out)
+            av = torch.mean(out, dim=-2)
+            #print(av)
+            log(1, f"Mean:\t{av.item():5.3f}")
+
+            real_out = []
+            for res in chain_entity.residues():
+                c = res.ca.get_misc("compactness")
+                real_out.append(c)
+
+            #print(real_out)
+
+            if len(real_out) == 0:
+                log("warning", "No real output generated")
+                continue
+            real_av = sum([r for r in real_out if r is not None]) / len([r for r in real_out if r is not None])
+            log(1, f"Real mean:\t{real_av:3.5f}")
+
+            av_diff = abs(real_av-av.item())
+
+            if av_diff >= 3: col = "magenta"
+            elif av_diff >= 2:   col = "red"
+            elif av_diff >= 1: col = "yellow"
+            else: col = "green"
+            av_diff = colour(col, f"{av_diff:3.5f}")
+            log(1, f"Mean diff: {av_diff}")
+
+            try:
+                assert len(chain_entity.residues()) == out.shape[-2] == len(real_out), f"Lengths do not match ({len(chain_entity.residues()), out.shape[-2], len(real_out)})"
+                for res, real, pred in zip(chain_entity.residues(), real_out, out[0]):
+                    if real is None:
+                        diff = colour("white", "n/a")
+                        real = colour("yellow", "None ")
+                    else:
+                        diff = abs(real-pred.item())
+                        if diff >= 3: col = "magenta"
+                        elif diff >= 2:   col = "red"
+                        elif diff >= 1: col = "yellow"
+                        else: col = "green"
+                        diff = colour(col, f"{diff:5.3f}")
+                        real = f"{real:5.3f}"
+                    print(f"{res.resnum:4d}: {real} --> {pred.item():5.3f}\tdiff= {diff}")
+            except AssertionError as e:
+                log("warning", e)
 
 
-        model = MODEL_CLASS(name=DATASET_NAME, in_shape=IN_SHAPE, inference=True)
-        log(1, f"Model:", model)
-        model.load(model_path)
+
+
+
 
 
 
