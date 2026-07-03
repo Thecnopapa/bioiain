@@ -29,7 +29,7 @@ elif "multimers" in sys.argv:
     dataset = StructureDataset.from_list("./data/cath-dataset-nonredundant-S20.multimeric.list", name="multimers")
 
 elif "pisa" in sys.argv:
-    dataset = StructureDataset.from_list("./data/cath-dataset-nonredundant-S20.multimeric.list", name="pisa")
+    dataset = StructureDataset.from_list("./data/cath-dataset-nonredundant-S20.monomeric.list", name="pisa")
     dataset.add_list("./data/cath-dataset-nonredundant-S20.multimeric.list")
 
 elif "receptors" in sys.argv:

@@ -617,7 +617,11 @@ class BIEntity(object):
                         mode = "a"
                     else:
                         if type(d) is list:
-                            d = d[0]
+                            try:
+                                d = d[0]
+                            except:
+                                log("warning", "Trying to export empty list")
+                                continue
                         write_dict(d, file_path=filepath, label=k, mode=mode, name=self.name())
                         mode = "a"
 
