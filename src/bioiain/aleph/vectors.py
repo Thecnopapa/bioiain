@@ -459,6 +459,6 @@ class CVMatrix(object):
 
             if not neighs_found:
                 log("ERROR", f"No neighbours found for cv: {cv}\nMight be due to small structure")
-                raise NoNeighboursFound()
+                raise NoNeighboursFound(f"No neighbours found for cv: {cv}\nMight be due to small structure")
 
         return self

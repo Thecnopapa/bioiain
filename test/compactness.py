@@ -250,7 +250,7 @@ class FoldseekDB(object):
             else:
                 seq = "".join(self.zip(entry["aa_seq"], entry["tok_seq"]))
             log(3, "LEN SEQ", len(seq))
-            tokens = tokenizer.tokenize(seq)
+            #tokens = tokenizer.tokenize(seq)
             inputs = tokenizer(seq, return_tensors="pt")
             inputs = {k: v.to(DEVICE) for k, v in inputs.items()}
             with torch.no_grad():
