@@ -71,7 +71,7 @@ class StructureDataset(object):
 
 
     def add_to_blacklist(self, path, error=None, reason=None, ):
-        log("warning", f"Blacklisted: {path} ({error.__class__.__name}) {error}:{reason}")
+        log("warning", f"Blacklisted: {path} ({error.__class__.__name__}) {error}:{reason}")
         with open(self.blacklist_file, "a") as bl:
             bl.write(f"{path}: {reason}\n")
         self.blacklist.append(path)

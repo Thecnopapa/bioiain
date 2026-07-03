@@ -1,36 +1,15 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
-*.py[codz]
-*$py.class
 
-# C extensions
-*.so
 
 # Distribution / packaging
-.Python
 build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
 *.egg-info/
-.installed.cfg
 *.egg
-MANIFEST
 
 
-
-
-
-.idea
+# Bioiain V2
 test/data/*/
 test/data/*.link.list
 test/exports
@@ -42,27 +21,32 @@ test/headers
 test/models
 test/datasets
 test/predictions
-test/runs
+
 test/.models
-test/bioian.d
-test/ bioiain.d
-test/logs
 test/trash
-
 test/figs
-
 test/foldseek
-
 test/pisa_raw
 test/pisa_data
-
 test/bioiain
 test/cvmaps
 
-*/bioiain.d/
 
+# Bioiain V3
+test/runs
+*/bioiain.d/
+test/bioian.d
+test/ bioiain.d
+test/logs
+
+# Docs
 html
 
+
+# IDEs
+.idea
 *.geany
 *.sublime-*
 
+#ALEPH
+*/fromCVtoAA_12.txt
