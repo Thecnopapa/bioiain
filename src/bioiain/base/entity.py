@@ -288,6 +288,8 @@ class BIEntity(object):
             if as_chains:
                 for ch, atms in chain_list.items():
                     chain_list[ch] = BIChain().from_atoms(atms, self.code(), ch, parent=self)
+                #[print(ch.id(), type(ch.id())) for ch in chain_list.values()]
+                #print((ch.id() if not by_complex else ch.complex()) for ch in chain_list.values())
                 chain_list = [ch for ch in chain_list.values() if (chain_sele is None) or ((ch.id() if not by_complex else ch.complex()) in chain_sele)]
 
             return chain_list

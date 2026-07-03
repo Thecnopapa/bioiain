@@ -20,10 +20,10 @@ class BIChain(BIEntity):
         return chain_id
 
     def complex(self):
-        return self.data["info"]["complex_id"]
+        return str(self.data["info"]["complex_id"])
 
     def id(self):
-        return self.data["info"]["chain_id"]
+        return str(self.data["info"]["chain_id"])
 
     def __repr__(self):
         return f"<bi.{self.__class__.__name__}: {self.code()}:{self.id()}/{self.complex()}>"

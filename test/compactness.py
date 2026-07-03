@@ -379,6 +379,7 @@ class CompactStructure(FragmentedStructure):
         max_frags = self.data["fragments"]["n_fragments"]
         assert max_frags is not None
 
+
         all_compactness = []
         rn = -1
         for n, k in enumerate(kdtree):

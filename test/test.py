@@ -72,6 +72,8 @@ if len(embeddings) == 0 or FORCE:
         chain = data["chain"]
         t = tensor[0]
         saprot_name = tensor[1]
+
+
         #print(t.shape)
 
         #print("DATA", data)

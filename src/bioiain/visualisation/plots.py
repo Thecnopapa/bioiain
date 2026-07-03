@@ -22,6 +22,8 @@ pymol_colours = ('green', 'cyan', 'red', 'yellow', 'violet','blue',
 
 def plasma(value, scale=256, as_hex=False, as_pymol_hex=False):
     cm = mpl.colormaps["plasma"]
+    if scale <= 0:
+        scale = 1
     value = round((value / scale) * 256)
     col = cm(value)
     if as_hex or as_pymol_hex:
