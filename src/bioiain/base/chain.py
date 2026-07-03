@@ -14,7 +14,7 @@ class BIChain(BIEntity):
     def find_id(self, method="first"):
 
         if method == "first":
-            chain_id = self.atoms()[0].chain
+            chain_id = self._all_atoms()[0].chain
         else:
             chain_id = method
         return chain_id

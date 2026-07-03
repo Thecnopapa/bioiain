@@ -67,7 +67,8 @@ if len(embeddings) == 0 or FORCE:
     fs = FoldseekDB(dataset.name, dataset, foldseek_command=fs_cmd)
     label_folder = os.path.join(SUBDIR_NAME, "labels", "compactness")
     os.makedirs(label_folder, exist_ok=True)
-    for data, tensor in fs.match_dataset(dataset, atoms=False, entity_class=CompactStructure, force=FORCE):
+    for n, (data, tensor) in enumerate(fs.match_dataset(dataset, atoms=False, entity_class=CompactStructure, force=FORCE)):
+        log("header", n)
         entity = data["entity"]
         chain = data["chain"]
         t = tensor[0]
