@@ -369,9 +369,13 @@ class BIEntity(object):
                         [log("warning", ra) for ra in resatms]
                         continue
                     except NoMainAtomFound:
-                        log("warning", "Non main atom for:", k)
+                        log("warning", "No main atom for:", k)
                         [log("warning", ra) for ra in resatms]
                         continue
+                    except (NoBackbone, NotImplementedError) as e:
+                        #log("warning", e.__class__.__name__, e)
+                        continue
+
                     if getattr(e, "type", None) in target_entities:
                         entities.append(e)
                 return entities

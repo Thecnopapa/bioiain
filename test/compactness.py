@@ -79,16 +79,17 @@ if (len(embeddings) == 0 or FORCE) and not INFERENCE:
     label_folder = os.path.join(SUBDIR_NAME, "labels", "compactness")
     os.makedirs(label_folder, exist_ok=True)
     for n, (data, tensor) in enumerate(fs.match_dataset(dataset, atoms=False, entity_class=ENTITY_CLASS, force=FORCE)):
-        log("header", n)
+
         entity = data["entity"]
         chain = data["chain"]
         t = tensor[0]
         saprot_name = tensor[1]
+        log("header", n, chain)
 
         try:
             assert t.shape[-2] == len(chain.sequence()), f"Sequence len ({len(chain.sequence())}) and token len ({t.shape[-2]}) missmatch."
         except AssertionError as e:
-            #log("warning", e)
+            log("warning", e)
             n_missmatches += 1
             continue
 

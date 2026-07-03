@@ -8,7 +8,7 @@ from ..utilities import d3to1
 
 
 
-def build_res(atoms, ignore_errors=True, **kwargs):
+def build_res(atoms, ignore_errors=False, **kwargs):
     try:
         resnames = [a.resname for a in atoms]
         atomnames = [a.name for a in atoms]
@@ -34,9 +34,9 @@ def build_res(atoms, ignore_errors=True, **kwargs):
 
         raise NoMatchingClass()
 
-    except (NoCaFound, NoBackbone, NotImplementedError) as e:
-        log("warning", e)
+    except (NoMainAtomFound, NoBackbone, NoMatchingClass, NotImplementedError) as e:
         if ignore_errors:
+            log("warning", e)
             return None
         else:
             raise

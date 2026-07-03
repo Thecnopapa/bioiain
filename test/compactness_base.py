@@ -257,9 +257,10 @@ class FoldseekDB(object):
         model_name = model_name.split("/")[-1]
 
         for entry in self:
+            log("header", entry["name"])
             if save_folder is None:
                 save_folder = os.path.join(SUBDIR_NAME, "embeddings")
-            print(save_folder, "saprot", model_name)
+            #print(save_folder, "saprot", model_name)
             save_path = os.path.join(save_folder, "saprot", model_name)
             os.makedirs(save_path, exist_ok=True)
             save_path = os.path.join(save_path, entry["name"].split(" ")[0]+".pt")
