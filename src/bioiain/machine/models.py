@@ -1,4 +1,4 @@
-import torch
+import torch, math
 import torchvision.transforms.v2.functional
 import PIL
 
@@ -90,7 +90,18 @@ class BaseModel(nn.Module):
         try: loss = self.running_loss[self.mode]
         except KeyError: loss = self.running_loss.get('default', None)
 
-        return f"<bi.{self.__class__.__name__}: {self.data['name']}\n - MODE: {self.mode}\n - optimiser: {optim.__class__.__name__}\n - criterion: {crit.__class__.__name__}\n - current epoch: {self.data['epoch']}\n - running loss: {loss}\n - layers: {[f'{k}({v.__class__.__name__})' for k, v in layers.items()]}>\n"
+
+        return f"""
+    <bi.{self.__class__.__name__}: {self.data['name']}
+        - MODE: {self.mode}
+        - optimiser: {optim.__class__.__name__}
+        - criterion: {crit.__class__.__name__}
+        - current epoch: {self.data['epoch']}
+        - running loss: {loss}
+        - layers:{"".join([f'\n          - {k}\t--> {v.__class__.__name__}\t({getattr(v, 'in_features', '?')}x{getattr(v, 'out_features', '?')})\tNp= {self.humanise(sum(vv.numel() for vv in v.parameters()))}' for k, v in layers.items()])}
+        - total params: {self.n_params(human=True)}
+    >
+"""
 
 
     def json(self):
@@ -104,6 +115,37 @@ class BaseModel(nn.Module):
         for k in self.submodels.keys():
             self.submodels[k] = self.submodels[k].to(device)
         return self
+
+    @staticmethod
+    def humanise(number:int|float) -> str:
+        if number > 1000000000000:
+            n = number / 1000000000000
+            return f"{n:.1f}T"
+        if number > 1000000000:
+            n = number / 1000000000
+            return f"{n:.1f}G"
+        elif number > 1000000:
+            n = number / 1000000
+            return f"{n:.1f}M"
+        elif number > 1000:
+            n = number / 1000
+            return f"{n:.1f}K"
+        else:
+            if type(number) is int:
+                return f"{number}"
+            return f"{number:.1f}"
+
+    def n_params(self, model="mode", human=False):
+        if model == "mode":
+            model = self.mode
+        model_params = sum(p.numel() for p in self.submodels[model].parameters())
+
+        if human:
+            return self.humanise(model_params)
+
+        return model_params
+
+
 
 
     def mount(self):
@@ -142,10 +184,8 @@ class BaseModel(nn.Module):
         #with torch.no_grad():
         #    self.writer.add_graph(self, torch.rand(self.data["in_shape"]))
 
-
-        log(3, f"Model mounted: {list(self.layers.keys())}")
         self.to(DEVICE)
-
+        log(3, f"Model mounted: {list(self.layers.keys())} to: {DEVICE}")
 
         return self.submodels.keys()
 

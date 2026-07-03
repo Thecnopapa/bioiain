@@ -53,6 +53,8 @@ print(dataset)
 
 
 DATASET_NAME = f"{dataset.name}_foldseek"
+log("title", DATASET_NAME)
+
 
 log("start", "EMBEDDINGS")
 
@@ -144,7 +146,8 @@ log("header", embeddings)
 model = CompactnessMLPmk1(name=DATASET_NAME, in_shape=[1280], hidden_dims=[])
 model.mount()
 total_params = sum(p.numel() for p in model.submodels["default"].parameters())
-log(1, "Number of parameters in the model:", total_params)
+log(1, "Number of parameters in the model:", model.n_params(human=True))
+print(repr(model))
 #print(model)
 
 epochs = 100
@@ -157,7 +160,7 @@ for epoch in range(epochs):
             log(1, f"{n:6d}/{max_n:6d}", end = " ")
         if item.l is None:
             continue
-        out = model.forward(item.t)
+        out = model.forward(item.t.to(DEVICE))
         #out = torch.clamp(out,0, 10)
         loss = model.loss(out, item)
         if n % 100 == 0:
@@ -169,7 +172,5 @@ for epoch in range(epochs):
     log("end", f"EPOCH: {epoch}", print_timer=True, reset_timer=False)
 model.save()
 
-
-
-print("DONE")
+log("end", "TRAINING")
 exit()
