@@ -5,75 +5,80 @@ from .atom import BIAtom
 
 
 class Water(object):
-	child_class = BIAtom
-	type = "water"
-	def __init__(self, atoms, **kwargs):
-		self.atoms = atoms
+    child_class = BIAtom
+    type = "water"
+    def __init__(self, atoms, **kwargs):
+        self.atoms = atoms
 
-		for a in self.atoms:
-			if a.name == "O":
-				self.o = a
-		self.resseq = self.o.resseq
-		self.id = self.resseq
-		self.relevant = False
+        for a in self.atoms:
+            if a.name == "O":
+                self.o = a
+        self.resseq = self.o.resseq
+        self.id = self.resseq
+        self.relevant = False
 
-	def __repr__(self):
-		return f"<bi.{self.__class__.__name__} id={self.id}>"
+    def __repr__(self):
+        return f"<bi.{self.__class__.__name__} id={self.id}>"
 
 
 class Ligand(object):
-	child_class = BIAtom
-	type = "ligand"
-	def __init__(self, atoms, parent=None, relevance_threshold=15, **kwargs):
-		self.atoms = atoms
+    child_class = BIAtom
+    type = "ligand"
+    def __init__(self, atoms, parent=None, relevance_threshold=15, **kwargs):
+        self.atoms = atoms
 
-		self.name = str(self.atoms[0].resname)
-		self.chain = self.atoms[0].chain
-		self.complex = self.atoms[0].complex
-		self.entity = self.atoms[0].entity
-		self.model = self.atoms[0].model
+        self.name = str(self.atoms[0].resname)
+        self.chain = self.atoms[0].chain
+        self.complex = self.atoms[0].complex
+        self.entity = self.atoms[0].entity
+        self.model = self.atoms[0].model
 
-		self.id = (self.name, self.complex)
-		self.id2 = (self.name, self.chain)
+        # For compatibility
+        self.resseq = self.atoms[0].resseq
+        self.resnum = self.atoms[0].resnum
+        self.resname = self.atoms[0].resname
 
-		self.relevant = True
+        self.id = (self.name, self.complex)
+        self.id2 = (self.name, self.chain)
 
-		self._com = None
+        self.relevant = True
 
-		if parent is not None:
-			self._determine_relevance(entity=parent, relevance_threshold=relevance_threshold)
+        self._com = None
 
-
-	def _determine_relevance(self, entity=None, relevance_threshold=15):
-		self.relevant = False
-		if entity is None:
-			self.relevant = True
-		else:
-			sa = self._calculate_sasa(entity=entity)
-			if sa < relevance_threshold:
-				self.relevant = True
-			#print("SASA", sa, "LIGAND:", self)
+        if parent is not None:
+            self._determine_relevance(entity=parent, relevance_threshold=relevance_threshold)
 
 
-		return self.relevant
-
-	def _calculate_sasa(self, entity=None):
-		from ..tools.SASA import SASA
-		sasa = SASA()
-		sasas = sasa.compute(entity=entity, targets=self.atoms, quiet=True)
-		assert len(sasas) == len(self.atoms)
-
-		av_sasa = sum(sasas) / len(sasas)
-		self.sasa = av_sasa
-		return self.sasa
+    def _determine_relevance(self, entity=None, relevance_threshold=15):
+        self.relevant = False
+        if entity is None:
+            self.relevant = True
+        else:
+            sa = self._calculate_sasa(entity=entity)
+            if sa < relevance_threshold:
+                self.relevant = True
+            #print("SASA", sa, "LIGAND:", self)
 
 
+        return self.relevant
 
-	def com(self, force=False):
-		if self._com is None or force:
-			from ..utilities.maths import find_com
-			self._com = find_com(self.atoms)
-		return self._com
+    def _calculate_sasa(self, entity=None):
+        from ..tools.SASA import SASA
+        sasa = SASA()
+        sasas = sasa.compute(entity=entity, targets=self.atoms, quiet=True)
+        assert len(sasas) == len(self.atoms)
 
-	def __repr__(self):
-		return f"<bi.{self.__class__.__name__} id={self.id2}({self.complex})>"
+        av_sasa = sum(sasas) / len(sasas)
+        self.sasa = av_sasa
+        return self.sasa
+
+
+
+    def com(self, force=False):
+        if self._com is None or force:
+            from ..utilities.maths import find_com
+            self._com = find_com(self.atoms)
+        return self._com
+
+    def __repr__(self):
+        return f"<bi.{self.__class__.__name__} id={self.id2}({self.complex})>"

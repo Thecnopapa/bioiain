@@ -297,8 +297,8 @@ class BIAtom(PseudoAtom):
 
         #PROPERTIES
         self.id = (self.name,  self.resnum, self.complex) # Ambiguous (author)
-        self.id2 = (self.name,  self.resseq, self.chain, self.entity) # Not ambiguous (label)
-        self.id3 = (self.atomnum, self.type, self.element, self.name, self.resseq, self.chain, self.model) # Unique
+        self.id2 = (self.name,  self.resseq, self.chain, self.entity, self.prime) # Not ambiguous (label)
+        self.id3 = (self.atomnum, self.type, self.element, self.name, self.resseq, self.chain, self.model, self.prime) # Unique
         x = float(data["Cartn_x"])
         y = float(data["Cartn_y"])
         z = float(data["Cartn_z"])
@@ -542,15 +542,15 @@ def _fix_disordered(atoms):
         if atom.disordered:
             for a in fixed_atoms:
                 if a.id2 == atom.id2:
-                    if a.resseq is None and not (a.resnum == atom.resnum):
+                    if (a.resseq is None) and (a.resnum != atom.resnum):
                         continue
                     try:
                         assert a.disordered
                     except:
                         print(">>>")
-                        print(a, a.resseq, a.resnum)
+                        print(a, a.resseq, a.resnum, a.atomnum, a.id3)
                         print("###")
-                        print(atom, atom.resseq, atom.resnum)
+                        print(atom, atom.resseq, atom.resnum, atom.atomnum, a.id3)
                         print("<<<")
                         raise
                     a.doppelgangers.append(atom)
