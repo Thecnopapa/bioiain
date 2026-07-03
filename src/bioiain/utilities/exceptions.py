@@ -76,6 +76,10 @@ class PISAError(CCP4Error):
 # Model related
 class ModelNotFound(Exception):
     pass
+class ModelSaveError(Exception):
+    pass
+class TryingToSaveInferenceModel(ModelSaveError):
+    pass
 
 # Residue related
 class NoCaFound(Exception):

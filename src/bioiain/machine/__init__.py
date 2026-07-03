@@ -15,6 +15,16 @@ elif torch.xpu.is_available():
 log(1, "DEVICE:", DEVICE)
 
 
+
+
+def set_seed(seed=6):
+    import torch, numpy, random
+    random.seed(seed)
+    numpy.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
 def tensor_to_numpy(tensor):
     return tensor.detach().cpu().numpy()
 

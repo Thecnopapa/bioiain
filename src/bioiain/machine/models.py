@@ -324,8 +324,10 @@ class BaseModel(nn.Module):
         return fname
 
 
-    def save(self, path=None, add_epoch=False, temp=False):
+    def save(self, path=None, add_epoch=False, temp=False, allow_inference=False):
         log(1, f"Saving model (TEMP={temp})")
+        if self.inference and not allow_inference:
+            raise TryingToSaveInferenceModel()
         if path is None:
             path = os.path.join(self.data["folder"], self.get_fname(add_epoch=add_epoch))
         for name, submodel in self.submodels.items():
@@ -359,7 +361,7 @@ class BaseModel(nn.Module):
 
     @classmethod
     def load(self, *args, **kwargs):
-        pass
+        raise NotImplementedError()
 
 
     def load(self, data_path=None, epoch=None, weights_only=False):
@@ -367,8 +369,18 @@ class BaseModel(nn.Module):
 
         if data_path is None:
             data_path = os.path.join(self.data["folder"], self.get_fname(add_epoch=epoch))+".data.json"
-        if not os.path.exists(data_path):
-            raise ModelNotFound(data_path)
+            try:
+                if not os.path.exists(data_path):
+                    raise ModelNotFound(data_path)
+            except:
+                log("warning", "Latest model not found, looking for temp model instead")
+                data_path = os.path.join(self.data["folder"], self.get_fname(add_epoch=epoch))+".temp.data.json"
+                if not os.path.exists(data_path):
+                    raise ModelNotFound(data_path)
+        else:
+            if not os.path.exists(data_path):
+                raise ModelNotFound(data_path)
+
         raw_data = json.load(open(data_path, "r"))
         self.data = self.data | raw_data
 
@@ -377,7 +389,7 @@ class BaseModel(nn.Module):
         if is_tmp:
             base_path = base_path.replace(".temp", "")
 
-        log(2, "base_path", base_path)
+        log(2, "Model base_path:", base_path)
         if not self.mounted:
             self.mount()
 

@@ -124,15 +124,18 @@ class BIEntity(object):
         for a in self.all_atoms():
             a.set_misc(key, value)
 
-    def path(self, minimal=False):
-        if not minimal:
-            if self.paths.get("self", None) is None:
-                self.export()
-            return self.paths["self"].strip()
-        else:
+    def path(self, minimal=False, source=False):
+        assert not (minimal and source), f"Trying to get both minimal and source paths at the same time"
+        if minimal:
             if self.paths.get("minimal", None) is None:
                 self.export(minimal=True)
             return self.paths["minimal"].strip()
+        elif source:
+            return self.paths["source"].strip()
+        else:
+            if self.paths.get("self", None) is None:
+                self.export()
+            return self.paths["self"].strip()
 
     def folder(self):
 
