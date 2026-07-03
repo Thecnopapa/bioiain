@@ -11,7 +11,7 @@ class BIEntity(object):
     tmp_folder = "/tmp"
     excluded_from_headers = ["_bi_*", "_atom_site", "_aleph_*","_cell", "_symmetry","_entry"]
 
-    def __init__(self, export_folder=None, parent=None, use_tmp=False, **kwargs):
+    def __init__(self, export_folder=None, parent=None, use_tmp=False, model:str|int="1", **kwargs):
         if export_folder is None:
             export_folder = os.path.join(SUBDIR_NAME, "exports").strip()
         self.children = []
@@ -31,6 +31,7 @@ class BIEntity(object):
                 "code": None, # The code of this structure, if any
                 "name": None, # The name of this structure (used mainly for file naming)
                 "class": self.__class__.__name__,
+                "model": str(model)
             },
             "sequences": {
                 "aa": None,
@@ -99,9 +100,9 @@ class BIEntity(object):
 
     def __repr__(self):
         if self.is_symmetry():
-            return "<{}:{} id={} op={}>".format(self.__class__.__name__, self.code(), self.id(), self.op())
+            return "<{}:{} id={} op={} model={}>".format(self.__class__.__name__, self.code(), self.id(), self.op(), self.model())
         #return "<{}:{} id={} (len:{})>".format(self.__class__.__name__, self.code(), self.id(), len(self))
-        return "<{}:{} id={}>".format(self.__class__.__name__, self.code(), self.id())
+        return "<{}:{} id={}> model={}".format(self.__class__.__name__, self.code(), self.id(), self.model())
 
     def __str__(self):
         return repr(self)
@@ -110,6 +111,36 @@ class BIEntity(object):
         if self.has_flag("no_atoms", True):
             return 0
         return len(self.residues())
+
+    def model(self):
+        return self.data["info"]["model"]
+
+    def avail_models(self):
+        return list(set([str(a.model) for a in self._all_atoms()]))
+
+
+    def set_model(self, model_num:str|int):
+        model_num = str(model_num)
+        assert model_num in self.avail_models(), f"Requested model({model_num}) does not exist in this entity: {self.avail_models()}"
+        self.data["info"]["model"] = model_num
+        return self
+
+    def models(self, in_place=True):
+        if in_place:
+            for m in self.avail_models():
+                self.set_model(m)
+                yield self
+        else:
+            models = []
+            for m in self.avail_models():
+                if m == self.model():
+                    models.append(self)
+                else:
+                    new_model = self.copy()
+                    new_model.set_model(m)
+                    models.append(new_model)
+            return models
+
 
     def name(self):
         return str(self.data["info"]["name"])
@@ -235,7 +266,23 @@ class BIEntity(object):
         return self._cvectors
 
 
-    def atoms(self, ca_only=False, hetatm=False, ligands=False, residues=False, dna=False, water=False, hydrogens=False, force=False, group_by_residue=False, disordered=False, as_residues=False, chain=None, group_by_chain=False, as_chains=False, by_complex=False, **kwargs):
+    def atoms(self,
+              ca_only=False,
+              hetatm=False,
+              ligands=False,
+              residues=False,
+              dna=False,
+              water=False,
+              hydrogens=False,
+              group_by_residue=False,
+              disordered=False,
+              as_residues=False,
+              chain=None,
+              group_by_chain=False,
+              as_chains=False,
+              by_complex=False,
+              model:int|str|None = None,
+              **kwargs):
         from .atom import _fix_disordered
         from .residue import build_res
 
@@ -263,8 +310,14 @@ class BIEntity(object):
 
         atoms = self.all_atoms()
 
+        if model is None:
+            model = self.model()
+
         if not disordered:
             atoms = _fix_disordered(atoms)
+
+        if (model is not None) and model != "*" :
+            atoms = [a for a in atoms if a.model == model]
 
         if not hetatm:
             atoms = [a for a in atoms if a.type == "ATOM"]
@@ -300,10 +353,10 @@ class BIEntity(object):
         if group_by_residue or len(target_entities) > 0:
             atoms_by_res = {}
             for atom in atoms:
-                if atom.id2[1:] in atoms_by_res:
-                    atoms_by_res[atom.id2[1:]].append(atom)
+                if atom.id2()[1:] in atoms_by_res:
+                    atoms_by_res[atom.id2()[1:]].append(atom)
                 else:
-                    atoms_by_res[atom.id2[1:]] = [atom]
+                    atoms_by_res[atom.id2()[1:]] = [atom]
 
             if len(target_entities) > 0:
                 entities = []

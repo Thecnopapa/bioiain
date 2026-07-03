@@ -122,7 +122,32 @@ class FoldseekDB(object):
             "aa_seq": aa_seq,
         }
 
-
+    @staticmethod
+    def parse_name(full_name, as_dict=False):
+        name = full_name.split(" ")[0]
+        description = " ".join([n for n in full_name.split(" ")[1:]])
+        components = name.split("_")
+        chain = "*"
+        model = "1"
+        if len(components) == 1:
+            code = components[0]
+        elif len(components) == 2:
+            code, chain = components
+        elif (len(components) == 4) and components[1] == "MODEL":
+            code, _, model, chain = components
+        else:
+            raise NameParsingError(f"Unable to fetch name and code from {full_name}")
+        if as_dict:
+            return dict(
+                full_name=full_name,
+                name=name,
+                description=description,
+                code=code,
+                chain=chain,
+                model=model,
+            )
+        else:
+            return code, chain, model
 
     def match_dataset(self, dataset, saprot=True, atoms=True, entity_class=BIEntity, **kwargs):
 
@@ -135,15 +160,8 @@ class FoldseekDB(object):
         for (name, t_seq), (_, aa_seq), *data in zip(*iterables):
 
             #print(name)
-            name = name.split(" ")[0]
-            #print(name.split("_"))
-            if len(name.split("_")) == 1:
-                code = name.split("_")[0]
-                chain = "*"
-            elif len(name.split("_")) == 2:
-                code, chain = name.split("_")
-            else:
-                raise Exception(f"Unable to fetch name and code from {name}")
+            code, chain, model = self.parse_name(name)
+
             #print(code, chain)
             t_seq = t_seq[0]
             aa_seq = aa_seq[0]
@@ -162,6 +180,7 @@ class FoldseekDB(object):
                     except CrystalError as e:
                         dataset.add_to_blacklist(entry["path"], error=e)
                         continue
+                entity.set_model(model)
                 #print(entity)
                 #print(chain)
                 chains = entity.chains(chain, by_complex=True)
@@ -204,7 +223,7 @@ class FoldseekDB(object):
         return l
 
 
-    def saprot_embeddings(self, sequence_only=False, model_name="westlake-repl/SaProt_650M_PDB", force=False, save_folder=False):
+    def saprot_embeddings(self, sequence_only=False, model_name="westlake-repl/SaProt_650M_PDB", force=False, save_folder=None):
 
         log(2, "Generating SaProt Embeddings...")
         from transformers import EsmTokenizer, EsmForMaskedLM
@@ -240,6 +259,7 @@ class FoldseekDB(object):
         for entry in self:
             if save_folder is None:
                 save_folder = os.path.join(SUBDIR_NAME, "embeddings")
+            print(save_folder, "saprot", model_name)
             save_path = os.path.join(save_folder, "saprot", model_name)
             os.makedirs(save_path, exist_ok=True)
             save_path = os.path.join(save_path, entry["name"].split(" ")[0]+".pt")

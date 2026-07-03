@@ -292,25 +292,8 @@ class BIAtom(PseudoAtom):
         #CHAIN
         self.chain = data["label_asym_id"] # Auto
         self.complex = data["auth_asym_id"] # Given
-        self.entity = int(data["label_entity_id"])
-        self.model = int(data["pdbx_PDB_model_num"])
-
-        #PROPERTIES
-        self.id = (self.name,  self.resnum, self.complex) # Ambiguous (author)
-        self.id2 = (self.name,  self.resseq, self.chain, self.entity, self.prime) # Not ambiguous (label)
-        self.id3 = (self.atomnum, self.type, self.element, self.name, self.resseq, self.chain, self.model, self.prime) # Unique
-        x = float(data["Cartn_x"])
-        y = float(data["Cartn_y"])
-        z = float(data["Cartn_z"])
-        coord = (x, y, z)
-        super().__init__(coord)
-        self.occupancy = float(data["occupancy"])
-        self.b = float(data["B_iso_or_equiv"])
-        self.ins_code = data.get("pdbx_PDB_ins_code", None)
-        
-
-        
-
+        self.entity = str(data["label_entity_id"])
+        self.model = str(data["pdbx_PDB_model_num"])
 
 
         #DISORDER
@@ -329,28 +312,44 @@ class BIAtom(PseudoAtom):
             self.doppelgangers = []
             self.favourite = True
 
+        # COORDINATES
+        x = float(data["Cartn_x"])
+        y = float(data["Cartn_y"])
+        z = float(data["Cartn_z"])
+        coord = (x, y, z)
+        super().__init__(coord)
+        self.occupancy = float(data["occupancy"])
+        self.b = float(data["B_iso_or_equiv"])
+        self.ins_code = data.get("pdbx_PDB_ins_code", None)
+
+
+    def id(self): return self.name,  self.resnum, self.complex,  self.prime # Ambiguous (author)
+    def id2(self): return self.name,  self.resseq, self.chain, self.entity, self.prime # Not ambiguous (label) / Unique across chains
+    def id3(self): return self.type, self.element, self.name, self.resseq, self.chain, self.model, self.prime # Unique across models
+    def id4(self): return self.atomnum, self.alt_id, self.type, self.element, self.name, self.resseq, self.chain, self.model, self.prime # Unique (absolute)
+
 
 
     def print_full(self):
         if self.disordered:
             if self.favourite:
-                r = "\n<bi.{} id={}.{} b={} occupancy={} (disordred)>".format(self.__class__.__name__, self.id, self.alt_id, self.b, self.occupancy)
+                r = "\n<bi.{} id={}.{} b={} occupancy={} (disordred)>".format(self.__class__.__name__, self.id(), self.alt_id, self.b, self.occupancy)
                 for datm in self.doppelgangers:
                     r += "\n - <bi.{} id={}.{} b={} occupancy={} (disordered)>".format(self.__class__.__name__, datm.id, datm.alt_id, datm.b, datm.occupancy)
                 return r
             else:
-                return "<bi.{} id={}.{} b={} occupancy={} (disordred/not-favourite)>".format(self.__class__.__name__, self.id, self.alt_id, self.b, self.occupancy)
+                return "<bi.{} id={}.{} b={} occupancy={} (disordred/not-favourite)>".format(self.__class__.__name__, self.id(), self.alt_id, self.b, self.occupancy)
         else:
-            return "<bi.{} id={} b={}>".format(self.__class__.__name__, self.id, self.b)
+            return "<bi.{} id={} b={}>".format(self.__class__.__name__, self.id(), self.b)
 
     def __repr__(self):
         if self.disordered:
             if self.favourite:
-                return "<bi.{} id={}.{} b={} occupancy={} (disordred)>".format(self.__class__.__name__, self.id, self.alt_id, self.b, self.occupancy)
+                return "<bi.{} id={}.{} b={} occupancy={} (disordred)>".format(self.__class__.__name__, self.id(), self.alt_id, self.b, self.occupancy)
             else:
-                return "<bi.{} id={}.{} b={} occupancy={} (disordred/not-favourite)>".format(self.__class__.__name__, self.id, self.alt_id, self.b, self.occupancy)
+                return "<bi.{} id={}.{} b={} occupancy={} (disordred/not-favourite)>".format(self.__class__.__name__, self.id(), self.alt_id, self.b, self.occupancy)
         else:
-            return "<bi.{} id={} b={}>".format(self.__class__.__name__, self.id, self.b)
+            return "<bi.{} id={} b={}>".format(self.__class__.__name__, self.id(), self.b)
 
 
 
@@ -541,16 +540,16 @@ def _fix_disordered(atoms):
     for atom in atoms:
         if atom.disordered:
             for a in fixed_atoms:
-                if a.id2 == atom.id2:
+                if a.id3() == atom.id3():
                     if (a.resseq is None) and (a.resnum != atom.resnum):
                         continue
                     try:
                         assert a.disordered
                     except:
                         print(">>>")
-                        print(a, a.resseq, a.resnum, a.atomnum, a.id3)
+                        print(a, a.resseq, a.resnum, a.atomnum, a.id4())
                         print("###")
-                        print(atom, atom.resseq, atom.resnum, atom.atomnum, a.id3)
+                        print(atom, atom.resseq, atom.resnum, atom.atomnum, a.id4())
                         print("<<<")
                         raise
                     a.doppelgangers.append(atom)

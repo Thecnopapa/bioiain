@@ -11,8 +11,6 @@ class NotAGoodIdea(Exception):
 class MissingProgram(Exception):
     pass
 
-class FoldseekError(Exception):
-    pass
 
 
 #PDB download related
@@ -147,6 +145,17 @@ class SearchError(MMSEQS2Error):
 class TsvError(MMSEQS2Error):
     pass
 
+# Foldseek related
+
+class FoldseekError(Exception):
+    pass
+
+class FoldseekParsingError(FoldseekError):
+    pass
+
+class NameParsingError(FoldseekParsingError):
+    pass
+
 
 # Embedding related
 class EmbeddingGenerationError(Exception):
@@ -169,22 +178,3 @@ class NoTensorAvailable(EmbeddingLoadError):
 
 class UnknownEmbeddingFormat(EmbeddingLoadError):
     pass
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

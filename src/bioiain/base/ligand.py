@@ -14,11 +14,13 @@ class Water(object):
             if a.name == "O":
                 self.o = a
         self.resseq = self.o.resseq
-        self.id = self.resseq
         self.relevant = False
 
+    def id(self):
+        return self.resseq
+
     def __repr__(self):
-        return f"<bi.{self.__class__.__name__} id={self.id}>"
+        return f"<bi.{self.__class__.__name__} id={self.id()}>"
 
 
 class Ligand(object):
@@ -38,8 +40,7 @@ class Ligand(object):
         self.resnum = self.atoms[0].resnum
         self.resname = self.atoms[0].resname
 
-        self.id = (self.name, self.complex)
-        self.id2 = (self.name, self.chain)
+
 
         self.relevant = True
 
@@ -48,6 +49,8 @@ class Ligand(object):
         if parent is not None:
             self._determine_relevance(entity=parent, relevance_threshold=relevance_threshold)
 
+    def id(self): return self.name, self.complex
+    def id2(self): return self.name, self.chain
 
     def _determine_relevance(self, entity=None, relevance_threshold=15):
         self.relevant = False
@@ -81,4 +84,4 @@ class Ligand(object):
         return self._com
 
     def __repr__(self):
-        return f"<bi.{self.__class__.__name__} id={self.id2}({self.complex})>"
+        return f"<bi.{self.__class__.__name__} id={self.id2()}({self.complex})>"

@@ -119,10 +119,6 @@ class BIResidue(object):
             if self.is_disordered:
                 raise NotImplementedError()
 
-            if self.fragment is None:
-                self.id = ( self.resname, self.resnum, self.resseq, self.chain, self.complex , self.entity)
-            else:
-                self.id = ( self.resname, self.resnum, self.resseq, self.chain, self.entity, self.complex, self.fragment)
 
             if any([a is None for a in self.backbone]):
                 log("error", "Trying to initialise residue with no backbone")
@@ -130,11 +126,13 @@ class BIResidue(object):
                 print(self)
                 raise NoBackbone("Trying to initialise residue with no backbone")
 
+    def id(self): return self.resname, self.resnum, self.resseq, self.chain, self.entity, self.complex, self.fragment
+
     def __repr__(self):
-        return f"<bi.{self.__class__.__name__} id={self.id}>"
+        return f"<bi.{self.__class__.__name__} id={self.id()}>"
 
     def name(self):
-        return "_".join([str(v) for v in self.id])
+        return "_".join([str(v) for v in self.id()])
 
     def to_atoms(self, key, value):
         for atom in self.atoms:
@@ -199,7 +197,7 @@ class BINucleoutide(object):
         if type(atoms) == dict:
             atoms = atoms.values()
         self.atoms = atoms
-        self.c1 = None
+        self.p = None
         self.resnum = None
         self.resname = None
         self.resseq = None
@@ -210,29 +208,28 @@ class BINucleoutide(object):
         for a in self.atoms:
             #print(a)
             #print(a.name)
-            if a.name == "C1":
-                self.c1 = a
+            if a.name == "P":
+                self.p = a
                 break
 
-        if self.c1 is None:
-            log("error", "Trying to initialise nucleotide with no C1")
+        if self.p is None:
+            log("error", "Trying to initialise nucleotide with no P")
             print([a.name for a in self.atoms])
             print()
             raise NoCaFound()
 
-        self.fragment = self.c1.get_misc("fragment", None)
+        self.fragment = self.p.get_misc("fragment", None)
 
-        self.resnum = self.c1.resnum
-        self.resname = self.c1.resname
-        self.resseq = self.c1.resseq
-        self.chain = self.c1.chain
-        if self.fragment is None:
-            self.id = ( self.resname, self.resnum, self.resseq, self.chain)
-        else:
-            self.id = ( self.resname, self.resnum, self.resseq, self.chain, self.fragment)
+        self.resnum = self.p.resnum
+        self.resname = self.p.resname
+        self.resseq = self.p.resseq
+        self.chain = self.p.chain
+
+
+    def id(self): return self.resname, self.resnum, self.resseq, self.chain, self.fragment
 
     def __repr__(self):
-        return f"<bi.{self.__class__.__name__} id={self.id}>"
+        return f"<bi.{self.__class__.__name__} id={self.id()}>"
 
     def to_atoms(self, key, value):
         for atom in self.atoms:
