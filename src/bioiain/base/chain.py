@@ -33,7 +33,7 @@ class BIChain(BIEntity):
     def set_chain_id(self, chain_id=None, complex=False):
         if complex:
             log("Warning", f"Setting chain id, complex={complex}")
-            raise Exception()
+            raise Exception() # For debugging, remove if used
         if chain_id is None:
             chain_id = self.find_id()
         chain_id = str(chain_id)

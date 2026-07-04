@@ -102,7 +102,7 @@ class BIEntity(object):
         if self.is_symmetry():
             return "<{}:{} id={} op={} model={}>".format(self.__class__.__name__, self.code(), self.id(), self.op(), self.model())
         #return "<{}:{} id={} (len:{})>".format(self.__class__.__name__, self.code(), self.id(), len(self))
-        return "<{}:{} id={}> model={}".format(self.__class__.__name__, self.code(), self.id(), self.model())
+        return "<{}:{} id={} model={}>".format(self.__class__.__name__, self.code(), self.id(), self.model())
 
     def __str__(self):
         return repr(self)
@@ -337,17 +337,17 @@ class BIEntity(object):
             from .chain import BIChain
             chain_list = {}
             for atom in atoms:
-                if atom.complex in chain_list.keys():
-                    chain_list[atom.complex].append(atom)
+                if atom.chain in chain_list.keys():
+                    chain_list[atom.chain].append(atom)
                 else:
-                    chain_list[atom.complex] = [atom]
+                    chain_list[atom.chain] = [atom]
             if as_chains:
                 for ch, atms in chain_list.items():
                     chain_list[ch] = BIChain().from_atoms(atms, self.code(), ch, parent=self)
                 #[print(ch.id(), type(ch.id())) for ch in chain_list.values()]
                 #print((ch.id() if not by_complex else ch.complex()) for ch in chain_list.values())
                 chain_list = [ch for ch in chain_list.values() if (chain_sele is None) or ((ch.id() if not by_complex else ch.complex()) in chain_sele)]
-
+                chain_list = [ch for ch in chain_list if len(ch.residues()) > 0]
             return chain_list
 
         if group_by_residue or len(target_entities) > 0:
@@ -1013,3 +1013,7 @@ class BIEntity(object):
     def _calculate_pisa(self, **kwargs):
         from ..tools.PISA import PISA
         pisa = PISA(pisa_id=self.name(), **kwargs)
+
+    def img3D(self, size=32, property="b", mode="max"):
+        pixels = np.arange(size**3)
+        grid = pixels.reshape(size, size, size)

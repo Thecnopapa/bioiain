@@ -42,5 +42,30 @@ class CompactnessMLPmk1(BaseModel):
             "linear3": nn.Linear(self.data["hidden_dims"][-2], self.data["hidden_dims"][-1]),
             "en_relu3": nn.ReLU(),
             "linear4": nn.Linear(self.data["hidden_dims"][-1], 1),
+        }
 
+class Contactability3Dmk1(BaseModel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        n = self.data["in_shape"][0]
+        self.data["hidden_dims"] = [n*2, n*2, n]
+        self.layers["default"] = {
+            "3d1": nn.Conv3d(
+                in_channels= n,
+                out_channels= n*2,
+                kernel_size=8,
+                stride=4,
+            ),
+            "en_relu1": nn.ReLU(),
+            "3d2": nn.Conv3d(
+                in_channels=n * 2,
+                out_channels=n * 4,
+                kernel_size=4,
+                stride=2,
+            ),
+            "en_relu2": nn.ReLU(),
+            "flatten": nn.Flatten(),
+            "linear3": nn.Linear(n*4*4, self.data["hidden_dims"][-1]),
+            "en_relu3": nn.ReLU(),
+            "linear4": nn.Linear(self.data["hidden_dims"][-1], 1),
         }

@@ -81,36 +81,49 @@ if (len(embeddings) == 0 or FORCE) and not INFERENCE:
     for n, (data, tensor) in enumerate(fs.match_dataset(dataset, atoms=False, entity_class=ENTITY_CLASS, force=FORCE)):
 
         entity = data["entity"]
-        chain = data["chain"]
+        chains = data["chains"]
+        code = data["code"]
+        model = data["model"]
+
+        sequence = data["aa_seq"]
         t = tensor[0]
         saprot_name = tensor[1]
-        log("header", n, chain)
+        log("header", n, *chains)
 
         try:
-            assert t.shape[-2] == len(chain.sequence()), f"Sequence len ({len(chain.sequence())}) and token len ({t.shape[-2]}) missmatch."
+            assert t.shape[-2] == len(sequence), f"Sequence len ({len(sequence)}) and token len ({t.shape[-2]}) missmatch."
         except AssertionError as e:
             log("warning", e)
             n_missmatches += 1
             continue
 
-        name = f"{chain.code()}_{chain.id()}"
-        label_path = os.path.join(label_folder, f"{chain.code()}_{chain.id()}.compactness.label.csv")
+        name = f"{code}_{''.join([c.id() for c in chains])}_{model}"
+        label_path = os.path.join(label_folder, f"{name}.compactness.label.csv")
         log(2, label_path)
 
         if FORCE or not os.path.exists(label_path):
             log(1, "Regenerating compactness label...")
 
             entity.compactness(with_symmetry=True, force=FORCE)
-            chain = entity.chains(chain.complex(), by_complex=False)[0]
-            #print("CHAIN 2:", chain)
+            compact_chains = entity.chains([c.id() for c in chains], by_complex=False)
+
+            print("COMPACT CHAINS:", chain)
 
             label_header="#"
             label_value=" "
-            #print(len(chain.residues()))
+            total_seq = ""
+            for ch in compact_chains:
+                total_seq += ch.sequence()
 
-            assert t.shape[-2] == len(chain.sequence()), f"Sequence len ({len(chain.sequence())}) and token len ({t.shape[-2]}) missmatch."
+            print("Total seq:", len(total_seq))
 
-            for res in chain.residues():
+            assert t.shape[-2] == len(total_seq), f"Sequence len ({len(total_seq)}) and token len ({t.shape[-2]}) missmatch."
+
+            residues = []
+            for ch in compact_chains:
+                residues.extend(ch.residues())
+
+            for res in residues:
 
                 c = res.ca.get_misc("compactness")
                 label_header += f"{res.resnum:8d} "

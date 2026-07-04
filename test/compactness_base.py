@@ -165,7 +165,7 @@ class FoldseekDB(object):
             #print(code, chain)
             t_seq = t_seq[0]
             aa_seq = aa_seq[0]
-            #print(code, chain, len(t_seq), len(aa_seq))
+            print(code, chain, len(t_seq), len(aa_seq))
                 
             try:
                 entry = dataset.get(code)
@@ -181,32 +181,32 @@ class FoldseekDB(object):
                         dataset.add_to_blacklist(entry["path"], error=e)
                         continue
                 entity.set_model(model)
-                #print(entity)
-                #print(chain)
+                print(entity)
+                print(chain)
                 chains = entity.chains(chain, by_complex=True)
                 #print(chains)
-                for chain_entity in chains:
-                    #print(chain, chain_entity, chain_entity.id(), chain_entity.complex())
-                    pass
-                assert len(chains) == 1
-                ch = chains[0]
 
-                #print(len(ch.sequence()), len(t_seq))
-                #print()
+                sequence = ""
+                for chain_entity in chains:
+                    print(chain, chain_entity, chain_entity.id(), chain_entity.complex(), len(chain_entity.residues()))
+                    sequence += "".join([ch.sequence() for ch in chains])
+                    pass
+
+
+                print(len([ch.sequence() for ch in chains]), len(sequence), len(t_seq))
+                print()
             except:
-                raise
-                yield {
-                    "t_seq": t_seq,
-                    "error": True,
-                    "chain_id": chain,
-                }, *data
+                raise FoldseekParsingError()
             yield {
+                "code": code,
+                "chain": chain,
+                "model": model,
                 "t_seq": t_seq,
                 "error": False,
-                "aa_seq": ch.sequence(),
-                "match_len": len(ch.sequence()) == len(t_seq),
+                "aa_seq": sequence,
+                "match_len": len(sequence) == len(t_seq),
                 "chain_id": chain,
-                "chain": chain_entity,
+                "chains": chains,
                 "entity": entity,
             }, *data
 
@@ -230,6 +230,8 @@ class FoldseekDB(object):
         import torch
         from src.bioiain.machine import DEVICE
 
+        def load_saprot(model_name):
+            pass
 
         tokenizer_name = model_name
         model_name = model_name
