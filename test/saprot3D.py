@@ -16,23 +16,26 @@ from src.bioiain.base import *
 from compactness_base import *
 from compactness_models import *
 from src.bioiain.machine import *
+from data import dataset
 set_seed()
 
-IMG_SIZE = 16
+
+FORCE = ("--force" in sys.argv) or ("-f" in sys.argv)
 INFERENCE = "-i" in sys.argv
 TRAIN = "-t" in sys.argv
 
-dataset = StructureDataset.from_list("./data/cath-dataset-nonredundant-S20.monomeric.list", name="pisa", oligo=0)
-dataset.add_list("./data/cath-dataset-nonredundant-S20.multimeric.list", oligo=1)
-dataset.shuffle()
-dataset = StructureDataset.from_list("./data/consensus.list", name="consensus", oligo=1)
+IMG_SIZE = 16
 
 DATASET_NAME = f"{dataset.name}_3D_{IMG_SIZE}"
+FOLDSEEK = os.environ.get("FOLDSEEK_PATH", "foldseek")
+SAPROT_MODEL = "SaProt_650M_PDB"
+SAPROT_PATH = f"westlake-repl/{SAPROT_MODEL}"
 
-FORCE = False
+
+print(dataset)
+
 
 embeddings = EmbeddingDataset(DATASET_NAME)
-print(dataset)
 if (not FORCE) or "--rebuild" in sys.argv:
     embeddings.load()
 

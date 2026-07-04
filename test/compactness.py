@@ -15,6 +15,9 @@ from compactness_base import *
 from compactness_models import *
 
 from src.bioiain.machine import *
+from data import dataset
+print(dataset)
+
 
 set_seed()
 
@@ -24,32 +27,8 @@ FORCE = ("--force" in sys.argv) or ("-f" in sys.argv)
 print(f"FORCE={FORCE}")
 
 
-
-if "monomers" in sys.argv:
-    dataset = StructureDataset.from_list("./data/cath-dataset-nonredundant-S20.monomeric.list", name="monomers")
-
-elif "multimers" in sys.argv:
-    dataset = StructureDataset.from_list("./data/cath-dataset-nonredundant-S20.multimeric.list", name="multimers")
-
-elif "pisa" in sys.argv:
-    dataset = StructureDataset.from_list("./data/cath-dataset-nonredundant-S20.monomeric.list", name="pisa")
-    dataset.add_list("./data/cath-dataset-nonredundant-S20.multimeric.list")
-
-elif "receptors" in sys.argv:
-    dataset = StructureDataset.from_list("./data/receptors.list", name="receptors")
-
-elif "lbds" in sys.argv:
-    dataset = StructureDataset.from_list("./data/lbds.list", name="lbds")
-
-elif "consensus" in sys.argv:
-    dataset = StructureDataset.from_list("./data/consensus.list", name="consensus")
-
-else:
-    dataset = StructureDataset.from_list(["1M2Z", "3HBB", "6F63", "5LXN", "3brf", "6e52", "7t2y", "3kg2", "2GEJ", "2bis"], name="aleph")
-
-
 #dataset = StructureDataset.from_list("./data/consensus.list")
-print(dataset)
+
 #dataset.load(entity_class=CompactStructure, check_existing=not FORCE)
 #dataset.export()
 
