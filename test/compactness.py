@@ -251,7 +251,7 @@ if INFERENCE:
                 chain = "*"
             log("header", f"Infering {code} chain {chain}")
 
-            chain_entity = entity.chains(chain, use_complex=True)[0]
+            chain_entity = entity.chains(chain, by_complex=True)[0]
 
             tensor = tensor.to(DEVICE)
             log(1, "N res:\t", len(chain_entity.residues()))

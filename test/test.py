@@ -20,15 +20,44 @@ FOLDSEEK = os.environ.get("FOLDSEEK_PATH", "foldseek")
 
 entity = CompactStructure.from_file("1M2Z.cif", export_folder="trash")
 print(entity)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Bad idea
+exit()
 entity.compactness()
 fs = FoldseekDB("db_" + entity.code(), [entity.path(source=True)], folder=entity.folder(), foldseek_command=FOLDSEEK)
 for tensor, saprot_name, tensor_path, entry in fs.saprot_embeddings(save_folder=entity.folder()):
     code, chain, model = fs.parse_name(entry["name"])
 
-    log("header", f"Code {code} chain {chain}")
+    log("header", f"Code {code} chain {chain} model {model}")
 
-    chain_entity = entity.chains(chain, use_complex=True, model=model)[0]
-    print(chain)
-    residues = chain_entity.residues()
+    chains = entity.chains(chain, by_complex=True, model=model)
+    for en in range(1280):
+        entity.set_misc(f"{saprot_name}_{en}", None, force=False)
+    for chain_entity in chains:
+        print(chain_entity)
+        residues = chain_entity.residues()
+        print(len(residues), tensor.shape)
 
-    chain_entity.img3D(property=["b", "compactness"], plot=True)
+        assert tensor.shape[-2] == len(residues), f"{tensor.shape[-2]} / {len(residues)}"
+
+        for e, res in zip(tensor.cpu().numpy()[0], residues):
+            print(e.shape, res)
+            for en, emb in enumerate(e):
+                #print(en, emb)
+                res.set_misc(f"{saprot_name}_{en}", emb)
+
+        #chain_entity.img3D(property=["b", "compactness"], plot=False)
+    entity.export()

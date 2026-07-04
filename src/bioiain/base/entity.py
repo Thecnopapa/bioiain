@@ -151,8 +151,14 @@ class BIEntity(object):
         else:
             self.data["info"]["name"] = str(name)
 
-    def set_misc(self, key, value):
+    def set_misc(self, key, value, force=True):
         for a in self.all_atoms():
+            if not force:
+                try:
+                    a.get_misc(key)
+                    continue
+                except KeyError:
+                    pass
             a.set_misc(key, value)
 
     def path(self, minimal=False, source=False):
@@ -317,7 +323,7 @@ class BIEntity(object):
             atoms = _fix_disordered(atoms)
 
         if (model is not None) and model != "*" :
-            atoms = [a for a in atoms if a.model == model]
+            atoms = [a for a in atoms if str(a.model) == str(model)]
 
         if not hetatm:
             atoms = [a for a in atoms if a.type == "ATOM"]
@@ -346,8 +352,14 @@ class BIEntity(object):
                     chain_list[ch] = BIChain().from_atoms(atms, self.code(), ch, parent=self)
                 #[print(ch.id(), type(ch.id())) for ch in chain_list.values()]
                 #print((ch.id() if not by_complex else ch.complex()) for ch in chain_list.values())
-                chain_list = [ch for ch in chain_list.values() if (chain_sele is None) or ((ch.id() if not by_complex else ch.complex()) in chain_sele)]
+                chain_list = list(chain_list.values())
                 chain_list = [ch for ch in chain_list if len(ch.residues()) > 0]
+                if chain_sele is not None:
+                    if by_complex:
+                        chain_list = [ch for ch in chain_list if ch.complex() in chain_sele]
+                    else:
+                        chain_list = [ch for ch in chain_list if ch.id() in chain_sele]
+
             return chain_list
 
         if group_by_residue or len(target_entities) > 0:
@@ -1015,7 +1027,7 @@ class BIEntity(object):
         pisa = PISA(pisa_id=self.name(), **kwargs)
 
 
-    def img3D(self, size=32, property:None|dict|list|str=None, mode="max", distortion="none", plot=False, show_plot=True):
+    def img3D(self, size=16, property:None|dict|list|str=None, mode="max", distortion="none", plot=False, show_plot=True):
         log(2, f"Generating 3D voxels...")
         log(3, f"Size: {size}x{size}x{size} ({size**3})")
         log(3, f"Distorion: {distortion}")
@@ -1086,10 +1098,6 @@ class BIEntity(object):
         pixeled_coords = np.array([(x,y,z) for x, y, z in zip(*pixeled_coords)]).astype(np.int64)
         #print(pixeled_coords.shape)
 
-        # if plot:
-        #     log(3, f"Creating figure...")
-        #     from ..visualisation.plots import fig3D, show, plasma
-        #     fig, _ = fig3D()
 
         for prop in properties:
             pp = prop.get("property")
@@ -1128,6 +1136,7 @@ class BIEntity(object):
                 log(3, f"Plotting voxels... ({pp})")
                 from ..visualisation.plots import fig3D, show, plasma
                 fig, ax = fig3D()
+                show()
                 ax.set_title(pp)
                 np.set_printoptions(threshold=sys.maxsize)
                 #print(value_grid)
@@ -1144,9 +1153,11 @@ class BIEntity(object):
                 log(4, "Cube:", cube.shape)
                 log(4, "Colors:", colors.shape)
                 ax.voxels(cube, facecolors=colors, alpha=0.5)
+                ax.set_box_aspect((1, 1, 1))
 
                 if show_plot:
                     show()
+                exit()
 
 
         if pp is not None:

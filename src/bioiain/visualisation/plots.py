@@ -54,10 +54,8 @@ def close(fig):
     plt.close(fig)
 
 def show(**kwargs):
-    try:
-        plt.show(**kwargs)
-    except:
-        pass
+    plt.show(**kwargs)
+
 
 def grid2D(rows, columns, height=5, width=5, as_grid=False):
     log(2, f"Creating {rows}x{columns} (rxc) grid...")
