@@ -59,6 +59,9 @@ class AlreadyLoaded(StructureLoadException):
 class UnknownFormat(StructureLoadException):
     pass
 
+class DisorderParsingError(StructureLoadException):
+    pass
+
 # Structure export related
 class StructureExportError(Exception):
     pass
@@ -115,7 +118,7 @@ class AlreadyOrthogonal(FractionalConversionError):
 class CrystalError(Exception):
     pass
 
-class MissingCrystalInfo(CrystalError):
+class MissingCrystalInfo(CrystalError, StructureLoadException):
     pass
 
 # ALEPH related

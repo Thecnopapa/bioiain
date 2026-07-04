@@ -166,20 +166,19 @@ class FoldseekDB(object):
             t_seq = t_seq[0]
             aa_seq = aa_seq[0]
             print(code, chain, len(t_seq), len(aa_seq))
-                
+
+            entry = dataset.get(code)
             try:
-                entry = dataset.get(code)
+
                 #print(entry)
 
                 try:
                     assert entity is not None
                     assert entity.code() == code
                 except:
-                    try:
-                        entity = entity_class.from_file(entry["path"], code=code, no_atoms=not atoms)
-                    except CrystalError as e:
-                        dataset.add_to_blacklist(entry["path"], error=e)
-                        continue
+                    entity = entity_class.from_file(entry["path"], code=code, no_atoms=not atoms)
+
+
                 entity.set_model(model)
                 print(entity)
                 print(chain)
@@ -195,8 +194,13 @@ class FoldseekDB(object):
 
                 print(len([ch.sequence() for ch in chains]), len(sequence), len(t_seq))
                 print()
-            except:
-                raise FoldseekParsingError()
+
+
+            except (StructureLoadException, AssertionError) as e:
+                dataset.add_to_blacklist(entry["path"], error=e)
+                continue
+
+
             yield {
                 "code": code,
                 "chain": chain,
