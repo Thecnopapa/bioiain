@@ -40,7 +40,7 @@ class BaseModel(nn.Module):
         self.dry = dry
         self.mounted = False
         if type(in_shape) is int:
-            self.data["in_shape"] = (in_shape)
+            self.data["in_shape"] = [in_shape]
         else:
             self.data["in_shape"] = in_shape
         self.inference = inference
@@ -75,13 +75,12 @@ class BaseModel(nn.Module):
 
 
     def __str__(self):
-        if self.mounted:
-            return f"{self.__class__.__name__}_{self.data['dataname']}"
-        else:
-            return f"{self.__class__.__name__}_{self.data['dataname']}"
+        return f"<bi.{self.__class__.__name__}_{self.data['dataname']} mounted={self.mounted}>"
 
 
     def __repr__(self):
+        if not self.mounted:
+            return str(self)
         try: crit = self.criterions[self.mode]
         except KeyError: crit = self.criterions.get('default', None)
         try: optim = self._optimisers[self.mode]
@@ -90,7 +89,6 @@ class BaseModel(nn.Module):
         except KeyError: layers = self.layers.get("default", None)
         try: loss = self.running_loss[self.mode]
         except KeyError: loss = self.running_loss.get('default', None)
-
 
         return f"""
     <bi.{self.__class__.__name__}: {self.data['name']}
@@ -544,7 +542,7 @@ class BaseModel(nn.Module):
 
 
 
-    def _calculate_loss(self, output:torch.Tensor, item:Item, criterion_name:str="mode") -> torch.Tensor|float:
+    def _calculate_loss(self, output:torch.Tensor, item:Item|torch.Tensor, criterion_name:str="mode") -> torch.Tensor|float:
 
         if criterion_name == "mode":
             criterions = [self.mode]
@@ -562,7 +560,6 @@ class BaseModel(nn.Module):
             if criterion not in self.criterions: criterions[n] = "default"; criterion = "default"
             if isinstance(self.criterions[criterion], CustomLoss) or not isinstance(item, Item):
                 losses.append(self.criterions[criterion](output, item))
-
 
             elif hasattr(item, "lt"):
                 print("LT", item.lt)
@@ -633,7 +630,7 @@ class BaseModel(nn.Module):
 
 
 
-    def loss(self, output:torch.Tensor|None=None, item:Item|None=None, criterion_name:str="mode", backwards:bool=True, zero_optims:str|None="mode", step="mode", force_backpropagation=False, retain_graph=False) -> torch.Tensor|float:
+    def loss(self, output:torch.Tensor|None=None, item:Item|torch.Tensor|None=None, criterion_name:str="mode", backwards:bool=True, zero_optims:str|None="mode", step="mode", force_backpropagation=False, retain_graph=False) -> torch.Tensor|float:
 
         if (output is not None) and (item is not None):
             loss = self._calculate_loss(output, item, criterion_name=criterion_name)

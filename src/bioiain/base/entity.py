@@ -1028,7 +1028,9 @@ class BIEntity(object):
         #print(count_grid)
 
         count_grid.fill(0)
-        value_grid.fill(0)
+        value_grid.fill(0.0)
+        value_grid = value_grid.astype(np.float32)
+
 
         #print(count_grid)
         residues = self.residues()
@@ -1086,7 +1088,10 @@ class BIEntity(object):
                 if property == "b":
                     p = res.bfactor()
                 else:
-                    p = res.ca.get_misc("property", 0)
+                    p = res.get_misc(property, 0.)
+                if p is None:
+                    p = 0.
+                p = float(p)
                 if mode == "max":
                     value_grid[coord[0], coord[1], coord[2]] = max(count_grid[coord[0], coord[1], coord[2]], p)
                 elif mode == "min":
@@ -1099,16 +1104,15 @@ class BIEntity(object):
             value_grid = np.divide(value_grid, count_grid, where=count_grid > 0)
 
 
-        np.set_printoptions(threshold=sys.maxsize)
-
         if plot:
             log(3, "Plotting voxels...")
             from ..visualisation.plots import fig3D, show, plasma
             fig, ax = fig3D()
-
-            max_val = value_grid.max()
-            print("max_val", max_val)
-            cube = np.indices([size, size, size])
+            np.set_printoptions(threshold=sys.maxsize)
+            #print(value_grid)
+            max_val = value_grid.reshape(size**3).max()
+            log(4, "Scale:", max_val)
+            #cube = np.indices([size, size, size])
             cube = (count_grid > 0) & (count_grid > 0) & (count_grid > 0) 
             #print(cube)
 
@@ -1116,8 +1120,8 @@ class BIEntity(object):
             colors = np.array(color_vector(value_grid, scale=max_val, as_hex=True))
             #print(colors)
 
-            print(colors.shape)
-            print(cube.shape)
+            log(4, "Cube:", cube.shape)
+            log(4, "Colors:", colors.shape)
             ax.voxels(cube, facecolors=colors, alpha=0.5)
 
             if show_plot:
@@ -1128,14 +1132,3 @@ class BIEntity(object):
             return value_grid
         else:
             return count_grid
-
-
-
-
-
-
-
-
-
-
-

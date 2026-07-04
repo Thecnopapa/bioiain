@@ -53,15 +53,13 @@ class StructureDataset(object):
 
 
     class Entry(object):
-        def __init__(self, data, dataset):
-            self.code = data.get("code", "XXXX")
-            self.name = data.get("name", None)
-            self.path = data.get("path", None)
-            self.url = data.get("url", None)
-            self.source = data.get("source", None)
-            self.extension = data.get("extension", None)
+        def __init__(self, data:dict, dataset:StructureDataset):
+            self.data = data
             self.dataset = dataset
 
+
+        def __getattr__(self, key):
+            return self.data.get(key)
 
         def __repr__(self):
             return f"<bi.{self.dataset.__class__.__name__}.{self.__class__.__name__}: {self.code} ({self.name}) at {self.path if self.path is not None else self.url} from {self.source}>"
@@ -91,18 +89,31 @@ class StructureDataset(object):
     def paths(self) -> list:
         return [e.get("path", None) for e in self.data.values() if not self.check_blacklist(e["path"])]
 
-    def entities(self, entity_class=BIEntity, **kwargs):
+    def entities(self, entity_class=BIEntity, return_entries=False, **kwargs):
         for entry in self:
-            
             entity = entity_class.from_file(entry.path, code=entry.name, **kwargs)
-
-            yield entity
+            if return_entries:
+                yield entity, entry
+            else:
+                yield entity
             
     def export(self, **kwargs):
         [e.export() for e in self.entities(**kwargs)]
 
     def load(self, **kwargs):
         [e.atoms() for e in self.entities(**kwargs)]
+
+    def shuffle(self):
+        import random
+
+        random_keys = list(self.data.keys())
+        random.shuffle(random_keys)
+        new_dict = {}
+        for k in random_keys:
+            new_dict[k] = self.data[k]
+        self.data = new_dict
+
+
 
     def __repr__(self):
         return f"<bi.{self.__class__.__name__}: {self.name} N={len(self)}>"
@@ -120,9 +131,9 @@ class StructureDataset(object):
 
     def __next__(self):
         if self.i < len(self._codes):
-            c = self._codes[self.i]
+            #c = self._codes[self.i]
             self.i += 1
-            return self.get[c]
+            return self[self.i]
         else:
             raise StopIteration
 
@@ -133,7 +144,7 @@ class StructureDataset(object):
             return self.data.get(code, exception)
 
 
-    def add(self, code, name=None, path=None, url=None, source="manual", extension="cif", replace=True):
+    def add(self, code, name=None, path=None, url=None, source="manual", extension="cif", replace=True, **extras):
         if path in self.blacklist:
             log("warning", f"Path: {path} in blacklist: {self.blacklist_file}")
             return self
@@ -151,10 +162,11 @@ class StructureDataset(object):
             "url": url,
             "source": source,
             "extension": extension,
+            **extras
         }
         return self
 
-    def add_dir(self, folder, exclude:str|list|None=None, replace=True, allowed_extensions=("cif", "pdb")):
+    def add_dir(self, folder, exclude:str|list|None=None, replace=True, allowed_extensions=("cif", "pdb"), **extras):
         log(2, f"Adding directory files: {folder} to {self}")
         if exclude is None:
             exclude = []
@@ -170,22 +182,22 @@ class StructureDataset(object):
             code = file.split(".")[0]
             name = code
             path = relative_path(os.path.join(folder, file))
-            self.add(code, name=name, path=path, url=None, source="dir", extension=extension, replace=replace)
+            self.add(code, name=name, path=path, url=None, source="dir", extension=extension, replace=replace, **extras)
             counter += 1
         log(2, f"Added {counter} files to {self}")
 
         return self
 
     @classmethod
-    def from_dir(cls, folder, name=None, exclude:str|list|None=None, replace=True):
+    def from_dir(cls, folder, name=None, exclude:str|list|None=None, replace=True, **extras):
         if name is None:
             name = os.path.dirname(os.path.abspath(folder))
         self = cls(name=name)
-        self.add_dir(folder, exclude=exclude, replace=replace)
+        self.add_dir(folder, exclude=exclude, replace=replace,**extras)
         return self
 
 
-    def add_list(self, file_or_list:str|list, download_as="cif", base_url=None, force=False, replace=True):
+    def add_list(self, file_or_list:str|list, download_as="cif", base_url=None, force=False, replace=True, **extras):
         log(2, f"Adding list: {file_or_list} to {self}")
         pdb_links = []
         pdbs_to_download = []
@@ -252,22 +264,22 @@ class StructureDataset(object):
                         counter += 1
                 else:
                     skipped_counter += 1
-                self.add(code, name=code, path=f_path, url=url, source="list_downloaded", extension=extension, replace=replace)
+                self.add(code, name=code, path=f_path, url=url, source="list_downloaded", extension=extension, replace=replace,**extras)
         print()
         log(2, f"{counter} files downloaded, {failed_counter} failed, {skipped_counter} skipped")
         for path in pdb_paths:
             code = os.path.basename(path.split(".")[0])
             extension = f_name.split(".")[-1]
-            self.add(code, name=code, path=path, url=None, source="list_path", extension=extension, replace=replace)
+            self.add(code, name=code, path=path, url=None, source="list_path", extension=extension, replace=replace, **extras)
         return self
 
     @classmethod
-    def from_list(cls, file_or_list:str|list, name=None, download_as="cif", base_url=None, force=False, replace=True):
+    def from_list(cls, file_or_list:str|list, name=None, download_as="cif", base_url=None, force=False, replace=True,**extras):
         if name is None:
             if type(file_or_list) is list:
                 name = "pdb_list"
             elif type(file_or_list) is str:
                 name = os.path.basename(file_or_list).split(".")[0]
         self = cls(name=name)
-        self.add_list(file_or_list, download_as=download_as, base_url=base_url, force=force, replace=replace)
+        self.add_list(file_or_list, download_as=download_as, base_url=base_url, force=force, replace=replace, **extras)
         return self

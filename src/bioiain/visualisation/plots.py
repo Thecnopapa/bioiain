@@ -54,7 +54,10 @@ def close(fig):
     plt.close(fig)
 
 def show(**kwargs):
-    plt.show(**kwargs)
+    try:
+        plt.show(**kwargs)
+    except:
+        pass
 
 def grid2D(rows, columns, height=5, width=5, as_grid=False):
     log(2, f"Creating {rows}x{columns} (rxc) grid...")
@@ -110,7 +113,8 @@ def fig3D(entity:any=None, preset:str=None,
         ax.axes.set_zlim(-1,2)
 
     else:
-        log("warning", "3D Plot preset ({}) not found".format(preset))
+        #log("warning", "3D Plot preset ({}) not found".format(preset))
+        pass
 
 
     return [fig, ax]

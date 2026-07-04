@@ -44,28 +44,43 @@ class CompactnessMLPmk1(BaseModel):
             "linear4": nn.Linear(self.data["hidden_dims"][-1], 1),
         }
 
-class Contactability3Dmk1(BaseModel):
+class Compactness3Dmk1(BaseModel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         n = self.data["in_shape"][0]
-        self.data["hidden_dims"] = [n*2, n*2, n]
-        self.layers["default"] = {
-            "3d1": nn.Conv3d(
-                in_channels= n,
-                out_channels= n*2,
-                kernel_size=8,
-                stride=4,
-            ),
-            "en_relu1": nn.ReLU(),
-            "3d2": nn.Conv3d(
-                in_channels=n * 2,
-                out_channels=n * 4,
+        self.data["hidden_dims"] = [n, n*4, n*8, n]
+        cn = self.data["hidden_dims"]
+        max_size = (self.data["in_shape"][1] - 4)**3
+        print(max_size)
+
+        self.layers["convolution"] = {
+            "conv3d1": nn.Conv3d(
+                in_channels= cn[0],
+                out_channels= cn[1],
                 kernel_size=4,
-                stride=2,
+                stride=1,
             ),
-            "en_relu2": nn.ReLU(),
-            "flatten": nn.Flatten(),
-            "linear3": nn.Linear(n*4*4, self.data["hidden_dims"][-1]),
-            "en_relu3": nn.ReLU(),
-            "linear4": nn.Linear(self.data["hidden_dims"][-1], 1),
+            "conv_relu1": nn.ReLU(),
+            "conv3d2": nn.Conv3d(
+                in_channels=cn[1],
+                out_channels=cn[2],
+                kernel_size=2,
+                stride=1,
+            )
+        }
+        self.layers["linear"] = {
+            "flatten1": nn.Flatten(),
+            "linear_relu1": nn.ReLU(),
+            "conv1d": nn.Conv1d(8, 1, kernel_size=1, stride=1),
+            "linear_relu2": nn.ReLU(),
+            "linear": nn.Linear(max_size, 1280),
+            "linear_relu3": nn.ReLU(),
+        }
+        self.layers["classifier"] = {
+            "classifier_head": nn.Linear(1280, 1),
+        }
+        self.layers["default"] = {
+            **self.layers["convolution"],
+            **self.layers["linear"],
+            **self.layers["classifier"],
         }

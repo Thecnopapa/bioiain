@@ -410,7 +410,7 @@ class BIAtom(PseudoAtom):
             return self.misc[label]
         else:
             if keyerror == "undefined":
-                raise KeyError
+                raise KeyError(f"Misc key ({label}) not found in {self}")
             else:
                 return keyerror
 

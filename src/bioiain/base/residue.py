@@ -146,6 +146,9 @@ class BIResidue(object):
             a.set_misc(key, value)
         return self
 
+    def get_misc(self, key, keyerror="undefined"):
+        return self.ca.get_misc(key, keyerror=keyerror)
+
     def set_bfactor(self, bfactor):
         for a in self.atoms:
             a.set_bfactor(bfactor)

@@ -30,7 +30,7 @@ authors = [
 ]
 description = "Package for structural analysis of proteins"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 
 
 classifiers = [
@@ -92,5 +92,3 @@ aleph = [
 db = [
     "plinder"
 ]
-
-

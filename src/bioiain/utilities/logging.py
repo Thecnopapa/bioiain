@@ -154,25 +154,25 @@ def log(level:int|str=1, *args, **kwargs):
                 if level == 0 or level is None:
                     print(*args, **kwargs)
                 elif level == "start":
-                    tprint(*args, **kwargs)
+                    _tprint(*args, **kwargs)
                 elif level == "header":
                     print(colour("white"), end="")
-                    sprint(*args, **kwargs)
+                    _sprint(*args, **kwargs)
                     print(colour("end"), end="")
                 elif level == "end":
-                    eprint(*args, **kwargs)
+                    _eprint(*args, **kwargs)
                 elif type(level) is int:
                     if v >= level:
-                        print1(*args, space=2*level, **kwargs)
+                        _print1(*args, space=2*level, **kwargs)
                     else:
-                        print1("...", space=2 * level, **kwargs)
+                        _print1("...", space=2 * level, **kwargs)
                 else:
                     print("Unknown log level: {}".format(repr(level)))
                     print(*args, **kwargs)
 
 start_time = None
 
-def tprint(*strings:str, head:int=10, style:str="#", end:str="\n", sep:str=" ", reset_timer=True, print_timer=False):  # Print section title
+def _tprint(*strings:str, head:int=10, style:str="#", end:str="\n", sep:str=" ", reset_timer=True, print_timer=False):  # Print section title
     global start_time
     width = shutil.get_terminal_size()[0] -2
     string = " ".join([str(s) for s in strings])
@@ -193,19 +193,19 @@ def tprint(*strings:str, head:int=10, style:str="#", end:str="\n", sep:str=" ", 
     if reset_timer:
         start_time = time.time()
 
-def eprint(*strings, style = "^", print_timer=True, **kwargs):  # Print end of section
-    tprint(*strings, style=style, end="\n\n", print_timer=print_timer, **kwargs)
+def _eprint(*strings, style = "^", print_timer=True, **kwargs):  # Print end of section
+    _tprint(*strings, style=style, end="\n\n", print_timer=print_timer, **kwargs)
 
 
 
 
-def sprint(*strings:str, **kwargs): # Print Subtitle
+def _sprint(*strings:str, **kwargs): # Print Subtitle
     str_strings = map(str, strings)
     prefix = "\n"
     out = " * "+ " ".join(str_strings)
     print(prefix+out,**kwargs)
 
-def print1(*strings:str, space:int=2, **kwargs): # Print with 1 indent
+def _print1(*strings:str, space:int=2, **kwargs): # Print with 1 indent
     str_strings = []
     for string in strings:
         if type(string) == list or type(string) == tuple:
