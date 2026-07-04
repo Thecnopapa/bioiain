@@ -11,7 +11,7 @@ class BIEntity(object):
     tmp_folder = "/tmp"
     excluded_from_headers = ["_bi_*", "_atom_site", "_aleph_*","_cell", "_symmetry","_entry"]
 
-    def __init__(self, export_folder=None, parent=None, use_tmp=False, model:str|int="1", **kwargs):
+    def __init__(self, export_folder=None, parent=None, use_tmp=False, model:str|int="*", **kwargs):
         if export_folder is None:
             export_folder = os.path.join(SUBDIR_NAME, "exports").strip()
         self.children = []

@@ -59,6 +59,11 @@ class AlreadyLoaded(StructureLoadException):
 class UnknownFormat(StructureLoadException):
     pass
 
+# Structure export related
+class StructureExportError(Exception):
+    pass
+class ExportingNoAtoms(StructureExportError):
+    pass
 
 # CCP4 related
 class CCP4Error(Exception):
