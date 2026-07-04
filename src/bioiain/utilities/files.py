@@ -53,7 +53,7 @@ class StructureDataset(object):
 
 
     class Entry(object):
-        def __init__(self, data:dict, dataset:StructureDataset):
+        def __init__(self, data:dict, dataset):
             self.data = data
             self.dataset = dataset
 
