@@ -4,6 +4,24 @@ from ..utilities.logging import log
 
 
 
+def humanise(number:int|float) -> str:
+    if number > 1000000000000:
+        n = number / 1000000000000
+        return f"{n:.1f}T"
+    if number > 1000000000:
+        n = number / 1000000000
+        return f"{n:.1f}G"
+    elif number > 1000000:
+        n = number / 1000000
+        return f"{n:.1f}M"
+    elif number > 1000:
+        n = number / 1000
+        return f"{n:.1f}K"
+    else:
+        if type(number) is int:
+            return f"{number}"
+        return f"{number:.1f}"
+
 def interpret(val):
     if val is None:
         return val

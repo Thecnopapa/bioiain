@@ -1014,6 +1014,128 @@ class BIEntity(object):
         from ..tools.PISA import PISA
         pisa = PISA(pisa_id=self.name(), **kwargs)
 
-    def img3D(self, size=32, property="b", mode="max"):
+    def img3D(self, size=32, property=None, mode="max", distortion="none", plot=False, show_plot=True):
+        log(2, f"Generating 3D voxels...")
+        log(3, f"Size: {size}x{size}x{size} ({size**3})")
+        log(3, f"Property: {property}")
+        log(3, f"Mode: {mode}")
+        log(3, f"Distorion: {distortion}")
+        assert size % 2 == 0
         pixels = np.arange(size**3)
-        grid = pixels.reshape(size, size, size)
+        #print(pixels.shape)
+        count_grid = pixels.reshape(size, size, size)
+        value_grid = pixels.reshape(size, size, size)
+        #print(count_grid)
+
+        count_grid.fill(0)
+        value_grid.fill(0)
+
+        #print(count_grid)
+        residues = self.residues()
+        coords = np.array([res.ca.coord for res in residues])
+        x_coords = np.array([c[0] for c in coords])
+        y_coords = np.array([c[1] for c in coords])
+        z_coords = np.array([c[2] for c in coords])
+
+        coord_sets = [x_coords, y_coords, z_coords]
+
+
+        #print(coords.shape)
+        x_range = x_coords.min(axis=0), x_coords.max(axis=0)
+        y_range = y_coords.min(axis=0), y_coords.max(axis=0)
+        z_range = z_coords.min(axis=0), z_coords.max(axis=0)
+
+        ranges = [x_range, y_range, z_range]
+        #print("ranges")
+        #[print(ran) for ran in ranges]
+
+        x_center, y_centre, z_centre = centres = [start + ((end-start)/2) for start, end in ranges] 
+        #print("centres")
+        #[print(cen) for cen in centres]
+
+        if distortion == "none":
+            vertice_len = max(end - start for start, end in ranges)
+        else:
+            raise NotImplementedError(f"Distortion mode {distortion} not implemented")
+
+        log(3, f"Cube size: {vertice_len:5.3f} cubic A")
+
+        pixel_len = vertice_len / (size-2)
+        log(3, f"Voxel size: {pixel_len:5.3f} cubic A")
+
+
+        centered_coords = []
+        for coord_set, centre in zip(coord_sets, centres):
+            centered = coord_set - centre
+            #print(centered.shape)
+            centered_coords.append(centered)
+
+        pixeled_coords = []
+        for coord_set in centered_coords:
+            pixeled = (coord_set // pixel_len ) + size/2
+            #print(pixeled.shape)
+            pixeled_coords.append(pixeled)
+        #print(pixeled_coords)
+        pixeled_coords = np.array([(x,y,z) for x, y, z in zip(*pixeled_coords)]).astype(np.int64)
+        #print(pixeled_coords.shape)
+
+        for coord, res in zip(pixeled_coords, residues):
+            #print(coord)
+            count_grid[coord[0], coord[1], coord[2]] = count_grid[coord[0], coord[1], coord[2]] +1
+            if property is not None:
+                if property == "b":
+                    p = res.bfactor()
+                else:
+                    p = res.ca.get_misc("property", 0)
+                if mode == "max":
+                    value_grid[coord[0], coord[1], coord[2]] = max(count_grid[coord[0], coord[1], coord[2]], p)
+                elif mode == "min":
+                    value_grid[coord[0], coord[1], coord[2]] = min(count_grid[coord[0], coord[1], coord[2]], p)
+                elif mode in ["sum", "mean"]:
+                    value_grid[coord[0], coord[1], coord[2]] = count_grid[coord[0], coord[1], coord[2]] + p
+                else:
+                    raise NotImplementedError(f"Mode {mode} not implemented")
+        if property is not None and mode == "mean":
+            value_grid = np.divide(value_grid, count_grid, where=count_grid > 0)
+
+
+        np.set_printoptions(threshold=sys.maxsize)
+
+        if plot:
+            log(3, "Plotting voxels...")
+            from ..visualisation.plots import fig3D, show, plasma
+            fig, ax = fig3D()
+
+            max_val = value_grid.max()
+            print("max_val", max_val)
+            cube = np.indices([size, size, size])
+            cube = (count_grid > 0) & (count_grid > 0) & (count_grid > 0) 
+            #print(cube)
+
+            color_vector = np.vectorize(plasma)
+            colors = np.array(color_vector(value_grid, scale=max_val, as_hex=True))
+            #print(colors)
+
+            print(colors.shape)
+            print(cube.shape)
+            ax.voxels(cube, facecolors=colors, alpha=0.5)
+
+            if show_plot:
+                show()
+
+
+        if property is not None:
+            return value_grid
+        else:
+            return count_grid
+
+
+
+
+
+
+
+
+
+
+

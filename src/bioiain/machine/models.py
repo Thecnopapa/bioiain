@@ -4,6 +4,7 @@ import PIL
 
 from torch.utils.tensorboard import SummaryWriter
 from ..utilities import *
+from ..utilities.strings import humanise
 from . import DEVICE
 
 from .losses import *
@@ -98,7 +99,7 @@ class BaseModel(nn.Module):
         - criterion: {crit.__class__.__name__}
         - current epoch: {self.data['epoch']}
         - running loss: {loss}
-        - layers:{"".join([f'\n          - {k}\t--> {v.__class__.__name__}\t({getattr(v, 'in_features', '?')}x{getattr(v, 'out_features', '?')})\tNp= {self.humanise(sum(vv.numel() for vv in v.parameters()))}' for k, v in layers.items()])}
+        - layers:{"".join([f'\n          - {k}\t--> {v.__class__.__name__}\t({getattr(v, 'in_features', '?')}x{getattr(v, 'out_features', '?')})\tNp= {humanise(sum(vv.numel() for vv in v.parameters()))}' for k, v in layers.items()])}
         - total params: {self.n_params(human=True)}
     >
 """
@@ -116,24 +117,6 @@ class BaseModel(nn.Module):
             self.submodels[k] = self.submodels[k].to(device)
         return self
 
-    @staticmethod
-    def humanise(number:int|float) -> str:
-        if number > 1000000000000:
-            n = number / 1000000000000
-            return f"{n:.1f}T"
-        if number > 1000000000:
-            n = number / 1000000000
-            return f"{n:.1f}G"
-        elif number > 1000000:
-            n = number / 1000000
-            return f"{n:.1f}M"
-        elif number > 1000:
-            n = number / 1000
-            return f"{n:.1f}K"
-        else:
-            if type(number) is int:
-                return f"{number}"
-            return f"{number:.1f}"
 
     def n_params(self, model="mode", human=False):
         if model == "mode":
@@ -141,7 +124,7 @@ class BaseModel(nn.Module):
         model_params = sum(p.numel() for p in self.submodels[model].parameters())
 
         if human:
-            return self.humanise(model_params)
+            return humanise(model_params)
 
         return model_params
 

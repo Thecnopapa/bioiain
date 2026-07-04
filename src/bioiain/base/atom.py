@@ -229,98 +229,103 @@ class BIAtom(PseudoAtom):
     def __init__(self, data, residue=None, entity=None):
         if len(data) == 1:
             data = data[0]
+        try:
+            self._residue = residue
+            self._entity = entity
+            for k, v in data.items():
+                if v == "." or v == "?" or v=="None":
+                    #print(k, "is empty for:", data["id"])
+                    #print(data)
+                    data[k] = None
 
-        self._residue = residue
-        self._entity = entity
-        for k, v in data.items():
-            if v == "." or v == "?" or v=="None":
-                #print(k, "is empty for:", data["id"])
-                #print(data)
-                data[k] = None
+            essential_labs = [
+                "group_PDB",
+                "id",
+                "type_symbol",
+                "label_alt_id",
+                "label_atom_id",
+                "label_comp_id",
+                "label_seq_id",
+                "label_asym_id",
+                "label_entity_id",
+                "auth_atom_id",
+                "auth_comp_id",
+                "auth_seq_id",
+                "auth_asym_id",
+                "Cartn_x",
+                "Cartn_y",
+                "Cartn_z",
+                "occupancy",
+                "B_iso_or_equiv",
+                "pdbx_PDB_model_num",
+                "pdbx_PDB_ins_code",
 
-        essential_labs = [
-            "group_PDB",
-            "id",
-            "type_symbol",
-            "label_alt_id",
-            "label_atom_id",
-            "label_comp_id",
-            "label_seq_id",
-            "label_asym_id",
-            "label_entity_id",
-            "auth_atom_id",
-            "auth_comp_id",
-            "auth_seq_id",
-            "auth_asym_id",
-            "Cartn_x",
-            "Cartn_y",
-            "Cartn_z",
-            "occupancy",
-            "B_iso_or_equiv",
-            "pdbx_PDB_model_num",
-            "pdbx_PDB_ins_code",
-
-        ]
-
-
-        self.misc = {}
-        for k, v in data.items():
-            if not (k  in essential_labs):
-                self.misc[k] = v
+            ]
 
 
-        #ATOM
-        self.atomnum = int(data["id"])
-        self.type = data["group_PDB"] # ATOM / HETATM
-        self.element = data["type_symbol"].strip() #C
-        self.name = data["label_atom_id"].strip() # CA (Auto)
-        self.name2 = data["auth_atom_id"].strip() # CA (Given)
-        self.prime = False
-        if "'" in self.name:
-            self.prime = True
-            self.name = self.name.replace("'", "").strip()
-            self.name2 = self.name2.replace("'", "").strip()
-
-        #RES
-        self.resname = str(data["label_comp_id"]) # Auto
-        self.resname2 = str(data["auth_comp_id"]) # Given
-        self.resseq = data["label_seq_id"] # Auto
-        if self.resseq is not None: self.resseq = int(self.resseq)
-        self.resnum = data["auth_seq_id"] # Given
-        if self.resnum is not None: self.resnum = int(self.resnum)
-
-        #CHAIN
-        self.chain = data["label_asym_id"] # Auto
-        self.complex = data["auth_asym_id"] # Given
-        self.entity = str(data["label_entity_id"])
-        self.model = str(data["pdbx_PDB_model_num"])
+            self.misc = {}
+            for k, v in data.items():
+                if not (k  in essential_labs):
+                    self.misc[k] = v
 
 
-        #DISORDER
-        if "label_alt_id" not in data:
-            data["label_alt_id"] = "."
-        self.alt_id = data["label_alt_id"]
-        if self.alt_id is None or self.alt_id == "None":
-            self.alt_id = "."
+            #ATOM
+            self.atomnum = int(data["id"])
+            self.type = data["group_PDB"] # ATOM / HETATM
+            assert self.type in ["ATOM", "HETATM"]
+            self.element = str(data["type_symbol"]).strip().upper() #C
+            self.name = str(data["label_atom_id"]).strip().upper() # CA (Auto)
+            
+            self.name2 = str(data["auth_atom_id"]).strip().upper() # CA (Given)
+            self.prime = False
+            if "'" in self.name:
+                self.prime = True
+                self.name = self.name.replace("'", "").strip()
+                self.name2 = self.name2.replace("'", "").strip()
 
-        if self.alt_id == ".":
-            self.disordered = False
-            self.doppelgangers = None
-            self.favourite = None
-        else:
-            self.disordered = True
-            self.doppelgangers = []
-            self.favourite = True
+            #RES
+            self.resname = str(data["label_comp_id"]) # Auto
+            self.resname2 = str(data["auth_comp_id"]) # Given
+            self.resseq = data["label_seq_id"] # Auto
+            if self.resseq is not None: self.resseq = int(self.resseq)
+            self.resnum = data["auth_seq_id"] # Given
+            if self.resnum is not None: self.resnum = int(self.resnum)
 
-        # COORDINATES
-        x = float(data["Cartn_x"])
-        y = float(data["Cartn_y"])
-        z = float(data["Cartn_z"])
-        coord = (x, y, z)
-        super().__init__(coord)
-        self.occupancy = float(data["occupancy"])
-        self.b = float(data["B_iso_or_equiv"])
-        self.ins_code = data.get("pdbx_PDB_ins_code", None)
+            #CHAIN
+            self.chain = data["label_asym_id"] # Auto
+            self.complex = data["auth_asym_id"] # Given
+            self.entity = str(data["label_entity_id"])
+            self.model = str(data["pdbx_PDB_model_num"])
+
+
+            #DISORDER
+            if "label_alt_id" not in data:
+                data["label_alt_id"] = "."
+            self.alt_id = data["label_alt_id"]
+            if self.alt_id is None or self.alt_id == "None":
+                self.alt_id = "."
+
+            if self.alt_id == ".":
+                self.disordered = False
+                self.doppelgangers = None
+                self.favourite = None
+            else:
+                self.disordered = True
+                self.doppelgangers = []
+                self.favourite = True
+
+            # COORDINATES
+            x = float(data["Cartn_x"])
+            y = float(data["Cartn_y"])
+            z = float(data["Cartn_z"])
+            coord = (x, y, z)
+            super().__init__(coord)
+            self.occupancy = float(data["occupancy"])
+            self.b = float(data["B_iso_or_equiv"])
+            self.ins_code = data.get("pdbx_PDB_ins_code", None)
+        except:
+            print(data)
+            raise
 
 
     def id(self): return self.name,  self.resnum, self.complex,  self.prime # Ambiguous (author)
