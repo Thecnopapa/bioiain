@@ -346,8 +346,10 @@ class EmbeddingDataset(object):
         from torch import load as torch_load
         if label_key is None:
             label_key = self.data["label_key"]
+
         embedding_path = None
         label_path = None
+        label_value = None
         #print("GET:", key)
         iter_dim = 0
         rel_key = None
@@ -372,7 +374,11 @@ class EmbeddingDataset(object):
             if embedding:
                 embedding_path = e["embedding_path"]
             if label:
-                label_path = e[label_key]
+                if "path" in label_key:
+                    label_path = e[label_key]
+                    label_value = None
+                else:
+                    label_value = e[label_key]
             rel_key = key - e["start"]
             break
 
@@ -387,6 +393,8 @@ class EmbeddingDataset(object):
 
         if only_data:
             return e
+
+
 
         #print("REL_KEY:", rel_key)
 
@@ -437,6 +445,7 @@ class EmbeddingDataset(object):
 
 
 
+
         target_tensor=None
         target_label=None
         if embedding:
@@ -467,6 +476,9 @@ class EmbeddingDataset(object):
                     print(label_data, len(label_data))
                     print(rel_key)
                     raise
+            elif label_value is not None:
+                target_label = label_value
+
 
         if cache:
             self.cache = {"label_data":None, "label_path":None, "tensor":None, "embedding_path":None}
@@ -486,11 +498,12 @@ class EmbeddingDataset(object):
         return Item(target_tensor, target_label, label_to_index=l_to_i, key=key, dataset=self)
 
 
-    def add_label(self, key, label):
-        self.embeddings[key]["label"] = label
+    def add_label(self, key, label, label_key="label"):
+        self.embeddings[key][label_key] = label
         self.data["mapped"] = False
+        self.data["label_key"] = label_key
 
-        return self[key]
+        return key
 
 
     def add_label_from_string(self, label, key=None, var_name="label_path"):
@@ -565,7 +578,7 @@ class EmbeddingDataset(object):
         return path
 
 
-    def load(self, folder=None, missing_ok=True, load_split=False):
+    def load(self, folder=None, missing_ok=True, load_split=False, load_tem=False):
         log(1, "Loading dataset...")
         if folder is None:
             assert self.data["folder"] is not None

@@ -133,7 +133,10 @@ class StructureDataset(object):
         if self.i < len(self._codes):
             #c = self._codes[self.i]
             self.i += 1
-            return self[self.i]
+            try:
+                return self[self.i-1]
+            except IndexError:
+                raise IndexError(self.i -1, len(self._codes))
         else:
             raise StopIteration
 

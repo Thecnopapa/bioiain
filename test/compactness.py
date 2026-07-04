@@ -16,7 +16,6 @@ from compactness_models import *
 
 from src.bioiain.machine import *
 
-
 set_seed()
 
 
@@ -73,6 +72,8 @@ if (not FORCE) or "--rebuild" in sys.argv:
     embeddings.load()
 
 if (len(embeddings) == 0 or FORCE) and not INFERENCE:
+    tracemalloc_start()
+
     n_missmatches = 0
     total = 0
     fs = FoldseekDB(dataset.name, dataset, foldseek_command=FOLDSEEK)
@@ -134,6 +135,7 @@ if (len(embeddings) == 0 or FORCE) and not INFERENCE:
             with open(label_path, "w") as lf:
                 lf.write(label_header+"\n")
                 lf.write(label_value[:-2]+"\n")
+            tracemalloc_top()
         else:
             log(1, "Compactness label already generated")
         log(2, label_path, saprot_name)
