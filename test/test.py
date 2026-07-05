@@ -22,21 +22,6 @@ entity = CompactStructure.from_file("1M2Z.cif", export_folder="trash")
 print(entity)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-# Bad idea
-exit()
-entity.compactness()
 fs = FoldseekDB("db_" + entity.code(), [entity.path(source=True)], folder=entity.folder(), foldseek_command=FOLDSEEK)
 for tensor, saprot_name, tensor_path, entry in fs.saprot_embeddings(save_folder=entity.folder()):
     code, chain, model = fs.parse_name(entry["name"])
@@ -53,11 +38,5 @@ for tensor, saprot_name, tensor_path, entry in fs.saprot_embeddings(save_folder=
 
         assert tensor.shape[-2] == len(residues), f"{tensor.shape[-2]} / {len(residues)}"
 
-        for e, res in zip(tensor.cpu().numpy()[0], residues):
-            print(e.shape, res)
-            for en, emb in enumerate(e):
-                #print(en, emb)
-                res.set_misc(f"{saprot_name}_{en}", emb)
 
-        #chain_entity.img3D(property=["b", "compactness"], plot=False)
-    entity.export()
+        chain_entity.img3D(property="b", plot=False, embedding=tensor)

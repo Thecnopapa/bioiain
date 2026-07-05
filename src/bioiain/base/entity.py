@@ -1027,10 +1027,10 @@ class BIEntity(object):
         pisa = PISA(pisa_id=self.name(), **kwargs)
 
 
-    def img3D(self, size=16, property:None|dict|list|str=None, mode="max", distortion="none", plot=False, show_plot=True):
+    def img3D(self, size=16, property:None|dict|list|str=None, mode="max", distortion="none", plot=False, show_plot=True, embedding=None):
         log(2, f"Generating 3D voxels...")
         log(3, f"Size: {size}x{size}x{size} ({size**3})")
-        log(3, f"Distorion: {distortion}")
+        log(3, f"Distortion: {distortion}")
         assert size % 2 == 0
 
         if type(property) is str:
@@ -1041,6 +1041,10 @@ class BIEntity(object):
             properties = [{"property":None}]
         else:
             raise NotImplementedError()
+
+        if embedding is not None:
+            # TODO: insert embedding as properties
+            pass
 
 
         pixels = np.arange(size**3)
@@ -1097,6 +1101,7 @@ class BIEntity(object):
         #print(pixeled_coords)
         pixeled_coords = np.array([(x,y,z) for x, y, z in zip(*pixeled_coords)]).astype(np.int64)
         #print(pixeled_coords.shape)
+
 
 
         for prop in properties:
