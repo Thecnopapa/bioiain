@@ -1141,7 +1141,6 @@ class BIEntity(object):
                 log(3, f"Plotting voxels... ({pp})")
                 from ..visualisation.plots import fig3D, show, plasma
                 fig, ax = fig3D()
-                show()
                 ax.set_title(pp)
                 np.set_printoptions(threshold=sys.maxsize)
                 #print(value_grid)
@@ -1158,11 +1157,11 @@ class BIEntity(object):
                 log(4, "Cube:", cube.shape)
                 log(4, "Colors:", colors.shape)
                 ax.voxels(cube, facecolors=colors, alpha=0.5)
-                ax.set_box_aspect((1, 1, 1))
-
+                #ax.set_box_aspect((size, size, size))
+                ax.set_aspect('equal')
                 if show_plot:
                     show()
-                exit()
+                #exit()
 
 
         if pp is not None:

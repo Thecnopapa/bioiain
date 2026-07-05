@@ -39,4 +39,4 @@ for tensor, saprot_name, tensor_path, entry in fs.saprot_embeddings(save_folder=
         assert tensor.shape[-2] == len(residues), f"{tensor.shape[-2]} / {len(residues)}"
 
 
-        chain_entity.img3D(property="b", plot=False, embedding=tensor)
+        chain_entity.img3D(property="b", plot=True, embedding=tensor)
