@@ -61,7 +61,7 @@ class CompactnessMLPmk1(BaseModel):
             "linear4": nn.Linear(self.data["hidden_dims"][-1], 1),
         }
 
-class Compactness3Dmk1(BaseModel):
+class Saprot3Dto1(BaseModel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         n = self.data["in_shape"][0]

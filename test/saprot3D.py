@@ -20,51 +20,89 @@ from data import dataset
 set_seed()
 
 
-FORCE = ("--force" in sys.argv) or ("-f" in sys.argv)
-INFERENCE = "-i" in sys.argv
-TRAIN = "-t" in sys.argv
 
 IMG_SIZE = 16
-
-DATASET_NAME = f"{dataset.name}_3D_{IMG_SIZE}"
-FOLDSEEK = os.environ.get("FOLDSEEK_PATH", "foldseek")
-SAPROT_MODEL = "SaProt_650M_PDB"
-SAPROT_PATH = f"westlake-repl/{SAPROT_MODEL}"
-
 
 print(dataset)
 
 
-embeddings = EmbeddingDataset(DATASET_NAME)
-if (not FORCE) or "--rebuild" in sys.argv:
-    embeddings.load()
+def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, force=False, rebuild=False):
+    from src.bioiain.machine.datasets import EmbeddingDataset
+    if force:
+        rebuild = True
 
-if (len(embeddings) == 0 or FORCE):
-    for n, (entity, entry) in enumerate(dataset.entities(entity_class=CompactStructure, return_entries=True)):
-        entity.compactness()
-        for chain in entity.chains():
-            img = chain.img3D(property="compactness", plot=False, size=16)
+    if foldseek_command is None:
+        foldseek_command = os.environ.get("FOLDSEEK_PATH", "foldseek")
+    fs = FoldseekDB(dataset.name, dataset, foldseek_command=foldseek_command, force=force, dry=True)
 
-            exit()
+    embeddings_name = f"{fs.saprot_model}_3D_size_{img_size}_{dataset.name}"
+    embeddings = EmbeddingDataset(embeddings_name)
+    if not force:
+        embeddings.load(load_temp=True)
 
-            tensor = torch.tensor(img).reshape(-1, *img.shape)
+    if embeddings.incomplete() or rebuild:
+        fs.run()
 
-            embedding = compactness3Dembedding.from_tensor(tensor,name=chain.full_id(), img_size=IMG_SIZE).save()
-            key = embeddings.add(embedding, key=chain.full_id())
-            embeddings.add_label(key, entry.oligo)
-
-            #print(embeddings)
-            #print(embeddings[len(embeddings)-1])
-            #print(dataset)
-            embeddings.save(temp=True)
-
+        for n, (tensor_path, entry, saprot_model) in enumerate(fs.saprot_embeddings(return_tensor=False)):
+            log(1, f"N={n}")
+            code, ch, model = fs.parse_name(entry["name"])
+            name = f"{code}_{ch}_{model}"
+            if name in embeddings.embeddings.keys():
+                log(1, f"Embedding ({name}) already generated")
+                continue
+            try:
+                entity = BIEntity.from_file(dataset.get(code).get("path"), verbose=False)
+                log(1, entity)
+                chain = entity.chains(ch, by_complex=True, model=model)
+                assert len(chain) == 1, f"Multiple chains detected {(code,ch,model)}: {chain}"
+                chain = chain[0]
+                log(1, chain)
+                residues = chain.residues(need_backbone=False)
+                log(1, "Loading tensor...")
+                tensor = torch.load(tensor_path)
+                #print(tensor.shape)
+                assert tensor.shape[-2] == len(residues), f"{tensor.shape[-2]} / {len(residues)}\n{entry["aa_seq"]}\n{chain.sequence()}"
+                log(1, "Generating 3D embedding...")
+                tensor3D = chain.img3D(property=None, plot=False, size=IMG_SIZE, embedding=tensor, mode="mean", residue_kwargs={"need_backbone":False})
+                #print(tensor3D.shape)
+                embedding = SaProt3DEmbedding.from_tensor(tensor,name=name, img_size=IMG_SIZE, saprot_model=saprot_model).save()
+                embeddings.add(embedding)
+                embeddings.save(temp=True)
+            except StructureLoadException as e:
+                dataset.add_to_blacklist(dataset.get(code).get("path"), e)
+            except AssertionError:
+                raise
     embeddings.save(temp=False)
+    return embeddings
+
+
+embeddings = generate_3DSaprot_embeddings(dataset, img_size=IMG_SIZE, force=FORCE, rebuild=REBUILD)
+
+if REBUILD or FORCE:
+    log("header","Configuring oligomer labels")
+    for n, k in enumerate(embeddings.embeddings.keys()):
+        log(2, f"{n+1}/{len(embeddings)}", end="\r")
+        code = k.split("_")[0]
+        entry = dataset.get(code)
+        label = entry.get("oligo", None)
+        embeddings.add_label(k, label, "oligo")
+    embeddings.use_label("oligo")
+    embeddings.save()
+    print()
+    log(1, "Oligomer labels ready")
 
 if TRAIN:
     log("start", "TRAINING")
-    model = Compactness3Dmk1(name=dataset.name, in_shape=[1, IMG_SIZE])
+
+    in_shape = embeddings[0].t.shape
+    log(1, "in_shape:", in_shape)
+
+    model = Saprot3Dto1(name=dataset.name, in_shape=in_shape)
+    print(model)
+    exit()
     model.mount()
     print(repr(model))
+    exit()
 
     EPOCHS = 100
     for epoch in range(EPOCHS):
