@@ -24,8 +24,10 @@ from src.bioiain.utilities.sequences import FASTA
 
 
 class FoldseekDB(object):
-    def __init__(self,name, list_dir_or_dataset, folder=None, foldseek_command="foldseek", force=False, verbose=2, saprot_model="SaProt_650M_PDB"):
+    def __init__(self,name, list_dir_or_dataset, folder=None, foldseek_command="foldseek", force=False, verbose=2, saprot_model="SaProt_650M_PDB", dry=False):
         self.foldseek_command = foldseek_command
+        self.saprot_model=saprot_model
+
         self.verbose = str(verbose)
         if folder is None:
             folder = os.path.join(SUBDIR_NAME, "foldseek")
@@ -37,13 +39,20 @@ class FoldseekDB(object):
 
         self.token_fasta_path = None
         self.sequence_fasta_path = None
+        self.force = force
+
+        if not dry:
+            self.run()
 
 
+        
+
+
+    def run(self, force=None):
+        if force is None:
+            force = self.force
         self.create_db(force=force)
         self.generate_tokens(force=force)
-
-        self.saprot_model=saprot_model
-
 
     def create_db(self, force=False):
         tsv_path = os.path.join(self.folder, f"{self.name}.list.tsv")

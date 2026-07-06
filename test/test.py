@@ -27,7 +27,7 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
 
     if foldseek_command is None:
         foldseek_command = os.environ.get("FOLDSEEK_PATH", "foldseek")
-    fs = FoldseekDB(dataset.name, dataset, foldseek_command=foldseek_command, force=force)
+    fs = FoldseekDB(dataset.name, dataset, foldseek_command=foldseek_command, force=force, dry=True)
 
     embeddings_name = f"{fs.saprot_model}_3D_size_{img_size}_{dataset.name}"
     embeddings = EmbeddingDataset(embeddings_name)
@@ -35,6 +35,7 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
         embeddings.load(load_temp=True)
 
     if embeddings.incomplete():
+        fs.run()
 
         for tensor_path, entry, saprot_model in fs.saprot_embeddings(return_tensor=False):
             #print(entry)
@@ -60,7 +61,8 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
             embedding = SaProt3DEmbedding.from_tensor(tensor,name=name, img_size=IMG_SIZE, saprot_model=saprot_model).save()
             embeddings.add(embedding)
             embeddings.save(temp=True)
-    return embeddings_name
+    embeddings.save(temp=False)
+    return embeddings
 
 embeddings = generate_3DSaprot_embeddings(dataset, img_size=IMG_SIZE)
 print(embeddings)
