@@ -98,9 +98,9 @@ class BIResidue(object):
                 self.ca = self.atoms[0]
             if self.ca is None:
                 if require_ca:
-                    print("No CA")
-                    print([a.name for a in self.atoms])
-                    print([a.atomnum for a in self.atoms])
+                    #print("No CA")
+                    #print([a.name for a in self.atoms])
+                    #print([a.atomnum for a in self.atoms])
                     raise NoCaFound("Trying to initialise residue with no CA")
 
             self.set_fragment()
@@ -123,9 +123,9 @@ class BIResidue(object):
 
 
             if any([a is None for a in self.backbone]):
-                print("No backbone")
-                print(self)
-                print(self.backbone)
+                #print("No backbone")
+                #print(self)
+                #print(self.backbone)
                 raise NoBackbone(self, f"Trying to initialise {self.__class__.__name__} with no backbone")
 
     def id(self): return self.resname, self.resnum, self.resseq, self.chain, self.entity, self.complex, self.fragment
@@ -219,10 +219,10 @@ class BISugar(object):
                 break
 
         if self.main is None:
-            print("No main", self.__class__.__name__)
-            print([a.name for a in self.atoms])
-            print([a.atomnum for a in self.atoms])
-            [print(a, a.id4()) for a in self.atoms]
+            #print("No main", self.__class__.__name__)
+            #print([a.name for a in self.atoms])
+            #print([a.atomnum for a in self.atoms])
+            #[print(a, a.id4()) for a in self.atoms]
             raise NoMainAtomFound(f"Trying to initialise {self.__class__.__name__} with no {self.main_atom_name}")
 
         self.fragment = self.main.get_misc("fragment", None)

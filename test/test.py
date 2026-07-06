@@ -37,14 +37,14 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
     if embeddings.incomplete():
         fs.run()
 
-        for tensor_path, entry, saprot_model in fs.saprot_embeddings(return_tensor=False):
-            #print(entry)
+        for n, (tensor_path, entry, saprot_model) in enumerate(fs.saprot_embeddings(return_tensor=False)):
+            log(1, f"N={n}")
             code, ch, model = fs.parse_name(entry["name"])
             name = f"{code}_{ch}_{model}"
             if name in embeddings.embeddings.keys():
                 log(1, f"Embedding ({name}) already generated")
                 continue
-            entity = BIEntity.from_file(dataset.get(code).get("path"), verbose=True)
+            entity = BIEntity.from_file(dataset.get(code).get("path"), verbose=False)
             log(1, entity)
             chain = entity.chains(ch, by_complex=True, model=model)
             assert len(chain) == 1, f"Multiple chains detected {(code,ch,model)}: {chain}"
