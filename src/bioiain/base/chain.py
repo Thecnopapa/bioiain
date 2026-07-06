@@ -42,8 +42,7 @@ class BIChain(BIEntity):
         chain_id = str(chain_id)
         if len(chain_id) != 1:
             chain_id = chain_id.replace("_", "-")
-
-            log(f"warning", f"CHAIN ID is longer than 1: {chain_id}")
+            #log(f"warning", f"CHAIN ID is longer than 1: {chain_id}")
             self.set_flag("unconventional_chain_id", True)
         self.data["info"]["chain_id"] = chain_id
         if complex:
