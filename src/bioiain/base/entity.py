@@ -473,8 +473,8 @@ class BIEntity(object):
             try:
                 self._all_atoms(filepath=filepath, force=True, is_pdb=file_format == "pdb", **kwargs)
             except (StructureLoadException, CrystalError) as e:
-                log("Error", f"Structure not loaded: {filepath}", e)
-                raise e
+                #log("Error", f"Structure not loaded: {filepath}", e.__class__.__name__)
+                raise StructureLoadException(f"Structure not loaded: {filepath}", e.__class__.__name__)
                 return None
         else:
             self.set_flag("no_atoms", True)
@@ -590,10 +590,13 @@ class BIEntity(object):
             #print(filepath)
             if verbose:
                 log(2, "Reading atoms from CIF:", filepath)
-            mmcif= read_mmcif(filepath, subset=["_atom_site", "_cell", "_symmetry"])
+            try:
+                mmcif= read_mmcif(filepath, subset=["_atom_site", "_cell", "_symmetry"])
+            except:
+                raise MissingCrystalInfo()
             atoms=mmcif("_atom_site")
             if atoms is None:
-                raise StructureLoadException("No atoms")
+                raise StructureLoadException(f"No atoms in: {filepath}")
             self.headers["cell"] = mmcif("_cell")
             self.headers["symmetry"] = mmcif("_symmetry")
             self.data["symmetry"]["in_asu"] = True

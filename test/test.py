@@ -44,23 +44,28 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
             if name in embeddings.embeddings.keys():
                 log(1, f"Embedding ({name}) already generated")
                 continue
-            entity = BIEntity.from_file(dataset.get(code).get("path"), verbose=False)
-            log(1, entity)
-            chain = entity.chains(ch, by_complex=True, model=model)
-            assert len(chain) == 1, f"Multiple chains detected {(code,ch,model)}: {chain}"
-            chain = chain[0]
-            log(1, chain)
-            residues = chain.residues(need_backbone=False)
-            log(1, "Loading tensor...")
-            tensor = torch.load(tensor_path)
-            #print(tensor.shape)
-            assert tensor.shape[-2] == len(residues), f"{tensor.shape[-2]} / {len(residues)}\n{entry["aa_seq"]}\n{chain.sequence()}"
-            log(1, "Generating 3D embedding...")
-            tensor3D = chain.img3D(property=None, plot=False, size=IMG_SIZE, embedding=tensor, mode="mean", residue_kwargs={"need_backbone":False})
-            #print(tensor3D.shape)
-            embedding = SaProt3DEmbedding.from_tensor(tensor,name=name, img_size=IMG_SIZE, saprot_model=saprot_model).save()
-            embeddings.add(embedding)
-            embeddings.save(temp=True)
+            try:
+                entity = BIEntity.from_file(dataset.get(code).get("path"), verbose=False)
+                log(1, entity)
+                chain = entity.chains(ch, by_complex=True, model=model)
+                assert len(chain) == 1, f"Multiple chains detected {(code,ch,model)}: {chain}"
+                chain = chain[0]
+                log(1, chain)
+                residues = chain.residues(need_backbone=False)
+                log(1, "Loading tensor...")
+                tensor = torch.load(tensor_path)
+                #print(tensor.shape)
+                assert tensor.shape[-2] == len(residues), f"{tensor.shape[-2]} / {len(residues)}\n{entry["aa_seq"]}\n{chain.sequence()}"
+                log(1, "Generating 3D embedding...")
+                tensor3D = chain.img3D(property=None, plot=False, size=IMG_SIZE, embedding=tensor, mode="mean", residue_kwargs={"need_backbone":False})
+                #print(tensor3D.shape)
+                embedding = SaProt3DEmbedding.from_tensor(tensor,name=name, img_size=IMG_SIZE, saprot_model=saprot_model).save()
+                embeddings.add(embedding)
+                embeddings.save(temp=True)
+            except StructureLoadException as e:
+                dataset.add_to_blacklist(dataset.get(code).get("path"), e)
+            except AssertionError:
+                raise
     embeddings.save(temp=False)
     return embeddings
 
