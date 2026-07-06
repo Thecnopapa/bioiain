@@ -33,8 +33,6 @@ for tensor, saprot_name, tensor_path, entry in fs.saprot_embeddings(save_folder=
     log("header", f"Code {code} chain {chain} model {model}")
 
     chains = entity.chains(chain, by_complex=True, model=model)
-    for en in range(1280):
-        entity.set_misc(f"{saprot_name}_{en}", None, force=False)
     for chain_entity in chains:
         print(chain_entity)
         residues = chain_entity.residues()
@@ -43,7 +41,7 @@ for tensor, saprot_name, tensor_path, entry in fs.saprot_embeddings(save_folder=
         assert tensor.shape[-2] == len(residues), f"{tensor.shape[-2]} / {len(residues)}"
 
 
-        tensor3D = chain_entity.img3D(property=None, plot=True, size=IMG_SIZE, embedding=tensor, mode="mean")
+        tensor3D = chain_entity.img3D(property=None, plot=False, size=IMG_SIZE, embedding=tensor, mode="mean")
         print(tensor3D.shape)
 
         embedding = SaProt3DEmbedding.from_tensor(tensor,name=chain_entity.full_id(), img_size=IMG_SIZE).save()
