@@ -24,7 +24,7 @@ from src.bioiain.utilities.sequences import FASTA
 
 
 class FoldseekDB(object):
-    def __init__(self,name, list_dir_or_dataset, folder=None, foldseek_command="foldseek", force=False, verbose=2):
+    def __init__(self,name, list_dir_or_dataset, folder=None, foldseek_command="foldseek", force=False, verbose=2, saprot_model="SaProt_650M_PDB"):
         self.foldseek_command = foldseek_command
         self.verbose = str(verbose)
         if folder is None:
@@ -41,6 +41,8 @@ class FoldseekDB(object):
 
         self.create_db(force=force)
         self.generate_tokens(force=force)
+
+        self.saprot_model=saprot_model
 
 
     def create_db(self, force=False):
@@ -227,23 +229,26 @@ class FoldseekDB(object):
         return l
 
 
-    def saprot_embeddings(self, sequence_only=False, model_name="westlake-repl/SaProt_650M_PDB", force=False, save_folder=None):
+    def saprot_embeddings(self, sequence_only=False, saprot_model=None, force=False, save_folder=None, return_tensor=True):
 
         log(2, "Generating SaProt Embeddings...")
+        if saprot_model is None:
+            saprot_model = f"westlake-repl/{self.saprot_model}"
+
         from transformers import EsmTokenizer, EsmForMaskedLM
         import torch
         from src.bioiain.machine import DEVICE
 
-        def load_saprot(model_name):
+        def load_saprot(saprot_model):
             pass
 
-        tokenizer_name = model_name
-        model_name = model_name
+        tokenizer_name = saprot_model
+        model_name = saprot_model
 
 
         tokenizer_path = os.path.join(SUBDIR_NAME, "hf", "saprot", f"tok_{tokenizer_name}")
         if not os.path.exists(tokenizer_path):
-            log(3, "Downloading tokeniser:", model_name)
+            log(3, "Downloading tokeniser:", tokenizer_name)
             tokenizer = EsmTokenizer.from_pretrained(tokenizer_name)
             os.makedirs(os.path.dirname(tokenizer_path), exist_ok=True)
             tokenizer.save_pretrained(tokenizer_path)
@@ -260,25 +265,28 @@ class FoldseekDB(object):
         model.eval()
         model.to(DEVICE)
 
-        model_name = model_name.split("/")[-1]
 
         for entry in self:
             log("header", entry["name"])
             if save_folder is None:
                 save_folder = os.path.join(SUBDIR_NAME, "embeddings")
-            #print(save_folder, "saprot", model_name)
-            save_path = os.path.join(save_folder, "saprot", model_name)
+            #print(save_folder, "saprot", saprot_model)
+            save_path = os.path.join(save_folder, "saprot", saprot_model)
             os.makedirs(save_path, exist_ok=True)
             save_path = os.path.join(save_path, entry["name"].split(" ")[0]+".pt")
             if (not force) and os.path.exists(save_path):
-                yield torch.load(save_path), model_name, save_path, entry
+                if return_tensor:
+                    yield torch.load(save_path), save_path, entry,  saprot_model,
+                else: 
+                    yield save_path, entry,  saprot_model,
+
                 continue
             log(2, "Running SaProt model...")
             if sequence_only:
                 seq = "".join([f"{aa.upper()}#" for aa in entry["aa_seq"]])
             else:
                 seq = "".join(self.zip(entry["aa_seq"], entry["tok_seq"]))
-            log(3, "LEN SEQ", len(seq))
+            log(3, "LEN SEQ:", len(entry["aa_seq"]))
             #tokens = tokenizer.tokenize(seq)
             inputs = tokenizer(seq, return_tensors="pt")
             inputs = {k: v.to(DEVICE) for k, v in inputs.items()}
@@ -287,11 +295,14 @@ class FoldseekDB(object):
                 outputs = model(**inputs, output_hidden_states=True)
                 log(3, "Output ready")
                 last_hidden = outputs.hidden_states[-1][:,1:-1,:]
-                log(3, "LEN EMBEDDING", last_hidden.shape)
+                log(3, "EMBEDDING:", last_hidden.shape)
 
                 torch.save(last_hidden, save_path)
+                if return_tensor:
+                    yield last_hidden, save_path, entry, saprot_model
+                else:
+                    yield save_path, entry, saprot_model
 
-                yield last_hidden, model_name, save_path, entry
                 continue
 
 

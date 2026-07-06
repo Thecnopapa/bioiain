@@ -27,11 +27,15 @@ class MisslabellingException(SequenceMissmatchException):
     pass
 
 
-# Dataset related
+# EmbeddingDataset related
 class DeletedIndex(Exception):
     def __init__(self, *args, next_n=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.next_n = next_n
+
+class EmbeddingDatasetNotFound(FileNotFoundError):
+    pass
+
 
 
 # MMCIF related
@@ -89,13 +93,19 @@ class TryingToSaveInferenceModel(ModelSaveError):
 
 
 # Residue related
-class NoMainAtomFound(Exception):
+
+class ResidueBuildingError(Exception):
+    def __init__(self, residue, *args, **kwargs):
+        super().__init__(self, *args, **kwargs)
+        self.residue = residue
+    
+class NoMainAtomFound(ResidueBuildingError):
     pass
 
 class NoCaFound(NoMainAtomFound):
     pass
 
-class NoBackbone(Exception):
+class NoBackbone(ResidueBuildingError):
     pass
 
 class NoMatchingClass(Exception):

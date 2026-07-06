@@ -101,6 +101,7 @@ class EmbeddingDataset(object):
             param_names = None,
             residue_embedding_class = None,
             embedding_class = None,
+            incomplete = True,
         )
         self.mode="normal"
         os.makedirs(self.data["folder"], exist_ok=True)
@@ -112,6 +113,8 @@ class EmbeddingDataset(object):
         }
         self._lock = False
 
+    def incomplete(self):
+        return self.data.get("incomplete", True)
 
     def __repr__(self):
         if self.data["deleted_indexes"] > 0:
@@ -263,19 +266,25 @@ class EmbeddingDataset(object):
         return self.data["label_to_index"]
 
 
-    def add(self, embedding, key:str|int|None=None, label_path=None, fasta=True):
+    def add(self, embedding, key:str|int|None=None, label_path=None, fasta=True, use_indexes=False):
 
         while self._lock:
             print("Awaiting for lock")
             time.sleep(1)
         self._lock = True
 
-        if key is None:
+        if use_indexes:
             key = len(self.embeddings)
-        log(1, "Adding to dataset:", embedding)
-        print(embedding.path())
+        else:
+            if key is None:
+                key = embedding.name
+        log(1, "Adding to dataset:", key, embedding)
+        assert key not in self.embeddings.keys(), f"Key ({key}) already in dataset"
+
+        #print(embedding.path())
         self.embeddings[key] = {
             "key": key,
+            "name": embedding.name,
             "n": len(self.embeddings),
             "start": len(self),
             "end": len(self)+len(embedding),
@@ -316,7 +325,7 @@ class EmbeddingDataset(object):
         if fp is None:
             return
         if target_path is None:
-            new_fp = fp.replace(".tmp", "")
+            new_fp = fp.replace(".temp", "")
         else:
             new_fp = target_path
         if not new_fp.split(".")[-1] in ["fasta", "fas", "aln"]:
@@ -331,7 +340,7 @@ class EmbeddingDataset(object):
             fasta_path = self.data["fasta_path"]
             mode = "a"
         else:
-            fasta_path = os.path.join(self.data["folder"], self.data["name"]+".dataset.fasta.tmp")
+            fasta_path = os.path.join(self.data["folder"], self.data["name"]+".dataset.fasta.temp")
             self.data["fasta_path"] = fasta_path
             mode = "w"
         with open(fasta_path, mode) as f:
@@ -556,6 +565,11 @@ class EmbeddingDataset(object):
         if folder is None:
             assert self.data["folder"] is not None
             folder = self.data["folder"]
+        if temp:
+            self.data["incomplete"] = True
+        else:
+           self.data["incomplete"] = False 
+
         data = {
             "data": self.data,
             "embeddings": self.embeddings,
@@ -569,25 +583,40 @@ class EmbeddingDataset(object):
             if self.data.get("fasta_path", None) is not None:
                 self._save_fasta(target_path=path.replace(".json", ".fasta"))
         else:
-            path += ".tmp"
+            path += ".temp"
         json.dump(data, open(path, "w"), indent=4)
         try:
-            os.remove(path + ".tmp")
+            os.remove(path + ".temp")
         except FileNotFoundError:
             pass
         return path
 
 
-    def load(self, folder=None, missing_ok=True, load_split=False, load_tem=False):
+    def load(self, folder=None, missing_ok=True, load_split=False, load_temp=False):
         log(1, "Loading dataset...")
         if folder is None:
             assert self.data["folder"] is not None
             folder = self.data["folder"]
         path = os.path.join(folder, self.data["fname"])
-        log(2, "Dataset_path:", path)
-        if not os.path.exists(path) and missing_ok:
-            log("warning", f"Dataset data not found at: {path}")
-            return self
+        if not os.path.exists(path):
+            log("warning", f"Dataset found at: {path}")
+            if not missing_ok:
+                raise EmbeddingDatasetNotFound(path)
+            if not load_temp:
+                return self
+            log(2, "Checking for incomplete dataset...")
+            path = path+".temp"
+            if not os.path.exists(path):
+                log("warning", f"Incomplete dataset not found either at: {path}")
+                return self
+            log(3, "Incomplete dataset_path:", path)
+        else:
+            log(2, "Dataset_path:", path)
+
+
+
+
+                
         raw = json.load(open(path, "r"))
         self.data = raw["data"]
         self.embeddings = raw["embeddings"]

@@ -100,9 +100,9 @@ class BIEntity(object):
 
     def __repr__(self):
         if self.is_symmetry():
-            return "<{}:{} id={} op={} model={}>".format(self.__class__.__name__, self.code(), self.id(), self.op(), self.model())
+            return "<bi.{}:{} id={} op={} model={}>".format(self.__class__.__name__, self.code(), self.id(), self.op(), self.model())
         #return "<{}:{} id={} (len:{})>".format(self.__class__.__name__, self.code(), self.id(), len(self))
-        return "<{}:{} id={} model={}>".format(self.__class__.__name__, self.code(), self.id(), self.model())
+        return "<bi.{}:{} id={} model={}>".format(self.__class__.__name__, self.code(), self.id(), self.model())
 
     def __str__(self):
         return repr(self)
@@ -225,8 +225,8 @@ class BIEntity(object):
     def chains(self, sele:list|str=None, by_complex=False, **kwargs):
         return self.atoms(as_chains=True, hetatm=True, chain_sele=sele, by_complex=by_complex, **kwargs)
 
-    def residues(self, **kwargs) -> list:
-        return self.atoms(ca_only=False, residues=True, **kwargs)
+    def residues(self, need_main=True, need_backbone=True, **kwargs) -> list:
+        return self.atoms(ca_only=False, residues=True, hetatm=True, residue_params={"need_main":need_main, "need_backbone": need_backbone}, **kwargs)
 
     def waters(self, **kwargs):
         return self.atoms(ca_only=False, water=True, **kwargs)
@@ -288,6 +288,9 @@ class BIEntity(object):
               as_chains=False,
               by_complex=False,
               model:int|str|None = None,
+              verbose=False,
+              match_all=False,
+              residue_params={},
               **kwargs) -> list:
         from .atom import _fix_disordered
         from .residue import build_res
@@ -314,7 +317,7 @@ class BIEntity(object):
             target_entities.append("ligand")
 
 
-        atoms = self.all_atoms()
+        atoms = self.all_atoms(verbose=verbose)
 
         if model is None:
             model = self.model()
@@ -375,21 +378,36 @@ class BIEntity(object):
                 for k, resatms in atoms_by_res.items():
 
                     try:
-                        e = build_res(resatms, parent=self)
+                        ent = build_res(resatms, parent=self)
                     except NoMatchingClass:
-                        log("warning", "No matching class for atoms:")
-                        [log("warning", ra) for ra in resatms]
-                        continue
+                        if verbose:
+                            log("warning", "No matching class for:", k)
+                            [log("warning", ra) for ra in resatms]
+                        if match_all:
+                            raise
+                        else: 
+                            continue
                     except NoMainAtomFound:
-                        log("warning", "No main atom for:", k)
-                        [log("warning", ra) for ra in resatms]
-                        continue
-                    except (NoBackbone, NotImplementedError) as e:
-                        #log("warning", e.__class__.__name__, e)
-                        continue
+                        if verbose:
+                            log("warning", "No main atom for:", k)
+                            [log("warning", ra) for ra in resatms]
+                        if residue_params.get("need_main", True):
+                            continue
 
-                    if getattr(e, "type", None) in target_entities:
-                        entities.append(e)
+                    except NoBackbone as e:
+                        if verbose:
+                            log("warning", "No backbone for:", k)
+                            [log("warning", ra) for ra in resatms]
+                        if residue_params.get("need_backbone", True):
+                            continue
+                        ent = e.residue
+                        
+                    except Exception as e:
+                        log("warning", e.__class__.__name__, e)
+                        raise e
+
+                    if getattr(ent, "type", None) in target_entities:
+                        entities.append(ent)
                 return entities
 
             return atoms_by_res
@@ -435,11 +453,12 @@ class BIEntity(object):
 
 
     @classmethod
-    def from_file(cls, filepath, code="auto", file_format="auto", force=False, check_existing=True, source=None, export=False, no_atoms=False, **kwargs):
-        if check_existing:
-            log(1, "Loading from file:", filepath, f"(atoms={not no_atoms})")
-        else:
-            log(2, "Loading from file:", filepath, f"(atoms={not no_atoms})")
+    def from_file(cls, filepath, code="auto", file_format="auto", force=False, check_existing=True, source=None, export=False, no_atoms=False, verbose=False, **kwargs):
+        if verbose:
+            if check_existing:
+                log(1, "Loading from file:", filepath, f"(atoms={not no_atoms})")
+            else:
+                log(2, "Loading from file:", filepath, f"(atoms={not no_atoms})")
         if not os.path.exists(filepath):
             raise FileNotFoundError(filepath)
         self = cls(**kwargs)
@@ -472,8 +491,9 @@ class BIEntity(object):
         self.set_name(self.code())
         self.set_flag("fractional", False)
 
-        log(2, "Reading CIF data...")
-        data = read_mmcif(filepath, subset="_bi_*")
+        if verbose:
+            log(2, "Reading CIF data...")
+        data = read_mmcif(filepath, subset="_bi_*", verbose=verbose)
         if len(data) > 0:
             #print(data)
             for k in data.keys():
@@ -499,19 +519,22 @@ class BIEntity(object):
 
 
         if check_existing and not force:
-            log(2, "Checking previous exported data...")
+            if verbose:
+                log(2, "Checking previous exported data...")
             prev_path = self.export(dry=True)
             if os.path.exists(prev_path):
-                log(3, "Recovering previously exported file...")
+                if verbose:
+                    log(3, "Recovering previously exported file...")
                 try:
                     recovered_self = cls.from_file(prev_path, check_existing=False, source=filepath, no_atoms=no_atoms, **kwargs)
                     if recovered_self is None:
                         raise StructureRecoverException()
                     return recovered_self
                 except Exception as e:
-                    log("warning", e.__class__.__name__, e)
-                    log("Error", "Recovery failed (returning new)")
-                    raise
+                    if verbose:
+                        log("warning", e.__class__.__name__, e)
+                        log("Error", "Recovery failed (returning new)")
+                    raise e
 
         self.recover_cvectors()
 
@@ -538,12 +561,12 @@ class BIEntity(object):
         return self._com
 
 
-    def all_atoms(self):
+    def all_atoms(self, *args, **kwargs):
         if self._atoms is None:
             self._all_atoms()
         return self._atoms
 
-    def _all_atoms(self, filepath=None, force=False, require_crystal=True, **kwargs):
+    def _all_atoms(self, filepath=None, force=False, require_crystal=True, verbose=False, **kwargs):
         from .atom import BIAtom
 
 
@@ -565,7 +588,8 @@ class BIEntity(object):
                 filepath = self.export()
             filepath = filepath.strip()
             #print(filepath)
-            log(2, "Reading atoms from CIF:", filepath)
+            if verbose:
+                log(2, "Reading atoms from CIF:", filepath)
             mmcif= read_mmcif(filepath, subset=["_atom_site", "_cell", "_symmetry"])
             atoms=mmcif("_atom_site")
             if atoms is None:
@@ -589,7 +613,7 @@ class BIEntity(object):
             self.headers["symmetry"]["space_group_name_H-M"] = f"\'{self.headers['symmetry']['space_group_name_H-M']}\'"
 
 
-    def export(self, minimal=False, cleanup=False, as_pdb=False, target_folder=None, sufix=None, dry=False, all_headers=True, cvmatrix=True, cvectors=True):
+    def export(self, minimal=False, cleanup=False, as_pdb=False, target_folder=None, sufix=None, dry=False, all_headers=True, cvmatrix=True, cvectors=True, verbose=False):
 
         custom_folder = False
         if target_folder is None:
@@ -619,10 +643,11 @@ class BIEntity(object):
         os.makedirs(base_folder, exist_ok=True)
         base_path = os.path.join(base_folder, fname)
         if dry:
-            log(3, "Calculating export path...")
+            if verbose:
+                log(3, "Calculating export path...")
             return base_path+".cif"
-
-        log(2, f"Exporting: {self} to {base_path}")
+        if verbose:
+            log(2, f"Exporting: {self} to {base_path}")
         if self.has_flag("is_fractional", True):
             log("Warning", "A fractional entity was about to be exported!")
             log("Warning", "An orthogonal copy was made for you and exported instead! (only for atoms)")
@@ -631,12 +656,12 @@ class BIEntity(object):
             orth = self
 
         if minimal:
-            minimal_path= orth._export_structure(base_path, headers=False, all_headers=False, misc_fields=True, cleanup=True, as_pdb=as_pdb, cvectors=False, cvmatrix=False)
+            minimal_path= orth._export_structure(base_path, headers=False, all_headers=False, misc_fields=True, cleanup=True, as_pdb=as_pdb, cvectors=False, cvmatrix=False, verbose=verbose)
             if not custom_folder:
                 self.paths["minimal"] = minimal_path
             return minimal_path
         else:
-            path = orth._export_structure(base_path, headers=True, all_headers=all_headers, misc_fields=True, cleanup=cleanup, as_pdb=as_pdb, cvmatrix=cvmatrix, cvectors=cvectors)
+            path = orth._export_structure(base_path, headers=True, all_headers=all_headers, misc_fields=True, cleanup=cleanup, as_pdb=as_pdb, cvmatrix=cvmatrix, cvectors=cvectors, verbose=verbose)
             if not custom_folder:
                 self.paths["self"] = path
                 if not as_pdb:
@@ -655,9 +680,9 @@ class BIEntity(object):
         return filepath
 
 
-    def _export_structure(self, filepath:str, atoms:list=None, headers:bool=None, misc_fields:bool=True, cleanup=True, as_pdb=False, all_headers=True, cvectors=True, cvmatrix=True) -> str:
-
-        log(2,"Exporting structure...")
+    def _export_structure(self, filepath:str, atoms:list=None, headers:bool=None, misc_fields:bool=True, cleanup=True, as_pdb=False, all_headers=True, cvectors=True, cvmatrix=True, verbose=False) -> str:
+        if verbose:
+            log(2,"Exporting structure...")
         mode = "w"
         if atoms is None:
             if cleanup:
@@ -712,14 +737,17 @@ class BIEntity(object):
 
 
             if cvectors and (self._cvectors is not None):
-                log(3, "Exporting cvectors...")
+                if verbose:
+                    log(3, "Exporting cvectors...")
                 write_dict_list(self._cvectors, file_path=filepath, label="aleph_cvectors", mode=mode, name=self.name())
                 mode = "a"
             if cvmatrix and (getattr(self, "_cvmatrix", None) is not None):
-                log(3, "Exporting cvmatrix...")
+                if verbose:
+                    log(3, "Exporting cvmatrix...")
                 write_dict_list([v.closest_vp for v in self._cvmatrix.vectors], file_path=filepath, label="aleph_cvmatrix", mode=mode, name=self.name())
                 mode = "a"
-            log(3, "Exporting atoms...")
+            if verbose:
+                log(3, "Exporting atoms...")
             return write_atoms(atoms, filepath, name=self.name(), include_misc=misc_fields, mode=mode)
 
     @classmethod
@@ -1027,7 +1055,7 @@ class BIEntity(object):
         pisa = PISA(pisa_id=self.name(), **kwargs)
 
 
-    def img3D(self, size=16, property:None|dict|list|str=None, mode="mean", distortion="none", plot=False, show_plot=True, embedding=None):
+    def img3D(self, size=16, property:None|dict|list|str=None, mode="mean", distortion="none", plot=False, show_plot=True, embedding=None, residue_kwargs={}):
         log(2, f"Generating 3D voxels...")
         log(3, f"Size: {size}x{size}x{size} ({size**3})")
         log(3, f"Distortion: {distortion}")
@@ -1035,7 +1063,7 @@ class BIEntity(object):
 
 
         output = None
-        residues = self.residues()
+        residues = self.residues(**residue_kwargs)
 
 
 
@@ -1050,9 +1078,9 @@ class BIEntity(object):
 
         if embedding is not None:
             import torch
-            print(embedding.size())
+            #print(embedding.size())
             embedding = embedding.resize(len(residues), embedding.size()[-1])
-            print(embedding.size())
+            log(3, embedding.size())
             assert len(residues) == embedding.size()[0], f"N residues({len(residues)}) does not match embedding size ({embedding.size()[0]})"
 
             properties.extend([{"property": f"emb_{n}", "is_tensor":True, "n": n} for n in range(embedding.size()[-1])])
@@ -1206,5 +1234,5 @@ class BIEntity(object):
                 #exit()
 
 
-
+        print()
         return output

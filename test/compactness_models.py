@@ -32,11 +32,16 @@ class SaProtEmbedding(Embedding):
 
 class structure3DEmbedding(Embedding):
     iter_dim = 0
-    def __init__(self, img_size, **kwargs):
-        super().__init__(subfolder=f"size_{img_size}", **kwargs)
+    def __init__(self, img_size, subfolder=None, **kwargs):
+        if subfolder is None:
+            subfolder = ""
+        else:
+            subfolder = f"{subfolder}_"
+        super().__init__(subfolder=f"{subfolder}size_{img_size}", **kwargs)
 
 class SaProt3DEmbedding(structure3DEmbedding):
-    pass
+    def __init__(self, *args, saprot_model=None, **kwargs):
+        super().__init__(*args, subfolder=saprot_model, **kwargs)
 
 class compactness3Dembedding(SaProt3DEmbedding):
     pass

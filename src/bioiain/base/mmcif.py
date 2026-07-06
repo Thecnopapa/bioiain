@@ -192,7 +192,7 @@ class MMCIF(object):
 
 
 
-def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list|str=None ,as_dict=False) -> MMCIF:
+def read_mmcif(file_path, output_folder=None, subset:list|str=None, exclude:list|str=None ,as_dict=False, verbose=False) -> MMCIF:
     from ..utilities.strings import str_to_list_with_literals
     data = {}
     name = os.path.basename(file_path).split(".")[0]
