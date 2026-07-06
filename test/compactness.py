@@ -197,7 +197,10 @@ if INFERENCE:
         try:
             model_path = sys.argv[sys.argv.index("--model") + 1]
         except:
-            model_path = None
+            try:
+                model_path = sys.argv[sys.argv.index("--md") + 1]
+            except:
+                model_path = None
         log(1, f"Model path: {model_path}")
 
         model = MODEL_CLASS(name=DATASET_NAME, in_shape=IN_SHAPE, inference=True)
@@ -265,6 +268,8 @@ if INFERENCE:
             av_diff = colour(col, f"{av_diff:3.5f}")
             log(1, f"Mean diff: {av_diff}")
 
+            diffs = []
+
             try:
                 assert len(chain_entity.residues()) == out.shape[-2] == len(real_out), f"Lengths do not match ({len(chain_entity.residues()), out.shape[-2], len(real_out)})"
                 for res, real, pred in zip(chain_entity.residues(), real_out, out[0]):
@@ -273,16 +278,26 @@ if INFERENCE:
                         real = colour("yellow", "None ")
                     else:
                         diff = abs(real-pred.item())
+                        diffs.append(diff)
                         if diff >= 3: col = "magenta"
                         elif diff >= 2:   col = "red"
                         elif diff >= 1: col = "yellow"
                         else: col = "green"
                         diff = colour(col, f"{diff:5.3f}")
                         real = f"{real:5.3f}"
-                    print(f"{res.resnum:4d}: {real} --> {pred.item():5.3f}\tdiff= {diff}")
+                    log(2, f"{res.resnum:4d}: {real} --> {pred.item():5.3f}\tdiff= {diff}")
             except AssertionError as e:
                 log("warning", e)
 
+            if len(diffs) > 0:
+                rmse = sum(diffs) / len(diffs)
+
+                if rmse >= 3: col = "magenta"
+                elif rmse >= 2:   col = "red"
+                elif rmse >= 1: col = "yellow"
+                else: col = "green"
+                rmse = colour(col, f"{rmse:3.5f}")
+                log(1, f"RMSE: {rmse}")
 
 
 

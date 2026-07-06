@@ -66,7 +66,7 @@ class BaseModel(nn.Module):
         self.running_loss = {"total":0, "default":0}
         self.batch_loss = {"current_n":0, "current_list":[], "cumulative":0, "n_batches": 0}
 
-        self.data["name"] = str(self)
+        self.data["name"] = f"{self.__class__.__name__}_{name}"
         self._optimisers = {}
         self._schedulers = {}
 
@@ -296,6 +296,9 @@ class BaseModel(nn.Module):
         else: self.data["epoch"] += 1
         return self.data["epoch"]
 
+
+    def name(self):
+        return get_fname(self)
 
     def get_fname(self, add_epoch=False) -> str:
         if add_epoch and self.data["epoch"] is not None:
