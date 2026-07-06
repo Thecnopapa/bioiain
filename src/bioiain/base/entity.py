@@ -1027,11 +1027,17 @@ class BIEntity(object):
         pisa = PISA(pisa_id=self.name(), **kwargs)
 
 
-    def img3D(self, size=16, property:None|dict|list|str=None, mode="max", distortion="none", plot=False, show_plot=True, embedding=None):
+    def img3D(self, size=16, property:None|dict|list|str=None, mode="mean", distortion="none", plot=False, show_plot=True, embedding=None):
         log(2, f"Generating 3D voxels...")
         log(3, f"Size: {size}x{size}x{size} ({size**3})")
         log(3, f"Distortion: {distortion}")
         assert size % 2 == 0
+
+
+        output = None
+        residues = self.residues()
+
+
 
         if type(property) is str:
             properties = [{"property":property}]
@@ -1043,9 +1049,13 @@ class BIEntity(object):
             raise NotImplementedError()
 
         if embedding is not None:
-            # TODO: insert embedding as properties
-            pass
+            import torch
+            print(embedding.size())
+            embedding = embedding.resize(len(residues), embedding.size()[-1])
+            print(embedding.size())
+            assert len(residues) == embedding.size()[0], f"N residues({len(residues)}) does not match embedding size ({embedding.size()[0]})"
 
+            properties.extend([{"property": f"emb_{n}", "is_tensor":True, "n": n} for n in range(embedding.size()[-1])])
 
         pixels = np.arange(size**3)
         #print(pixels.shape)
@@ -1059,7 +1069,6 @@ class BIEntity(object):
 
 
         #print(count_grid)
-        residues = self.residues()
         coords = np.array([res.ca.coord for res in residues])
         x_coords = np.array([c[0] for c in coords])
         y_coords = np.array([c[1] for c in coords])
@@ -1105,53 +1114,86 @@ class BIEntity(object):
 
 
         for prop in properties:
+            count_grid.fill(0)
+            value_grid.fill(0.0)
+            value_grid = value_grid.astype(np.float32)
+
             pp = prop.get("property")
+            if pp is None:
+                continue
             mm = prop.get("mode", mode)
 
-            log(3, f"Property: {pp}")
-            log(3, f"Mode: {mm}")
+            log(3, f"Property: {pp} (mode: {mm})", end="\r")
 
 
+            #print(value_grid[6][6])
 
-
-            for coord, res in zip(pixeled_coords, residues):
+            for nn, (coord, res) in enumerate(zip(pixeled_coords, residues)):
                 #print(coord)
                 count_grid[coord[0], coord[1], coord[2]] = count_grid[coord[0], coord[1], coord[2]] +1
-                if pp is not None:
-                    if pp == "b":
-                        p = res.bfactor()
+                if pp != "count":
+                    if prop.get("is_tensor"):
+                        emb_n = prop.get("n")
+                        p = float(embedding[nn, emb_n].item())
+                        #print(nn, emb_n, p)
                     else:
-                        p = res.get_misc(pp, 0.)
-                    if p is None:
-                        p = 0.
-                    p = float(p)
+                        if pp == "b":
+                            p = res.bfactor()
+                        else:
+                            p = res.get_misc(pp, 0.)
+                        if p is None:
+                            p = 0.
+                        p = float(p)
+
                     if mode == "max":
-                        value_grid[coord[0], coord[1], coord[2]] = max(count_grid[coord[0], coord[1], coord[2]], p)
+                        value_grid[coord[0], coord[1], coord[2]] = max(value_grid[coord[0], coord[1], coord[2]], p)
                     elif mode == "min":
-                        value_grid[coord[0], coord[1], coord[2]] = min(count_grid[coord[0], coord[1], coord[2]], p)
+                        value_grid[coord[0], coord[1], coord[2]] = min(value_grid[coord[0], coord[1], coord[2]], p)
                     elif mode in ["sum", "mean"]:
-                        value_grid[coord[0], coord[1], coord[2]] = count_grid[coord[0], coord[1], coord[2]] + p
+                        value_grid[coord[0], coord[1], coord[2]] = value_grid[coord[0], coord[1], coord[2]] + p
                     else:
                         raise NotImplementedError(f"Mode {mode} not implemented")
+
+
+            if pp == "count":
+                value_grid = count_grid
+                value_grid = value_grid.astype(np.float32)
+
             if property is not None and mode == "mean":
+                #print(count_grid[6][6])
+                #print(value_grid[6][6])
                 value_grid = np.divide(value_grid, count_grid, where=count_grid > 0)
+
+            t = torch.tensor(value_grid)
+            t = t.reshape(-1, *t.shape)
+            #log(3,"Out:", t.shape)
+
+            if output is None:
+                output = t
+            else:
+                output = torch.cat((output, t))
+            #print(output.shape)
 
 
             if plot:
+                print()
                 log(3, f"Plotting voxels... ({pp})")
                 from ..visualisation.plots import fig3D, show, plasma
                 fig, ax = fig3D()
                 ax.set_title(pp)
                 np.set_printoptions(threshold=sys.maxsize)
                 #print(value_grid)
-                max_val = value_grid.reshape(size**3).max()
+                max_val = abs(value_grid.reshape(size**3).max() - value_grid.reshape(size**3).min())
+                norm_grid = value_grid-value_grid.reshape(size**3).min()
+                print(norm_grid[6][6])
+
                 log(4, "Scale:", max_val)
                 #cube = np.indices([size, size, size])
                 cube = (count_grid > 0) & (count_grid > 0) & (count_grid > 0)
                 #print(cube)
 
                 color_vector = np.vectorize(plasma)
-                colors = np.array(color_vector(value_grid, scale=max_val, as_hex=True))
+                colors = np.array(color_vector(norm_grid, scale=max_val, as_hex=True))
                 #print(colors)
 
                 log(4, "Cube:", cube.shape)
@@ -1164,7 +1206,5 @@ class BIEntity(object):
                 #exit()
 
 
-        if pp is not None:
-            return value_grid
-        else:
-            return count_grid
+
+        return output

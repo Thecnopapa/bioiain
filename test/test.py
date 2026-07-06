@@ -14,6 +14,8 @@ log("title", "test.py")
 from src.bioiain.utilities.logging import *
 from src.bioiain.base import *
 from compactness_base import *
+from compactness_models import *
+
 
 FOLDSEEK = os.environ.get("FOLDSEEK_PATH", "foldseek")
 
@@ -22,6 +24,8 @@ entity = CompactStructure.from_file("1M2Z.cif", export_folder="trash")
 print(entity)
 
 
+
+IMG_SIZE = 16
 fs = FoldseekDB("db_" + entity.code(), [entity.path(source=True)], folder=entity.folder(), foldseek_command=FOLDSEEK)
 for tensor, saprot_name, tensor_path, entry in fs.saprot_embeddings(save_folder=entity.folder()):
     code, chain, model = fs.parse_name(entry["name"])
@@ -39,4 +43,7 @@ for tensor, saprot_name, tensor_path, entry in fs.saprot_embeddings(save_folder=
         assert tensor.shape[-2] == len(residues), f"{tensor.shape[-2]} / {len(residues)}"
 
 
-        chain_entity.img3D(property="b", plot=True, embedding=tensor)
+        tensor3D = chain_entity.img3D(property=None, plot=True, size=IMG_SIZE, embedding=tensor, mode="mean")
+        print(tensor3D.shape)
+
+        embedding = SaProt3DEmbedding.from_tensor(tensor,name=chain_entity.full_id(), img_size=IMG_SIZE).save()

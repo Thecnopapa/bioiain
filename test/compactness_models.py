@@ -29,11 +29,17 @@ class SaProtEmbedding(Embedding):
     iter_dim = 1
     pass
 
-class compactness3Dembedding(Embedding):
+
+class structure3DEmbedding(Embedding):
     iter_dim = 0
     def __init__(self, img_size, **kwargs):
         super().__init__(subfolder=f"size_{img_size}", **kwargs)
 
+class SaProt3DEmbedding(structure3DEmbedding):
+    pass
+
+class compactness3Dembedding(SaProt3DEmbedding):
+    pass
 
 class CompactnessMLPmk1(BaseModel):
     def __init__(self, *args, **kwargs):
