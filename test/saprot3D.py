@@ -101,7 +101,7 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
                     labels.add(label_embedding)
                     labels.save(temp=True)
 
-            except StructureLoadException as e:
+            except (StructureLoadException, NotImplementedError) as e:
                 dataset.add_to_blacklist(dataset.get(code).get("path"), e)
             except AssertionError as e:
                 try:
