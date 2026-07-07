@@ -158,7 +158,7 @@ class BaseModel(nn.Module):
         self.mounted = True
 
         self.reset_loss()
-        self.data["name"] = str(self)
+        #self.data["name"] = str(self)
 
         if self.writer is None:
             self._create_writer()
@@ -208,7 +208,7 @@ class BaseModel(nn.Module):
         if self.dry or self.inference:
             self.writer = SummaryWriter(log_dir=os.path.join(TEMP_FOLDER, "trash"))
         else:
-            self.writer = SummaryWriter(log_dir=f"runs/{self.__class__.__name__}/{str(self)}_{datetime.datetime.now().strftime('%m-%d_%H-%M-%S')}")
+            self.writer = SummaryWriter(log_dir=f"runs/{self.__class__.__name__}/{self.name()}_{datetime.datetime.now().strftime('%m-%d_%H-%M-%S')}")
 
 
     def reset_loss(self):
@@ -529,8 +529,8 @@ class BaseModel(nn.Module):
         if len(preds) > 0 and len(truths) > 0:
             try:
                 from ..visualisation.plots import plot_confusion
-                _, confusion_path = plot_confusion(preds, truths, title=f"{str(self)}", classes = label_to_index.keys())
-                _, confusion_path = plot_confusion(preds, truths, title=f"{str(self)}.weighted", classes = label_to_index.keys())
+                _, confusion_path = plot_confusion(preds, truths, title=f"{self.name()}", classes = label_to_index.keys())
+                _, confusion_path = plot_confusion(preds, truths, title=f"{self.name()}.weighted", classes = label_to_index.keys())
 
 
                 im = PIL.Image.open(confusion_path)

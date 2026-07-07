@@ -15,8 +15,11 @@ class Fragment(BIChain):
         self.paths["sub_folder"] = "fragmented/fragments"
         self.data["info"]["fragment_id"] = fragment_id
 
-    def id(self):
-        return (self.data["info"]["fragment_id"], self.data["info"]["chain_id"])
+    def fragment_id(self):
+        return self.data["info"].get("fragment_id", None)
+
+    def __repr__(self):
+        return f"<bi.{self.__class__.__name__}: {self.code()}: ch:{self.id()} co:{self.complex()} ({self.fragment_id()})>"
 
     def full_id(self):
         return f"{self.code()}_{self.id()}_{self.data["info"]["fragment_id"]}"
@@ -318,12 +321,3 @@ class FragmentedStructure(BIStructure):
         if execute:
             script.execute()
         return script
-
-
-
-
-
-
-
-
-

@@ -215,7 +215,7 @@ class Saprot3Dto1(BaseModel):
         else:
             x = self._forward(x, "convolution_mixed")
 
-        print(x.shape)
+        #print(x.shape)
         x = self._forward(x, "linear")
         if classifier:
             c = self._forward(x, "classifier")

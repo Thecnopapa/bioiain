@@ -29,7 +29,7 @@ class BIChain(BIEntity):
         return f"{self.code()}_{self.id()}"
 
     def __repr__(self):
-        return f"<bi.{self.__class__.__name__}: {self.code()}:{self.id()}/{self.complex()}>"
+        return f"<bi.{self.__class__.__name__}: {self.code()}: ch:{self.id()} co:{self.complex()}>"
 
 
 
