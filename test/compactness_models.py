@@ -9,7 +9,7 @@ from src.bioiain.utilities.sequences import *
 
 from src.bioiain.utilities.maths import *
 
-from src.bioiain.machine import DEVICE, tensor_to_numpy, Embedding
+from src.bioiain.machine import DEVICE, tensor_to_numpy, Embedding, humanise
 from src.bioiain.machine.losses import *
 from src.bioiain.machine.models import BaseModel
 from src.bioiain.machine.layers import *
@@ -31,7 +31,7 @@ class SaProtEmbedding(Embedding):
 
 
 class structure3DEmbedding(Embedding):
-    iter_dim = 0
+    iter_dim = None
     def __init__(self, img_size, subfolder=None, **kwargs):
         if subfolder is None:
             subfolder = ""
@@ -61,43 +61,109 @@ class CompactnessMLPmk1(BaseModel):
             "linear4": nn.Linear(self.data["hidden_dims"][-1], 1),
         }
 
+
+
+
 class Saprot3Dto1(BaseModel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        n = self.data["in_shape"][0]
-        self.data["hidden_dims"] = [n, n*4, n*8, n]
-        cn = self.data["hidden_dims"]
-        max_size = (self.data["in_shape"][1] - 4)**3
-        print(max_size)
+        in_channels = self.data["in_shape"][0]
+        img_size = self.data["img_size"] = self.data["in_shape"][-1]
+        hc = [in_channels*3, in_channels*2]
+        self.data["hidden_channels"] = hc
+        self.data["size_reduction"] =  10
+        max_size = self.data["max_size"] = img_size - 10
 
-        self.layers["convolution"] = {
-            "conv3d1": nn.Conv3d(
-                in_channels= cn[0],
-                out_channels= cn[1],
+        log(2, "In shape", self.data["in_shape"])
+        log(2, "In channels", in_channels)
+        log(2, "Hidden channels", hc)
+        log(2, "Max size", humanise(max_size))
+
+
+        self.layers["convolution_common"] = {
+            "conv3dC": nn.Conv3d(
+                in_channels= in_channels,
+                out_channels= hc[0],
                 kernel_size=4,
                 stride=1,
             ),
-            "conv_relu1": nn.ReLU(),
-            "conv3d2": nn.Conv3d(
-                in_channels=cn[1],
-                out_channels=cn[2],
+            "conv_reluC": nn.ReLU(),
+            "pool3dC": nn.MaxPool3d(
+                kernel_size=4,
+                stride=1,
+            ),
+        }
+        self.layers["convolution_x"] = {
+            "conv3dX": nn.Conv3d(
+                in_channels=in_channels,
+                out_channels=hc[1],
                 kernel_size=2,
                 stride=1,
-            )
+            ),
+            "conv_reluX": nn.ReLU(),
+            "pool3dX": nn.MaxPool3d(
+                kernel_size=4,
+                stride=1,
+            ),
         }
+        self.layers["convolution_y"] = {
+            "conv3dY": nn.Conv3d(
+                in_channels=in_channels,
+                out_channels=hc[1],
+                kernel_size=2,
+                stride=1,
+            ),
+            "conv_reluY": nn.ReLU(),
+            "pool3dY": nn.MaxPool3d(
+                kernel_size=4,
+                stride=1,
+            ),
+        }
+        self.layers["convolution_z"] = {
+            "conv3dZ": nn.Conv3d(
+                in_channels=in_channels,
+                out_channels=hc[1],
+                kernel_size=2,
+                stride=1,
+            ),
+            "conv_reluZ": nn.ReLU(),
+            "pool3dZ": nn.MaxPool3d(
+                kernel_size=4,
+                stride=1,
+            ),
+        }
+
         self.layers["linear"] = {
-            "flatten1": nn.Flatten(),
             "linear_relu1": nn.ReLU(),
-            "conv1d": nn.Conv1d(8, 1, kernel_size=1, stride=1),
+            "flatten1": nn.Flatten(),
+            "conv1d1": nn.Conv1d(hc[0] * 2, in_channels, kernel_size=1, stride=1),
             "linear_relu2": nn.ReLU(),
-            "linear": nn.Linear(max_size, 1280),
-            "linear_relu3": nn.ReLU(),
+            "conv1d2": nn.Conv1d(in_channels, 1, kernel_size=1, stride=1),
         }
+
         self.layers["classifier"] = {
-            "classifier_head": nn.Linear(1280, 1),
+            "lineal_classifier": nn.Linear(max_size**3, 1),
         }
+
         self.layers["default"] = {
-            **self.layers["convolution"],
-            **self.layers["linear"],
+            **self.layers["convolution_common"], # --> [3840, 10, 10, 10]
+            **self.layers["convolution_x"], # --> [2560, 6, 6, 6] x3
+            **self.layers["convolution_y"],
+            **self.layers["convolution_z"], # --> [7680, 6, 6, 6] (total)
+            **self.layers["linear"], # --> [1, 216]
             **self.layers["classifier"],
         }
+
+    def forward(self, x):
+        self.set_mode("default")
+        x = self._forward(x, "convolution_common")
+        x, y, z = torch.split(x, self.data["in_shape"][0])
+        x, y, z = self._forward(x, "convolution_x"), self._forward(y, "convolution_y"), self._forward(z, "convolution_z")
+        #print(x.shape, y.shape, z.shape)
+        x = torch.cat((x, y, z))
+        x = self._forward(x, "linear")
+        c = self._forward(x, "classifier")
+        x = x.reshape(1, self.data["max_size"], self.data["max_size"], self.data["max_size"])
+        c = c.reshape(1)
+
+        return x, c

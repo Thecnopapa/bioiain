@@ -105,7 +105,10 @@ class Embedding(object):
     def length(self) -> int:
         if self.dry:
             return 0
-        return self.tensor().shape[getattr(self, "iter_dim", 0)]
+        iter_dim = getattr(self, "iter_dim", 0)
+        if iter_dim is not None:
+            return self.tensor().shape[iter_dim]
+        return 1
 
     def __len__(self):
         return self.length()
@@ -231,26 +234,3 @@ class ProteinEmbedding(Embedding):
                 self.missing_indexes.append(n)
         self.sequence = seq
         return e
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -64,8 +64,8 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
                 assert tensor.shape[-2] == len(residues), f"{tensor.shape[-2]} / {len(residues)}\n{entry["aa_seq"]}\n{chain.sequence()}"
                 log(1, "Generating 3D embedding...")
                 tensor3D = chain.img3D(property=None, plot=False, size=IMG_SIZE, embedding=tensor, mode="mean", residue_kwargs={"need_backbone":False})
-                #print(tensor3D.shape)
-                embedding = SaProt3DEmbedding.from_tensor(tensor,name=name, img_size=IMG_SIZE, saprot_model=saprot_model).save()
+                log(2, tensor3D.shape)
+                embedding = SaProt3DEmbedding.from_tensor(tensor3D,name=name, img_size=IMG_SIZE, saprot_model=saprot_model).save()
                 embeddings.add(embedding)
                 embeddings.save(temp=True)
             except StructureLoadException as e:
@@ -93,16 +93,14 @@ if REBUILD or FORCE:
 
 if TRAIN:
     log("start", "TRAINING")
-
-    in_shape = embeddings[0].t.shape
+    in_shape = embeddings.get(0).t.shape
     log(1, "in_shape:", in_shape)
 
     model = Saprot3Dto1(name=dataset.name, in_shape=in_shape)
     print(model)
-    exit()
     model.mount()
     print(repr(model))
-    exit()
+
 
     EPOCHS = 100
     for epoch in range(EPOCHS):
@@ -113,8 +111,11 @@ if TRAIN:
             #print(entity)
             if n % 100 == 0:
                 log(1, f"{n:6d}/{max_n:6d}", end=" ")
-
-            out = model.forward(item.t.reshape(-1, *item.t.shape).to(DEVICE))
+            input = item.t.to(DEVICE)
+            print("\nIN:", input.shape)
+            out_i, out_c = model.forward(input)
+            print("OUT:", out_i.shape, out_c.shape)
+            exit()
             loss = model.loss(out, item)
             if n % 100 == 0:
                 loss_str = f"{model.running_loss['default'] / model.running_loss['total']:7.3f}"

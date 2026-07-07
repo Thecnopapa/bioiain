@@ -457,20 +457,23 @@ class EmbeddingDataset(object):
 
         target_tensor=None
         target_label=None
+
         if embedding:
             target_tensor = tensor
-            #print(iter_dim)
-            for i in range(iter_dim):
-                #print(target_tensor.shape, i)
-                target_tensor = target_tensor[0]
-            try:
-                target_tensor = target_tensor[rel_key]
-            except IndexError:
-                print("tensor", target_tensor)
-                print(target_tensor.shape)
-                print(key, rel_key)
-                print(json.dumps(e, indent=4))
-                raise
+            print("original tensor", target_tensor.shape)
+            print("iter_dim", iter_dim)
+            if iter_dim is not None:
+                for i in range(iter_dim):
+                    print(target_tensor.shape, i)
+                    target_tensor = target_tensor[0]
+                    try:
+                        target_tensor = target_tensor[rel_key]
+                    except IndexError:
+                        print("tensor", target_tensor)
+                        print(target_tensor.shape)
+                        print(key, rel_key)
+                        print(json.dumps(e, indent=4))
+                        raise
 
         if label:
             if label_data is not None:
