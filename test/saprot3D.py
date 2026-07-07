@@ -83,7 +83,7 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
                     log(1, "Loading tensor...")
                     tensor = torch.load(tensor_path)
                     #print(tensor.shape)
-                    assert tensor.shape[-2] == len(residues), f"{tensor.shape[-2]} / {len(residues)}\n{entry["aa_seq"]}\n{chain.sequence()}"
+                    assert tensor.shape[-2] == len(residues), f"{tensor.shape[-2]} / {len(residues)}"
                     log(1, "Generating 3D embedding...")
                     tensor3D = chain.img3D(property=None, plot=False, size=IMG_SIZE, embedding=tensor, mode="mean", residue_kwargs={"need_backbone":False})
                     log(2, tensor3D.shape)
@@ -103,8 +103,13 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
 
             except StructureLoadException as e:
                 dataset.add_to_blacklist(dataset.get(code).get("path"), e)
-            except AssertionError:
-                raise
+            except AssertionError as e:
+                try:
+                    log("warning", f'\n{entry["aa_seq"]}\n{chain.sequence()}')
+                except:
+                    pass
+                dataset.add_to_blacklist(dataset.get(code).get("path"), e)
+
     embeddings.save(temp=False)
     labels.save(temp=False)
     return embeddings, labels
