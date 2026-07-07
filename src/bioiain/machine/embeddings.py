@@ -47,7 +47,7 @@ class Embedding(object):
             "embedding_path": relative_path(self.path()),
             "length": len(self),
             "iter_dim": getattr(self, "iter_dim", 0),
-
+            "shape": self.tensor().shape,
             "param_names": getattr(self, "param_names", None),
         } | extra
 

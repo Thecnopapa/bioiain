@@ -603,7 +603,7 @@ class EmbeddingDataset(object):
             folder = self.data["folder"]
         path = os.path.join(folder, self.data["fname"])
         if not os.path.exists(path):
-            log("warning", f"Dataset found at: {path}")
+            log("warning", f"Dataset not found at: {path}")
             if not missing_ok:
                 raise EmbeddingDatasetNotFound(path)
             if not load_temp:

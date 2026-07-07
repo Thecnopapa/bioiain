@@ -268,7 +268,8 @@ class StructureDataset(object):
                 else:
                     skipped_counter += 1
                 self.add(code, name=code, path=f_path, url=url, source="list_downloaded", extension=extension, replace=replace,**extras)
-        print()
+        if counter > 0 or failed_counter > 0:
+            print()
         log(2, f"{counter} files downloaded, {failed_counter} failed, {skipped_counter} skipped")
         for path in pdb_paths:
             code = os.path.basename(path.split(".")[0])

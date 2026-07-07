@@ -97,14 +97,14 @@ class Saprot3Dto1(BaseModel):
             ),
         }
         self.layers["convolution_mixed"] = {
-            "conv3dX": nn.Conv3d(
+            "conv3dM": nn.Conv3d(
                 in_channels=hc[0],
                 out_channels=hc[0]*2,
                 kernel_size=2,
                 stride=1,
             ),
-            "conv_reluX": nn.ReLU(),
-            "pool3dX": nn.MaxPool3d(
+            "conv_reluM": nn.ReLU(),
+            "pool3dM": nn.MaxPool3d(
                 kernel_size=4,
                 stride=1,
             ),
@@ -171,8 +171,22 @@ class Saprot3Dto1(BaseModel):
 
         }
         self.layers["compressor"] = {
-            "compressor1": self.layers["convolution_common"]["pool3dC"],
-            "compressor2": self.layers["convolution_mixed"]["pool3dMixed"],
+            "compressor1": nn.MaxPool3d(
+                kernel_size=4,
+                stride=2,
+            ),
+            "compressor2": nn.MaxPool3d(
+                 kernel_size=2,
+                 stride=1,
+             ),
+            # "compressor3": nn.MaxPool3d(
+            #     kernel_size=2,
+            #     stride=1,
+            # ),
+            # "compressor4": nn.MaxPool3d(
+            #     kernel_size=4,
+            #     stride=1,
+            # ),
         }
 
 
@@ -185,6 +199,8 @@ class Saprot3Dto1(BaseModel):
             **self.layers["linear"], # --> [1, 216]
             **self.layers["classifier"],
         }
+
+        self.criterions["default"] = ImgAndClassifierLoss()
 
     def forward(self, x, classifier=True):
         self.set_mode("default")
@@ -210,7 +226,8 @@ class Saprot3Dto1(BaseModel):
         return x, c
 
     def compress(self, x):
-        print("compressing:", x.shape)
-        x = _forward("compressor")
-        print("compressed:", x.shape)
-        return x
+        with torch.no_grad():
+            #print("compressing:", x.shape)
+            x = self._forward(x, "compressor")
+            #print("compressed:", x.shape)
+            return x

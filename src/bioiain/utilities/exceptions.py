@@ -92,6 +92,11 @@ class TryingToSaveInferenceModel(ModelSaveError):
     pass
 
 
+# LossRelated
+class LossIsZero(Exception):
+    pass
+
+
 # Residue related
 
 class ResidueBuildingError(Exception):

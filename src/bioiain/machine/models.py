@@ -545,7 +545,7 @@ class BaseModel(nn.Module):
 
 
 
-    def _calculate_loss(self, output:torch.Tensor, item:Item|torch.Tensor, criterion_name:str="mode") -> torch.Tensor|float:
+    def _calculate_loss(self, *items, criterion_name:str="mode", **kwargs) -> torch.Tensor|float:
 
         if criterion_name == "mode":
             criterions = [self.mode]
@@ -561,29 +561,34 @@ class BaseModel(nn.Module):
         for n, criterion in enumerate(criterions):
 
             if criterion not in self.criterions: criterions[n] = "default"; criterion = "default"
-            if isinstance(self.criterions[criterion], CustomLoss) or not isinstance(item, Item):
-                losses.append(self.criterions[criterion](output, item))
 
-            elif hasattr(item, "lt"):
-                print("LT", item.lt)
-                losses.append(self.criterions[criterion](output, item.lt.to(DEVICE)))
-            elif item.l is not None:
-                #print("L", item.l)
-                try:
-                    losses.append(self.criterions[criterion](output, torch.Tensor([item.l]).to(DEVICE)))
-                except:
-                    print(item)
-                    print(item.l)
-                    print(item.__dict__)
-                    raise
+            if len(items) == 2:
+                output, item = items
+                if isinstance(self.criterions[criterion], CustomLoss) or not isinstance(item, Item):
+                    losses.append(self.criterions[criterion](output, item))
+
+                elif hasattr(item, "lt"):
+                    print("LT", item.lt)
+                    losses.append(self.criterions[criterion](output, item.lt.to(DEVICE)))
+                elif item.l is not None:
+                    #print("L", item.l)
+                    try:
+                        losses.append(self.criterions[criterion](output, torch.Tensor([item.l]).to(DEVICE)))
+                    except:
+                        print(item)
+                        print(item.l)
+                        print(item.__dict__)
+                        raise
+                else:
+                    try:
+                        losses.append(self.criterions[criterion](output, torch.Tensor(item.t).to(DEVICE)))
+                    except:
+                        print(item)
+                        print(item.t)
+                        print(item.__dict__)
+                        raise
             else:
-                try:
-                    losses.append(self.criterions[criterion](output, torch.Tensor(item.t).to(DEVICE)))
-                except:
-                    print(item)
-                    print(item.t)
-                    print(item.__dict__)
-                    raise
+                losses.append(self.criterions[criterion](*[i.to(DEVICE) for i in items], **kwargs))
 
         if len(losses) > 1:
             loss = torch.sum(losses)
@@ -630,6 +635,11 @@ class BaseModel(nn.Module):
         return loss
 
 
+
+    def raw_loss(self, *inputs, criterion_name:str="mode", backwards:bool=True, zero_optims:str|None="mode", step="mode", force_backpropagation=False, retain_graph=False, **kwargs):
+        loss = self._calculate_loss(*inputs, criterion_name=criterion_name, **kwargs)
+        loss = self._backpropagate(loss=loss, zero_optims=zero_optims, step=step, force=force_backpropagation, retain_graph=retain_graph)
+        return loss
 
 
 

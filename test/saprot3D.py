@@ -39,7 +39,7 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
     labels_name = f"compactness_3D_size_{img_size}_{dataset.name}"
 
     embeddings = EmbeddingDataset(embeddings_name)
-    labels = EmbeddingDataset(embeddings_name)
+    labels = EmbeddingDataset(labels_name)
 
     if not force:
         if not force_embeddings:
@@ -73,6 +73,7 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
                
                 log(1, entity)
                 chain = entity.chains(ch, by_complex=True, model=model)
+                print([c.complex() for c in chain])
                 assert len(chain) == 1, f"Multiple chains detected {(code,ch,model)}: {chain}"
                 chain = chain[0]
                 log(1, chain)
@@ -145,27 +146,37 @@ if TRAIN:
             #print(n)
             embeddings.use_label("oligo")
             item = embeddings.get(n, label=False, label_key="oligo")
+            litem = labels.get(n, label=False)
+            assert item.name == litem.name
             tensor = item.t.to(DEVICE)
+            label = litem.t.to(DEVICE)
             label_oligo = item.l
             #print(tensor, label_oligo)
 
             #print(entity)
-            if n % 100 == 0:
+            if n % 1 == 0:
                 log(1, f"{n:6d}/{max_n:6d}", end=" ")
 
 
             print("\nIN:", tensor.shape)
             out_i, out_c = model.forward(tensor)
             print("OUT:", out_i.shape, out_c.shape)
+            print("LABEL:", label.shape)
+            label = model.compress(label)
+            print("COMPRESSED LABEL:", label.shape)
+            print(out_i is None, label is None, out_c is None, label_oligo is None)
+            if label_oligo is not None:
+                loss = model.raw_loss(out_i, label, out_c, label_oligo)
+            else:
+                loss = model.loss(out_i, label)
+            print("LOSS:", loss)
 
-            loss = model.loss(out_c, item)
-            if n % 100 == 0 or True:
+            if n % 1 == 0:
                 loss_str = f"{model.running_loss['default'] / model.running_loss['total']:7.3f}"
                 print(f"loss: {colour('yellow', loss_str)} \tlast: loss={loss:7.3f} out={out_c.item():7.3f} l={item.l}",
                       end="\r")
-            exit()
 
-            continue # PLot example output
+            continue # Remove to plot example output
             from src.bioiain.visualisation import voxels3d
             out3d = out_i.detach().cpu().numpy()[0]
             count3d = (out3d != 0) & (out3d != 0) & (out3d != 0)
