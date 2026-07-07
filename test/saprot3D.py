@@ -141,15 +141,15 @@ if TRAIN:
     EPOCHS = 100
     for epoch in range(EPOCHS):
         log("start", f"EPOCH: {epoch}", print_timer=True, reset_timer=False)
-        max_n = len(dataset)
+        max_n = len(embeddings)
         for n in range(len(embeddings)):
             #print(n)
             embeddings.use_label("oligo")
             item = embeddings.get(n, label=False, label_key="oligo")
             litem = labels.get(n, label=False)
             assert item.name == litem.name
-            tensor = item.t.to(DEVICE)
-            label = litem.t.to(DEVICE)
+            tensor = item.t.to(torch.float32).to(DEVICE)
+            label = litem.t.to(torch.float32).to(DEVICE)
             label_oligo = item.l
             #print(tensor, label_oligo)
 
@@ -158,22 +158,22 @@ if TRAIN:
                 log(1, f"{n:6d}/{max_n:6d}", end=" ")
 
 
-            print("\nIN:", tensor.shape)
+            #print("\nIN:", tensor.shape, tensor.dtype)
             out_i, out_c = model.forward(tensor)
-            print("OUT:", out_i.shape, out_c.shape)
-            print("LABEL:", label.shape)
+            #print("OUT:", out_i.shape, out_c.shape)
+            #print("LABEL:", label.shape, label.dtype)
             label = model.compress(label)
-            print("COMPRESSED LABEL:", label.shape)
-            print(out_i is None, label is None, out_c is None, label_oligo is None)
+            #print("COMPRESSED LABEL:", label.shape)
+            #print(out_i is None, label is None, out_c is None, label_oligo is None)
             if label_oligo is not None:
                 loss = model.raw_loss(out_i, label, out_c, label_oligo)
             else:
                 loss = model.loss(out_i, label)
-            print("LOSS:", loss)
+            #print("LOSS:", loss)
 
             if n % 1 == 0:
                 loss_str = f"{model.running_loss['default'] / model.running_loss['total']:7.3f}"
-                print(f"loss: {colour('yellow', loss_str)} \tlast: loss={loss:7.3f} out={out_c.item():7.3f} l={item.l}",
+                print(f"loss: {colour('yellow', loss_str)} \tlast --> loss={loss:7.3f} out={out_c.item():7.3f} l={item.l}",
                       end="\r")
 
             continue # Remove to plot example output
