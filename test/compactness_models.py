@@ -71,8 +71,10 @@ class Saprot3Dto1(BaseModel):
         img_size = self.data["img_size"] = self.data["in_shape"][-1]
         hc = [in_channels*3, in_channels*2]
         self.data["hidden_channels"] = hc
-        self.data["size_reduction"] =  10
-        max_size = self.data["max_size"] = img_size - 10
+        self.data["size_reduction"] =  [(4 + 2), (2 + 2)]
+        triplet_size:int = img_size - self.data["size_reduction"][0]
+        max_size = self.data["max_size"] = img_size - sum(self.data["size_reduction"])
+
 
         log(2, "In shape", self.data["in_shape"])
         log(2, "In channels", in_channels)
@@ -97,11 +99,13 @@ class Saprot3Dto1(BaseModel):
             "conv3dX": nn.Conv3d(
                 in_channels=in_channels,
                 out_channels=hc[1],
+                #kernel_size=[2, 2, triplet_size],
                 kernel_size=2,
                 stride=1,
             ),
             "conv_reluX": nn.ReLU(),
             "pool3dX": nn.MaxPool3d(
+                #kernel_size=[4, 4, 1],
                 kernel_size=4,
                 stride=1,
             ),
@@ -110,11 +114,13 @@ class Saprot3Dto1(BaseModel):
             "conv3dY": nn.Conv3d(
                 in_channels=in_channels,
                 out_channels=hc[1],
+                #kernel_size=[2, triplet_size, 2],
                 kernel_size=2,
                 stride=1,
             ),
             "conv_reluY": nn.ReLU(),
             "pool3dY": nn.MaxPool3d(
+                #kernel_size=[4, 1, 4],
                 kernel_size=4,
                 stride=1,
             ),
@@ -123,11 +129,13 @@ class Saprot3Dto1(BaseModel):
             "conv3dZ": nn.Conv3d(
                 in_channels=in_channels,
                 out_channels=hc[1],
+                #kernel_size=[triplet_size, 2, 2],
                 kernel_size=2,
                 stride=1,
             ),
             "conv_reluZ": nn.ReLU(),
             "pool3dZ": nn.MaxPool3d(
+                #kernel_size=[1, 4, 4],
                 kernel_size=4,
                 stride=1,
             ),
@@ -154,16 +162,21 @@ class Saprot3Dto1(BaseModel):
             **self.layers["classifier"],
         }
 
-    def forward(self, x):
+    def forward(self, x, classifier=True):
         self.set_mode("default")
         x = self._forward(x, "convolution_common")
         x, y, z = torch.split(x, self.data["in_shape"][0])
         x, y, z = self._forward(x, "convolution_x"), self._forward(y, "convolution_y"), self._forward(z, "convolution_z")
-        #print(x.shape, y.shape, z.shape)
+        # print(x.shape, y.shape, z.shape)
+        # x, y, z = x.reshape(x.shape[0], x.shape[1]*x.shape[2]*x.shape[3]), y.reshape(y.shape[0], y.shape[1]*y.shape[2]*y.shape[3]), z.reshape(z.shape[0], z.shape[1]*z.shape[2]*z.shape[3])
+        # print(x.shape, y.shape, z.shape)
         x = torch.cat((x, y, z))
+        print(x.shape)
         x = self._forward(x, "linear")
-        c = self._forward(x, "classifier")
+        if classifier:
+            c = self._forward(x, "classifier")
+            c = c.reshape(1)
+        else:
+            c = None
         x = x.reshape(1, self.data["max_size"], self.data["max_size"], self.data["max_size"])
-        c = c.reshape(1)
-
         return x, c

@@ -106,15 +106,29 @@ if TRAIN:
     for epoch in range(EPOCHS):
         log("start", f"EPOCH: {epoch}", print_timer=True, reset_timer=False)
         max_n = len(dataset)
-        for n, item in enumerate(embeddings):
+        for n in range(len(embeddings)):
+            #print(n)
+            embeddings.use_label("oligo")
+            item = embeddings.get(n, label=False, label_key="oligo")
+            tensor = item.t.to(DEVICE)
+            label_oligo = item.l
+            #print(tensor, label_oligo)
 
             #print(entity)
             if n % 100 == 0:
                 log(1, f"{n:6d}/{max_n:6d}", end=" ")
-            input = item.t.to(DEVICE)
-            print("\nIN:", input.shape)
-            out_i, out_c = model.forward(input)
+
+
+            print("\nIN:", tensor.shape)
+            out_i, out_c = model.forward(tensor)
             print("OUT:", out_i.shape, out_c.shape)
+
+            from src.bioiain.visualisation import voxels3d
+            out3d = out_i.detach().cpu().numpy()[0]
+            print(out3d)
+            count3d = (out3d != 0) & (out3d != 0) & (out3d != 0)
+            print(count3d)
+            voxels3d(out3d, count3d, show_plot=True, title=f"out: {out_c.detach().item():5.3f}")
             exit()
             loss = model.loss(out, item)
             if n % 100 == 0:

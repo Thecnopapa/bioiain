@@ -1207,34 +1207,9 @@ class BIEntity(object):
 
 
             if plot:
-                print()
-                log(3, f"Plotting voxels... ({pp})")
-                from ..visualisation.plots import fig3D, show, plasma
-                fig, ax = fig3D()
-                ax.set_title(pp)
-                np.set_printoptions(threshold=sys.maxsize)
-                #print(value_grid)
-                max_val = abs(value_grid.reshape(size**3).max() - value_grid.reshape(size**3).min())
-                norm_grid = value_grid-value_grid.reshape(size**3).min()
-                print(norm_grid[6][6])
+                from src.bioiain.visualisation import voxels3d
+                voxels3d(value_grid, count_grid, show_plot=show_plot, title=pp)
 
-                log(4, "Scale:", max_val)
-                #cube = np.indices([size, size, size])
-                cube = (count_grid > 0) & (count_grid > 0) & (count_grid > 0)
-                #print(cube)
-
-                color_vector = np.vectorize(plasma)
-                colors = np.array(color_vector(norm_grid, scale=max_val, as_hex=True))
-                #print(colors)
-
-                log(4, "Cube:", cube.shape)
-                log(4, "Colors:", colors.shape)
-                ax.voxels(cube, facecolors=colors, alpha=0.5)
-                #ax.set_box_aspect((size, size, size))
-                ax.set_aspect('equal')
-                if show_plot:
-                    show()
-                #exit()
 
 
         print()

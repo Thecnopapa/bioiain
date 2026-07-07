@@ -146,3 +146,31 @@ def plot_heatmap(matrix, show=False, filename=None):
         plt.savefig(filename)
     if show:
         plt.show(block=True)
+
+def voxels3d(value_grid, count_grid, show_plot=False, title=None):
+    print()
+    log(3, f"Plotting voxels... ({title})")
+    fig, ax = fig3D()
+    ax.set_title(title)
+    np.set_printoptions(threshold=sys.maxsize)
+    # print(value_grid)
+    max_val = abs(value_grid.reshape(value_grid.shape[-1] ** 3).max() - value_grid.reshape(value_grid.shape[-1] ** 3).min())
+    norm_grid = value_grid - value_grid.reshape(value_grid.shape[-1] ** 3).min()
+
+    log(4, "Scale:", max_val)
+    # cube = np.indices([size, size, size])
+    cube = (count_grid > 0) & (count_grid > 0) & (count_grid > 0)
+    # print(cube)
+
+    color_vector = np.vectorize(plasma)
+    colors = np.array(color_vector(norm_grid, scale=max_val, as_hex=True))
+    # print(colors)
+
+    log(4, "Cube:", cube.shape)
+    log(4, "Colors:", colors.shape)
+    ax.voxels(cube, facecolors=colors, alpha=0.5)
+    # ax.set_box_aspect((size, size, size))
+    ax.set_aspect('equal')
+    if show_plot:
+        show()
+    # exit()

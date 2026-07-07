@@ -460,11 +460,11 @@ class EmbeddingDataset(object):
 
         if embedding:
             target_tensor = tensor
-            print("original tensor", target_tensor.shape)
-            print("iter_dim", iter_dim)
+            #print("original tensor", target_tensor.shape)
+            #print("iter_dim", iter_dim)
             if iter_dim is not None:
                 for i in range(iter_dim):
-                    print(target_tensor.shape, i)
+                    #print(target_tensor.shape, i)
                     target_tensor = target_tensor[0]
                     try:
                         target_tensor = target_tensor[rel_key]
