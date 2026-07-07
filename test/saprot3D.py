@@ -19,6 +19,8 @@ from src.bioiain.machine import *
 from data import dataset
 set_seed()
 
+if "--trace" in sys.argv:
+    tracemalloc_start()
 
 
 IMG_SIZE = 16
@@ -51,6 +53,8 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
         fs.run()
 
         for n, (tensor_path, entry, saprot_model) in enumerate(fs.saprot_embeddings(return_tensor=False)):
+            if "--trace" in sys.argv:
+                tracemalloc_top()
             log(1, f"N={n}")
             code, ch, model = fs.parse_name(entry["name"])
             name = f"{code}_{ch}_{model}"
