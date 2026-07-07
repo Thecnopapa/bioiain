@@ -19,8 +19,8 @@ from src.bioiain.machine import *
 from data import dataset
 set_seed()
 
-if "--trace" in sys.argv:
-    tracemalloc_start()
+
+tracemalloc_start()
 
 
 IMG_SIZE = 16
@@ -85,7 +85,12 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
                 if not embedding_done:
                     residues = chain.residues(need_backbone=False)
                     log(1, "Loading tensor...")
-                    tensor = torch.load(tensor_path)
+                    try:
+                        tensor = torch.load(tensor_path)
+                    except Exception as e:
+                        os.remove(tensor_path)
+                        log("Error", "Error reading tensor:", tensor_path, e)
+                        continue
                     #print(tensor.shape)
                     assert tensor.shape[-2] == len(residues), f"{tensor.shape[-2]} / {len(residues)}"
                     log(1, "Generating 3D embedding...")

@@ -1,6 +1,8 @@
 
 import os, sys, shutil, time, datetime, requests
 
+from bioiain.utilities import tracemalloc_start
+
 from .. import SUBDIR_NAME, TEMP_FOLDER, WD, FD
 
 class Log(object):
@@ -289,19 +291,34 @@ def send_tensorboard_run(host, folder, run, file, key, epoch=0, protocol="https"
 
 
 
+TRACE = ("--trace" in sys.argv) or ("--tracemalloc" in sys.argv)
+CURRENTLY_TRACING = False
 
-
+if TRACE:
+    tracemalloc_start()
 
 def tracemalloc_start():
+    global CURRENTLY_TRACING
     log("header", f"Starting tracemalloc")
     import tracemalloc
     tracemalloc.start()
+    CURRENTLY_TRACING = True
+
+def tracemalloc_stop():
+    global CURRENTLY_TRACING
+    log("header", f"Starting tracemalloc")
+    import tracemalloc
+    tracemalloc.stop()
+    CURRENTLY_TRACING = False
 
 def tracemalloc_top(top=15):
-    import tracemalloc
-    snapshot = tracemalloc.take_snapshot()
-    top_stats = snapshot.statistics('lineno')
+    global CURRENTLY_TRACING
+    if CURRENTLY_TRACING:
+        import tracemalloc
+        snapshot = tracemalloc.take_snapshot()
+        top_stats = snapshot.statistics('lineno')
 
-    log("header", f"Tracemalloc top {top}")
-    for stat in top_stats[:top]:
-        log(1, stat)
+        log("header", f"Tracemalloc top {top}")
+        for stat in top_stats[:top]:
+            log(1, stat)
+        print()

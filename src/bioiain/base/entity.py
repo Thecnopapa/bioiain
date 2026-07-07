@@ -327,7 +327,7 @@ class BIEntity(object):
         if not disordered:
             atoms = _fix_disordered(atoms)
 
-        if (model is not None) and model != "*" :
+        if (model is not None) and model not in ["*" "-"]:
             atoms = [a for a in atoms if str(a.model) == str(model)]
 
         if not hetatm:

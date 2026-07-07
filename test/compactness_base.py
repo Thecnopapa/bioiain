@@ -138,7 +138,7 @@ class FoldseekDB(object):
         name = full_name.split(" ")[0]
         description = " ".join([n for n in full_name.split(" ")[1:]])
         components = name.split("_")
-        chain = "*"
+        chain = "-"
         model = "1"
         if len(components) == 1:
             code = components[0]
