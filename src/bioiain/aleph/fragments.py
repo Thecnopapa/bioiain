@@ -18,6 +18,9 @@ class Fragment(BIChain):
     def id(self):
         return (self.data["info"]["fragment_id"], self.data["info"]["chain_id"])
 
+    def full_id(self):
+        return f"{self.code()}_{self.id()}_{self.data["info"]["fragment_id"]}"
+
 
     @classmethod
     def from_atoms(cls, atoms, code=None, chain_id=None, fragment_id=None, **kwargs):

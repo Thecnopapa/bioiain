@@ -141,6 +141,8 @@ class BIEntity(object):
                     models.append(new_model)
             return models
 
+    def full_id(self):
+        return f"{self.code()}"
 
     def name(self):
         return str(self.data["info"]["name"])
@@ -536,7 +538,7 @@ class BIEntity(object):
                         log("Error", "Recovery failed (returning new)")
                     raise e
 
-        self.recover_cvectors()
+        self._recover_cvectors()
 
         self.set_flag("loaded", True)
         self.set_flag("no_atoms", no_atoms)
@@ -546,7 +548,7 @@ class BIEntity(object):
         return self
 
 
-    def  recover_cvectors(self):
+    def _recover_cvectors(self):
         pass
 
 
@@ -1058,12 +1060,14 @@ class BIEntity(object):
         pisa = PISA(pisa_id=self.name(), **kwargs)
 
 
-    def img3D(self, size=16, property:None|dict|list|str=None, mode="mean", distortion="none", plot=False, show_plot=True, embedding=None, residue_kwargs={}, as_embedding=False):
+    def img3D(self, size=16, property:None|dict|list|str=None, mode="mean", distortion="none", plot=False, show_plot=False, embedding=None, residue_kwargs={}, as_embedding=False, gif=False):
         log(2, f"Generating 3D voxels...")
         log(3, f"Size: {size}x{size}x{size} ({size**3})")
         log(3, f"Distortion: {distortion}")
         assert size % 2 == 0
 
+        if gif or show_plot:
+            plot = True
 
         output = None
         residues = self.residues(**residue_kwargs)
@@ -1214,8 +1218,11 @@ class BIEntity(object):
 
 
             if plot:
+                gif_path = None
+                if gif:
+                    gif_path = os.path.join(self.folder(), "gifs", f"{self.full_id()}_{pp}")
                 from src.bioiain.visualisation import voxels3d
-                voxels3d(value_grid, count_grid, show_plot=show_plot, title=pp)
+                voxels3d(value_grid, count_grid, show_plot=show_plot, title=pp, gif_path=gif_path)
 
 
 

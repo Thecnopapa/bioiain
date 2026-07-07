@@ -18,8 +18,7 @@ from compactness_models import *
 IMG_SIZE = 16
 
 
-entity = next(dataset.entities())
+for entity in dataset.entities(entity_class=CompactStructure):
 
-entity.img3D(property="b", plot=True)
+	entity.img3D(property="compactness", show_plot=False, gif=True)
 
-exit()

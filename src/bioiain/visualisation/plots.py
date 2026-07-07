@@ -1,5 +1,5 @@
 import sys, os, math
-
+from .. import TEMP_FOLDER
 
 from ..utilities.logging import log
 
@@ -147,7 +147,65 @@ def plot_heatmap(matrix, show=False, filename=None):
     if show:
         plt.show(block=True)
 
-def voxels3d(value_grid, count_grid, show_plot=False, title=None, shrink=False):
+
+def mpl3D_to_gif(
+    fig, 
+    axes, 
+    name = "animation.gif", 
+    folder=None, 
+    save_path=None,
+    total_frames=360, total_d = 360, duration = 15
+    ):
+
+
+    import io, PIL
+    from ..utilities.utilities_old import ProgressBar
+
+    if type(axes) not in (list, tuple):
+        axes = [axes]
+
+    if folder is None:
+        folder = TEMP_FOLDER
+
+    if save_path is not None:
+        name = os.path.basename(save_path)
+        folder = os.path.dirname(save_path)
+
+    if not name.endswith(".gif"):
+        name += ".gif"
+    os.makedirs(folder, exist_ok=True)
+    path = os.path.join(folder, name)
+
+
+    f_duration = duration * 1000 / total_frames
+
+    dpf = total_d / total_frames
+
+    log(3, "Animating: {} Duration: {}s, degrees/frames: {}/{}".format(name, duration, total_d, total_frames))
+
+
+    progress = ProgressBar(total_frames, silent=True)
+    images = []
+    for frame in range(total_frames):
+        for ax in axes:
+            ax.view_init(azim=frame*dpf)
+        buf = io.BytesIO()
+        fig.savefig(buf)
+        buf.seek(0)
+
+        images.append(PIL.Image.open(buf))
+        progress.add(info="{}/{}".format(frame, total_frames))
+    images[0].save(
+        path,
+        append_images=images[1:],
+        duration=f_duration,  # duration of each frame in milliseconds
+        loop=1,  # loop forever
+        save_all=True,
+    )
+    log(4,"Saving to:", path)
+    return path
+
+def voxels3d(value_grid, count_grid, show_plot=False, title=None, shrink=False, gif_path=None):
 
     def explode_cube(data):
         size = np.array(data.shape)*2
@@ -199,6 +257,10 @@ def voxels3d(value_grid, count_grid, show_plot=False, title=None, shrink=False):
 
     # ax.set_box_aspect((size, size, size))
     ax.set_aspect('equal')
+
+    if gif_path is not None:
+        mpl3D_to_gif(fig, ax, save_path=gif_path)
+
     if show_plot:
         show()
     return fig, ax
