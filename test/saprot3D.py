@@ -26,7 +26,7 @@ IMG_SIZE = 16
 print(dataset)
 
 
-def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, force=False, rebuild=False):
+def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, force=False, rebuild=False, force_labels=False, force_embeddings=False):
     from src.bioiain.machine.datasets import EmbeddingDataset
     if force:
         rebuild = True
@@ -42,8 +42,10 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
     labels = EmbeddingDataset(embeddings_name)
 
     if not force:
-        embeddings.load(load_temp=True)
-        labels.load(load_temp=True)
+        if not force_embeddings:
+            embeddings.load(load_temp=True)
+        if not force_labels:
+            labels.load(load_temp=True)
 
     if embeddings.incomplete() or labels.incomplete() or rebuild:
         fs.run()
@@ -54,11 +56,11 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
             name = f"{code}_{ch}_{model}"
             embedding_done = False
             label_done = False
-            if name in embeddings.embeddings.keys():
+            if name in embeddings.embeddings.keys() and not force_embeddings:
                 if os.path.exists(embeddings.embeddings[name]["embedding_path"]):
                     log(1, f"Embedding ({name}) already generated")
                     embedding_done = True
-            if name in labels.embeddings.keys():
+            if name in labels.embeddings.keys() and not force_labels:
                 l_path = labels.embeddings[name]["embedding_path"]
                 if os.path.exists(l_path):
                     log(1, f"Label ({name}) already generated")
@@ -107,7 +109,7 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
     return embeddings, labels
 
 
-embeddings, labels = generate_3DSaprot_embeddings(dataset, img_size=IMG_SIZE, force=FORCE, rebuild=REBUILD)
+embeddings, labels = generate_3DSaprot_embeddings(dataset, img_size=IMG_SIZE, force=FORCE, rebuild=REBUILD, force_labels=LABELS)
 
 if REBUILD or FORCE or LABELS:
     log("header","Configuring oligomer labels")
@@ -121,26 +123,6 @@ if REBUILD or FORCE or LABELS:
     embeddings.save()
     print()
     log(1, "Oligomer labels ready")
-
-    # log("header","Configuring compactness labels")
-    # for n, k in enumerate(embeddings.embeddings.keys()):
-    #     log(2, f"{n+1}/{len(embeddings)}", end="\r")
-    #     code, ch, model = k.split("_")
-    #     entry = dataset.get(code)
-    #     entity = CompactStructure.from_file(entry["path"])
-    #     entity.compactness(with_symmetry=True)
-    #     chain = entity.chains(ch, model=model)
-    #     assert len(chain) == 1
-    #     chain = chain[0]
-    #     label = chain.img3D(property="compactness", as_embedding=True)
-    #     print(label.shape)
-    #     exit()
-    #     embeddings.add_label(k, label, "compactness_symm")
-    # embeddings.use_label("compactness_symm")
-    # embeddings.save()
-    # print()
-    # log(1, "Oligomer labels ready")
-
 
 
 
