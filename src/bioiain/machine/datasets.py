@@ -14,7 +14,7 @@ from torch.utils.data import Dataset, DataLoader
 
 
 class Item(object):
-    def __init__(self, tensor:Tensor, label:Any, label_to_index:dict|None=None, key:str=None, dataset=None):
+    def __init__(self, tensor:Tensor, label:Any, label_to_index:dict|None=None, key:str=None, name:str=None, dataset=None):
         self.tensor = tensor
         self.label = label
         self.t = self.tensor
@@ -36,6 +36,7 @@ class Item(object):
 
 
         self.key = key
+        self.name = name
         self.dataset = dataset
 
     def __getitem__(self, item):
@@ -507,7 +508,7 @@ class EmbeddingDataset(object):
         if self.data["mapped"]:
             l_to_i = self.data["label_to_index"]
         #print(l_to_i)
-        return Item(target_tensor, target_label, label_to_index=l_to_i, key=key, dataset=self)
+        return Item(target_tensor, target_label, label_to_index=l_to_i, key=key, name=e["name"], dataset=self)
 
 
     def add_label(self, key, label, label_key="label"):

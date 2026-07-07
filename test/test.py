@@ -18,7 +18,8 @@ from compactness_models import *
 IMG_SIZE = 16
 
 
-embeddings = generate_3DSaprot_embeddings(dataset, img_size=IMG_SIZE)
-print(embeddings)
+entity = next(dataset.entities())
+
+entity.img3D(property="b", plot=True)
 
 exit()

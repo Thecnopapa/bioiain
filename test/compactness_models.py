@@ -30,7 +30,7 @@ class SaProtEmbedding(Embedding):
     pass
 
 
-class structure3DEmbedding(Embedding):
+class Structure3DEmbedding(Embedding):
     iter_dim = None
     def __init__(self, img_size, subfolder=None, **kwargs):
         if subfolder is None:
@@ -39,12 +39,13 @@ class structure3DEmbedding(Embedding):
             subfolder = f"{subfolder}_"
         super().__init__(subfolder=f"{subfolder}size_{img_size}", **kwargs)
 
-class SaProt3DEmbedding(structure3DEmbedding):
+class SaProt3DEmbedding(Structure3DEmbedding):
     def __init__(self, *args, saprot_model=None, **kwargs):
         super().__init__(*args, subfolder=saprot_model, **kwargs)
 
-class compactness3Dembedding(SaProt3DEmbedding):
-    pass
+class Compactness3DEembedding(Structure3DEmbedding):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, subfolder="compactness", **kwargs)
 
 class CompactnessMLPmk1(BaseModel):
     def __init__(self, *args, **kwargs):
@@ -83,14 +84,27 @@ class Saprot3Dto1(BaseModel):
 
 
         self.layers["convolution_common"] = {
-            "conv3dC": nn.Conv3d(
+            "conv3dMixed": nn.Conv3d(
                 in_channels= in_channels,
                 out_channels= hc[0],
                 kernel_size=4,
                 stride=1,
             ),
-            "conv_reluC": nn.ReLU(),
+            "conv_reluMixed": nn.ReLU(),
             "pool3dC": nn.MaxPool3d(
+                kernel_size=4,
+                stride=1,
+            ),
+        }
+        self.layers["convolution_mixed"] = {
+            "conv3dX": nn.Conv3d(
+                in_channels=hc[0],
+                out_channels=hc[0]*2,
+                kernel_size=2,
+                stride=1,
+            ),
+            "conv_reluX": nn.ReLU(),
+            "pool3dX": nn.MaxPool3d(
                 kernel_size=4,
                 stride=1,
             ),
@@ -153,11 +167,21 @@ class Saprot3Dto1(BaseModel):
             "lineal_classifier": nn.Linear(max_size**3, 1),
         }
 
+        self.layers["decoder"] = {
+
+        }
+        self.layers["compressor"] = {
+            "compressor1": self.layers["convolution_common"]["pool3dC"],
+            "compressor2": self.layers["convolution_mixed"]["pool3dMixed"],
+        }
+
+
         self.layers["default"] = {
             **self.layers["convolution_common"], # --> [3840, 10, 10, 10]
-            **self.layers["convolution_x"], # --> [2560, 6, 6, 6] x3
-            **self.layers["convolution_y"],
-            **self.layers["convolution_z"], # --> [7680, 6, 6, 6] (total)
+            **self.layers["convolution_mixed"],
+            #**self.layers["convolution_x"], # --> [2560, 6, 6, 6] x3
+            #**self.layers["convolution_y"],
+            #**self.layers["convolution_z"], # --> [7680, 6, 6, 6] (total)
             **self.layers["linear"], # --> [1, 216]
             **self.layers["classifier"],
         }
@@ -165,12 +189,16 @@ class Saprot3Dto1(BaseModel):
     def forward(self, x, classifier=True):
         self.set_mode("default")
         x = self._forward(x, "convolution_common")
-        x, y, z = torch.split(x, self.data["in_shape"][0])
-        x, y, z = self._forward(x, "convolution_x"), self._forward(y, "convolution_y"), self._forward(z, "convolution_z")
-        # print(x.shape, y.shape, z.shape)
-        # x, y, z = x.reshape(x.shape[0], x.shape[1]*x.shape[2]*x.shape[3]), y.reshape(y.shape[0], y.shape[1]*y.shape[2]*y.shape[3]), z.reshape(z.shape[0], z.shape[1]*z.shape[2]*z.shape[3])
-        # print(x.shape, y.shape, z.shape)
-        x = torch.cat((x, y, z))
+        if self.mode == "splitted":
+            x, y, z = torch.split(x, self.data["in_shape"][0])
+            x, y, z = self._forward(x, "convolution_x"), self._forward(y, "convolution_y"), self._forward(z, "convolution_z")
+            # print(x.shape, y.shape, z.shape)
+            # x, y, z = x.reshape(x.shape[0], x.shape[1]*x.shape[2]*x.shape[3]), y.reshape(y.shape[0], y.shape[1]*y.shape[2]*y.shape[3]), z.reshape(z.shape[0], z.shape[1]*z.shape[2]*z.shape[3])
+            # print(x.shape, y.shape, z.shape)
+            x = torch.cat((x, y, z))
+        else:
+            x = self._forward(x, "convolution_mixed")
+
         print(x.shape)
         x = self._forward(x, "linear")
         if classifier:
@@ -180,3 +208,9 @@ class Saprot3Dto1(BaseModel):
             c = None
         x = x.reshape(1, self.data["max_size"], self.data["max_size"], self.data["max_size"])
         return x, c
+
+    def compress(self, x):
+        print("compressing:", x.shape)
+        x = _forward("compressor")
+        print("compressed:", x.shape)
+        return x

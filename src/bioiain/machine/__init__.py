@@ -15,9 +15,10 @@ elif torch.xpu.is_available():
 log(1, "DEVICE:", DEVICE)
 
 FORCE = ("--force" in sys.argv) or ("-f" in sys.argv)
-INFERENCE = "-i" in sys.argv
-TRAIN = "-t" in sys.argv
+INFERENCE = ("--inference" in sys.argv) or ("-i" in sys.argv)
+TRAIN = ("--train" in sys.argv) or ("-t" in sys.argv)
 REBUILD = ("--rebuild" in sys.argv) or ("-r" in sys.argv)
+LABELS = ("--labels" in sys.argv) or ("-l" in sys.argv)
 
 
 def set_seed(seed=6):

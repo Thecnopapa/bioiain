@@ -36,49 +36,80 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
     fs = FoldseekDB(dataset.name, dataset, foldseek_command=foldseek_command, force=force, dry=True)
 
     embeddings_name = f"{fs.saprot_model}_3D_size_{img_size}_{dataset.name}"
+    labels_name = f"compactness_3D_size_{img_size}_{dataset.name}"
+
     embeddings = EmbeddingDataset(embeddings_name)
+    labels = EmbeddingDataset(embeddings_name)
+
     if not force:
         embeddings.load(load_temp=True)
+        labels.load(load_temp=True)
 
-    if embeddings.incomplete() or rebuild:
+    if embeddings.incomplete() or labels.incomplete() or rebuild:
         fs.run()
 
         for n, (tensor_path, entry, saprot_model) in enumerate(fs.saprot_embeddings(return_tensor=False)):
             log(1, f"N={n}")
             code, ch, model = fs.parse_name(entry["name"])
             name = f"{code}_{ch}_{model}"
+            embedding_done = False
+            label_done = False
             if name in embeddings.embeddings.keys():
-                log(1, f"Embedding ({name}) already generated")
+                if os.path.exists(embeddings.embeddings[name]["embedding_path"]):
+                    log(1, f"Embedding ({name}) already generated")
+                    embedding_done = True
+            if name in labels.embeddings.keys():
+                l_path = labels.embeddings[name]["embedding_path"]
+                if os.path.exists(l_path):
+                    log(1, f"Label ({name}) already generated")
+                    label_done = True
+
+            if (embedding_done and label_done) and not force:
                 continue
             try:
-                entity = BIEntity.from_file(dataset.get(code).get("path"), verbose=False)
+                entity = CompactStructure.from_file(dataset.get(code).get("path"), verbose=False)
+               
                 log(1, entity)
                 chain = entity.chains(ch, by_complex=True, model=model)
                 assert len(chain) == 1, f"Multiple chains detected {(code,ch,model)}: {chain}"
                 chain = chain[0]
                 log(1, chain)
-                residues = chain.residues(need_backbone=False)
-                log(1, "Loading tensor...")
-                tensor = torch.load(tensor_path)
-                #print(tensor.shape)
-                assert tensor.shape[-2] == len(residues), f"{tensor.shape[-2]} / {len(residues)}\n{entry["aa_seq"]}\n{chain.sequence()}"
-                log(1, "Generating 3D embedding...")
-                tensor3D = chain.img3D(property=None, plot=False, size=IMG_SIZE, embedding=tensor, mode="mean", residue_kwargs={"need_backbone":False})
-                log(2, tensor3D.shape)
-                embedding = SaProt3DEmbedding.from_tensor(tensor3D,name=name, img_size=IMG_SIZE, saprot_model=saprot_model).save()
-                embeddings.add(embedding)
-                embeddings.save(temp=True)
+
+                if not embedding_done:
+                    residues = chain.residues(need_backbone=False)
+                    log(1, "Loading tensor...")
+                    tensor = torch.load(tensor_path)
+                    #print(tensor.shape)
+                    assert tensor.shape[-2] == len(residues), f"{tensor.shape[-2]} / {len(residues)}\n{entry["aa_seq"]}\n{chain.sequence()}"
+                    log(1, "Generating 3D embedding...")
+                    tensor3D = chain.img3D(property=None, plot=False, size=IMG_SIZE, embedding=tensor, mode="mean", residue_kwargs={"need_backbone":False})
+                    log(2, tensor3D.shape)
+                    embedding = SaProt3DEmbedding.from_tensor(tensor3D,name=name, img_size=IMG_SIZE, saprot_model=saprot_model).save()
+                    embeddings.add(embedding)
+                    embeddings.save(temp=True)
+
+                if not label_done:
+                    log(1, "Loading compactness...")
+                    entity.compactness()
+                    log(1, "Generating 3D label...")
+                    label3D = chain.img3D(property="compactness", plot=False, size=IMG_SIZE, as_embedding=True, mode="mean", residue_kwargs={"need_backbone":False})
+                    log(2, label3D.shape)
+                    label_embedding = Compactness3DEembedding.from_tensor(label3D, name=name, img_size=IMG_SIZE).save()
+                    labels.add(label_embedding)
+                    labels.save(temp=True)
+
             except StructureLoadException as e:
                 dataset.add_to_blacklist(dataset.get(code).get("path"), e)
             except AssertionError:
                 raise
     embeddings.save(temp=False)
-    return embeddings
+    labels.save(temp=False)
+    return embeddings, labels
 
 
-embeddings = generate_3DSaprot_embeddings(dataset, img_size=IMG_SIZE, force=FORCE, rebuild=REBUILD)
+embeddings, labels = generate_3DSaprot_embeddings(dataset, img_size=IMG_SIZE, force=FORCE, rebuild=REBUILD)
 
-if REBUILD or FORCE:
+if REBUILD or FORCE or LABELS:
     log("header","Configuring oligomer labels")
     for n, k in enumerate(embeddings.embeddings.keys()):
         log(2, f"{n+1}/{len(embeddings)}", end="\r")
@@ -90,6 +121,28 @@ if REBUILD or FORCE:
     embeddings.save()
     print()
     log(1, "Oligomer labels ready")
+
+    # log("header","Configuring compactness labels")
+    # for n, k in enumerate(embeddings.embeddings.keys()):
+    #     log(2, f"{n+1}/{len(embeddings)}", end="\r")
+    #     code, ch, model = k.split("_")
+    #     entry = dataset.get(code)
+    #     entity = CompactStructure.from_file(entry["path"])
+    #     entity.compactness(with_symmetry=True)
+    #     chain = entity.chains(ch, model=model)
+    #     assert len(chain) == 1
+    #     chain = chain[0]
+    #     label = chain.img3D(property="compactness", as_embedding=True)
+    #     print(label.shape)
+    #     exit()
+    #     embeddings.add_label(k, label, "compactness_symm")
+    # embeddings.use_label("compactness_symm")
+    # embeddings.save()
+    # print()
+    # log(1, "Oligomer labels ready")
+
+
+
 
 if TRAIN:
     log("start", "TRAINING")
@@ -123,18 +176,20 @@ if TRAIN:
             out_i, out_c = model.forward(tensor)
             print("OUT:", out_i.shape, out_c.shape)
 
+            loss = model.loss(out_c, item)
+            if n % 100 == 0 or True:
+                loss_str = f"{model.running_loss['default'] / model.running_loss['total']:7.3f}"
+                print(f"loss: {colour('yellow', loss_str)} \tlast: loss={loss:7.3f} out={out_c.item():7.3f} l={item.l}",
+                      end="\r")
+            exit()
+
+            continue # PLot example output
             from src.bioiain.visualisation import voxels3d
             out3d = out_i.detach().cpu().numpy()[0]
-            print(out3d)
             count3d = (out3d != 0) & (out3d != 0) & (out3d != 0)
-            print(count3d)
-            voxels3d(out3d, count3d, show_plot=True, title=f"out: {out_c.detach().item():5.3f}")
-            exit()
-            loss = model.loss(out, item)
-            if n % 100 == 0:
-                loss_str = f"{model.running_loss['default'] / model.running_loss['total']:7.3f}"
-                print(f"loss: {colour('yellow', loss_str)} \tlast: loss={loss:7.3f} out={out.item():7.3f} l={entry.oligo}",
-                      end="\r")
+            voxels3d(out3d, count3d, show_plot=True, title=f"({item.name}) out={out_c.detach().item():5.3f} l={item.l}", shrink=True)
+
+
         print()
         model.save(temp=True)
         model.add_epoch()

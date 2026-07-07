@@ -147,7 +147,14 @@ def plot_heatmap(matrix, show=False, filename=None):
     if show:
         plt.show(block=True)
 
-def voxels3d(value_grid, count_grid, show_plot=False, title=None):
+def voxels3d(value_grid, count_grid, show_plot=False, title=None, shrink=False):
+
+    def explode_cube(data):
+        size = np.array(data.shape)*2
+        data_e = np.zeros(size - 1, dtype=data.dtype)
+        data_e[::2, ::2, ::2] = data
+        return data_e
+
     print()
     log(3, f"Plotting voxels... ({title})")
     fig, ax = fig3D()
@@ -162,15 +169,36 @@ def voxels3d(value_grid, count_grid, show_plot=False, title=None):
     cube = (count_grid > 0) & (count_grid > 0) & (count_grid > 0)
     # print(cube)
 
+
     color_vector = np.vectorize(plasma)
     colors = np.array(color_vector(norm_grid, scale=max_val, as_hex=True))
     # print(colors)
 
     log(4, "Cube:", cube.shape)
     log(4, "Colors:", colors.shape)
-    ax.voxels(cube, facecolors=colors, alpha=0.5)
+
+
+
+    if shrink:
+        filled = np.ones(cube.shape)
+        filled = explode_cube(filled)
+        colors = explode_cube(colors)
+        #ecolors_2 = explode(edgecolors)
+        x, y, z = np.indices(np.array(filled.shape) + 1).astype(float) // 2
+        x[0::2, :, :] += 0.05
+        y[:, 0::2, :] += 0.05
+        z[:, :, 0::2] += 0.05
+        x[1::2, :, :] += 0.95
+        y[:, 1::2, :] += 0.95
+        z[:, :, 1::2] += 0.95
+
+        ax.voxels(x, y, z, filled, facecolors=colors, alpha=0.5)
+
+    else:
+        ax.voxels(cube, facecolors=colors, alpha=0.5)
+
     # ax.set_box_aspect((size, size, size))
     ax.set_aspect('equal')
     if show_plot:
         show()
-    # exit()
+    return fig, ax

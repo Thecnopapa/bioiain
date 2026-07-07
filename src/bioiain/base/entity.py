@@ -1058,7 +1058,7 @@ class BIEntity(object):
         pisa = PISA(pisa_id=self.name(), **kwargs)
 
 
-    def img3D(self, size=16, property:None|dict|list|str=None, mode="mean", distortion="none", plot=False, show_plot=True, embedding=None, residue_kwargs={}):
+    def img3D(self, size=16, property:None|dict|list|str=None, mode="mean", distortion="none", plot=False, show_plot=True, embedding=None, residue_kwargs={}, as_embedding=False):
         log(2, f"Generating 3D voxels...")
         log(3, f"Size: {size}x{size}x{size} ({size**3})")
         log(3, f"Distortion: {distortion}")
@@ -1080,6 +1080,7 @@ class BIEntity(object):
             raise NotImplementedError()
 
         if embedding is not None:
+            as_embedding = True
             import torch
             #print(embedding.size())
             embedding = embedding.resize(len(residues), embedding.size()[-1])
@@ -1163,12 +1164,12 @@ class BIEntity(object):
                 #print(coord)
                 count_grid[coord[0], coord[1], coord[2]] = count_grid[coord[0], coord[1], coord[2]] +1
                 if pp != "count":
-                    if prop.get("is_tensor"):
+                    if prop.get("is_tensor", False):
                         emb_n = prop.get("n")
                         p = float(embedding[nn, emb_n].item())
                         #print(nn, emb_n, p)
                     else:
-                        if pp == "b":
+                        if pp.lower() in ["b", "b_factor", "bfactor"]:
                             p = res.bfactor()
                         else:
                             p = res.get_misc(pp, 0.)
@@ -1195,11 +1196,16 @@ class BIEntity(object):
                 #print(value_grid[6][6])
                 value_grid = np.divide(value_grid, count_grid, where=count_grid > 0)
 
-            t = torch.tensor(value_grid)
-            t = t.reshape(-1, *t.shape)
-            #log(3,"Out:", t.shape)
 
-            if output is None:
+            if as_embedding:
+                import torch
+                t = torch.tensor(value_grid)
+                t = t.reshape(-1, *t.shape)
+                #log(3,"Out:", t.shape)
+            else:
+                t = value_grid
+
+            if output is None or not as_embedding:
                 output = t
             else:
                 output = torch.cat((output, t))

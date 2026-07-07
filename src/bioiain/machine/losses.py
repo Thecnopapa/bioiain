@@ -213,3 +213,12 @@ class CustomHalfHalf(CustomLoss):
         loss *= self.weight[pred]
         return loss
 
+
+
+
+
+
+
+
+def loss3D(object):
+    pass
