@@ -267,51 +267,59 @@ class EmbeddingDataset(object):
         return self.data["label_to_index"]
 
 
-    def add(self, embedding, key:str|int|None=None, label_path=None, fasta=True, use_indexes=False):
+    def add(self, embedding, key:str|int|None=None, label_path=None, fasta=True, use_indexes=False, replace=False):
 
         while self._lock:
             print("Awaiting for lock")
             time.sleep(1)
         self._lock = True
+        try:
+            if use_indexes:
+                key = len(self.embeddings)
+            else:
+                if key is None:
+                    key = embedding.name
+            log(1, "Adding to dataset:", key, embedding)
 
-        if use_indexes:
-            key = len(self.embeddings)
-        else:
-            if key is None:
-                key = embedding.name
-        log(1, "Adding to dataset:", key, embedding)
-        assert key not in self.embeddings.keys(), f"Key ({key}) already in dataset"
+            if key in self.embeddings.keys():
+                log("warning", f"Key ({key}) already in dataset")
+                if not replace:
+                    self._lock = False
+                    raise AlreadyInDataset(f"{key}, {self}")
 
-        #print(embedding.path())
-        self.embeddings[key] = {
-            "key": key,
-            "name": embedding.name,
-            "n": len(self.embeddings),
-            "start": len(self),
-            "end": len(self)+len(embedding),
-            "embedding_path": relative_path(embedding.path()),
-            "embedding_data": relative_path(embedding.json()),
-            "label_path": relative_path(label_path),
-            "length": len(embedding),
-            "iter_dim": getattr(embedding, "iter_dim", 0),
-            "deleted": False,
-            "sequence":getattr(embedding, "sequence", None),
-            "chains":getattr(embedding, "chains", "*"),
-            "entity_path": getattr(embedding, "entity_path", None),
-        }
+            #print(embedding.path())
+            self.embeddings[key] = {
+                "key": key,
+                "name": embedding.name,
+                "n": len(self.embeddings),
+                "start": len(self),
+                "end": len(self)+len(embedding),
+                "embedding_path": relative_path(embedding.path()),
+                "embedding_data": relative_path(embedding.json()),
+                "label_path": relative_path(label_path),
+                "length": len(embedding),
+                "iter_dim": getattr(embedding, "iter_dim", 0),
+                "deleted": False,
+                "sequence":getattr(embedding, "sequence", None),
+                "chains":getattr(embedding, "chains", "*"),
+                "entity_path": getattr(embedding, "entity_path", None),
+            }
 
-        self.data["length"] += len(embedding)
-        if fasta and hasattr(embedding, "sequence"):
-            if embedding.sequence is not None:
-                self._add_to_fasta(key, embedding.sequence)
-        if self.data["param_names"] is None:
-            self.data["param_names"] = getattr(embedding, "param_names", None)
-        if self.data["residue_embedding_class"] is None:
-            self.data["residue_embedding_class"] = getattr(embedding, "residue_embedding_name", None)
-        if self.data["embedding_class"] is None:
-            self.data["embedding_class"] = embedding.__class__.__name__
+            self.data["length"] += len(embedding)
+            if fasta and hasattr(embedding, "sequence"):
+                if embedding.sequence is not None:
+                    self._add_to_fasta(key, embedding.sequence)
+            if self.data["param_names"] is None:
+                self.data["param_names"] = getattr(embedding, "param_names", None)
+            if self.data["residue_embedding_class"] is None:
+                self.data["residue_embedding_class"] = getattr(embedding, "residue_embedding_name", None)
+            if self.data["embedding_class"] is None:
+                self.data["embedding_class"] = embedding.__class__.__name__
 
-        self.data["mapped"] = False
+            self.data["mapped"] = False
+        except:
+            self._lock = False
+            raise
         self._lock = False
         return key
 

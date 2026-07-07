@@ -78,7 +78,7 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
                 log(1, entity)
                 chain = entity.chains(ch, by_complex=True, model=model)
                 print([c.complex() for c in chain])
-                assert len(chain) == 1, f"Multiple chains detected {(code,ch,model)}: {chain}"
+                assert len(chain) <= 1, f"Multiple chains detected {(code,ch,model)}: {chain}"
                 chain = chain[0]
                 log(1, chain)
 

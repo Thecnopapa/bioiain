@@ -36,6 +36,9 @@ class DeletedIndex(Exception):
 class EmbeddingDatasetNotFound(FileNotFoundError):
     pass
 
+class AlreadyInDataset(Exception):
+    pass
+
 
 
 # MMCIF related
