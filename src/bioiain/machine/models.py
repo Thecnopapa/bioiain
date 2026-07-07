@@ -208,7 +208,7 @@ class BaseModel(nn.Module):
         if self.dry or self.inference:
             self.writer = SummaryWriter(log_dir=os.path.join(TEMP_FOLDER, "trash"))
         else:
-            self.writer = SummaryWriter(log_dir=f"runs/{self.__class__.__name__}/{str(self)}_{datetime.datetime.now().strftime('%m-%d_%H-%M-%S')}")
+            self.writer = SummaryWriter(log_dir=f"runs/{self.__class__.__name__}/{self.name()}_{datetime.datetime.now().strftime('%m-%d_%H-%M-%S')}")
 
 
     def reset_loss(self):
