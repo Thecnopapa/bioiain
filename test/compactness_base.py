@@ -24,7 +24,9 @@ from src.bioiain.utilities.sequences import FASTA
 
 
 class FoldseekDB(object):
-    def __init__(self,name, list_dir_or_dataset, folder=None, foldseek_command="foldseek", force=False, verbose=2, saprot_model="SaProt_650M_PDB", dry=False):
+    def __init__(self,name, list_dir_or_dataset, folder=None, foldseek_command=None, force=False, verbose=2, saprot_model="SaProt_650M_PDB", dry=False):
+        if foldseek_command is None:
+            foldseek_command = os.environ.get("FOLDSEEK_PATH", "foldseek")
         self.foldseek_command = foldseek_command
         self.saprot_model=saprot_model
 

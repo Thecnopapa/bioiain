@@ -28,14 +28,14 @@ log(1, f"IMG_SIZE={IMG_SIZE}")
 
 print(dataset)
 
+MODEL_CLASS = Saprot3Dto1
+
 
 def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, force=False, rebuild=False, force_labels=False, force_embeddings=False):
     from src.bioiain.machine.datasets import EmbeddingDataset
     if force:
         rebuild = True
 
-    if foldseek_command is None:
-        foldseek_command = os.environ.get("FOLDSEEK_PATH", "foldseek")
     fs = FoldseekDB(dataset.name, dataset, foldseek_command=foldseek_command, force=force, dry=True)
 
     embeddings_name = f"{fs.saprot_model}_3D_size_{img_size}_{dataset.name}"
@@ -140,13 +140,13 @@ if REBUILD or FORCE or LABELS:
     log(1, "Oligomer labels ready")
 
 
+IN_SHAPE = embeddings.get(0).t.shape
 
 if TRAIN:
     log("start", "TRAINING")
-    in_shape = embeddings.get(0).t.shape
-    log(1, "in_shape:", in_shape)
+    log(1, "in_shape:", IN_SHAPE)
 
-    model = Saprot3Dto1(name=dataset.name, in_shape=in_shape)
+    model = MODEL_CLASS(name=dataset.name, in_shape=IN_SHAPE)
     print(model)
     model.mount()
     print(repr(model))
@@ -207,4 +207,135 @@ if TRAIN:
 
 
 if INFERENCE:
-    pass
+    log("start", "INFERENCE")
+
+    with torch.no_grad():
+        try:
+            filepath = sys.argv[sys.argv.index("--file") + 1]
+            log(1, f"File path: {filepath}")
+        except:
+            raise
+
+
+        try:
+            model_path = sys.argv[sys.argv.index("--model") + 1]
+        except:
+            try:
+                model_path = sys.argv[sys.argv.index("--md") + 1]
+            except:
+                model_path = None
+        log(1, f"Model path: {model_path}")
+
+        model = MODEL_CLASS(name=dataset.name, in_shape=IN_SHAPE, inference=True)
+        log(1, f"Model:", model)
+        model.load(model_path)
+
+
+        log(1, "Loading entity...")
+        entity = CompactStructure.from_file(filepath, export_folder="inference")
+        entity.compactness(with_symmetry=True)
+
+        entity.export()
+        log(2, "Entity loaded:", entity)
+
+        inference_name = f"inference_{MODEL_CLASS.__name__}_{datetime.datetime.now().strftime('_%y-%m-%d_%H-%M-%S')}"
+        inference_folder = os.path.join(entity.folder(), "inference", inference_name)
+        os.makedirs(inference_folder, exist_ok=False)
+
+
+
+        fs = FoldseekDB("db_"+entity.code(), [entity.path(source=True)], folder=entity.folder())
+        print(fs)
+
+        for n, (tensor_path, entry, saprot_model) in enumerate(fs.saprot_embeddings(return_tensor=False)):
+            code, ch, m = fs.parse_name(entry["name"])
+            name = f"{code}_{ch}_{m}"
+
+            try:
+                log(1, entity)
+                chain = entity.chains(ch, by_complex=True, model=m)
+                print([c.complex() for c in chain])
+                assert len(chain) <= 1, f"Multiple chains detected {(code,ch,model)}: {chain}"
+                chain = chain[0]
+                log(1, chain)
+
+                residues = chain.residues(need_backbone=False)
+                log(1, "Loading tensor...")
+                try:
+                    tensor = torch.load(tensor_path)
+                except Exception as e:
+                    os.remove(tensor_path)
+                    log("Error", "Error reading tensor:", tensor_path, e)
+                    continue
+                #print(tensor.shape)
+                assert tensor.shape[-2] == len(residues), f"{tensor.shape[-2]} / {len(residues)}"
+                log(1, "Generating 3D embedding...")
+                tensor3D = chain.img3D(property=None, plot=False, size=IMG_SIZE, embedding=tensor, mode="mean", residue_kwargs={"need_backbone":False})
+                log(2, tensor3D.shape)
+
+
+                log(1, "Loading compactness...")
+                entity.compactness()
+                log(1, "Generating 3D label...")
+                label3D = chain.img3D(property="compactness", plot=False, size=IMG_SIZE, as_embedding=True, mode="mean", residue_kwargs={"need_backbone":False})
+                log(2, label3D.shape)
+
+            except:
+                raise
+
+            in_tensor = tensor3D.to(DEVICE)
+            print("IN_TENSOR", in_tensor.shape)
+            real_label = label3D.to(DEVICE)
+            print("REAL_LABEL", real_label.shape)
+            compressed_label = model.compress(real_label)
+            print("COMPRESSED_LABEL", compressed_label.shape)
+
+            out_i, out_c = model(in_tensor)
+            print("OUT", out_i.shape)
+
+            import matplotlib.pyplot as plt
+            from src.bioiain.visualisation import voxels3d, show
+            fig = plt.figure()
+            n_figs = 5
+
+            label_ax = fig.add_subplot(1, n_figs, 1, projection="3d")
+            real_label = real_label.detach().cpu().numpy()[0]
+            label_count = (real_label > 0.1) & (real_label > 0.1) & (real_label > 0.1)
+            label_count = label_count.astype(np.int64)
+            #print(label_count)
+            voxels3d(real_label, count_grid=label_count, ax = label_ax, shrink = True, title="Real label")
+
+            compressed_ax = fig.add_subplot(1, n_figs, 2, projection="3d")
+            compressed_label = compressed_label.detach().cpu().numpy()[0]
+            voxels3d(compressed_label, ax = compressed_ax, shrink = True, title="Compressed")
+
+
+            out_ax = fig.add_subplot(1, n_figs, 3, projection="3d")
+            out_i = out_i.detach().cpu().numpy()[0]
+            print(out_i)
+            voxels3d(out_i, ax = out_ax, shrink = True, title="Out")
+
+            scaled_ax = fig.add_subplot(1, n_figs, 4, projection="3d")
+
+            max_val = compressed_label.reshape(compressed_label.shape[-1] ** 3).max()
+            min_val = compressed_label.reshape(compressed_label.shape[-1] ** 3).min()
+
+            max_out = out_i.reshape(out_i.shape[-1] ** 3).max()
+            min_out = out_i.reshape(out_i.shape[-1] ** 3).min()
+
+            out_range = abs(max_out - min_out)
+            val_range = abs(max_val - min_val)
+            
+            scaled_out = np.absolute((out_i + min_out) / out_range * val_range)
+            
+            voxels3d(scaled_out, ax = scaled_ax, shrink = True, title="Scaled")
+
+
+            diff_ax = fig.add_subplot(1, n_figs, 5, projection="3d")
+            diff = np.absolute(scaled_out- compressed_label)
+            voxels3d(diff, ax = diff_ax, shrink = True, title="Diff")
+
+            show()
+            exit()
+
+

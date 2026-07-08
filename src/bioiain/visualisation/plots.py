@@ -12,7 +12,13 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
 
-
+try:
+    mpl.use('QtAgg')
+except:
+    try:
+        mpl.use('TkAgg')
+    except:
+        mpl.use('Agg')
 
 mpl_colours = ('blue', 'orange', 'green', 'red', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan')
 pymol_colours = ('green', 'cyan', 'red', 'yellow', 'violet','blue',
@@ -28,6 +34,22 @@ def plasma(value, scale=256, as_hex=False, as_pymol_hex=False, alpha:float|None=
     value = round((float(value) / float(scale)) * 256)
     #print(value)
     col = cm(value)
+    col = process_rgba(col, alpha=alpha, as_hex=as_hex, as_pymol_hex=as_pymol_hex)
+    return col
+
+
+def traffic(value, scale=256, as_hex=False, as_pymol_hex=False, alpha:float|None=None):
+    cm = mpl.colormaps["RdYlGn"]
+    if scale <= 0:
+        scale = 1
+    #print(value, scale)
+    value = round((float(value) / float(scale)) * 256)
+    #print(value)
+    col = cm(value)
+    col = process_rgba(col, alpha=alpha, as_hex=as_hex, as_pymol_hex=as_pymol_hex)
+    return col
+
+def process_rgba(col, alpha=None, as_hex=False, as_pymol_hex=False):
     if alpha is not None:
         col = list(col)
         col[3] = alpha
@@ -36,17 +58,9 @@ def plasma(value, scale=256, as_hex=False, as_pymol_hex=False, alpha:float|None=
         col = rgb2hex(col)
     if as_pymol_hex:
         col = col.replace("#", "0x")
-    #print(col)
     return col
 
 
-try:
-    mpl.use('QtAgg')
-except:
-    try:
-        mpl.use('TkAgg')
-    except:
-        mpl.use('Agg')
 
 
 
@@ -205,7 +219,7 @@ def mpl3D_to_gif(
     log(4,"Saving to:", path)
     return path
 
-def voxels3d(value_grid, count_grid, show_plot=False, title=None, shrink=False, gif_path=None):
+def voxels3d(value_grid, count_grid=None, show_plot=False, title=None, shrink=False, gif_path=None, ax=None):
 
     def explode_cube(data):
         size = np.array(data.shape)*2
@@ -215,15 +229,31 @@ def voxels3d(value_grid, count_grid, show_plot=False, title=None, shrink=False, 
 
     print()
     log(3, f"Plotting voxels... ({title})")
-    fig, ax = fig3D()
-    ax.set_title(title)
+
+    value_grid = np.copy(value_grid)
+
+    if ax is None:
+        fig, ax = fig3D()
+    else:
+        fig = None
     np.set_printoptions(threshold=sys.maxsize)
     # print(value_grid)
     max_val = abs(value_grid.reshape(value_grid.shape[-1] ** 3).max() - value_grid.reshape(value_grid.shape[-1] ** 3).min())
     norm_grid = value_grid - value_grid.reshape(value_grid.shape[-1] ** 3).min()
 
     log(4, "Scale:", max_val)
+    if title is None:
+        title = "voxels"
+    ax.set_title(f"{title} s={max_val:.2f}")
+
     # cube = np.indices([size, size, size])
+
+    if count_grid is None:
+        log(4, "Plotting entire cube (no count_grid)")
+        count_grid = value_grid.reshape(value_grid.shape)
+        count_grid.fill(1)
+    else:
+        count_grid = np.copy(count_grid)
     cube = (count_grid > 0) & (count_grid > 0) & (count_grid > 0)
     # print(cube)
 
@@ -238,8 +268,8 @@ def voxels3d(value_grid, count_grid, show_plot=False, title=None, shrink=False, 
 
 
     if shrink:
-        filled = np.ones(cube.shape)
-        filled = explode_cube(filled)
+        #filled = np.ones(cube.shape)
+        filled = explode_cube(cube)
         colors = explode_cube(colors)
         #ecolors_2 = explode(edgecolors)
         x, y, z = np.indices(np.array(filled.shape) + 1).astype(float) // 2
@@ -258,9 +288,12 @@ def voxels3d(value_grid, count_grid, show_plot=False, title=None, shrink=False, 
     # ax.set_box_aspect((size, size, size))
     ax.set_aspect('equal')
 
-    if gif_path is not None:
-        mpl3D_to_gif(fig, ax, save_path=gif_path)
+    if fig is not None:
+        if gif_path is not None:
+            mpl3D_to_gif(fig, ax, save_path=gif_path)
 
-    if show_plot:
-        show()
-    return fig, ax
+        if show_plot:
+            show()
+        return fig, ax
+    else:
+        return ax
