@@ -44,8 +44,8 @@ If you were to use this and find any issue I'll be happy to fix it :D
 
 Module wiki can be found at [wiki.bioiain.com](https://wiki.bioiain.com) .
 
-Relevant python code can be found in the `src` folder within their relevant folders.
-The `test` is for development use, and it's contents will be **probably** deleted/modified at some point, and are not included in the package.
+Relevant python code can be found in the `src` folder within their respective folders.
+The `test` folder is for active development, and it's contents are **constantly** deleted/modified, and are not included in the package.
 
 > [!NOTE]
 > Preset workflows are being developed, including the [projectDimer](https://gitHub.com/thecnopapa/projectdimer) workflow. (WIP)
@@ -53,11 +53,13 @@ The `test` is for development use, and it's contents will be **probably** delete
 
 **Protein Framework**
 
-Originally based on Biopython's hierarchy, but no longer dependant on it. Classes for structures and chains are included for manipulation and analysis of protein models. Designed to be expandable, custom classes are encouraged to match each purpose.
+Originally based on Biopython's hierarchy, but no longer dependant on it. Classes for structures, chains, residues, and atoms are included for manipulation and analysis of protein models. 
  
-Unlike Biopython, residues and atoms do not share the base entity framework as they behave in significantly different ways. Also respective classes for nucleotides, ligands and water are included.
+Unlike Biopython, residues and atoms do not share the base entity framework as they behave in significantly different ways. Also respective classes for nucleotides, ligands and water are included and under development.
 
-Includes general-purpose tools and pipelines for importing, processing,saving, and exporting structures in mmCIF format (but PDB is still slightly supported)
+Bioiain is designed to be expandable, and custom classes are encouraged to match your purpose. Two custom classes (`FragmentedStructure` and `Fragment`) are included within the `aleph` module to deal with protein fragments.
+
+Includes general-purpose tools and pipelines for importing, processing, saving, and exporting structures in mmCIF format (but PDB exports are slightly supported)
 
 > [!IMPORTANT]
 > PDB Parsing is not supported yet, so the input so far must be mmCIF
@@ -68,18 +70,34 @@ Includes general-purpose tools and pipelines for importing, processing,saving, a
 
 **Symmetries**
 
-This framework is designed to work with all the information available in crystallographic structures, therefore symmetry is considered when available.
+This framework is designed to work with all the information available in crystallographic structures, therefore symmetry is considered by default when available.
 
 
 **Machine Learning**
 
-Still at a very early stage, Bioiain includes a PyTorch-based ML framework to simplify the development and training of ML models, focused on structural data.
+Still at a very early stage, Bioiain includes a PyTorch-based ML framework to simplify the development and training of ML models using on structural data.
 
-This includes a base model with all the utilities commonly used during train/test/eval/inference of models.
+It is intended for the development of new model architectures, embeddings, protein languages, classification, and other ML based approaches to structural biology.
 
-Also a dataset/embedding framework is also set up with integrations with the Protein Framework.
+> [!NOTE]
+> It will probably not outperform any other library, but you won't have to worry about file organisation, logging, or blowing your RAM by loading all your data into memeory.
 
-This includes integrated logging using Tensorboard.
+This includes a `BaseModel` class with all the utilities commonly used during train/test/eval/inference of models. This allows setting up a model with custom layers and/or sub-models without dealing with losses, batching, logging, saving, loading, or exporting.
+
+> [!NOTE]
+> This is designed with medium complexity models in mind, such as Variational Auto-Encoders, therefore might be over-complicated for a simple classifier, and I have not tried to set up a transformer, but could be complicated.
+
+This framework works best with the provided `EmbeddingDataset` class, which doubles as a dataset and dataloader. And can be easily set  up wilenusing (or not) the provided Protein Framework.
+
+The framework relies on the provided `Embedding` class and subclasses. Which allow the generation and integration of custom-made embeddings, at protein or residue level.
+
+This includes (local) integrated logging using Tensorboard.
+
+>[!NOTE]
+> WIP: Still on the first iteration, will be reworked at some point.
+
+> [!IMPORTANT]
+> Integration with external datasets is still not dealt with and will likely require some processing.
 
 
 **ALEPH**
@@ -98,12 +116,13 @@ Utility functions to use and parse some external tools are included. For now thi
 
 Additionally, a large set of utilities is included, from logging, to common mathematical operations.
 
+The `utilities.files.StructureDataset` facilitates working with large numbers of protein structures, and can fetch your structures of interest straight from the PDB.
 
 **Visualization**
 
 For structural visualisation, a custom PyMol scripting framework is included, replacing heavy sessions with generative commands.
 
-Some common matplotlib utilities are also included.
+Some common matplotlib utilities are also included. Including 3D visualisation of structures.
 
 **Databases**
 
