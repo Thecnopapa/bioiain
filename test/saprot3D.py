@@ -173,13 +173,14 @@ if TRAIN:
 
 
             #print("\nIN:", tensor.shape, tensor.dtype)
-            out_i, out_c = model.forward(tensor)
+            out_i = model.forward(tensor)
             #print("OUT:", out_i.shape, out_c.shape)
             #print("LABEL:", label.shape, label.dtype)
             label = model.compress(label)
             #print("COMPRESSED LABEL:", label.shape)
-            #print(out_i is None, label is None, out_c is None, label_oligo is None)
+
             if label_oligo is not None:
+                out_c = model.classify(out_i, reference=label)
                 loss = model.raw_loss(out_i, label, out_c, label_oligo)
             else:
                 loss = model.loss(out_i, label)
@@ -285,48 +286,48 @@ if INFERENCE:
 
             in_tensor = tensor3D.to(DEVICE)
             print("IN_TENSOR", in_tensor.shape)
-            real_label = label3D.to(DEVICE)
-            print("REAL_LABEL", real_label.shape)
-            compressed_label = model.compress(real_label)
-            print("COMPRESSED_LABEL", compressed_label.shape)
+            real_label_x = label3D.to(DEVICE)
+            print("REAL_LABEL", real_label_x.shape)
+            compressed_label_x = model.compress(real_label_x)
+            print("COMPRESSED_LABEL", compressed_label_x.shape)
 
-            out_i, out_c = model(in_tensor)
-            print("OUT", out_i.shape)
+            out_x = model(in_tensor)
+            print("OUT", out_x.shape)
 
             import matplotlib.pyplot as plt
             from src.bioiain.visualisation import voxels3d, show
             fig = plt.figure()
-            n_figs = 5
+            n_figs = 6
 
             label_ax = fig.add_subplot(1, n_figs, 1, projection="3d")
-            real_label = real_label.detach().cpu().numpy()[0]
+            real_label = real_label_x.detach().cpu().numpy()[0]
             label_count = (real_label > 0.1) & (real_label > 0.1) & (real_label > 0.1)
             label_count = label_count.astype(np.int64)
             #print(label_count)
             voxels3d(real_label, count_grid=label_count, ax = label_ax, shrink = True, title="Real label")
 
             compressed_ax = fig.add_subplot(1, n_figs, 2, projection="3d")
-            compressed_label = compressed_label.detach().cpu().numpy()[0]
+            compressed_label = compressed_label_x.detach().cpu().numpy()[0]
             voxels3d(compressed_label, ax = compressed_ax, shrink = True, title="Compressed")
 
 
             out_ax = fig.add_subplot(1, n_figs, 3, projection="3d")
-            out_i = out_i.detach().cpu().numpy()[0]
-            print(out_i)
-            voxels3d(out_i, ax = out_ax, shrink = True, title="Out")
+            out = out_x.detach().cpu().numpy()[0]
+            print(out)
+            voxels3d(out, ax = out_ax, shrink = True, title="Out")
 
             scaled_ax = fig.add_subplot(1, n_figs, 4, projection="3d")
 
             max_val = compressed_label.reshape(compressed_label.shape[-1] ** 3).max()
             min_val = compressed_label.reshape(compressed_label.shape[-1] ** 3).min()
 
-            max_out = out_i.reshape(out_i.shape[-1] ** 3).max()
-            min_out = out_i.reshape(out_i.shape[-1] ** 3).min()
+            max_out = out.reshape(out.shape[-1] ** 3).max()
+            min_out = out.reshape(out.shape[-1] ** 3).min()
 
             out_range = abs(max_out - min_out)
             val_range = abs(max_val - min_val)
             
-            scaled_out = np.absolute((out_i + min_out) / out_range * val_range)
+            scaled_out = np.absolute((out + min_out) / out_range * val_range)
             
             voxels3d(scaled_out, ax = scaled_ax, shrink = True, title="Scaled")
 
@@ -334,6 +335,13 @@ if INFERENCE:
             diff_ax = fig.add_subplot(1, n_figs, 5, projection="3d")
             diff = np.absolute(scaled_out- compressed_label)
             voxels3d(diff, ax = diff_ax, shrink = True, title="Diff")
+
+            model_diff_ax = fig.add_subplot(1, n_figs, 6, projection="3d")
+            pred, model_diff = model.classify(out_x, reference=compressed_label_x, return_diff=True)
+            pred = pred.detach().cpu().numpy().item()
+            model_diff = model_diff.detach().cpu().numpy()[0]
+            voxels3d(model_diff, ax = model_diff_ax, shrink = True, title=f"Model diff ({pred:.2f})")
+
 
             show()
             exit()

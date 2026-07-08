@@ -153,7 +153,7 @@ class Saprot3Dto1(BaseModel):
 
         self.criterions["default"] = ImgAndClassifierLoss()
 
-    def forward(self, x, classifier=True):
+    def forward(self, x, classify=False, reference=None):
         self.set_mode("default")
         x = self._forward(x, "convolution_common")
 
@@ -162,13 +162,14 @@ class Saprot3Dto1(BaseModel):
 
         #print(x.shape)
         x = self._forward(x, "linear")
-        if classifier:
-            c = self._forward(x, "classifier")
-            c = c.reshape(1)
+        if classify:
+            c = self.classify(x, reference=reference)
         else:
             c = None
         x = x.reshape(1, self.data["latent_size"], self.data["latent_size"], self.data["latent_size"])
-        return x, c
+        if classify:
+            return x, c
+        return x
 
     def compress(self, x):
         with torch.no_grad():
@@ -177,3 +178,20 @@ class Saprot3Dto1(BaseModel):
             x = self._forward(x, "last_pool")
             #print("compressed:", x.shape)
             return x
+
+    def classify(self, x, reference=None, return_diff=False):
+        if reference is not None:
+            x = x.reshape(1, self.data["latent_size"]**3)
+            r = reference.to(x.dtype).reshape(1, self.data["latent_size"]**3).to(DEVICE)
+            x = torch.nn.functional.normalize(x)
+            r = torch.nn.functional.normalize(r)
+            d = torch.sub(r, x)
+        else:
+            d = x
+
+        c = self._forward(d, "classifier")
+        c = c.reshape(1)
+        if return_diff:
+            d = d.reshape(1, self.data["latent_size"], self.data["latent_size"], self.data["latent_size"])
+            return c, d
+        return c
