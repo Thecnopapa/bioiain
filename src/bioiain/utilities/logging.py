@@ -1,8 +1,6 @@
 
 import os, sys, shutil, time, datetime, requests
 
-from bioiain.utilities import tracemalloc_start
-
 from .. import SUBDIR_NAME, TEMP_FOLDER, WD, FD
 
 class Log(object):

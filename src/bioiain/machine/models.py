@@ -298,7 +298,7 @@ class BaseModel(nn.Module):
 
 
     def name(self):
-        return get_fname(self)
+        return self.get_fname(self)
 
     def get_fname(self, add_epoch=False) -> str:
         if add_epoch and self.data["epoch"] is not None:

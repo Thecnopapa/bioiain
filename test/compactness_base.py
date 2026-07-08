@@ -242,7 +242,8 @@ class FoldseekDB(object):
 
         log(2, "Generating SaProt Embeddings...")
         if saprot_model is None:
-            saprot_model = f"westlake-repl/{self.saprot_model}"
+            saprot_model = self.saprot_model
+            saprot_path = f"westlake-repl/{self.saprot_model}"
 
         from transformers import EsmTokenizer, EsmForMaskedLM
         import torch
@@ -251,22 +252,20 @@ class FoldseekDB(object):
         def load_saprot(saprot_model):
             pass
 
-        tokenizer_name = saprot_model
-        model_name = saprot_model
 
 
-        tokenizer_path = os.path.join(SUBDIR_NAME, "hf", "saprot", f"tok_{tokenizer_name}")
+        tokenizer_path = os.path.join(SUBDIR_NAME, "hf", "SaProt", f"tok_{saprot_model}")
         if not os.path.exists(tokenizer_path):
-            log(3, "Downloading tokeniser:", tokenizer_name)
-            tokenizer = EsmTokenizer.from_pretrained(tokenizer_name)
+            log(3, "Downloading tokeniser:", saprot_path)
+            tokenizer = EsmTokenizer.from_pretrained(saprot_path)
             os.makedirs(os.path.dirname(tokenizer_path), exist_ok=True)
             tokenizer.save_pretrained(tokenizer_path)
         tokenizer = EsmTokenizer.from_pretrained(tokenizer_path)
 
-        model_path = os.path.join(SUBDIR_NAME, "hf", "saprot", f"mod_{model_name}")
+        model_path = os.path.join(SUBDIR_NAME, "hf", "SaProt", f"mod_{saprot_model}")
         if not os.path.exists(model_path):
-            log(3, "Downloading model:", model_name)
-            model = EsmForMaskedLM.from_pretrained(model_name)
+            log(3, "Downloading model:", saprot_path)
+            model = EsmForMaskedLM.from_pretrained(saprot_path)
             os.makedirs(os.path.dirname(model_path), exist_ok=True)
             model.save_pretrained(model_path)
         model = EsmForMaskedLM.from_pretrained(model_path)
@@ -280,7 +279,7 @@ class FoldseekDB(object):
             if save_folder is None:
                 save_folder = os.path.join(SUBDIR_NAME, "embeddings")
             #print(save_folder, "saprot", saprot_model)
-            save_path = os.path.join(save_folder, "saprot", saprot_model)
+            save_path = os.path.join(save_folder, "SaProtRaw", saprot_model)
             os.makedirs(save_path, exist_ok=True)
             save_path = os.path.join(save_path, entry["name"].split(" ")[0]+".pt")
             if (not force) and os.path.exists(save_path):

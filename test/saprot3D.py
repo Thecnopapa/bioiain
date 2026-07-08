@@ -20,10 +20,11 @@ from data import dataset
 set_seed()
 
 
-tracemalloc_start()
-
 
 IMG_SIZE = 16
+if "--size" in sys.argv:
+    IMG_SIZE = int(sys.argv[sys.argv.index("--size") + 1])
+log(1, f"IMG_SIZE={IMG_SIZE}")
 
 print(dataset)
 
@@ -53,8 +54,7 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
         fs.run()
 
         for n, (tensor_path, entry, saprot_model) in enumerate(fs.saprot_embeddings(return_tensor=False)):
-            if "--trace" in sys.argv:
-                tracemalloc_top()
+            tracemalloc_top()
             log(1, f"N={n}")
             code, ch, model = fs.parse_name(entry["name"])
             name = f"{code}_{ch}_{model}"
@@ -190,12 +190,12 @@ if TRAIN:
                 print(f"loss: {colour('yellow', loss_str)} \tlast --> loss={loss:7.3f} out={out_c.item():7.3f} l={item.l}",
                       end="\r")
 
-            continue # Remove to plot example output
-            from src.bioiain.visualisation import voxels3d
-            out3d = out_i.detach().cpu().numpy()[0]
-            count3d = (out3d != 0) & (out3d != 0) & (out3d != 0)
-            voxels3d(out3d, count3d, show_plot=True, title=f"({item.name}) out={out_c.detach().item():5.3f} l={item.l}", shrink=True)
-
+            if "--preview" in sys.argv:
+                from src.bioiain.visualisation import voxels3d
+                out3d = out_i.detach().cpu().numpy()[0]
+                count3d = (out3d != 0) & (out3d != 0) & (out3d != 0)
+                voxels3d(out3d, count3d, show_plot=True, title=f"({item.name}) out={out_c.detach().item():5.3f} l={item.l}", shrink=True)
+                exit()
 
         print()
         model.save(temp=True)

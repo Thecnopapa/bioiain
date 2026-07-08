@@ -70,87 +70,48 @@ class Saprot3Dto1(BaseModel):
         super().__init__(*args, **kwargs)
         in_channels = self.data["in_shape"][0]
         img_size = self.data["img_size"] = self.data["in_shape"][-1]
-        hc = [in_channels*3, in_channels*2]
-        self.data["hidden_channels"] = hc
-        self.data["size_reduction"] =  [(4 + 2), (2 + 2)]
-        triplet_size:int = img_size - self.data["size_reduction"][0]
+        hc = self.data["hidden_channels"] = [in_channels*3, in_channels*2]
+        latent_size = self.data["latent_size"] = 4
+        conv_kernels = [4, 2]
+
+        self.data["size_reduction"] =  [k-1 for k in conv_kernels]
+        #triplet_size:int = img_size - self.data["size_reduction"][0]
         max_size = self.data["max_size"] = img_size - sum(self.data["size_reduction"])
+        assert max_size >= latent_size, f"Input image is too small for this model by {latent_size - max_size}"
+
+        first_kernel = None
+        last_kernel = max(1, (max_size - latent_size) +1)
+        pool_kernels = self.data["pool_kernels"] = [first_kernel, last_kernel]
 
 
         log(2, "In shape", self.data["in_shape"])
         log(2, "In channels", in_channels)
         log(2, "Hidden channels", hc)
         log(2, "Max size", humanise(max_size))
+        log(2, "Pool kernels", pool_kernels)
 
 
         self.layers["convolution_common"] = {
             "conv3dMixed": nn.Conv3d(
                 in_channels= in_channels,
                 out_channels= hc[0],
-                kernel_size=4,
+                kernel_size=conv_kernels[0],
                 stride=1,
             ),
             "conv_reluMixed": nn.ReLU(),
-            "pool3dC": nn.MaxPool3d(
-                kernel_size=4,
-                stride=1,
-            ),
         }
         self.layers["convolution_mixed"] = {
             "conv3dM": nn.Conv3d(
                 in_channels=hc[0],
                 out_channels=hc[0]*2,
-                kernel_size=2,
+                kernel_size=conv_kernels[1],
                 stride=1,
             ),
             "conv_reluM": nn.ReLU(),
-            "pool3dM": nn.MaxPool3d(
-                kernel_size=4,
-                stride=1,
-            ),
         }
-        self.layers["convolution_x"] = {
-            "conv3dX": nn.Conv3d(
-                in_channels=in_channels,
-                out_channels=hc[1],
-                #kernel_size=[2, 2, triplet_size],
-                kernel_size=2,
-                stride=1,
-            ),
-            "conv_reluX": nn.ReLU(),
-            "pool3dX": nn.MaxPool3d(
-                #kernel_size=[4, 4, 1],
-                kernel_size=4,
-                stride=1,
-            ),
-        }
-        self.layers["convolution_y"] = {
-            "conv3dY": nn.Conv3d(
-                in_channels=in_channels,
-                out_channels=hc[1],
-                #kernel_size=[2, triplet_size, 2],
-                kernel_size=2,
-                stride=1,
-            ),
-            "conv_reluY": nn.ReLU(),
-            "pool3dY": nn.MaxPool3d(
-                #kernel_size=[4, 1, 4],
-                kernel_size=4,
-                stride=1,
-            ),
-        }
-        self.layers["convolution_z"] = {
-            "conv3dZ": nn.Conv3d(
-                in_channels=in_channels,
-                out_channels=hc[1],
-                #kernel_size=[triplet_size, 2, 2],
-                kernel_size=2,
-                stride=1,
-            ),
-            "conv_reluZ": nn.ReLU(),
-            "pool3dZ": nn.MaxPool3d(
-                #kernel_size=[1, 4, 4],
-                kernel_size=4,
+        self.layers["last_pool"] = {
+            "last_pool": nn.MaxPool3d(
+                kernel_size=last_kernel,
                 stride=1,
             ),
         }
@@ -164,7 +125,7 @@ class Saprot3Dto1(BaseModel):
         }
 
         self.layers["classifier"] = {
-            "lineal_classifier": nn.Linear(max_size**3, 1),
+            "lineal_classifier": nn.Linear(latent_size**3, 1),
         }
 
         self.layers["decoder"] = {
@@ -172,30 +133,20 @@ class Saprot3Dto1(BaseModel):
         }
         self.layers["compressor"] = {
             "compressor1": nn.MaxPool3d(
-                kernel_size=4,
-                stride=2,
+                kernel_size=conv_kernels[0],
+                stride=1,
             ),
             "compressor2": nn.MaxPool3d(
-                 kernel_size=2,
+                 kernel_size=conv_kernels[1],
                  stride=1,
              ),
-            # "compressor3": nn.MaxPool3d(
-            #     kernel_size=2,
-            #     stride=1,
-            # ),
-            # "compressor4": nn.MaxPool3d(
-            #     kernel_size=4,
-            #     stride=1,
-            # ),
         }
 
 
         self.layers["default"] = {
             **self.layers["convolution_common"], # --> [3840, 10, 10, 10]
             **self.layers["convolution_mixed"],
-            #**self.layers["convolution_x"], # --> [2560, 6, 6, 6] x3
-            #**self.layers["convolution_y"],
-            #**self.layers["convolution_z"], # --> [7680, 6, 6, 6] (total)
+            **self.layers["last_pool"],
             **self.layers["linear"], # --> [1, 216]
             **self.layers["classifier"],
         }
@@ -205,15 +156,9 @@ class Saprot3Dto1(BaseModel):
     def forward(self, x, classifier=True):
         self.set_mode("default")
         x = self._forward(x, "convolution_common")
-        if self.mode == "splitted":
-            x, y, z = torch.split(x, self.data["in_shape"][0])
-            x, y, z = self._forward(x, "convolution_x"), self._forward(y, "convolution_y"), self._forward(z, "convolution_z")
-            # print(x.shape, y.shape, z.shape)
-            # x, y, z = x.reshape(x.shape[0], x.shape[1]*x.shape[2]*x.shape[3]), y.reshape(y.shape[0], y.shape[1]*y.shape[2]*y.shape[3]), z.reshape(z.shape[0], z.shape[1]*z.shape[2]*z.shape[3])
-            # print(x.shape, y.shape, z.shape)
-            x = torch.cat((x, y, z))
-        else:
-            x = self._forward(x, "convolution_mixed")
+
+        x = self._forward(x, "convolution_mixed")
+        x = self._forward(x, "last_pool")
 
         #print(x.shape)
         x = self._forward(x, "linear")
@@ -222,12 +167,13 @@ class Saprot3Dto1(BaseModel):
             c = c.reshape(1)
         else:
             c = None
-        x = x.reshape(1, self.data["max_size"], self.data["max_size"], self.data["max_size"])
+        x = x.reshape(1, self.data["latent_size"], self.data["latent_size"], self.data["latent_size"])
         return x, c
 
     def compress(self, x):
         with torch.no_grad():
             #print("compressing:", x.shape)
             x = self._forward(x, "compressor")
+            x = self._forward(x, "last_pool")
             #print("compressed:", x.shape)
             return x
