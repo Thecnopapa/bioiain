@@ -21,7 +21,7 @@ set_seed()
 
 
 
-IMG_SIZE = 16
+IMG_SIZE = 8
 if "--size" in sys.argv:
     IMG_SIZE = int(sys.argv[sys.argv.index("--size") + 1])
 log(1, f"IMG_SIZE={IMG_SIZE}")
@@ -79,7 +79,11 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
                 chain = entity.chains(ch, by_complex=True, model=model)
                 print([c.complex() for c in chain])
                 assert len(chain) <= 1, f"Multiple chains detected {(code,ch,model)}: {chain}"
-                chain = chain[0]
+                try:
+                    chain = chain[0]
+                except:
+                    print(entity.chains(model=model))
+                    chain = chain[0]
                 log(1, chain)
 
                 if not embedding_done:
@@ -345,5 +349,3 @@ if INFERENCE:
 
             show()
             exit()
-
-

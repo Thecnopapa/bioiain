@@ -246,13 +246,13 @@ class FoldseekDB(object):
         if saprot_model is None:
             saprot_model = self.saprot_model
             saprot_path = f"westlake-repl/{self.saprot_model}"
-
+        else:
+            saprot_path = saprot_model
+            saprot_model = saprot_path.split("/")[-1]
         from transformers import EsmTokenizer, EsmForMaskedLM
         import torch
         from src.bioiain.machine import DEVICE
 
-        def load_saprot(saprot_model):
-            pass
 
 
 
