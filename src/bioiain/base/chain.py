@@ -16,6 +16,7 @@ class BIChain(BIEntity):
         if method == "first":
             chain_id = self._all_atoms()[0].chain
         else:
+            raise NotImplementedError(f"Chain.find_id('{method}')")
             chain_id = method
         return chain_id
 

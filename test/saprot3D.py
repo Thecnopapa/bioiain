@@ -30,8 +30,10 @@ print(dataset)
 
 MODEL_CLASS = Saprot3Dto1
 
+WORK_AS_IS = "--as-is" in sys.argv
 
-def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, force=False, rebuild=False, force_labels=False, force_embeddings=False):
+
+def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, force=False, rebuild=False, force_labels=False, force_embeddings=False, as_is=False):
     from src.bioiain.machine.datasets import EmbeddingDataset
     if force:
         rebuild = True
@@ -50,7 +52,7 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
         if not force_labels:
             labels.load(load_temp=True)
 
-    if embeddings.incomplete() or labels.incomplete() or rebuild:
+    if (embeddings.incomplete() or labels.incomplete() or rebuild) and not as_is:
         fs.run()
 
         for n, (tensor_path, entry, saprot_model) in enumerate(fs.saprot_embeddings(return_tensor=False)):
@@ -77,13 +79,18 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
                
                 log(1, entity)
                 chain = entity.chains(ch, by_complex=True, model=model)
-                print([c.complex() for c in chain])
-                assert len(chain) <= 1, f"Multiple chains detected {(code,ch,model)}: {chain}"
+                try:
+                    assert len(chain) <= 1, f"Multiple chains detected {(code,ch,model)}: {chain}"
+                except:
+                    print([c.complex() for c in chain])
+                    raise MultipleChainsDetected(f"Multiple chains detected {(code,ch,model)}: {chain}")
+
                 try:
                     chain = chain[0]
                 except:
                     print(entity.chains(model=model))
-                    chain = chain[0]
+                    raise NoChainsDetected(f"No chains detected {(code,ch,model)}: {chain} {print(entity.chains(model=model))}")
+
                 log(1, chain)
 
                 if not embedding_done:
@@ -96,7 +103,11 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
                         log("Error", "Error reading tensor:", tensor_path, e)
                         continue
                     #print(tensor.shape)
-                    assert tensor.shape[-2] == len(residues), f"{tensor.shape[-2]} / {len(residues)}"
+                    try:
+                        assert tensor.shape[-2] == len(residues), f"{tensor.shape[-2]} / {len(residues)}"
+                    except:
+                        log("warning", f'\n{entry["aa_seq"]}\n{chain.sequence()}')
+                        raise SequenceMissmatchException(f"{tensor.shape[-2]} / {len(residues)}")
                     log(1, "Generating 3D embedding...")
                     tensor3D = chain.img3D(property=None, plot=False, size=IMG_SIZE, embedding=tensor, mode="mean", residue_kwargs={"need_backbone":False})
                     log(2, tensor3D.shape)
@@ -114,7 +125,7 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
                     labels.add(label_embedding)
                     labels.save(temp=True)
 
-            except (StructureLoadException, NotImplementedError) as e:
+            except (StructureLoadException, NotImplementedError, MultipleChainsDetected, NoChainsDetected, SequenceMissmatchException) as e:
                 dataset.add_to_blacklist(dataset.get(code).get("path"), e)
             except AssertionError as e:
                 try:
@@ -128,7 +139,7 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
     return embeddings, labels
 
 
-embeddings, labels = generate_3DSaprot_embeddings(dataset, img_size=IMG_SIZE, force=FORCE, rebuild=REBUILD, force_labels=LABELS)
+embeddings, labels = generate_3DSaprot_embeddings(dataset, img_size=IMG_SIZE, force=FORCE, rebuild=REBUILD, force_labels=LABELS, as_is=WORK_AS_IS)
 
 if REBUILD or FORCE or LABELS:
     log("header","Configuring oligomer labels")

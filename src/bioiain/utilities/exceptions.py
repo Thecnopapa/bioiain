@@ -22,8 +22,16 @@ class DownloadError(Exception):
 class SequenceMissmatchException(Exception):
     pass
 
-
 class MisslabellingException(SequenceMissmatchException):
+    pass
+
+class ChainMissmatchException(Exception):
+    pass
+
+class MultipleChainsDetected(ChainMissmatchException):
+    pass
+
+class NoChainsDetected(ChainMissmatchException):
     pass
 
 
