@@ -47,9 +47,9 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
     labels = EmbeddingDataset(labels_name)
 
     if not force:
-        if not force_embeddings:
+        if not force_embeddings or as_is:
             embeddings.load(load_temp=True)
-        if not force_labels:
+        if not force_labels or as_is:
             labels.load(load_temp=True)
 
     if (embeddings.incomplete() or labels.incomplete() or rebuild) and not as_is:
@@ -144,7 +144,6 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
 embeddings, labels = generate_3DSaprot_embeddings(dataset, img_size=IMG_SIZE, force=FORCE, rebuild=REBUILD, force_labels=LABELS, as_is=WORK_AS_IS)
 
 if REBUILD or FORCE or LABELS:
-    # TODO: This breaks when using --as-is and -l
     log("header","Configuring oligomer labels")
     for n, k in enumerate(embeddings.embeddings.keys()):
         log(2, f"{n+1}/{len(embeddings)}", end="\r")
@@ -157,16 +156,22 @@ if REBUILD or FORCE or LABELS:
     embeddings.save(temp=WORK_AS_IS)
     print()
     log(1, "Oligomer labels ready")
+    print()
+
+
 
 
 IN_SHAPE = embeddings.get(0).t.shape
+print(f"IN_SHAPE={IN_SHAPE}")
+
+print("EMBEDDINGS", embeddings)
+print("LABELS:", labels)
 
 if TRAIN:
     log("start", "TRAINING")
-    log(1, "in_shape:", IN_SHAPE)
 
     model = MODEL_CLASS(name=dataset.name, in_shape=IN_SHAPE)
-    print(model)
+    log(1, model)
     model.mount()
     print(repr(model))
 
@@ -306,14 +311,14 @@ if INFERENCE:
                 raise
 
             in_tensor = tensor3D.to(DEVICE)
-            print("IN_TENSOR", in_tensor.shape)
+            #print("IN_TENSOR", in_tensor.shape)
             real_label_x = label3D.to(DEVICE)
-            print("REAL_LABEL", real_label_x.shape)
+            #print("REAL_LABEL", real_label_x.shape)
             compressed_label_x = model.compress(real_label_x)
-            print("COMPRESSED_LABEL", compressed_label_x.shape)
+            #print("COMPRESSED_LABEL", compressed_label_x.shape)
 
             out_x = model(in_tensor)
-            print("OUT", out_x.shape)
+            #print("OUT", out_x.shape)
 
             import matplotlib.pyplot as plt
             from src.bioiain.visualisation import voxels3d, show
@@ -334,7 +339,7 @@ if INFERENCE:
 
             out_ax = fig.add_subplot(1, n_figs, 3, projection="3d")
             out = out_x.detach().cpu().numpy()[0]
-            print(out)
+            #print(out)
             voxels3d(out, ax = out_ax, shrink = True, title="Out")
 
             scaled_ax = fig.add_subplot(1, n_figs, 4, projection="3d")
@@ -345,11 +350,17 @@ if INFERENCE:
             max_out = out.reshape(out.shape[-1] ** 3).max()
             min_out = out.reshape(out.shape[-1] ** 3).min()
 
+            #print(max_out, min_out)
+            #print(max_val, min_val)
             out_range = abs(max_out - min_out)
             val_range = abs(max_val - min_val)
+
+            #print(out_range)
+            #print(val_range)
             
-            scaled_out = np.absolute((out + min_out) / out_range * val_range)
-            
+            #scaled_out = np.absolute((out + min_out) / out_range * val_range)
+            scaled_out = ((out + min_out) / out_range) * val_range
+
             voxels3d(scaled_out, ax = scaled_ax, shrink = True, title="Scaled")
 
 

@@ -179,13 +179,42 @@ class Saprot3Dto1(BaseModel):
             #print("compressed:", x.shape)
             return x
 
-    def classify(self, x, reference=None, return_diff=False):
+    def classify_norm(self, x, reference=None, return_diff=False):
         if reference is not None:
             x = x.reshape(1, self.data["latent_size"]**3)
             r = reference.to(x.dtype).reshape(1, self.data["latent_size"]**3).to(DEVICE)
             x = torch.nn.functional.normalize(x)
             r = torch.nn.functional.normalize(r)
             d = torch.sub(r, x)
+        else:
+            d = x
+
+        c = self._forward(d, "classifier")
+        c = c.reshape(1)
+        if return_diff:
+            d = d.reshape(1, self.data["latent_size"], self.data["latent_size"], self.data["latent_size"])
+            return c, d
+        return c
+
+    def classify(self, x, reference=None, return_diff=False):
+        if reference is not None:
+            x = x.reshape(1, self.data["latent_size"]**3)
+            r = reference.to(x.dtype).reshape(1, self.data["latent_size"]**3).to(DEVICE)
+
+            max_x, min_x = torch.max(x), torch.min(x)
+            max_r, min_r = torch.max(r), torch.min(r)
+            #print("min/max")
+            #print(max_x, min_x)
+            #print(max_r, min_r)
+            
+            #print("Ranges")
+            range_x = torch.abs(torch.sub(max_x, min_x))
+            #print(range_x)
+            range_r = torch.abs(torch.sub(max_r, min_r))
+            #print(range_r)
+            scaled_x = torch.multiply(torch.divide(torch.add(x, min_x), range_x),  range_r)
+
+            d = torch.absolute(torch.sub(scaled_x, r))
         else:
             d = x
 
