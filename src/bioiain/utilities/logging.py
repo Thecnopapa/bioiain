@@ -1,5 +1,5 @@
-
 import os, sys, shutil, time, datetime, requests
+import numpy as np
 
 from .. import SUBDIR_NAME, TEMP_FOLDER, WD, FD
 
@@ -320,3 +320,77 @@ def tracemalloc_top(top=15):
         for stat in top_stats[:top]:
             log(1, stat)
         print()
+
+
+class GraphProgress(object):
+    def __init__(self, height=10, col_width=1):
+        self.screen=None
+        self.window = None
+        self.height = height
+        self.col_width=col_width
+        self.vals = []
+        from curses import wrapper
+        #wrapper(self._init_screen)
+        self._init_screen()
+
+    def _init_screen(self, screen=None):
+        import curses
+
+        if screen is None:
+            screen = curses.initscr()
+        self.screen = screen
+        self.graph = curses.newwin(self.height+2, os.get_terminal_size().columns, os.get_terminal_size().lines-self.height-2, 0)
+        self.graph.box()
+        self.graph.refresh()
+        self.title = curses.newwin(self.height, os.get_terminal_size().columns, 0, 0)
+        self.title.box()
+        self.title.refresh()
+
+
+    def end(self):
+        import curses
+        curses.nocbreak()
+        self.screen.keypad(0)
+        curses.echo()
+        curses.endwin()
+        print()
+
+    def update(self, val):
+        from curses import wrapper
+        import curses
+        try:
+            self.vals.append(val)
+            max_vals = (os.get_terminal_size().columns // self.col_width) -2
+
+            if len(self.vals) > max_vals:
+                self.vals = self.vals[len(self.vals)-max_vals:]
+            vals = np.array(self.vals)
+            self.title.addstr(1, 1, str(vals))
+            
+            highest = max(vals)
+
+            vals = (vals // (highest/(self.height)))
+            #print(vals)
+            #wrapper(self._update)
+        
+            self.title.addstr(2, 1, f"self.vals: {self.vals}")
+            self.title.addstr(3, 1, f"vals:      {vals}")
+            self.title.addstr(4, 1, f"highest: {highest}")
+            self.title.refresh()
+            self._update_graph(self.graph, vals)
+        except:
+            curses.nocbreak()
+            self.screen.keypad(0)
+            curses.echo()
+            curses.endwin()
+            raise
+
+    def _update_graph(self, graph, vals):
+
+        #print(screen)
+        for n, val in enumerate(vals):
+            #print(n, val)
+            for i in range(int(val)):
+                #raise Exception(self.height-int(i)-2)
+                graph.addstr(self.height-int(i), n+1, "#")
+        graph.refresh()
