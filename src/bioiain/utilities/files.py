@@ -48,6 +48,8 @@ class StructureDataset(object):
         else:
             with open(self.blacklist_file, "w") as bl:
                 bl.write(f"{self.blacklist_file}\n")
+        self.blacklist = list(set(self.blacklist))
+        log(2, f"{len(self.blacklist)} paths in blacklist: {self.blacklist_file}")
 
 
 

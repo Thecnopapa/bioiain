@@ -361,6 +361,7 @@ class EmbeddingDataset(object):
 
 
     def get(self, key, embedding=True, label=True, cache=True, label_key=None, only_data=False) -> Item:
+        #print("GET:", key)
         from torch import load as torch_load
         if label_key is None:
             label_key = self.data["label_key"]
@@ -377,7 +378,8 @@ class EmbeddingDataset(object):
         elif self.mode == "train": emb_list = self.splitted["train"]
         else: raise Exception("Not implemented split method:", self.mode)
 
-
+        #print(key)
+        #print(emb_list.keys())
         for e in emb_list.values():
             #print(e["start"], key ,e["end"])
             #print(key < e["start"], key >= e["end"])
@@ -397,9 +399,12 @@ class EmbeddingDataset(object):
                     label_value = None
                 else:
                     label_value = e[label_key]
+            #print(key, e["start"], key - e["start"])
             rel_key = key - e["start"]
+            #print(rel_key)
             break
-
+        #print(e)
+        #print(rel_key)
         try:
             assert rel_key is not None
         except AssertionError:

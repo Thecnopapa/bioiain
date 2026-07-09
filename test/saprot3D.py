@@ -114,6 +114,7 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
                     embedding = SaProt3DEmbedding.from_tensor(tensor3D,name=name, img_size=IMG_SIZE, saprot_model=saprot_model).save()
                     embeddings.add(embedding)
                     embeddings.save(temp=True)
+                    log(2, embeddings)
 
                 if not label_done:
                     log(1, "Loading compactness...")
@@ -124,6 +125,7 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
                     label_embedding = Compactness3DEembedding.from_tensor(label3D, name=name, img_size=IMG_SIZE).save()
                     labels.add(label_embedding)
                     labels.save(temp=True)
+                    log(2, labels)
 
             except (StructureLoadException, NotImplementedError, MultipleChainsDetected, NoChainsDetected, SequenceMissmatchException) as e:
                 dataset.add_to_blacklist(dataset.get(code).get("path"), e)
@@ -134,8 +136,8 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
                     pass
                 dataset.add_to_blacklist(dataset.get(code).get("path"), e)
 
-    embeddings.save(temp=False)
-    labels.save(temp=False)
+        embeddings.save(temp=False)
+        labels.save(temp=False)
     return embeddings, labels
 
 
@@ -197,13 +199,15 @@ if TRAIN:
             if label_oligo is not None:
                 out_c = model.classify(out_i, reference=label)
                 loss = model.raw_loss(out_i, label, out_c, label_oligo)
+                out_c_text = f"{out_c.item():7.3f}"
             else:
+                out_c_text="None"
                 loss = model.loss(out_i, label)
             #print("LOSS:", loss)
 
             if n % 1 == 0:
                 loss_str = f"{model.running_loss['default'] / model.running_loss['total']:7.3f}"
-                print(f"loss: {colour('yellow', loss_str)} \tlast --> loss={loss:7.3f} out={out_c.item():7.3f} l={item.l}",
+                print(f"loss: {colour('yellow', loss_str)} \tlast --> loss={loss:7.3f} out={out_c_text} l={item.l}",
                       end="\r")
 
             if "--preview" in sys.argv:
