@@ -2,6 +2,8 @@ import os, sys, shutil, time, datetime, requests, curses, math
 import numpy as np
 
 from .. import SUBDIR_NAME, TEMP_FOLDER, WD, FD
+CURSED = False
+CURSED_LOG = None
 
 class Log(object):
     def __init__(self):
@@ -12,9 +14,10 @@ class Log(object):
                       "debug": os.path.join(SUBDIR_NAME, "debug.log")}
         self.logging = True
         self.terminal = True
+        self.cursed_log = None
 
     def __repr__(self):
-        return f"<bi.Log: default: {self.files['default']}>"
+        return f"<bi.{self.__class__.__name__}: default: {self.files['default']}>"
 
     def list(self):
         return [l for l in self.files.values()]
@@ -28,8 +31,19 @@ class Log(object):
     def __call__(self):
         pass
 
+    def __getitem__(self, logname):
+        return self.files.get(logname, None) 
+
+    def 
+    def _process_input()
+
     def log(self):
-        pass
+
+        with open(self["debug"]) as debug_f:
+            debug_f.write()
+
+        if not logging:
+            return
 
     def error(self):
         pass
@@ -123,6 +137,11 @@ def log(level:int|str=1, *args, **kwargs):
             level = int(level)
         except:
             level = level.lower()
+    
+    if CURSED and CURSED_LOG is not None:
+        def print(*args, **kwargs):
+            CURSED_LOG.print(*args, **kwargs)
+
 
 
     if v > -2:
@@ -332,9 +351,12 @@ def cursed(fun, *args, **kwargs):
             try:
                 curses.nocbreak()
                 curses.echo()
+                curses.nonl()
                 curses.endwin()
+                log("warning", "Curse escaped")
             except Exception as ce:
                 log("warning", "Curses did not close properly:", ce)
+            log("warning", "Cursed error")
             raise e
     return cursed_fun
 
@@ -399,17 +421,17 @@ class CursedWindow(object):
             v["c"] = n+1
 
     def get_colour(self, name):
-        return self.colours[name]["c"]
+        return self.colours.get(name, {}).get("c", 0)
 
     @cursed
-    def print(self, *vals, c=None):
+    def print(self, *vals, c=None, end="\n"):
         val = " ".join(vals)
         for n, line in enumerate(val.split("\n")):
             if len(line) > self.width:
                 line = line[:self.width]
-            line = line+" ".join(["" for _ in range(self.width-len(line))])
-            if c is not None:
-                line = [line, self.get_colour(c)]
+            line = line
+
+            line = {"l":line, "c":self.get_colour(c), "end":end}
             self.content.append(line)
         if len(self.content) > self.height:
             self.content = self.content[len(self.content)-self.height:]
@@ -417,14 +439,28 @@ class CursedWindow(object):
         y = 1
         x = 1
         for n, s in enumerate(self.content):
-            c = 0
-            if type(s) is list:
-                s, c = s
-            col = curses.color_pair(c)
+            col = curses.color_pair(s.get("c", 0))
+            
+            extra_space = self.width-len(s["l"]) - (x-2)
+            if extra_space < 0:
+                l = s["l"][:extra_space]
+            else:
+                l = s["l"]+" ".join(["" for _ in range(extra_space)])
+            try:
+                self.window.addstr(y, x, l, col)
+            except:
+                raise Exception(x, y, l, col, extra_space)
 
-            self.window.addstr(y, x, s, col)
-            #self.window.addstr(str(col))
-            y+=1
+            end = s["end"]
+            if end == "\n":
+                y += 1
+                x = 1
+            elif end == "\r":
+                x = 1
+            elif end == " ":
+                x = x + len(s["l"])+1
+            elif end == "":
+                x = x + len(s["l"])
         self.refresh()
 
     @cursed
@@ -460,9 +496,16 @@ class CursedTerminal(object):
     @cursed
     def close(self):
         curses.nocbreak()
-        self.screen.keypad(0)
+        #self.screen.keypad(0)
         curses.echo()
+        curses.nonl()
+        for win in self.windows():
+            win.endwin()
         curses.endwin()
+        CURSED = False
+        CURSED_LOG = None
+        log("warning", "Curse closed")
+
 
     @cursed
     def refresh(self):
@@ -506,35 +549,7 @@ class CursedTerminal(object):
 
 
 
-
-class GraphProgress(object):
-    def __init__(self, height=10, col_width=1):
-        self.screen=None
-        self.window = None
-        self.height = height
-        self.col_width=col_width
-        self.vals = []
-        from curses import wrapper
-        #wrapper(self._init_screen)
-        self._init_screen()
-
-    
-        self.graph = curses.newwin(self.height+2, os.get_terminal_size().columns, os.get_terminal_size().lines-self.height-2, 0)
-        self.graph.box()
-        self.graph.refresh()
-        self.title = curses.newwin(self.height, os.get_terminal_size().columns, 0, 0)
-        self.title.box()
-        self.title.refresh()
-
-
-    def end(self):
-        import curses
-        curses.nocbreak()
-        self.screen.keypad(0)
-        curses.echo()
-        curses.endwin()
-        print()
-
+class _deprecated():
     def update(self, val):
         from curses import wrapper
         import curses
@@ -563,6 +578,7 @@ class GraphProgress(object):
             self.screen.keypad(0)
             curses.echo()
             curses.endwin()
+            curses.nonl()
             raise
 
     def _update_graph(self, graph, vals):
@@ -574,3 +590,18 @@ class GraphProgress(object):
                 #raise Exception(self.height-int(i)-2)
                 graph.addstr(self.height-int(i), n+1, "#")
         graph.refresh()
+
+def quad_term():
+    term = CursedTerminal()
+
+    heights = term.split_height(percentages=[10,50,40])
+    #print(heights)
+    widths = term.split_width(2)
+    #print(widths)
+
+    top =    term.add_window(heights[0], None,      heights[0], 0,         title=f"Top")
+    left =   term.add_window(heights[1], widths[0], heights[1], widths[0], title=f"Left")
+    right =  term.add_window(heights[1], widths[1], heights[1], widths[1], title=f"Right")
+    bottom = term.add_window(heights[2], None,      heights[2], 0,         title=f"Bottom")
+
+    return term, top, left, right, bottom

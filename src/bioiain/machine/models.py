@@ -37,6 +37,7 @@ class BaseModel(nn.Module):
         self.data["batch_size"] = batch_size
         self.mode = "default"
         self.writer = None
+        self.curse = None
         self.dry = dry
         self.mounted = False
         if type(in_shape) is int:

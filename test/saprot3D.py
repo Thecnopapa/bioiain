@@ -190,9 +190,13 @@ if TRAIN:
     print(repr(model))
 
 
+    term, top, left, right, bottom = logging.quad_term()
+    CURSED_LOG=left
     EPOCHS = 100
-    for epoch in range(EPOCHS):
-        log("start", f"EPOCH: {epoch}", print_timer=True, reset_timer=False)
+    top.print(f"Model: {model}")
+    @cursed
+    def train_loop(model, embeddings, labels, epoch):
+        top.print(f"EPOCH: {epoch}/{EPOCHS}" ,end="\r")
         max_n = len(embeddings)
         for n in range(len(embeddings)):
             #print(n)
@@ -207,7 +211,7 @@ if TRAIN:
 
             #print(entity)
             if n % 1 == 0:
-                log(1, f"{n:6d}/{max_n:6d}", end=" ")
+                left.print(f"{n:6d}/{max_n:6d}", end=" ")
 
 
             #print("\nIN:", tensor.shape, tensor.dtype)
@@ -228,8 +232,7 @@ if TRAIN:
 
             if n % 1 == 0:
                 loss_str = f"{model.running_loss['default'] / model.running_loss['total']:7.3f}"
-                print(f"loss: {colour('yellow', loss_str)} \tlast --> loss={loss.item():7.3f} out={out_c_text} l={item.l}",
-                      end="\r")
+                left.print(f"loss: {colour('yellow', loss_str)} \tlast --> loss={loss.item():7.3f} out={out_c_text} l={item.l}")
 
             if "--preview" in sys.argv:
                 from src.bioiain.visualisation import voxels3d
@@ -242,6 +245,8 @@ if TRAIN:
         model.save(temp=True)
         model.add_epoch()
         log("end", f"EPOCH: {epoch}", print_timer=True, reset_timer=False)
+    for epoch in range(EPOCHS):
+        train_loop(model, embeddings, labels, epoch)
     model.save()
 
     log("end", "TRAINING")
