@@ -148,8 +148,22 @@ if REBUILD or FORCE or LABELS:
     for n, k in enumerate(embeddings.embeddings.keys()):
         log(2, f"{n+1}/{len(embeddings)}", end="\r")
         code = k.split("_")[0]
-        entry = dataset.get(code)
-        label = entry.get("oligo", None)
+        label = None
+        if not "--precalculated" in sys.argv:
+            with open("./data/cath-dataset-nonredundant-S20.monomeric.list") as mf:
+                for l in mf:
+                    if code in l:
+                        label = 0
+                        break
+        if label is None:
+            with open("./data/cath-dataset-nonredundant-S20.multimeric.list") as mf:
+                for l in mf:
+                    if code in l:
+                        label = 1
+                        break
+        else:
+            entry = dataset.get(code)
+            label = entry.get("oligo", None)
         embeddings.add_label(k, label, "oligo")
     embeddings.use_label("oligo")
 
@@ -183,13 +197,13 @@ if TRAIN:
         for n in range(len(embeddings)):
             #print(n)
             embeddings.use_label("oligo")
-            item = embeddings.get(n, label=False, label_key="oligo")
+            item = embeddings.get(n, label=True, label_key="oligo")
             litem = labels.get(n, label=False)
             assert item.name == litem.name
             tensor = item.t.to(torch.float32).to(DEVICE)
             label = litem.t.to(torch.float32).to(DEVICE)
-            label_oligo = item.l
-            #print(tensor, label_oligo)
+            label_oligo = torch.Tensor([item.l]) if item.l is not None else None
+            #print(item.name, label_oligo, item.l)
 
             #print(entity)
             if n % 1 == 0:
@@ -214,7 +228,7 @@ if TRAIN:
 
             if n % 1 == 0:
                 loss_str = f"{model.running_loss['default'] / model.running_loss['total']:7.3f}"
-                print(f"loss: {colour('yellow', loss_str)} \tlast --> loss={loss:7.3f} out={out_c_text} l={item.l}",
+                print(f"loss: {colour('yellow', loss_str)} \tlast --> loss={loss.item():7.3f} out={out_c_text} l={item.l}",
                       end="\r")
 
             if "--preview" in sys.argv:
