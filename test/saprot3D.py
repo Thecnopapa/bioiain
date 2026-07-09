@@ -144,6 +144,7 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
 embeddings, labels = generate_3DSaprot_embeddings(dataset, img_size=IMG_SIZE, force=FORCE, rebuild=REBUILD, force_labels=LABELS, as_is=WORK_AS_IS)
 
 if REBUILD or FORCE or LABELS:
+    # TODO: This breaks when using --as-is and -l
     log("header","Configuring oligomer labels")
     for n, k in enumerate(embeddings.embeddings.keys()):
         log(2, f"{n+1}/{len(embeddings)}", end="\r")
@@ -152,7 +153,8 @@ if REBUILD or FORCE or LABELS:
         label = entry.get("oligo", None)
         embeddings.add_label(k, label, "oligo")
     embeddings.use_label("oligo")
-    embeddings.save()
+
+    embeddings.save(temp=WORK_AS_IS)
     print()
     log(1, "Oligomer labels ready")
 
