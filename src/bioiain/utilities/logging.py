@@ -1,4 +1,4 @@
-import os, sys, shutil, time, datetime, requests
+import os, sys, shutil, time, datetime, requests, curses, math
 import numpy as np
 
 from .. import SUBDIR_NAME, TEMP_FOLDER, WD, FD
@@ -322,6 +322,191 @@ def tracemalloc_top(top=15):
         print()
 
 
+
+def cursed(fun, *args, **kwargs):
+
+    def cursed_fun(*args, **kwargs):
+        try:
+            return fun(*args, **kwargs)
+        except Exception as e:
+            try:
+                curses.nocbreak()
+                curses.echo()
+                curses.endwin()
+            except Exception as ce:
+                log("warning", "Curses did not close properly:", ce)
+            raise e
+    return cursed_fun
+
+
+class CursedWindow(object):
+    def __init__(self, parent, height=None, width=None, y=None, x=None, box=True, title=None):
+        if height is None:
+            height = curses.LINES
+        if width is None:
+            width = curses.COLS
+        if x is None:
+            x = 0
+        if y is None:
+            y = 0
+
+        if type(width) is list:
+            width = width[0]
+        if type(height) is list:
+            height = height[0]
+        if type(x) is list:
+            x = x[1]
+        if type(y) is list:
+            y = y[1]
+
+        self.parent = parent
+        self.height, self.width, self.y, self.x = height, width, y, x
+        self.box = box
+
+        self.window = curses.newwin(self.height, self.width, self.y, self.x)
+        self.content = []
+
+        self.colours = {
+            "default": {"n": 0, "f": curses.COLOR_WHITE, "b":curses.COLOR_BLACK},
+            "black": {"n": 1, "f": curses.COLOR_BLACK, "b":curses.COLOR_WHITE},
+            "blue": {"n": 2, "f": curses.COLOR_BLUE, "b":curses.COLOR_WHITE},
+            "cyan": {"n": 3, "f": curses.COLOR_CYAN, "b":curses.COLOR_BLACK},
+            "green": {"n": 4, "f": curses.COLOR_GREEN, "b":curses.COLOR_BLACK},
+            "magenta": {"n": 5, "f": curses.COLOR_MAGENTA, "b":curses.COLOR_BLACK},
+            "red": {"n": 6, "f": curses.COLOR_RED, "b":curses.COLOR_BLACK},
+            "white": {"n": 7, "f": curses.COLOR_WHITE, "b":curses.COLOR_BLACK},
+            "yellow": {"n": 8, "f": curses.COLOR_YELLOW, "b":curses.COLOR_BLACK},
+        }
+        self.init_colours()
+
+
+        if box:
+            self.window.box()
+            self.height -= 2
+            self.width -= 2
+
+        self.set_title(title)
+
+        self.refresh()
+
+    def refresh(self):
+        self.window.refresh()
+
+    @cursed
+    def init_colours(self):
+        for n, (k, v) in enumerate(self.colours.items()):
+            curses.init_pair(n+1, v["f"], v["b"])
+            v["c"] = n+1
+
+    def get_colour(self, name):
+        return self.colours[name]["c"]
+
+    @cursed
+    def print(self, *vals, c=None):
+        val = " ".join(vals)
+        for n, line in enumerate(val.split("\n")):
+            if len(line) > self.width:
+                line = line[:self.width]
+            line = line+" ".join(["" for _ in range(self.width-len(line))])
+            if c is not None:
+                line = [line, self.get_colour(c)]
+            self.content.append(line)
+        if len(self.content) > self.height:
+            self.content = self.content[len(self.content)-self.height:]
+
+        y = 1
+        x = 1
+        for n, s in enumerate(self.content):
+            c = 0
+            if type(s) is list:
+                s, c = s
+            col = curses.color_pair(c)
+
+            self.window.addstr(y, x, s, col)
+            #self.window.addstr(str(col))
+            y+=1
+        self.refresh()
+
+    @cursed
+    def set_title(self, title=None):
+        if title is not None:
+            title = str(title)
+            if len(title) > self.width-4:
+                title = title[:self.width-4]
+        if self.box:
+            self.window.box()
+            if title is not None:
+                self.window.addstr(0, 2, f" {title} ")
+        self.refresh()
+
+
+
+
+
+class CursedTerminal(object):
+    def __init__(self):
+        
+        self.screen = None
+        self.windows = []
+
+
+        self._init_screen()
+    @cursed
+    def _init_screen(self, screen=None):
+            if screen is None:
+                screen = curses.initscr()
+                curses.start_color()
+            self.screen = screen
+    @cursed
+    def close(self):
+        curses.nocbreak()
+        self.screen.keypad(0)
+        curses.echo()
+        curses.endwin()
+
+    @cursed
+    def refresh(self):
+        self.screen.refresh()
+
+    @cursed
+    def refresh_windows(self):
+        for window in self.windows.values():
+            window.refresh()
+    @cursed
+    def add_window(self, *args, window_class=CursedWindow,**kwargs):
+        w = window_class(self, *args, **kwargs)
+        self.windows.append(w)
+        return w
+    @cursed
+    def split_width(self, divs=2, split_height=False, percentages=None):
+        if percentages is None:
+            percentages = [100/divs]*divs
+        #print(percentages)
+        if split_height:
+            w = curses.LINES
+        else:
+            w = curses.COLS 
+        ws = [math.floor(w*p/100) for p in percentages]
+        totalw = 0
+        tw = []
+        for ww in ws:
+            tw.append([ww, totalw])
+            totalw+=ww
+        if split_height:
+            tw[-1][0] += curses.LINES - totalw
+        else:
+            tw[-1][0] += curses.COLS - totalw
+        return tw
+
+    @cursed
+    def split_height(self, *args, **kwargs):
+        return self.split_width(*args, split_height=True, **kwargs)
+
+
+
+
+
+
 class GraphProgress(object):
     def __init__(self, height=10, col_width=1):
         self.screen=None
@@ -333,12 +518,7 @@ class GraphProgress(object):
         #wrapper(self._init_screen)
         self._init_screen()
 
-    def _init_screen(self, screen=None):
-        import curses
-
-        if screen is None:
-            screen = curses.initscr()
-        self.screen = screen
+    
         self.graph = curses.newwin(self.height+2, os.get_terminal_size().columns, os.get_terminal_size().lines-self.height-2, 0)
         self.graph.box()
         self.graph.refresh()

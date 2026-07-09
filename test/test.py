@@ -1,4 +1,4 @@
-import os, json, sys, time
+import os, json, sys, time, random
 sys.path.append('..')
 from src.bioiain.utilities import *
 from src.bioiain.base import *
@@ -11,16 +11,45 @@ log("title", "test.py")
 
 
 
+term = logging.CursedTerminal()
+
+heights = term.split_height(percentages=[10,50,40])
+#print(heights)
+widths = term.split_width(2)
+#print(widths)
+
+top =    term.add_window(heights[0], None,      heights[0], 0,         title=f"Top")
+left =   term.add_window(heights[1], widths[0], heights[1], widths[0], title=f"Left")
+rigth =  term.add_window(heights[1], widths[1], heights[1], widths[1], title=f"Right")
+bottom = term.add_window(heights[2], None,      heights[2], 0,         title=f"Bottom")
+
+top.print("data:")
+
+top.print("aaaa")
+top.print("bbb")
+top.print("ccc")
+top.print("ddd")
+top.print("eee")
+left.print("default", c="default")
+left.print("black", c="black")
+left.print("blue", c="blue")
+left.print("cyan", c="cyan")
+left.print("green", c="green")
+left.print("magenta", c="magenta")
+left.print("red", c="red")
+left.print("white", c="white")
+left.print("yellow", c="yellow")
 
 
-progress = logging.GraphProgress()
+time.sleep(2)
+#print(term)
 
-import random
-for n in range(50):
-	progress.update(random.randrange(1,20))
-	time.sleep(1)
+time.sleep(10)
+term.close()
 
-progress.end()
+
+
+
 exit()
 
 
@@ -38,5 +67,5 @@ IMG_SIZE = 16
 
 for entity in dataset.entities(entity_class=CompactStructure):
 
-	entity.img3D(property="compactness", show_plot=False, gif=True)
+    entity.img3D(property="compactness", show_plot=False, gif=True)
 
