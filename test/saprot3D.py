@@ -26,7 +26,7 @@ if "--size" in sys.argv:
     IMG_SIZE = int(sys.argv[sys.argv.index("--size") + 1])
 log(1, f"IMG_SIZE={IMG_SIZE}")
 
-print(dataset)
+log(1, dataset)
 
 MODEL_CLASS = Saprot3Dto1
 
@@ -176,10 +176,10 @@ if REBUILD or FORCE or LABELS:
 
 
 IN_SHAPE = embeddings.get(0).t.shape
-print(f"IN_SHAPE={IN_SHAPE}")
+log(1, f"IN_SHAPE={IN_SHAPE}")
 
-print("EMBEDDINGS", embeddings)
-print("LABELS:", labels)
+log(1, "EMBEDDINGS", embeddings)
+log(1, "LABELS:", labels)
 
 if TRAIN:
     log("start", "TRAINING")
