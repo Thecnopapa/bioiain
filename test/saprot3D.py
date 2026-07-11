@@ -206,7 +206,7 @@ if TRAIN:
             #print(item.name, label_oligo, item.l)
 
             #print(entity)
-            if n % 1 == 0:
+            if n % 100 == 0:
                 log(1, f"{n:6d}/{max_n:6d}", end=" ")
 
 
@@ -226,7 +226,7 @@ if TRAIN:
                 loss = model.loss(out_i, label)
             #print("LOSS:", loss)
 
-            if n % 1 == 0:
+            if n % 100 == 0:
                 loss_str = f"{model.running_loss['default'] / model.running_loss['total']:7.3f}"
                 print(f"loss: {colour('yellow', loss_str)} \tlast --> loss={loss.item():7.3f} out={out_c_text} l={item.l}",
                       end="\r")
