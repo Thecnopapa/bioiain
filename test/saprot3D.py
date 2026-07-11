@@ -155,12 +155,12 @@ if REBUILD or FORCE or LABELS:
                     if code in l:
                         label = 0
                         break
-        if label is None:
-            with open("./data/cath-dataset-nonredundant-S20.multimeric.list") as mf:
-                for l in mf:
-                    if code in l:
-                        label = 1
-                        break
+            if label is None:
+                with open("./data/cath-dataset-nonredundant-S20.multimeric.list") as mf:
+                    for l in mf:
+                        if code in l:
+                            label = 1
+                            break
         else:
             entry = dataset.get(code)
             label = entry.get("oligo", None)
