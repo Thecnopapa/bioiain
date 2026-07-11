@@ -3,6 +3,7 @@ import os, sys, json, xmltodict
 import subprocess
 from ..utilities.logging import log
 from ..utilities.exceptions import *
+from ..utilities import *
 
 
 log("header", "Importing PISA module...")
@@ -21,10 +22,14 @@ class PISA(object):
     def __init__(self,
                  pisa_id="temp",
                  pisa_command="pisa",
-                 out_folder="pisa_data",
-                 xml_folder="pisa_raw"):
+                 out_folder=None,
+                 xml_folder=None):
         self.pisa_command = pisa_command
         self.pisa_id = pisa_id
+        if out_folder is None:
+            out_folder = os.path.join(TEMP_FOLDER, "pisa", "data")
+        if xml_folder is None:
+            xml_folder = os.path.join(TEMP_FOLDER, "pisa", "xml")
         self.out_folder = out_folder
         self.xml_folder = xml_folder
         self.data = None
@@ -44,7 +49,7 @@ class PISA(object):
             filepath
         ]
         try:
-            print(" ... "+ " ".join(cmd))
+            print(" ..$ "+ " ".join(cmd))
             subprocess.run(cmd, check=True)
         except Exception as e:
             raise PISAError(e)
@@ -62,7 +67,7 @@ class PISA(object):
             "-erase"
         ]
         try:
-            print(" ... "+ " ".join(cmd))
+            print(" ..$ "+ " ".join(cmd))
             subprocess.run(cmd, check=True)
         except Exception as e:
             raise PISAError(e)
@@ -77,16 +82,16 @@ class PISA(object):
         if not force:
             fname = os.path.basename(filepath)
             out_path = os.path.join(self.out_folder, f"{fname.split(".")[0]}.pisa.json")
-            print(out_path)
+            print(f" ... output file: {out_path}")
             if os.path.exists(out_path):
                 self.load(out_path)
                 print(" ... reusing pisa output from:", out_path)
                 return out_path, self["pdb_code"]
         filepath = os.path.abspath(filepath)
-        print(f" ... PISA: analysing: {filepath}")
+        print(f" ... analysing: {filepath}")
         self.run_pisa(filepath)
         out, code = self.parse_pisa()
-        print(f" ... PISA output for: {code} at: {out}\n")
+        print(f" ... output for: {code} at: {out}\n")
         return out
 
 
@@ -233,12 +238,12 @@ class PISA(object):
         if interfaces:
             interfaces_path = f"{self.xml_folder}/{self.pisa_id}.interfaces.xml"
             cmd_i = cmd + ["interfaces"]
-            print(" ... "+ " ".join(cmd_i))
+            print(" ..$ "+ " ".join(cmd_i))
             subprocess.run(cmd_i, stdout=open(interfaces_path, "w"))
         if assemblies:
             assemblies_path = f"{self.xml_folder}/{self.pisa_id}.assemblies.xml"
             cmd_a = cmd + ["assemblies"]
-            print(" ... "+ " ".join(cmd_a))
+            print(" ..$ "+ " ".join(cmd_a))
             subprocess.run(cmd_a, stdout=open(assemblies_path, "w"))
         return interfaces_path, assemblies_path
 

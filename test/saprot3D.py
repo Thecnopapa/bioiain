@@ -150,13 +150,13 @@ if REBUILD or FORCE or LABELS:
         code = k.split("_")[0]
         label = None
         if not "--precalculated" in sys.argv:
-            with open("./data/cath-dataset-nonredundant-S20.monomeric.list") as mf:
+            with open(f"./data/{dataset.name}.monomeric.list") as mf:
                 for l in mf:
                     if code in l:
                         label = 0
                         break
             if label is None:
-                with open("./data/cath-dataset-nonredundant-S20.multimeric.list") as mf:
+                with open(f"./data/{dataset.name}.multimeric.list") as mf:
                     for l in mf:
                         if code in l:
                             label = 1
@@ -180,6 +180,10 @@ log(1, f"IN_SHAPE={IN_SHAPE}")
 
 log(1, "EMBEDDINGS", embeddings)
 log(1, "LABELS:", labels)
+
+PRINT_EVERY=100
+if len(embeddings) <= 100:
+    PRINT_EVERY=1
 
 if TRAIN:
     log("start", "TRAINING")
@@ -206,7 +210,7 @@ if TRAIN:
             #print(item.name, label_oligo, item.l)
 
             #print(entity)
-            if n % 100 == 0:
+            if n % PRINT_EVERY == 0:
                 log(1, f"{n:6d}/{max_n:6d}", end=" ")
 
 
@@ -226,9 +230,9 @@ if TRAIN:
                 loss = model.loss(out_i, label)
             #print("LOSS:", loss)
 
-            if n % 100 == 0:
-                loss_str = f"{model.running_loss['default'] / model.running_loss['total']:7.3f}"
-                print(f"loss: {colour('yellow', loss_str)} \tlast --> loss={loss.item():7.3f} out={out_c_text} l={item.l}",
+            if n % PRINT_EVERY == 0:
+                loss_str = f"{model.running_loss['default'] / model.running_loss['total']:15.3f}"
+                print(f"loss: {colour('yellow', loss_str)}\tlast --> loss={loss.item():15.3f} out={out_c_text} l={item.l}",
                       end="\r")
 
             if "--preview" in sys.argv:
