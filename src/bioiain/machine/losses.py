@@ -227,18 +227,24 @@ class ImgAndClassifierLoss(object):
     def __call__(self, out_i, img, out_c=None, c=None, return_all=False):
         #print(out_i, img, out_c, c)
         i_loss = self.MSE(out_i, img)
-        #print("I LOSS:", i_loss)
+
         c_loss = None
         try:
 
             assert (out_c is not None) and (c is not None), "No class provided"
+            print("\nI LOSS:", i_loss)
+
             c_loss = self.MSE(out_c, c)
-            #print("C LOSS:", c_loss)
-            multiplier = torch.divide(torch.tensor([1]).to(DEVICE), c_loss)
-            if c_loss > 0.1:
-                raise LossIsZero()
-            #print("MULTIPLIER:", multiplier)
+            print("C LOSS:", c_loss)
+            # if c_loss < 0.001:
+            #     raise LossIsZero()
+            # multiplier = torch.divide(torch.tensor([1]).to(DEVICE), c_loss)
+            multiplier = c_loss
+
+            print("MULTIPLIER:", multiplier)
             loss = torch.multiply(i_loss, multiplier)
+            print("NEW LOSS", loss)
+
         except (AssertionError, LossIsZero):
             loss = i_loss
 

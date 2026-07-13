@@ -44,8 +44,12 @@ class SaProt3DEmbedding(Structure3DEmbedding):
         super().__init__(*args, subfolder=saprot_model, **kwargs)
 
 class Compactness3DEembedding(Structure3DEmbedding):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, subfolder="compactness", **kwargs)
+    def __init__(self, *args, relative=True, **kwargs):
+        if relative:
+            prefix=f"compactness_rel"
+        else:
+            prefix=f"compactness_abs"
+        super().__init__(*args, subfolder=prefix, **kwargs)
 
 class CompactnessMLPmk1(BaseModel):
     def __init__(self, *args, **kwargs):
@@ -53,7 +57,7 @@ class CompactnessMLPmk1(BaseModel):
         n = self.data["in_shape"][0]
         self.data["hidden_dims"] = [n*2, n*2, n]
         self.layers["default"] = {
-            "linear1": nn.Linear(self.data["in_shape"][0], self.data["hidden_dims"][-3]),
+            "linear1":    nn.Linear(self.data["in_shape"][0], self.data["hidden_dims"][-3]),
             "en_relu1": nn.ReLU(),
             "linear2": nn.Linear(self.data["hidden_dims"][-3], self.data["hidden_dims"][-2]),
             "en_relu2": nn.ReLU(),

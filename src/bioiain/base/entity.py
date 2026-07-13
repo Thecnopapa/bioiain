@@ -77,6 +77,13 @@ class BIEntity(object):
         self._parameters = None
         self._operations = None
 
+        # COmpactness
+        self.data["compactness"] = {}
+        self._compactness = {
+            "rel_compactness": None,
+            "abs_compactness": None,
+        }
+
 
         if parent is not None:
             self.paths["export_folder"] = parent.paths["export_folder"].strip()
@@ -288,6 +295,7 @@ class BIEntity(object):
               chain=None,
               group_by_chain=False,
               as_chains=False,
+              chain_class=None,
               by_complex=False,
               model:int|str|None = None,
               verbose=False,
@@ -353,8 +361,11 @@ class BIEntity(object):
                 else:
                     chain_list[atom.chain] = [atom]
             if as_chains:
+                if chain_class is None:
+                    chain_class = BIChain
+
                 for ch, atms in chain_list.items():
-                    chain_list[ch] = BIChain().from_atoms(atms, self.code(), ch, parent=self)
+                    chain_list[ch] = chain_class().from_atoms(atms, self.code(), ch, parent=self)
                 #[print(ch.id(), type(ch.id())) for ch in chain_list.values()]
                 #print((ch.id() if not by_complex else ch.complex()) for ch in chain_list.values())
                 chain_list = list(chain_list.values())
@@ -1228,3 +1239,134 @@ class BIEntity(object):
 
         print()
         return output
+
+
+    def ca_kdtree(self, force=False, auto_parse_symmetry=True, **kwargs):
+        from ..utilities.kdtree import KDT
+        if force or getattr(self, "_kdtrees", {}).get("ca", None) is None or (self._kdtrees["ca"].has_symmetries != auto_parse_symmetry):
+            KDT(self, mode="ca", auto_parse_symmetry=auto_parse_symmetry, **kwargs)
+        return self._kdtrees["ca"]
+
+
+    def compactness(self, force=False, with_symmetry=True, **kwargs):
+        if with_symmetry:
+            label = "rel_compactness"
+        else:
+            label = "abs_compactness"
+        if (not force) and self.has_flag(f"{label}_calculated", True):
+            try:
+                self._compactness[label] = []
+                for res in self.residues():
+                    self._compactness[label].append(res.ca.get_misc(label))
+                log(2, "Compactness already generated")
+
+            except:
+                log("warning", "Failed to obtain entire completeness list from residues")
+                self._compactness[label] = None
+        if force or self._compactness[label] is None:
+            self._calculate_compactness(with_symmetry=with_symmetry, **kwargs)
+
+
+        return self._compactness
+
+    def _calculate_compactness(self, radius=10, plot=False, session=False, with_symmetry=True, export=True):
+        if with_symmetry:
+            label = "rel_compactness"
+        else:
+            label = "abs_compactness"
+        log(2, f"Calculating {label}...")
+        kdtree = self.ca_kdtree(auto_parse_symmetry=with_symmetry)
+        residues = self.residues()
+        self.set_misc(label, None)
+
+        from src.bioiain.visualisation.plots import plasma
+
+        if plot:
+            log(2, "Including 3D mpl plot")
+            from src.bioiain.visualisation.plots import fig3D, close, show, line
+            fig, ax = fig3D()
+            #print(fig, ax)
+
+        if session:
+            log(2, "Including pymol session")
+            from src.bioiain.visualisation.pymol import PymolScript
+            script = PymolScript(name=f"{label}_{self.name()}", folder = self.folder())
+            minimal = self.path(minimal=True)
+            entity_name = script.load(minimal)
+            #print(script ,entity_name)
+
+        self = self.fragment(in_place=True)
+        max_frags = self.data["fragments"]["n_fragments"]
+        assert max_frags is not None
+
+
+        all_compactness = []
+        rn = -1
+        for n, k in enumerate(kdtree):
+            if k["op"] != 1:
+                continue
+            rn += 1
+            #print(n, k, rn)
+            fragment = k["atom"].get_misc("fragment", 0)
+            if fragment is None:
+                fragment = 0
+            color = plasma(fragment, scale=max_frags)
+            coord = k["coord"]
+            atom = k["atom"]
+            residue = residues[rn]
+            #print(n, rn, atom, residue)
+            assert atom.resseq == residue.resseq, f"{atom.resseq}, {residue.resseq}"
+
+            neighs = list(kdtree.radius(k["coord"], radius=radius)[0])
+            # print(neighs)
+            final_vector = np.array([0., 0., 0.])
+            valid_nn = 0
+            for nn in neighs:
+                if n == nn:
+                    # log("warning", "Same atom:", n, nn)
+                    continue
+                if (kdtree.atom_of(nn).get_misc("fragment", None) == fragment) and (kdtree.pos_of(nn) in [None, 1]):
+                    # log("warning", "Same fragment:", fragment,  kdtree.atom_of(nn).get_misc("fragment", None),)
+                    continue
+                valid_nn += 1
+                # ax.plot(*line(k["coord"], kdtree.coord_of(nn)), c=color)
+                final_vector += np.array(vector(coord, kdtree.coord_of(nn)))
+
+
+            if valid_nn > 0:
+                final_vector /= valid_nn
+                final_vector *= -1
+                compactness = length(final_vector)
+                # print(final_vector, compactness)
+                vector_end = coord + final_vector
+                all_compactness.append(compactness)
+                residue.set_misc(label, float(compactness))
+                if  plot:
+                    ccol = plasma(compactness, scale=10)
+                    ax.scatter(*coord, c=ccol, s=valid_nn + 1)
+                    ax.plot(*line(coord, vector_end), c=ccol)
+                if session:
+                    hexccol = plasma(compactness, scale=10, as_pymol_hex=True)
+
+                    r1 = f"({entity_name} and i. {atom.resnum} and c. {atom.complex})"
+                    #print(r1)
+                    a1 = f"({r1} and n. ca)"
+                    script.line(name=label, sele1=a1, coord2=vector_end)
+                    script.color(r1, color=hexccol)
+
+
+        self.set_flag(f"{label}_calculated", True)
+
+        if plot:
+            show()
+            close(fig)
+
+        if session:
+            script.compile()
+            script.execute()
+        self._compactness[label] = all_compactness
+        if export:
+            self.export()
+        log(3, f"{label} calculated")
+        return self._compactness[label]
+

@@ -98,3 +98,9 @@ class BIChain(BIEntity):
         self.set_chain_id(chain_id, complex=overwrite_complex)
         self.sequence()
         return self
+
+
+
+
+
+

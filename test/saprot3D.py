@@ -41,18 +41,21 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
     fs = FoldseekDB(dataset.name, dataset, foldseek_command=foldseek_command, force=force, dry=True)
 
     embeddings_name = f"{fs.saprot_model}_3D_size_{img_size}_{dataset.name}"
-    labels_name = f"compactness_3D_size_{img_size}_{dataset.name}"
+    rel_labels_name = f"compactness_SYM_3D_size_{img_size}_{dataset.name}"
+    abs_labels_name = f"compactness_ABS_3D_size_{img_size}_{dataset.name}"
 
     embeddings = EmbeddingDataset(embeddings_name)
-    labels = EmbeddingDataset(labels_name)
+    rel_labels = EmbeddingDataset(rel_labels_name)
+    abs_labels = EmbeddingDataset(abs_labels_name)
 
     if not force:
         if not force_embeddings or as_is:
             embeddings.load(load_temp=True)
         if not force_labels or as_is:
-            labels.load(load_temp=True)
+            rel_labels.load(load_temp=True)
+            abs_labels.load(load_temp=True)
 
-    if (embeddings.incomplete() or labels.incomplete() or rebuild) and not as_is:
+    if (embeddings.incomplete() or rel_labels.incomplete() or abs_labels.incomplete() or rebuild) and not as_is:
         fs.run()
 
         for n, (tensor_path, entry, saprot_model) in enumerate(fs.saprot_embeddings(return_tensor=False)):
@@ -66,16 +69,17 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
                 if os.path.exists(embeddings.embeddings[name]["embedding_path"]):
                     log(1, f"Embedding ({name}) already generated")
                     embedding_done = True
-            if name in labels.embeddings.keys() and not force_labels:
-                l_path = labels.embeddings[name]["embedding_path"]
-                if os.path.exists(l_path):
-                    log(1, f"Label ({name}) already generated")
+            if name in rel_labels.embeddings.keys() and name in abs_labels.embeddings.keys() and not force_labels:
+                rel_l_path = rel_labels.embeddings[name]["embedding_path"]
+                abs_l_path = abs_labels.embeddings[name]["embedding_path"]
+                if os.path.exists(rel_l_path) and os.path.exists(abs_l_path):
+                    log(1, f"Labels ({name}) already generated")
                     label_done = True
 
             if (embedding_done and label_done) and not force:
                 continue
             try:
-                entity = CompactStructure.from_file(dataset.get(code).get("path"), verbose=False)
+                entity = FragmentedStructure.from_file(dataset.get(code).get("path"), verbose=False, check_existing=not force)
                
                 log(1, entity)
                 chain = entity.chains(ch, by_complex=True, model=model)
@@ -88,8 +92,8 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
                 try:
                     chain = chain[0]
                 except:
-                    print(entity.chains(model=model))
-                    raise NoChainsDetected(f"No chains detected {(code,ch,model)}: {chain} {print(entity.chains(model=model))}")
+                    print(entity.chains(by_complex=True, model=model))
+                    raise NoChainsDetected(f"No chains detected {(code,ch,model)}: {chain} {print(entity.chains(by_complex=True, model=model))}")
 
                 log(1, chain)
 
@@ -117,15 +121,26 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
                     log(2, embeddings)
 
                 if not label_done:
-                    log(1, "Loading compactness...")
-                    entity.compactness()
-                    log(1, "Generating 3D label...")
-                    label3D = chain.img3D(property="compactness", plot=False, size=IMG_SIZE, as_embedding=True, mode="mean", residue_kwargs={"need_backbone":False})
-                    log(2, label3D.shape)
-                    label_embedding = Compactness3DEembedding.from_tensor(label3D, name=name, img_size=IMG_SIZE).save()
-                    labels.add(label_embedding)
-                    labels.save(temp=True)
-                    log(2, labels)
+                    log(1, "Loading Relative compactness...")
+                    entity.compactness(with_symmetry=True)
+                    log(1, "Generating Relative 3D label...")
+                    rel_label3D = chain.img3D(property="rel_compactness", plot=False, size=IMG_SIZE, as_embedding=True, mode="mean", residue_kwargs={"need_backbone":False})
+                    log(2, rel_label3D.shape)
+                    rel_label_embedding = Compactness3DEembedding.from_tensor(rel_label3D, name=name, img_size=IMG_SIZE, relative=True).save()
+                    rel_labels.add(rel_label_embedding)
+                    rel_labels.save(temp=True)
+                    log(2, rel_labels)
+
+
+                    log(1, "Loading Absolute compactness...")
+                    chain.compactness(with_symmetry=False, export=False)
+                    log(1, "Generating Absolute 3D label...")
+                    abs_label3D = chain.img3D(property="abs_compactness", plot=False, size=IMG_SIZE, as_embedding=True, mode="mean", residue_kwargs={"need_backbone":False})
+                    log(2, abs_label3D.shape)
+                    abs_label_embedding = Compactness3DEembedding.from_tensor(abs_label3D, name=name, img_size=IMG_SIZE, relative=False).save()
+                    abs_labels.add(abs_label_embedding)
+                    abs_labels.save(temp=True)
+                    log(2, abs_labels)
 
             except (StructureLoadException, NotImplementedError, MultipleChainsDetected, NoChainsDetected, SequenceMissmatchException) as e:
                 dataset.add_to_blacklist(dataset.get(code).get("path"), e)
@@ -137,11 +152,12 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
                 dataset.add_to_blacklist(dataset.get(code).get("path"), e)
 
         embeddings.save(temp=False)
-        labels.save(temp=False)
-    return embeddings, labels
+        rel_labels.save(temp=False)
+        abs_labels.save(temp=False)
+    return embeddings, rel_labels, abs_labels
 
 
-embeddings, labels = generate_3DSaprot_embeddings(dataset, img_size=IMG_SIZE, force=FORCE, rebuild=REBUILD, force_labels=LABELS, as_is=WORK_AS_IS)
+embeddings, rel_labels, abs_labels = generate_3DSaprot_embeddings(dataset, img_size=IMG_SIZE, force=FORCE, rebuild=REBUILD, force_labels=LABELS, as_is=WORK_AS_IS)
 
 if REBUILD or FORCE or LABELS:
     log("header","Configuring oligomer labels")
@@ -179,9 +195,10 @@ IN_SHAPE = embeddings.get(0).t.shape
 log(1, f"IN_SHAPE={IN_SHAPE}")
 
 log(1, "EMBEDDINGS", embeddings)
-log(1, "LABELS:", labels)
-
+log(1, "REL LABELS:", rel_labels)
+log(1, "ABS_LABELS:", abs_labels)
 PRINT_EVERY=100
+FINETUNE = "--finetune" in sys.argv
 if len(embeddings) <= 100:
     PRINT_EVERY=1
 
@@ -202,32 +219,36 @@ if TRAIN:
             #print(n)
             embeddings.use_label("oligo")
             item = embeddings.get(n, label=True, label_key="oligo")
-            litem = labels.get(n, label=False)
-            assert item.name == litem.name
+            rel_item = rel_labels.get(n, label=False)
+            abs_item = abs_labels.get(n, label=False)
+
+            assert item.name == rel_item.name and item.name == abs_item.name, f"{item.name} == {rel_item.name} == {abs_item.name}"
             tensor = item.t.to(torch.float32).to(DEVICE)
-            label = litem.t.to(torch.float32).to(DEVICE)
+            rel_label = rel_item.t.to(torch.float32).to(DEVICE)
+            abs_label = abs_item.t.to(torch.float32).to(DEVICE)
             label_oligo = torch.Tensor([item.l]) if item.l is not None else None
             #print(item.name, label_oligo, item.l)
 
             #print(entity)
             if n % PRINT_EVERY == 0:
-                log(1, f"{n:6d}/{max_n:6d}", end=" ")
+                log(1, f"{n+1:6d}/{max_n:6d}", end=" ")
 
 
             #print("\nIN:", tensor.shape, tensor.dtype)
             out_i = model.forward(tensor)
             #print("OUT:", out_i.shape, out_c.shape)
             #print("LABEL:", label.shape, label.dtype)
-            label = model.compress(label)
+            rel_label_x = model.compress(rel_label)
+            abs_label_x = model.compress(abs_label)
             #print("COMPRESSED LABEL:", label.shape)
 
-            if label_oligo is not None:
-                out_c = model.classify(out_i, reference=label)
-                loss = model.raw_loss(out_i, label, out_c, label_oligo)
+            if label_oligo is not None and FINETUNE:
+                out_c = model.classify(out_i, reference=rel_label_x)
+                loss = model.raw_loss(out_i, rel_label_x, out_c, label_oligo)
                 out_c_text = f"{out_c.item():7.3f}"
             else:
                 out_c_text="None"
-                loss = model.loss(out_i, label)
+                loss = model.loss(out_i, rel_label_x)
             #print("LOSS:", loss)
 
             if n % PRINT_EVERY == 0:
