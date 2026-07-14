@@ -298,7 +298,7 @@ if INFERENCE:
 
 
         log(1, "Loading entity...")
-        entity = FragmentedStructure.from_file(filepath, export_folder="inference")
+        entity = FragmentedStructure.from_file(filepath, export_folder="inference", check_existing=False)
         entity.compactness(with_symmetry=True)
 
         entity.export()
@@ -318,11 +318,12 @@ if INFERENCE:
             name = f"{code}_{ch}_{m}"
 
             try:
-                log(1, entity)
+                log(1, entity, name)
                 chain = entity.chains(ch, by_complex=True, model=m)
-                print([c.complex() for c in chain])
+                print([c.complex() for c in entity.chains()])
+                print(chain, len(chain))
                 assert len(chain) <= 1, f"Multiple chains detected {(code,ch,m)}: {chain}"
-                assert len(chain) > 0, f"No chains detected {(code,ch,m)}: {entity.chains()}"
+                assert len(chain) > 0, f"No chains detected {(code,ch,m)}: {entity.chains(by_complex=True)}"
                 chain = chain[0]
                 log(1, chain)
 
@@ -348,7 +349,7 @@ if INFERENCE:
                 log(2, rel_label3D.shape)
 
                 log(1, "Loading Absolute compactness...")
-                chain.compactness(with_symmetry=False)
+                chain.compactness(with_symmetry=False, export=False)
                 log(1, "Generating absolute 3D label...")
                 abs_label3D = chain.img3D(property="abs_compactness", shrink=True, size=IMG_SIZE, as_embedding=True, mode="mean", residue_kwargs={"need_backbone":False})
                 log(2, abs_label3D.shape)

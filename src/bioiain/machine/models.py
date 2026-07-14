@@ -5,7 +5,7 @@ import PIL
 from torch.utils.tensorboard import SummaryWriter
 from ..utilities import *
 from ..utilities.strings import humanise
-from . import DEVICE
+from . import DEVICE, USE_ALL_DEVICES, DEVICE_N
 
 from .losses import *
 
@@ -61,8 +61,11 @@ class BaseModel(nn.Module):
             "default": {
             }
         }
+        self.constant_layers = {}
+
         self.submodels = {}
-        
+        self.constant_submodels = {}
+
         self.running_loss = {"total":0, "default":0}
         self.batch_loss = {"current_n":0, "current_list":[], "cumulative":0, "n_batches": 0}
 
@@ -112,7 +115,10 @@ class BaseModel(nn.Module):
         if device is None:
             device = DEVICE
         for k in self.submodels.keys():
-            self.submodels[k] = self.submodels[k].to(device)
+            if USE_ALL_DEVICES:
+                self.submodels[k] = torch.nn.DataParallel(self.submodels[k], device_ids=DEVICE_N)
+            else:
+                self.submodels[k] = self.submodels[k].to(device)
         return self
 
 
@@ -137,6 +143,13 @@ class BaseModel(nn.Module):
         log(2, "Mounting submodels...")
         for k, layer_set in self.layers.items():
             self.submodels[k] = nn.Sequential(*[l.to(DEVICE) for l in layer_set.values()]).to(DEVICE)
+
+        for k, layer_set in self.constant_layers.items():
+            self.constant_submodels[k] = nn.Sequential(*[l.to(DEVICE) for l in layer_set.values()]).to(DEVICE)
+            for const_l in self.constant_submodels[k]:
+                nn.init.constant_(const_l.weight, 1.0)
+                nn.init.constant_(const_l.bias, 0.0)
+
         if not self.inference:
             for o, op_data in self.optimisers.items():
                 if type(op_data["layer_set"]) is str:

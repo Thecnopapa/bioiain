@@ -114,7 +114,7 @@ class Saprot3Dto1(BaseModel):
             "conv_reluM": nn.ReLU(),
         }
         self.layers["last_pool"] = {
-            "last_pool": nn.MaxPool3d(
+            "last_pool": nn.AvgPool3d(
                 kernel_size=last_kernel,
                 stride=1,
             ),
@@ -136,11 +136,11 @@ class Saprot3Dto1(BaseModel):
 
         }
         self.layers["compressor"] = {
-            "compressor1": nn.MaxPool3d(
+            "compressor1": nn.AvgPool3d(
                 kernel_size=conv_kernels[0],
                 stride=1,
             ),
-            "compressor2": nn.MaxPool3d(
+            "compressor2": nn.AvgPool3d(
                  kernel_size=conv_kernels[1],
                  stride=1,
              ),

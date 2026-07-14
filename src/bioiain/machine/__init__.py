@@ -4,12 +4,18 @@ from ..utilities.logging import log
 import torch, sys
 
 DEVICE = "cpu"
+DEVICE_N = None
+USE_ALL_DEVICES = False
 if "--cpu" not in sys.argv:
     if torch.cuda.is_available():
+        DEVICE_LIST = list(range(torch.cuda.device_count()))
         DEVICE = "cuda"
         if "--cuda" in sys.argv:
-            DEVICE_N =  int(sys.argv[sys.argv.index("--cuda") + 1])
-            DEVICE = f"{DEVICE}:{DEVICE_N}"
+            DEVICE_N =  [int(sys.argv[sys.argv.index("--cuda") + 1])]
+            DEVICE = f"{DEVICE}:{DEVICE_N[0]}"
+        elif "--cuda-all" in sys.argv and len(DEVICE_LIST) > 1:
+            USE_ALL_DEVICES=True
+            DEVICE_N = DEVICE_LIST
     elif torch.xpu.is_available():
         DEVICE = "xpu"
 
