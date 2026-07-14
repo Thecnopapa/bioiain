@@ -4,24 +4,24 @@
 # PROJECT SPECIFIC AFTER THIS
 
 testing(){
-  cd $FOLDER_PATH/test && python test.py "$@"
+  cd $PROJECT_PATH/test && python test.py "$@"
 }
 
 upload(){
-  cd $FOLDER_PATH | exit 0
+  cd $PROJECT_PATH | exit 0
   python3 -m build
   python3 -m twine upload --repository pypi dist/* --verbose --skip-existing
   rm dist/*
 }
 upload-test(){
-  cd $FOLDER_PATH | exit 0
+  cd $PROJECT_PATH | exit 0
   python3 -m build
   python3 -m twine upload --repository testpypi dist/* --verbose --skip-existing
   rm dist/*
 }
 
 upload-gcloud(){
-  cd $FOLDER_PATH | exit 0
+  cd $PROJECT_PATH | exit 0
   python3 -m build
   python3 -m twine upload --repository-url  https://europe-west1-python.pkg.dev/iainvisa/python/ dist/* --verbose
   rm dist/*
@@ -32,6 +32,11 @@ upload-all(){
   upload-gcloud
 }
 
+
+
+pull-aleph(){
+  echo $(cd "${PROJECT_PATH}/src/bioiain/aleph/ALEPH2" && pull)
+}
 
 update(){
     echo '$ pip install bioiain -U'
