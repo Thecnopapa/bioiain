@@ -1,0 +1,3 @@
+[submodule "src/bioiain/aleph/ALEPH2"]
+	path = src/bioiain/aleph/ALEPH2
+	url = git@github.com:arcimboldo-team/ALEPH2.git
