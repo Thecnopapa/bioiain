@@ -321,7 +321,8 @@ if INFERENCE:
                 log(1, entity)
                 chain = entity.chains(ch, by_complex=True, model=m)
                 print([c.complex() for c in chain])
-                assert len(chain) <= 1, f"Multiple chains detected {(code,ch,model)}: {chain}"
+                assert len(chain) <= 1, f"Multiple chains detected {(code,ch,m)}: {chain}"
+                assert len(chain) > 0, f"No chains detected {(code,ch,m)}: {entity.chains()}"
                 chain = chain[0]
                 log(1, chain)
 
@@ -340,21 +341,29 @@ if INFERENCE:
                 log(2, tensor3D.shape)
 
 
-                log(1, "Loading compactness...")
-                entity.compactness(with_symmetry=True)
-                log(1, "Generating 3D label...")
-                label3D = chain.img3D(property="rel_compactness", shrink=True, size=IMG_SIZE, as_embedding=True, mode="mean", residue_kwargs={"need_backbone":False})
-                log(2, label3D.shape)
+                log(1, "Loading Relative compactness...")
+                entity.compactness(with_symmetry=True, force=True)
+                log(1, "Generating relative 3D label...")
+                rel_label3D = chain.img3D(property="rel_compactness", shrink=True, size=IMG_SIZE, as_embedding=True, mode="mean", residue_kwargs={"need_backbone":False})
+                log(2, rel_label3D.shape)
 
-            except:
+                log(1, "Loading Absolute compactness...")
+                chain.compactness(with_symmetry=False)
+                log(1, "Generating absolute 3D label...")
+                abs_label3D = chain.img3D(property="abs_compactness", shrink=True, size=IMG_SIZE, as_embedding=True, mode="mean", residue_kwargs={"need_backbone":False})
+                log(2, abs_label3D.shape)
+
+            except Exception as e:
+                log("warning", e)
+                continue
                 raise
 
             in_tensor = tensor3D.to(DEVICE)
-            #print("IN_TENSOR", in_tensor.shape)
-            real_label_x = label3D.to(DEVICE)
-            #print("REAL_LABEL", real_label_x.shape)
-            compressed_label_x = model.compress(real_label_x)
-            #print("COMPRESSED_LABEL", compressed_label_x.shape)
+            rel_label = rel_label3D.to(DEVICE)
+            rel_label_x = model.compress(rel_label)
+
+            abs_label = abs_label3D.to(DEVICE)
+            abs_label_x = model.compress(abs_label)
 
             out_x = model(in_tensor)
             #print("OUT", out_x.shape)
@@ -362,29 +371,64 @@ if INFERENCE:
             import matplotlib.pyplot as plt
             from src.bioiain.visualisation import voxels3d, show
             fig = plt.figure()
+            fig.suptitle(f"{chain}")
             n_figs = 6
-
-            label_ax = fig.add_subplot(1, n_figs, 1, projection="3d")
-            real_label = real_label_x.detach().cpu().numpy()[0]
-            label_count = (real_label > 0.1) & (real_label > 0.1) & (real_label > 0.1)
-            label_count = label_count.astype(np.int64)
-            #print(label_count)
-            voxels3d(real_label, count_grid=label_count, ax = label_ax, shrink = True, title="Real label")
-
-            compressed_ax = fig.add_subplot(1, n_figs, 2, projection="3d")
-            compressed_label = compressed_label_x.detach().cpu().numpy()[0]
-            voxels3d(compressed_label, ax = compressed_ax, shrink = True, title="Compressed")
+            n_rows = 3
 
 
-            out_ax = fig.add_subplot(1, n_figs, 3, projection="3d")
+            # Real Labels ##############################################################################################
+            rel_label_ax = fig.add_subplot(n_rows, n_figs, 1, projection="3d")
+            rel_label_detached = rel_label.detach().cpu().numpy()[0]
+            rel_label_count = (rel_label_detached > 0.01) & (rel_label_detached > 0.01) & (rel_label_detached > 0.01)
+            rel_label_count = rel_label_count.astype(np.int64)
+            #print(rel_label_detached)
+            voxels3d(rel_label_detached, count_grid=rel_label_count, ax = rel_label_ax, shrink = True, title="Rel label")
+
+            abs_label_ax = fig.add_subplot(n_rows, n_figs, n_figs+1, projection="3d")
+            abs_label_detached = abs_label.detach().cpu().numpy()[0]
+            abs_label_count = (abs_label_detached > 0.01) & (abs_label_detached > 0.01) & (abs_label_detached > 0.01)
+            abs_label_count = abs_label_count.astype(np.int64)
+            #print(abs_label_detached)
+            voxels3d(abs_label_detached, count_grid=abs_label_count, ax = abs_label_ax, shrink = True, title="Abs label")
+
+
+            diff_label_ax = fig.add_subplot(n_rows, n_figs, n_figs*2+1, projection="3d")
+
+            diff_label = abs(np.subtract(rel_label.detach().cpu().numpy()[0], abs_label.detach().cpu().numpy()[0]))
+
+            diff_label_count = (diff_label > 0.01) & (diff_label > 0.01) & (diff_label > 0.01)
+            diff_label_count = diff_label_count.astype(np.int64)
+            print(diff_label)
+            print(diff_label_count)
+            print(diff_label.shape)
+            voxels3d(diff_label, count_grid=diff_label_count, ax = diff_label_ax, shrink = True, title="Diff label")
+
+
+            # Compressed labels ########################################################################################
+            compressed_rel_ax = fig.add_subplot(n_rows, n_figs, 2, projection="3d")
+            rel_label_x_detached = rel_label_x.detach().cpu().numpy()[0]
+            voxels3d(rel_label_x_detached, ax = compressed_rel_ax, shrink = True, title="Rel label X")
+
+            compressed_abs_ax = fig.add_subplot(n_rows, n_figs, n_figs+2, projection="3d")
+            abs_label_x_detached = abs_label_x.detach().cpu().numpy()[0]
+            voxels3d(abs_label_x_detached, ax = compressed_abs_ax, shrink = True, title="Abs label X")
+
+            compressed_diff_ax = fig.add_subplot(n_rows, n_figs, n_figs*2+2, projection="3d")
+            diff_label_x = abs(rel_label_x.detach().cpu().numpy()[0] - abs_label_x.detach().cpu().numpy()[0])
+            voxels3d(diff_label_x, ax = compressed_diff_ax, shrink = True, title="Diff label X")
+
+
+
+            # Model output #############################################################################################
+            out_ax = fig.add_subplot(n_rows, n_figs, 3, projection="3d")
             out = out_x.detach().cpu().numpy()[0]
             #print(out)
-            voxels3d(out, ax = out_ax, shrink = True, title="Out")
+            voxels3d(out, ax = out_ax, shrink = True, title="Raw output")
 
-            scaled_ax = fig.add_subplot(1, n_figs, 4, projection="3d")
+            scaled_ax = fig.add_subplot(n_rows, n_figs, 4, projection="3d")
 
-            max_val = compressed_label.reshape(compressed_label.shape[-1] ** 3).max()
-            min_val = compressed_label.reshape(compressed_label.shape[-1] ** 3).min()
+            max_val = rel_label_x_detached.reshape(rel_label_x_detached.shape[-1] ** 3).max()
+            min_val = rel_label_x_detached.reshape(rel_label_x_detached.shape[-1] ** 3).min()
 
             max_out = out.reshape(out.shape[-1] ** 3).max()
             min_out = out.reshape(out.shape[-1] ** 3).min()
@@ -400,18 +444,18 @@ if INFERENCE:
             #scaled_out = np.absolute((out + min_out) / out_range * val_range)
             scaled_out = ((out + min_out) / out_range) * val_range
 
-            voxels3d(scaled_out, ax = scaled_ax, shrink = True, title="Scaled")
+            voxels3d(scaled_out, ax = scaled_ax, shrink = True, title="Scaled output")
 
+            # Real vs output differences ################################################################################
+            diff_ax = fig.add_subplot(n_rows, n_figs, 5, projection="3d")
+            diff = np.absolute(scaled_out- rel_label_x_detached)
+            voxels3d(diff, ax = diff_ax, shrink = True, title="Diff out/rel")
 
-            diff_ax = fig.add_subplot(1, n_figs, 5, projection="3d")
-            diff = np.absolute(scaled_out- compressed_label)
-            voxels3d(diff, ax = diff_ax, shrink = True, title="Diff")
-
-            model_diff_ax = fig.add_subplot(1, n_figs, 6, projection="3d")
-            pred, model_diff = model.classify(out_x, reference=compressed_label_x, return_diff=True)
+            model_diff_ax = fig.add_subplot(n_rows, n_figs, 6, projection="3d")
+            pred, model_diff = model.classify(out_x, reference=rel_label_x, return_diff=True)
             pred = pred.detach().cpu().numpy().item()
             model_diff = model_diff.detach().cpu().numpy()[0]
-            voxels3d(model_diff, ax = model_diff_ax, shrink = True, title=f"Model diff ({pred:.2f})")
+            voxels3d(model_diff, ax = model_diff_ax, shrink = True, title=f"Model diff out/rel ({pred:.2f})")
 
 
             show()
