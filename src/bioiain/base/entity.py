@@ -1071,7 +1071,7 @@ class BIEntity(object):
         pisa = PISA(pisa_id=self.name(), **kwargs)
 
 
-    def img3D(self, size=16, property:None|dict|list|str=None, mode="mean", distortion="none", plot=False, show_plot=False, embedding=None, residue_kwargs={}, as_embedding=False, gif=False):
+    def img3D(self, size=16, property:None|dict|list|str=None, mode="mean", distortion="none", plot=False, show_plot=False, embedding=None, residue_kwargs={}, as_embedding=False, gif=False, **kwargs):
         log(2, f"Generating 3D voxels...")
         log(3, f"Size: {size}x{size}x{size} ({size**3})")
         log(3, f"Distortion: {distortion}")
@@ -1233,7 +1233,7 @@ class BIEntity(object):
                 if gif:
                     gif_path = os.path.join(self.folder(), "gifs", f"{self.full_id()}_{pp}")
                 from src.bioiain.visualisation import voxels3d
-                voxels3d(value_grid, count_grid, show_plot=show_plot, title=pp, gif_path=gif_path)
+                voxels3d(value_grid, count_grid, show_plot=show_plot, title=pp, gif_path=gif_path, **kwargs)
 
 
 

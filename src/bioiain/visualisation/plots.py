@@ -219,7 +219,7 @@ def mpl3D_to_gif(
     log(4,"Saving to:", path)
     return path
 
-def voxels3d(value_grid, count_grid=None, show_plot=False, title=None, shrink=False, gif_path=None, ax=None):
+def voxels3d(value_grid, count_grid=None, show_plot=False, title=None, shrink=False, gif_path=None, ax=None, **kwargs):
 
     def explode_cube(data):
         size = np.array(data.shape)*2

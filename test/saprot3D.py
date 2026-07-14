@@ -298,7 +298,7 @@ if INFERENCE:
 
 
         log(1, "Loading entity...")
-        entity = CompactStructure.from_file(filepath, export_folder="inference")
+        entity = FragmentedStructure.from_file(filepath, export_folder="inference")
         entity.compactness(with_symmetry=True)
 
         entity.export()
@@ -341,9 +341,9 @@ if INFERENCE:
 
 
                 log(1, "Loading compactness...")
-                entity.compactness()
+                entity.compactness(with_symmetry=True)
                 log(1, "Generating 3D label...")
-                label3D = chain.img3D(property="compactness", plot=False, size=IMG_SIZE, as_embedding=True, mode="mean", residue_kwargs={"need_backbone":False})
+                label3D = chain.img3D(property="rel_compactness", shrink=True, size=IMG_SIZE, as_embedding=True, mode="mean", residue_kwargs={"need_backbone":False})
                 log(2, label3D.shape)
 
             except:
@@ -415,4 +415,4 @@ if INFERENCE:
 
 
             show()
-            exit()
+            #exit()
