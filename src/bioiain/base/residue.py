@@ -114,6 +114,7 @@ class BIResidue(object):
 
             self.resseq = self.ca.resseq
             self.chain = self.ca.chain
+            self.model = self.ca.model
             self.entity = self.ca.entity
             self.complex = self.ca.complex
 
