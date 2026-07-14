@@ -145,7 +145,7 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
                     abs_labels.save(temp=True)
                     log(2, abs_labels)
 
-            except (StructureLoadException, NotImplementedError, MultipleChainsDetected, NoChainsDetected, SequenceMissmatchException) as e:
+            except (StructureLoadException, NotImplementedError, MultipleChainsDetected, NoChainsDetected, SequenceMissmatchException, ALEPHError) as e:
                 dataset.add_to_blacklist(dataset.get(code).get("path"), e)
             except AssertionError as e:
                 try:
