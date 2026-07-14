@@ -11,6 +11,18 @@ log("title", "test.py")
 
 
 
+
+entity = BIEntity.from_file("./5ezq.cif")
+for res in entity.residues():
+    if res.resnum == 477:
+        print(res)
+        for a in res.atoms:
+            print(a)
+
+entity.fragment()
+exit()
+
+
 term = logging.CursedTerminal()
 
 heights = term.split_height(percentages=[10,50,40])

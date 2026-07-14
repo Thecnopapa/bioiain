@@ -381,10 +381,10 @@ class BIEntity(object):
         if group_by_residue or len(target_entities) > 0:
             atoms_by_res = {}
             for atom in atoms:
-                if atom.id2()[1:-1] in atoms_by_res:
-                    atoms_by_res[atom.id2()[1:-1]].append(atom)
+                if (atom.resseq, atom.chain, atom.model) in atoms_by_res:
+                    atoms_by_res[(atom.resseq, atom.chain, atom.model)].append(atom)
                 else:
-                    atoms_by_res[atom.id2()[1:-1]] = [atom]
+                    atoms_by_res[(atom.resseq, atom.chain, atom.model)] = [atom]
 
             if len(target_entities) > 0:
                 entities = []

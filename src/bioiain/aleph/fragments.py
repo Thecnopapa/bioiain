@@ -145,7 +145,7 @@ class FragmentedStructure(BIStructure):
                             if res.resname != resname:
                                 if resname is not None:
                                     print(res.resseq, res.resnum, res.complex, chain, full_id, res.entity)
-                                    raise Exception(f"res.resname({res.resname}) != resname({resname})\nfres:{fres}\nres: {res}")
+                                    raise ALEPHMissmatch(f"res.resname({res.resname}) != resname({resname})\nfres:{fres}\nres: {res}")
                                 else:
                                     #log("warning", f"res.resname({res.resname}) != resname({resname})\nfres:{fres}\nres: {res}")
                                     pass

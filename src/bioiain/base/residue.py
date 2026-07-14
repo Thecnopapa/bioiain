@@ -117,9 +117,9 @@ class BIResidue(object):
             self.entity = self.ca.entity
             self.complex = self.ca.complex
 
-            self.is_disordered = not self.ca.ins_code is None
+            self.is_disordered = self.ca.disordered
             if self.is_disordered:
-                raise NotImplementedError()
+                raise NotImplementedError(f"Residue {self.resseq} ch.{self.chain} m.{self.model} is disordered")
 
 
             if any([a is None for a in self.backbone]):

@@ -152,6 +152,9 @@ class MissingCrystalInfo(CrystalError, StructureLoadException):
 class ALEPHError(Exception):
     pass
 
+class ALEPHMissmatch(ALEPHError):
+    pass
+
 
 # CVector Related
 class CVMatrixError(Exception):
