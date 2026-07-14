@@ -20,6 +20,8 @@ from data import dataset
 set_seed()
 
 
+ALLOW_EXPORTS= not ("--no-exports" in sys.argv)
+log(1, f"ALLOW_EXPORTS={ALLOW_EXPORTS}")
 
 IMG_SIZE = 8
 if "--size" in sys.argv:
@@ -33,10 +35,11 @@ MODEL_CLASS = Saprot3Dto1
 WORK_AS_IS = "--as-is" in sys.argv
 
 
-def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, force=False, rebuild=False, force_labels=False, force_embeddings=False, as_is=False):
+def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, force=False, rebuild=False, force_labels=False, force_embeddings=False, as_is=False, allow_exports=True):
     from src.bioiain.machine.datasets import EmbeddingDataset
     if force:
         rebuild = True
+        allow_exports = False
 
     fs = FoldseekDB(dataset.name, dataset, foldseek_command=foldseek_command, force=force, dry=True)
 
@@ -79,7 +82,7 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
             if (embedding_done and label_done) and not force:
                 continue
             try:
-                entity = FragmentedStructure.from_file(dataset.get(code).get("path"), verbose=False, check_existing=not force)
+                entity = FragmentedStructure.from_file(dataset.get(code).get("path"), verbose=False, check_existing=allow_exports)
                
                 log(1, entity)
                 chain = entity.chains(ch, by_complex=True, model=model)
@@ -157,7 +160,7 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
     return embeddings, rel_labels, abs_labels
 
 
-embeddings, rel_labels, abs_labels = generate_3DSaprot_embeddings(dataset, img_size=IMG_SIZE, force=FORCE, rebuild=REBUILD, force_labels=LABELS, as_is=WORK_AS_IS)
+embeddings, rel_labels, abs_labels = generate_3DSaprot_embeddings(dataset, img_size=IMG_SIZE, force=FORCE, allow_exports=ALLOW_EXPORTS, rebuild=REBUILD, force_labels=LABELS, as_is=WORK_AS_IS)
 
 if REBUILD or FORCE or LABELS:
     log("header","Configuring oligomer labels")
