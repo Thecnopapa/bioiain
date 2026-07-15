@@ -177,26 +177,39 @@ def generate_3DSaprot_embeddings(dataset,
 
             if (embedding_done and label_done) and not force:
                 continue
-
-            while threading.active_count() > n_threads:
-                print(f"Waiting for available thread... ({name}) running:{threading.active_count()-1}")
-                time.sleep(1)
-            thread = threading.Thread(target=generate_embedding_set,
-                                      name = name,
-                                      kwargs = dict(n=n,
-                                                   name=name, 
-                                                   code=code, 
-                                                   ch=ch, 
-                                                   model=model, 
-                                                   tensor_path=tensor_path, 
-                                                   entry=entry, 
-                                                   saprot_model=saprot_model, 
-                                                   img_size=img_size, 
-                                                   embedding_done=embedding_done,
-                                                   label_done=label_done, 
-                                                   )
-                                      )
-            thread.start()
+            if N_THREADS > 1:
+                while threading.active_count() > n_threads:
+                    print(f"Waiting for available thread... ({name}) running:{threading.active_count()-1}")
+                    time.sleep(1)
+                thread = threading.Thread(target=generate_embedding_set,
+                                          name = name,
+                                          kwargs = dict(n=n,
+                                                       name=name, 
+                                                       code=code, 
+                                                       ch=ch, 
+                                                       model=model, 
+                                                       tensor_path=tensor_path, 
+                                                       entry=entry, 
+                                                       saprot_model=saprot_model, 
+                                                       img_size=img_size, 
+                                                       embedding_done=embedding_done,
+                                                       label_done=label_done, 
+                                                       )
+                                          )
+                thread.start()
+            else:
+                generate_embedding_set(n=n,
+                                       name=name, 
+                                       code=code, 
+                                       ch=ch, 
+                                       model=model, 
+                                       tensor_path=tensor_path, 
+                                       entry=entry, 
+                                       saprot_model=saprot_model, 
+                                       img_size=img_size, 
+                                       embedding_done=embedding_done,
+                                       label_done=label_done, 
+                                       )
         
         while threading.active_count() > 1:
             print(f"waiting for Threads to finish")
