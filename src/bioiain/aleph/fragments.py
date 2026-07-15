@@ -71,7 +71,7 @@ class FragmentedStructure(BIStructure):
     def recover_cvmatrix(self):
         pass
 
-    def _fragment_with_aleph(self, force=False, export=False, **kwargs):
+    def _fragment_with_aleph(self, force=False, export=False, verbose=False, **kwargs):
         log(2, f"Fragmenting structure with ALEPH... mode={self.aleph_mode}")
         if self.has_flag("fragmented", True) and not force:
             log(2, "Fragments already generated!")
@@ -89,6 +89,7 @@ class FragmentedStructure(BIStructure):
         else:
             if self.aleph_mode == "debug":
                 from .core._debug_ALEPH import annotate_pdb_model_with_aleph
+                verbose = True
             else:
                 from .core.ALEPH import annotate_pdb_model_with_aleph
             target_path = self.export(minimal=True, target_folder=os.path.join(TEMP_FOLDER, "trash"))
@@ -109,6 +110,7 @@ class FragmentedStructure(BIStructure):
                     strictness_bs=self.data["fragments"]["threshold_bs"],
                     peptide_length=self.data["fragments"]["peptide_length"],
                     write_pdb=False,
+                    verbose=verbose,
                 )
                 print("### ALEPH end ###")
             except Exception as e:
@@ -172,7 +174,8 @@ class FragmentedStructure(BIStructure):
                     fragment = Fragment.from_atoms(fatoms, code=self.code(), chain_id=chain, fragment_id=n, parent=self)
                     if export:
                         fragment.export()
-                    log(2, f"fragment {n}: {fragment}", end="\r")
+                    if verbose:
+                        log(2, f"fragment {n}: {fragment}", end="\r")
                     if single_atom_ratio[0] / single_atom_ratio[1] > 0.5:
                         log("Warning",
                             f"Detected fragment with too many missing side chains ({single_atom_ratio[0] / single_atom_ratio[1]:3.1f}%)")
@@ -215,11 +218,12 @@ class FragmentedStructure(BIStructure):
                 for n, fatoms in atoms_by_fragment.items():
                     chain = list(set([r.chain for r in fatoms]))[0]
                     fragment = Fragment.from_atoms(fatoms, code=self.code(), chain_id=chain, fragment_id=n, parent=self)
-                    log(2, f"fragment {n}: {fragment}", end="\r")
+                    #log(2, f"fragment {n}: {fragment}", end="\r")
 
                     fragments.append(fragment)
                 if len(fragments) > 0:
                     self._fragments = fragments
+                    log(3, f"{len(fragments)} loaded")
 
         if self._fragments is None or force:
             log(2, "Recalculating fragments...")

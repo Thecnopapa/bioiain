@@ -1,4 +1,4 @@
-import os, sys, shutil, time, datetime, requests, curses, math
+import os, sys, shutil, time, datetime, requests, curses, math, threading
 import numpy as np
 
 from .. import SUBDIR_NAME, TEMP_FOLDER, WD, FD
@@ -123,6 +123,10 @@ def log(level:int|str=1, *args, **kwargs):
             level = int(level)
         except:
             level = level.lower()
+
+    thread_name = threading.current_thread().name
+    if thread_name != "MainThread":
+        args = [f"({thread_name})"] + list(args)
 
 
     if v > -2:

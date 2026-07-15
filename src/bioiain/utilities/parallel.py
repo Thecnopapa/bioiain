@@ -1,6 +1,9 @@
 import os, sys, json, asyncio, time, threading, ctypes, psutil, platform
 from ..utilities.logging import log
 
+N_THREADS = 0
+if "--threads" in sys.argv:
+    N_THREADS = int(sys.argv[sys.argv.index("--threads") +1])
 
 #print("START")
 log("header", "Importing parallel utils...")

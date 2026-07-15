@@ -1,4 +1,4 @@
-import os, json, sys
+import os, json, sys, time, threading
 
 import torch
 
@@ -16,6 +16,7 @@ from src.bioiain.base import *
 from compactness_base import *
 from compactness_models import *
 from src.bioiain.machine import *
+from src.bioiain.utilities.parallel import N_THREADS
 from data import dataset
 set_seed()
 
@@ -35,7 +36,15 @@ MODEL_CLASS = Saprot3Dto1
 WORK_AS_IS = "--as-is" in sys.argv
 
 
-def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, force=False, rebuild=False, force_labels=False, force_embeddings=False, as_is=False, allow_exports=True):
+def generate_3DSaprot_embeddings(dataset, 
+                                 img_size=16, 
+                                 foldseek_command=None, 
+                                 force=False, rebuild=False, 
+                                 force_labels=False, 
+                                 force_embeddings=False, 
+                                 as_is=False, 
+                                 allow_exports=True, 
+                                 n_threads=1):
     from src.bioiain.machine.datasets import EmbeddingDataset
     if force:
         rebuild = True
@@ -58,8 +67,95 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
             rel_labels.load(load_temp=True)
             abs_labels.load(load_temp=True)
 
+    def generate_embedding_set(n, 
+                               name, 
+                               code, 
+                               ch, 
+                               model, 
+                               tensor_path,
+                               entry, 
+                               saprot_model, 
+                               img_size, 
+                               embedding_done,
+                               label_done,
+                               ):
+        try:
+            entity = FragmentedStructure.from_file(dataset.get(code).get("path"), verbose=False, check_existing=allow_exports)
+           
+            log(1, entity)
+            chain = entity.chains(ch, by_complex=True, model=model)
+            try:
+                assert len(chain) <= 1, f"Multiple chains detected {(code,ch,model)}: {chain}"
+            except:
+                print([c.complex() for c in chain])
+                raise MultipleChainsDetected(f"Multiple chains detected {(code,ch,model)}: {chain}")
+
+            try:
+                chain = chain[0]
+            except:
+                print(entity.chains(by_complex=True, model=model))
+                raise NoChainsDetected(f"No chains detected {(code,ch,model)}: {chain} {print(entity.chains(by_complex=True, model=model))}")
+
+            log(1, chain)
+
+            if not embedding_done:
+                residues = chain.residues(need_backbone=False)
+                log(1, "Loading tensor...")
+                try:
+                    tensor = torch.load(tensor_path)
+                except Exception as e:
+                    os.remove(tensor_path)
+                    log("Error", "Error reading tensor:", tensor_path, e)
+                    return
+                #print(tensor.shape)
+                try:
+                    assert tensor.shape[-2] == len(residues), f"{tensor.shape[-2]} / {len(residues)}"
+                except:
+                    log("warning", f'\n{entry["aa_seq"]}\n{chain.sequence()}')
+                    raise SequenceMissmatchException(f"{tensor.shape[-2]} / {len(residues)}")
+                log(1, "Generating 3D embedding...")
+                tensor3D = chain.img3D(property=None, plot=False, size=img_size, embedding=tensor, mode="mean", residue_kwargs={"need_backbone":False})
+                log(2, tensor3D.shape)
+                embedding = SaProt3DEmbedding.from_tensor(tensor3D,name=name, img_size=img_size, saprot_model=saprot_model).save()
+                embeddings.add(embedding)
+                embeddings.save(temp=True)
+                log(2, embeddings)
+
+            if not label_done:
+                log(1, "Loading Relative compactness...")
+                entity.compactness(with_symmetry=True)
+                log(1, "Generating Relative 3D label...")
+                rel_label3D = chain.img3D(property="rel_compactness", plot=False, size=img_size, as_embedding=True, mode="mean", residue_kwargs={"need_backbone":False})
+                log(2, rel_label3D.shape)
+                rel_label_embedding = Compactness3DEembedding.from_tensor(rel_label3D, name=name, img_size=img_size, relative=True).save()
+                rel_labels.add(rel_label_embedding)
+                rel_labels.save(temp=True)
+                log(2, rel_labels)
+
+
+                log(1, "Loading Absolute compactness...")
+                chain.compactness(with_symmetry=False, export=False)
+                log(1, "Generating Absolute 3D label...")
+                abs_label3D = chain.img3D(property="abs_compactness", plot=False, size=IMG_SIZE, as_embedding=True, mode="mean", residue_kwargs={"need_backbone":False})
+                log(2, abs_label3D.shape)
+                abs_label_embedding = Compactness3DEembedding.from_tensor(abs_label3D, name=name, img_size=IMG_SIZE, relative=False).save()
+                abs_labels.add(abs_label_embedding)
+                abs_labels.save(temp=True)
+                log(2, abs_labels)
+
+        except (StructureLoadException, NotImplementedError, MultipleChainsDetected, NoChainsDetected, SequenceMissmatchException, ALEPHError) as e:
+            dataset.add_to_blacklist(dataset.get(code).get("path"), e)
+        except AssertionError as e:
+            try:
+                log("warning", f'\n{entry["aa_seq"]}\n{chain.sequence()}')
+            except:
+                pass
+            dataset.add_to_blacklist(dataset.get(code).get("path"), e)
+
     if (embeddings.incomplete() or rel_labels.incomplete() or abs_labels.incomplete() or rebuild) and not as_is:
         fs.run()
+
+        #threads = [None]*max(1, n_threads)
 
         for n, (tensor_path, entry, saprot_model) in enumerate(fs.saprot_embeddings(return_tensor=False)):
             tracemalloc_top()
@@ -81,78 +177,30 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
 
             if (embedding_done and label_done) and not force:
                 continue
-            try:
-                entity = FragmentedStructure.from_file(dataset.get(code).get("path"), verbose=False, check_existing=allow_exports)
-               
-                log(1, entity)
-                chain = entity.chains(ch, by_complex=True, model=model)
-                try:
-                    assert len(chain) <= 1, f"Multiple chains detected {(code,ch,model)}: {chain}"
-                except:
-                    print([c.complex() for c in chain])
-                    raise MultipleChainsDetected(f"Multiple chains detected {(code,ch,model)}: {chain}")
 
-                try:
-                    chain = chain[0]
-                except:
-                    print(entity.chains(by_complex=True, model=model))
-                    raise NoChainsDetected(f"No chains detected {(code,ch,model)}: {chain} {print(entity.chains(by_complex=True, model=model))}")
-
-                log(1, chain)
-
-                if not embedding_done:
-                    residues = chain.residues(need_backbone=False)
-                    log(1, "Loading tensor...")
-                    try:
-                        tensor = torch.load(tensor_path)
-                    except Exception as e:
-                        os.remove(tensor_path)
-                        log("Error", "Error reading tensor:", tensor_path, e)
-                        continue
-                    #print(tensor.shape)
-                    try:
-                        assert tensor.shape[-2] == len(residues), f"{tensor.shape[-2]} / {len(residues)}"
-                    except:
-                        log("warning", f'\n{entry["aa_seq"]}\n{chain.sequence()}')
-                        raise SequenceMissmatchException(f"{tensor.shape[-2]} / {len(residues)}")
-                    log(1, "Generating 3D embedding...")
-                    tensor3D = chain.img3D(property=None, plot=False, size=IMG_SIZE, embedding=tensor, mode="mean", residue_kwargs={"need_backbone":False})
-                    log(2, tensor3D.shape)
-                    embedding = SaProt3DEmbedding.from_tensor(tensor3D,name=name, img_size=IMG_SIZE, saprot_model=saprot_model).save()
-                    embeddings.add(embedding)
-                    embeddings.save(temp=True)
-                    log(2, embeddings)
-
-                if not label_done:
-                    log(1, "Loading Relative compactness...")
-                    entity.compactness(with_symmetry=True)
-                    log(1, "Generating Relative 3D label...")
-                    rel_label3D = chain.img3D(property="rel_compactness", plot=False, size=IMG_SIZE, as_embedding=True, mode="mean", residue_kwargs={"need_backbone":False})
-                    log(2, rel_label3D.shape)
-                    rel_label_embedding = Compactness3DEembedding.from_tensor(rel_label3D, name=name, img_size=IMG_SIZE, relative=True).save()
-                    rel_labels.add(rel_label_embedding)
-                    rel_labels.save(temp=True)
-                    log(2, rel_labels)
-
-
-                    log(1, "Loading Absolute compactness...")
-                    chain.compactness(with_symmetry=False, export=False)
-                    log(1, "Generating Absolute 3D label...")
-                    abs_label3D = chain.img3D(property="abs_compactness", plot=False, size=IMG_SIZE, as_embedding=True, mode="mean", residue_kwargs={"need_backbone":False})
-                    log(2, abs_label3D.shape)
-                    abs_label_embedding = Compactness3DEembedding.from_tensor(abs_label3D, name=name, img_size=IMG_SIZE, relative=False).save()
-                    abs_labels.add(abs_label_embedding)
-                    abs_labels.save(temp=True)
-                    log(2, abs_labels)
-
-            except (StructureLoadException, NotImplementedError, MultipleChainsDetected, NoChainsDetected, SequenceMissmatchException, ALEPHError) as e:
-                dataset.add_to_blacklist(dataset.get(code).get("path"), e)
-            except AssertionError as e:
-                try:
-                    log("warning", f'\n{entry["aa_seq"]}\n{chain.sequence()}')
-                except:
-                    pass
-                dataset.add_to_blacklist(dataset.get(code).get("path"), e)
+            while threading.active_count() > n_threads:
+                print(f"Waiting for available thread... ({name}) running:{threading.active_count()-1}")
+                time.sleep(1)
+            thread = threading.Thread(target=generate_embedding_set,
+                                      name = name,
+                                      kwargs = dict(n=n,
+                                                   name=name, 
+                                                   code=code, 
+                                                   ch=ch, 
+                                                   model=model, 
+                                                   tensor_path=tensor_path, 
+                                                   entry=entry, 
+                                                   saprot_model=saprot_model, 
+                                                   img_size=img_size, 
+                                                   embedding_done=embedding_done,
+                                                   label_done=label_done, 
+                                                   )
+                                      )
+            thread.start()
+        
+        while threading.active_count() > 1:
+            print(f"waiting for Threads to finish")
+            time.sleep(1)
 
         embeddings.save(temp=False)
         rel_labels.save(temp=False)
@@ -160,7 +208,7 @@ def generate_3DSaprot_embeddings(dataset, img_size=16, foldseek_command=None, fo
     return embeddings, rel_labels, abs_labels
 
 
-embeddings, rel_labels, abs_labels = generate_3DSaprot_embeddings(dataset, img_size=IMG_SIZE, force=FORCE, allow_exports=ALLOW_EXPORTS, rebuild=REBUILD, force_labels=LABELS, as_is=WORK_AS_IS)
+embeddings, rel_labels, abs_labels = generate_3DSaprot_embeddings(dataset, img_size=IMG_SIZE, force=FORCE, allow_exports=ALLOW_EXPORTS, rebuild=REBUILD, force_labels=LABELS, as_is=WORK_AS_IS, n_threads=N_THREADS)
 
 if REBUILD or FORCE or LABELS:
     log("header","Configuring oligomer labels")

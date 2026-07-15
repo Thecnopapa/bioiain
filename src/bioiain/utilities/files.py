@@ -1,4 +1,4 @@
-import os, sys, shutil, json, requests
+import os, sys, shutil, json, requests, time
 from io import TextIOWrapper
 
 from . import string_to_list, clean_string
@@ -31,6 +31,7 @@ class StructureDataset(object):
         self.data = {}
         self.name = name
         self.blacklist = []
+        self._blacklist_lock = False
         log(1, "Initialising dataset:", self.name)
 
         if folder is None:
@@ -70,13 +71,23 @@ class StructureDataset(object):
             self.dataset.add_to_blacklist(self.path, reason=reason)
 
 
-    def add_to_blacklist(self, path, error=None, reason=None, ):
-        if reason is None:
-            reason = error
-        log("warning", f"Blacklisted: {path} ({error.__class__.__name__}):{reason}")
-        with open(self.blacklist_file, "a") as bl:
-            bl.write(f"{path}: {reason}\n")
-        self.blacklist.append(path)
+    def add_to_blacklist(self, path, error=None, reason=None):
+        while self._blacklist_lock:
+            print("waiting for blacklist lock...")
+            time.sleep(1)
+        self._blacklist_lock = True
+        try:
+            if reason is None:
+                reason = error
+            reason = str(reason).replace("\n", " /")
+            log("warning", f"Blacklisted: {path} ({error.__class__.__name__}):{reason}")
+            with open(self.blacklist_file, "a") as bl:
+                bl.write(f"{path}: {reason}\n")
+            self.blacklist.append(path)
+        except:
+            self._blacklist_lock = False
+            raise
+        self._blacklist_lock = False
 
     def check_blacklist(self, path):
         bl = set(self.blacklist)

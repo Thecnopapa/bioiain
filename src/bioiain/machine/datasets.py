@@ -1,4 +1,4 @@
-import os, json, time, shutil
+import os, json, time, shutil, copy
 from copy import deepcopy
 
 import numpy as np
@@ -146,6 +146,9 @@ class EmbeddingDataset(object):
     def __iter__(self):
         self.i = 0
         return self
+
+    def keys():
+        return list(self.embeddings.keys())
 
 
     def __next__(self):
@@ -323,6 +326,19 @@ class EmbeddingDataset(object):
         self._lock = False
         return key
 
+    def sort_as(self, target_dataset):
+        new_embeddings = {}
+        new_length = 0
+        for key in target_dataset.keys():
+            v = self.embeddings[key]
+            v["start"] = new_length
+            v["end"] = len(self)+v["length"]
+            new_embeddings[k] = v
+            new_length += len(embedding)
+
+        self.data["length"] = new_length
+        self.data["embeddings"] = new_embeddings
+        return self
 
     def remove(self, key):
         self.data["deleted_indexes"] += self.embeddings[key]["end"] - self.embeddings[key]["start"]
