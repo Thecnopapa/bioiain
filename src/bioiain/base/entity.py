@@ -1210,7 +1210,7 @@ class BIEntity(object):
                 print(count_grid[:6, :6])
                 print(value_grid[:6, :6])
                 print("meaning")
-                value_grid = np.divide(value_grid, count_grid, where=count_grid > 0.5) # Floating point error messing tings without this 0.5
+                value_grid = np.divide(value_grid, count_grid, where=count_grid > 0.5).astype(np.float32) # Floating point error messing tings without this 0.5
                 print(value_grid[:6, :6])
 
             if as_embedding:
