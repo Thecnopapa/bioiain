@@ -1217,6 +1217,9 @@ class BIEntity(object):
                 value_grid = np.divide(value_grid, count_grid, where=(count_grid > 0.5) & (value_grid != 0)).astype(np.float32) # Floating point error messing tings without this 0.5
                 print(value_grid[5:6, 5:6])
 
+
+            value_grid = value_grid.nan_to_num(copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+
             if as_embedding:
                 import torch
                 t = torch.tensor(value_grid)
