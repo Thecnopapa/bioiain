@@ -164,6 +164,10 @@ class StructureDataset(object):
         if path in self.blacklist:
             log("warning", f"Path: {path} in blacklist: {self.blacklist_file}")
             return self
+        if os.path.getsize(path) > 1.5 * 1024 * 1024:
+            log("warning", f"File: {os.path.basename(path)} too large! ({os.path.getsize(path) / 1024 / 1024 :3.2f} MiB)")
+            self.add_to_blacklist(path, reason=f"File: {os.path.basename(path)} too large! ({os.path.getsize(path) / 1024 / 1024 :3.2f} MiB)")
+            return self
         if code in self.codes():
             if replace:
                 log("warning", f"Replacing entry {code} in dataset: {self}")
