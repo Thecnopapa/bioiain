@@ -316,8 +316,8 @@ if TRAIN:
             if n % PRINT_EVERY == 0:
                 log(1, f"{n+1:6d}/{max_n:6d}", end=" ")
 
-
-            print("\nIN:", tensor.shape, tensor.dtype)
+            print("\nIN:", tensor)
+            print("\nIN SHAPE:", tensor.shape, tensor.dtype)
             out_i = model.forward(tensor)
             print("OUT:", out_i)
             print("OUT SHAPE:", out_i.shape)
