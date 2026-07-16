@@ -334,7 +334,7 @@ class EmbeddingDataset(object):
         for key in target_dataset.keys():
             v = self.embeddings[key]
             v["start"] = new_length
-            v["end"] = len(self)+v["length"]
+            v["end"] = new_length+v["length"]
             new_embeddings[key] = v
             new_length += v["length"]
 
