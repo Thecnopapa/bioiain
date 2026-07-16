@@ -32,7 +32,7 @@ for entry in dataset:
 
     if os.path.getsize(fpath) > 1.5 * 1024 * 1024:
         log("warning", f"File: {file} too large! ({os.path.getsize(fpath) / 1024 / 1024 :3.2f} MiB)")
-        with open(no_pisa_fname, "a") as f:
+        with open(nopisaf, "a") as f:
             f.write(code+"\n")
         continue
 
