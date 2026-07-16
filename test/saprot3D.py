@@ -317,9 +317,10 @@ if TRAIN:
                 log(1, f"{n+1:6d}/{max_n:6d}", end=" ")
 
 
-            #print("\nIN:", tensor.shape, tensor.dtype)
+            print("\nIN:", tensor.shape, tensor.dtype)
             out_i = model.forward(tensor)
-            #print("OUT:", out_i.shape, out_c.shape)
+            print("OUT:", out_i)
+            print("OUT SHAPE:", out_i.shape)
             #print("LABEL:", label.shape, label.dtype)
             rel_label_x = model.compress(rel_label)
             abs_label_x = model.compress(abs_label)
