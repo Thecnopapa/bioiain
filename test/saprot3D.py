@@ -283,7 +283,7 @@ log(1, "EMBEDDINGS", embeddings)
 log(1, "REL LABELS:", rel_labels)
 log(1, "ABS_LABELS:", abs_labels)
 PRINT_EVERY=100
-SAVE_TEMP_MODEL= False
+SAVE_TEMP_MODELS= False
 FINETUNE = "--finetune" in sys.argv
 FAST = "--fast" in sys.argv
 if len(embeddings) <= 1000 or DEVICE == "cpu":
