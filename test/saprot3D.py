@@ -321,10 +321,12 @@ if TRAIN:
             out_i = model.forward(tensor)
             print("OUT:", out_i)
             print("OUT SHAPE:", out_i.shape)
-            #print("LABEL:", label.shape, label.dtype)
+            print("REL LABEL:", rel_label)
+            print("REL LABEL SHAPE:", rel_label.shape, rel_label.dtype)
             rel_label_x = model.compress(rel_label)
             abs_label_x = model.compress(abs_label)
-            #print("COMPRESSED LABEL:", label.shape)
+            print("COMPRESSED REL LABEL:", rel_label_x)
+            print("COMPRESSED REL LABEL:", rel_label_x.shape)
 
             if label_oligo is not None and FINETUNE:
                 out_c = model.classify(out_i, reference=rel_label_x)
