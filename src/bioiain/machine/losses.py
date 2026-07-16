@@ -249,7 +249,7 @@ class ImgAndClassifierLoss(object):
             loss = i_loss
 
         print(loss)
-        if loss.isnan() is None:
+        if any(loss.isnan()) is None:
             raise Exception("Loss is None")
         if return_all:
             return loss, i_loss, c_loss
