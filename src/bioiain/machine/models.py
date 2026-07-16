@@ -288,10 +288,10 @@ class BaseModel(nn.Module):
                 log(2, f"Leftover backpropagation... ({self.batch_loss['current_n']})")
                 self.loss(force_backpropagation=True)
 
-    def add_epoch(self):
+    def add_epoch(self, add_histograms=True):
         self.leftover_batch()
 
-        if self.writer is not None:
+        if (self.writer is not None) and add_histograms:
             for set_name, layers in self.layers.items():
                 for layer_name, layer in layers.items():
                     if hasattr(layer, "weight"):

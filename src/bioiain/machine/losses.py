@@ -226,8 +226,8 @@ class ImgAndClassifierLoss(object):
 
     def __call__(self, out_i, img, out_c=None, c=None, return_all=False):
         #print(out_i, img, out_c, c)
-        print("OUT_I:", out_i)
-        print("IMG:", img)
+        #print("OUT_I:", out_i)
+        #print("IMG:", img)
         i_loss = self.MSE(out_i, img)
 
         c_loss = None
@@ -250,7 +250,7 @@ class ImgAndClassifierLoss(object):
         except (AssertionError, LossIsZero):
             loss = i_loss
 
-        print(str(loss.detach().cpu().numpy()))
+        #print(str(loss.detach().cpu().numpy()))
         if str(loss.detach().cpu().numpy()) == "nan":
             raise Exception("Loss is None")
         if return_all:

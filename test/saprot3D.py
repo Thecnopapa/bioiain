@@ -316,17 +316,17 @@ if TRAIN:
             if n % PRINT_EVERY == 0:
                 log(1, f"{n+1:6d}/{max_n:6d}", end=" ")
 
-            print("\nIN:", tensor)
-            print("\nIN SHAPE:", tensor.shape, tensor.dtype)
+            #print("\nIN:", tensor)
+            #print("\nIN SHAPE:", tensor.shape, tensor.dtype)
             out_i = model.forward(tensor)
-            print("OUT:", out_i)
-            print("OUT SHAPE:", out_i.shape)
-            print("REL LABEL:", rel_label)
-            print("REL LABEL SHAPE:", rel_label.shape, rel_label.dtype)
+            #print("OUT:", out_i)
+            #print("OUT SHAPE:", out_i.shape)
+            #print("REL LABEL:", rel_label)
+            #print("REL LABEL SHAPE:", rel_label.shape, rel_label.dtype)
             rel_label_x = model.compress(rel_label)
             abs_label_x = model.compress(abs_label)
-            print("COMPRESSED REL LABEL:", rel_label_x)
-            print("COMPRESSED REL LABEL:", rel_label_x.shape)
+            #print("COMPRESSED REL LABEL:", rel_label_x)
+            #print("COMPRESSED REL LABEL:", rel_label_x.shape)
 
             if label_oligo is not None and FINETUNE:
                 out_c = model.classify(out_i, reference=rel_label_x)
@@ -352,7 +352,7 @@ if TRAIN:
         print()
         if epoch % 10 == 0 and epoch != 0:
             model.save(temp=True)
-        model.add_epoch()
+        model.add_epoch(add_histograms=epoch % 10 == 0)
         log("end", f"EPOCH: {epoch}", print_timer=True, reset_timer=False)
     model.save()
 
