@@ -1218,7 +1218,7 @@ class BIEntity(object):
                 print(value_grid[5:6, 5:6])
 
 
-            value_grid = value_grid.nan_to_num(copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+            value_grid = np.nan_to_num(value_grid, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
 
             if as_embedding:
                 import torch
