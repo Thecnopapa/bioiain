@@ -241,10 +241,6 @@ abs_labels.sort_as(embeddings)
 #print(rel_labels.keys())
 #print(abs_labels.keys())
 
-log(1, "Ready datasets:")
-log(2, embeddings)
-log(2, rel_labels)
-log(2, abs_labels)
 
 if REBUILD or FORCE or LABELS:
     log("header","Configuring oligomer labels")

@@ -417,7 +417,7 @@ class EmbeddingDataset(object):
                     label_path = e[label_key]
                     label_value = None
                 else:
-                    label_value = e[label_key]
+                    label_value = e.get(label_key, None)
             #print(key, e["start"], key - e["start"])
             rel_key = key - e["start"]
             #print(rel_key)
