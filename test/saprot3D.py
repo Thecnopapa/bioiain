@@ -347,7 +347,8 @@ if TRAIN:
                 exit()
 
         print()
-        model.save(temp=True)
+        if epoch % 10 == 0 and epoch != 0:
+            model.save(temp=True)
         model.add_epoch()
         log("end", f"EPOCH: {epoch}", print_timer=True, reset_timer=False)
     model.save()
