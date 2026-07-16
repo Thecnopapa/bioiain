@@ -32,7 +32,7 @@ class StructureDataset(object):
         self.name = name
         self.blacklist = []
         self._blacklist_lock = False
-        log(1, "Initialising dataset:", self.name)
+        log(1, "Initialising dataset:", self.name, f"(blacklist={not ignore_blacklist})")
 
         if folder is None:
             if shared_source:
