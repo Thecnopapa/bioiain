@@ -237,9 +237,9 @@ embeddings, rel_labels, abs_labels = generate_3DSaprot_embeddings(dataset, img_s
 
 rel_labels.sort_as(embeddings)
 abs_labels.sort_as(embeddings)
-#print(embeddings.keys())
-#print(rel_labels.keys())
-#print(abs_labels.keys())
+print(embeddings.keys())
+print(rel_labels.keys())
+print(abs_labels.keys())
 
 
 if REBUILD or FORCE or LABELS:
