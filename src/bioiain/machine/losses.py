@@ -225,7 +225,9 @@ class ImgAndClassifierLoss(object):
         self.MSE = nn.MSELoss()
 
     def __call__(self, out_i, img, out_c=None, c=None, return_all=False):
-        print(out_i, img, out_c, c)
+        #print(out_i, img, out_c, c)
+        print("OUT_I:", out_i)
+        print("IMG:", img)
         i_loss = self.MSE(out_i, img)
 
         c_loss = None

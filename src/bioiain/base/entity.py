@@ -1207,11 +1207,11 @@ class BIEntity(object):
                 value_grid = value_grid.astype(np.float32)
 
             if property is not None and mode == "mean":
-                #print(count_grid[:6, :6])
-                #print(value_grid[:6, :6])
-                #print("meaning")
+                print(count_grid[:6, :6])
+                print(value_grid[:6, :6])
+                print("meaning")
                 value_grid = np.divide(value_grid, count_grid, where=count_grid > 0.5) # Floating point error messing tings without this 0.5
-                #print(value_grid[:6, :6])
+                print(value_grid[:6, :6])
 
             if as_embedding:
                 import torch
