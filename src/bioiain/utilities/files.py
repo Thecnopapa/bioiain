@@ -209,10 +209,10 @@ class StructureDataset(object):
         return self
 
     @classmethod
-    def from_dir(cls, folder, name=None, exclude:str|list|None=None, replace=True, **extras):
+    def from_dir(cls, folder, name=None, exclude:str|list|None=None, replace=True, ignore_blacklist=False, **extras):
         if name is None:
             name = os.path.dirname(os.path.abspath(folder))
-        self = cls(name=name)
+        self = cls(name=name, ignore_blacklist=ignore_blacklist)
         self.add_dir(folder, exclude=exclude, replace=replace,**extras)
         return self
 
@@ -295,12 +295,12 @@ class StructureDataset(object):
         return self
 
     @classmethod
-    def from_list(cls, file_or_list:str|list, name=None, download_as="cif", base_url=None, force=False, replace=True,**extras):
+    def from_list(cls, file_or_list:str|list, name=None, download_as="cif", base_url=None, force=False, replace=True, ignore_blacklist=False, **extras):
         if name is None:
             if type(file_or_list) is list:
                 name = "pdb_list"
             elif type(file_or_list) is str:
                 name = os.path.basename(file_or_list).split(".")[0]
-        self = cls(name=name)
+        self = cls(name=name, ignore_blacklist=ignore_blacklist)
         self.add_list(file_or_list, download_as=download_as, base_url=base_url, force=force, replace=replace, **extras)
         return self
