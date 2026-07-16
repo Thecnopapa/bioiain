@@ -282,7 +282,7 @@ log(1, "REL LABELS:", rel_labels)
 log(1, "ABS_LABELS:", abs_labels)
 PRINT_EVERY=100
 FINETUNE = "--finetune" in sys.argv
-if len(embeddings) <= 100:
+if len(embeddings) <= 1000:
     PRINT_EVERY=1
 
 if TRAIN:
