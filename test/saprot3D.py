@@ -285,9 +285,11 @@ log(1, "ABS_LABELS:", abs_labels)
 PRINT_EVERY=100
 SAVE_TEMP_MODEL= False
 FINETUNE = "--finetune" in sys.argv
+FAST = "--fast" in sys.argv
 if len(embeddings) <= 1000 or DEVICE == "cpu":
     PRINT_EVERY=1
-    SAVE_TEMP_MODELS = True
+    if not FAST:
+        SAVE_TEMP_MODELS = True
 
 if TRAIN:
     log("start", "TRAINING")
