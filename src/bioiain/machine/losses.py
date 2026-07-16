@@ -248,8 +248,8 @@ class ImgAndClassifierLoss(object):
         except (AssertionError, LossIsZero):
             loss = i_loss
 
-        print(loss.detach().cpu().numpy())
-        if any(loss.flatten().isnan()) is None:
+        print(str(loss.detach().cpu().numpy()))
+        if str(loss.detach().cpu().numpy()) == "nan":
             raise Exception("Loss is None")
         if return_all:
             return loss, i_loss, c_loss
