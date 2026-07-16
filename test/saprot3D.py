@@ -237,10 +237,12 @@ embeddings, rel_labels, abs_labels = generate_3DSaprot_embeddings(dataset, img_s
 
 rel_labels.sort_as(embeddings)
 abs_labels.sort_as(embeddings)
-print(embeddings.keys())
-print(rel_labels.keys())
-print(abs_labels.keys())
-
+# print(embeddings.keys())
+# print(rel_labels.keys())
+# print(abs_labels.keys())
+log(1, "EMBEDDINGS", embeddings)
+log(1, "REL LABELS:", rel_labels)
+log(1, "ABS_LABELS:", abs_labels)
 
 if REBUILD or FORCE or LABELS:
     log("header","Configuring oligomer labels")
