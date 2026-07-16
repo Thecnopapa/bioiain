@@ -67,6 +67,11 @@ def generate_3DSaprot_embeddings(dataset,
             rel_labels.load(load_temp=True)
             abs_labels.load(load_temp=True)
 
+    log(1, "Loaded datasets:")
+    log(2, embeddings)
+    log(2, rel_labels)
+    log(2, abs_labels)
+
     def generate_embedding_set(n, 
                                name, 
                                code, 
@@ -155,11 +160,11 @@ def generate_3DSaprot_embeddings(dataset,
     if (embeddings.incomplete() or rel_labels.incomplete() or abs_labels.incomplete() or rebuild) and not as_is:
         fs.run()
 
-        #threads = [None]*max(1, n_threads)
+        threads = []
         n_total = len(fs)
         for n, (tensor_path, entry, saprot_model) in enumerate(fs.saprot_embeddings(return_tensor=False)):
             tracemalloc_top()
-            log(1, f"N={n}/{n_total}")
+            log(1, f"N={n+1}/{n_total}")
             code, ch, model = fs.parse_name(entry["name"])
             name = f"{code}_{ch}_{model}"
             embedding_done = False
@@ -196,6 +201,7 @@ def generate_3DSaprot_embeddings(dataset,
                                                        label_done=label_done, 
                                                        )
                                           )
+                threads.append(t)
                 thread.start()
             else:
                 generate_embedding_set(n=n,
@@ -214,6 +220,11 @@ def generate_3DSaprot_embeddings(dataset,
         while threading.active_count() > 1:
             print(f"waiting for Threads to finish")
             time.sleep(1)
+        print("Joining threads...")
+        for t in threads:
+            t.join()
+        print("All threads joined")
+
 
         embeddings.save(temp=False)
         rel_labels.save(temp=False)
@@ -230,8 +241,10 @@ abs_labels.sort_as(embeddings)
 #print(rel_labels.keys())
 #print(abs_labels.keys())
 
-
-exit()
+log(1, "Ready datasets:")
+log(2, embeddings)
+log(2, rel_labels)
+log(2, abs_labels)
 
 if REBUILD or FORCE or LABELS:
     log("header","Configuring oligomer labels")
