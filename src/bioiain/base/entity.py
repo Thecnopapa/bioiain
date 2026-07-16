@@ -1210,13 +1210,13 @@ class BIEntity(object):
             value_grid = value_grid.astype(np.float32)
 
             if property is not None and mode == "mean":
-                print(count_grid)
-                print(value_grid)
-                print("meaning")
-                print(((count_grid > 0.5) & (value_grid != 0)))
+                #print(count_grid)
+                #print(value_grid)
+                #print("meaning")
+                #print(((count_grid > 0.5) & (value_grid != 0)))
                 np.divide(value_grid, count_grid, out=value_grid, where=(count_grid > 0.5) & (value_grid != 0)) # Floating point error messing tings without this 0.5
-                print(value_grid)
-                input("Press enter to continue")
+                #print(value_grid)
+                #input("Press enter to continue")
 
 
             #value_grid = np.nan_to_num(value_grid, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
