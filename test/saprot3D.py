@@ -316,7 +316,7 @@ if TRAIN:
             rel_label = rel_item.t.to(torch.float32).to(DEVICE)
             abs_label = abs_item.t.to(torch.float32).to(DEVICE)
             label_oligo = torch.Tensor([item.l]) if item.l is not None else None
-            #print(item.name, label_oligo, item.l)
+            print(n, item.name, label_oligo, item.l)
 
             #print(entity)
             if n % PRINT_EVERY == 0:
@@ -327,7 +327,8 @@ if TRAIN:
             out_i = model.forward(tensor)
             #print("OUT:", out_i)
             #print("OUT SHAPE:", out_i.shape)
-            #print("REL LABEL:", rel_label)
+            print(rel_item.t)
+            print("REL LABEL:", rel_label)
             #print("REL LABEL SHAPE:", rel_label.shape, rel_label.dtype)
             rel_label_x = model.compress(rel_label)
             abs_label_x = model.compress(abs_label)
