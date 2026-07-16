@@ -281,9 +281,11 @@ log(1, "EMBEDDINGS", embeddings)
 log(1, "REL LABELS:", rel_labels)
 log(1, "ABS_LABELS:", abs_labels)
 PRINT_EVERY=100
+SAVE_TEMP_MODEL= False
 FINETUNE = "--finetune" in sys.argv
-if len(embeddings) <= 1000:
+if len(embeddings) <= 1000 or DEVICE == "cpu":
     PRINT_EVERY=1
+    SAVE_TEMP_MODELS = True
 
 if TRAIN:
     log("start", "TRAINING")
@@ -351,7 +353,8 @@ if TRAIN:
 
         print()
         if epoch % 10 == 0 and epoch != 0:
-            model.save(temp=True)
+            if SAVE_TEMP_MODELS:
+                model.save(temp=True)
         model.add_epoch(add_histograms=epoch % 10 == 0)
         log("end", f"EPOCH: {epoch}", print_timer=True, reset_timer=False)
     model.save()
