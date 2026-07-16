@@ -360,8 +360,8 @@ if TRAIN:
         if epoch % 10 == 0 and epoch != 0:
             if SAVE_TEMP_MODELS:
                 model.save(temp=True)
-        if not FAST:
-            model.add_epoch(add_histograms=epoch % 10 == 0)
+
+        model.add_epoch(add_histograms=(epoch % 10 == 0) and not FAST)
         log("end", f"EPOCH: {epoch}", print_timer=True, reset_timer=False)
     model.save()
 
