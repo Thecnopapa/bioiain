@@ -232,7 +232,7 @@ def generate_3DSaprot_embeddings(dataset,
     return embeddings, rel_labels, abs_labels
 
 
-embeddings, rel_labels, abs_labels = generate_3DSaprot_embeddings(dataset, img_size=IMG_SIZE, force=FORCE, allow_exports=ALLOW_EXPORTS, rebuild=REBUILD, force_labels=LABELS, as_is=WORK_AS_IS, n_threads=N_THREADS)
+embeddings, rel_labels, abs_labels = generate_3DSaprot_embeddings(dataset, img_size=IMG_SIZE, force=FORCE, allow_exports=ALLOW_EXPORTS, rebuild=REBUILD, force_embeddings=EMBEDDINGS, force_labels=LABELS, as_is=WORK_AS_IS, n_threads=N_THREADS)
 
 
 rel_labels.sort_as(embeddings)
