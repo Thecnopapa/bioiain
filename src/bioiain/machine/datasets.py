@@ -147,7 +147,7 @@ class EmbeddingDataset(object):
         self.i = 0
         return self
 
-    def keys():
+    def keys(self):
         return list(self.embeddings.keys())
 
 
@@ -327,17 +327,20 @@ class EmbeddingDataset(object):
         return key
 
     def sort_as(self, target_dataset):
+        log(1, f"Sorting dataset {self.name} as as : {target_dataset.name}" )
+
         new_embeddings = {}
         new_length = 0
         for key in target_dataset.keys():
             v = self.embeddings[key]
             v["start"] = new_length
             v["end"] = len(self)+v["length"]
-            new_embeddings[k] = v
-            new_length += len(embedding)
+            new_embeddings[key] = v
+            new_length += v["length"]
 
         self.data["length"] = new_length
         self.data["embeddings"] = new_embeddings
+        log(2, f"Dataset {self.name} sorted as : {target_dataset.name}" )
         return self
 
     def remove(self, key):

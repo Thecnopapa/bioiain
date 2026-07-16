@@ -156,10 +156,10 @@ def generate_3DSaprot_embeddings(dataset,
         fs.run()
 
         #threads = [None]*max(1, n_threads)
-
+        n_total = len(fs)
         for n, (tensor_path, entry, saprot_model) in enumerate(fs.saprot_embeddings(return_tensor=False)):
             tracemalloc_top()
-            log(1, f"N={n}")
+            log(1, f"N={n}/{n_total}")
             code, ch, model = fs.parse_name(entry["name"])
             name = f"{code}_{ch}_{model}"
             embedding_done = False
@@ -222,6 +222,16 @@ def generate_3DSaprot_embeddings(dataset,
 
 
 embeddings, rel_labels, abs_labels = generate_3DSaprot_embeddings(dataset, img_size=IMG_SIZE, force=FORCE, allow_exports=ALLOW_EXPORTS, rebuild=REBUILD, force_labels=LABELS, as_is=WORK_AS_IS, n_threads=N_THREADS)
+
+
+rel_labels.sort_as(embeddings)
+abs_labels.sort_as(embeddings)
+#print(embeddings.keys())
+#print(rel_labels.keys())
+#print(abs_labels.keys())
+
+
+exit()
 
 if REBUILD or FORCE or LABELS:
     log("header","Configuring oligomer labels")

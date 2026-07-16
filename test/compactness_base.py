@@ -47,6 +47,12 @@ class FoldseekDB(object):
             self.run()
 
 
+    def __len__(self):
+        if getattr(self, "token_fasta_path", None) is not None:
+            return len(self.tokens_fasta())
+        else:
+            return 0
+
         
 
 
