@@ -496,9 +496,9 @@ if INFERENCE:
 
             diff_label_count = (diff_label > 0.01) & (diff_label > 0.01) & (diff_label > 0.01)
             diff_label_count = diff_label_count.astype(np.int64)
-            print(diff_label)
-            print(diff_label_count)
-            print(diff_label.shape)
+            #print(diff_label)
+            #print(diff_label_count)
+            #print(diff_label.shape)
             voxels3d(diff_label, count_grid=diff_label_count, ax = diff_label_ax, shrink = True, title="Diff label")
 
 
@@ -545,15 +545,38 @@ if INFERENCE:
             voxels3d(scaled_out, ax = scaled_ax, shrink = True, title="Scaled output")
 
             # Real vs output differences ################################################################################
-            diff_ax = fig.add_subplot(n_rows, n_figs, 5, projection="3d")
-            diff = np.absolute(scaled_out- rel_label_x_detached)
-            voxels3d(diff, ax = diff_ax, shrink = True, title="Diff out/rel")
+            rel_diff_ax = fig.add_subplot(n_rows, n_figs, 5, projection="3d")
 
-            model_diff_ax = fig.add_subplot(n_rows, n_figs, 6, projection="3d")
-            pred, model_diff = model.classify(out_x, reference=rel_label_x, return_diff=True)
-            pred = pred.detach().cpu().numpy().item()
-            model_diff = model_diff.detach().cpu().numpy()[0]
-            voxels3d(model_diff, ax = model_diff_ax, shrink = True, title=f"Model diff out/rel ({pred:.2f})")
+            rel_label_x_detached = rel_label_x.detach().cpu().numpy()[0]
+
+            max_rel_vals = np.maximum.reduce([scaled_out, rel_label_x_detached])
+            min_rel_vals = np.minimum.reduce([scaled_out, rel_label_x_detached])
+
+            rel_diff = np.absolute(max_rel_vals - min_rel_vals)
+            voxels3d(rel_diff, ax = rel_diff_ax, shrink = True, title="Diff out/rel")
+
+            abs_diff_ax = fig.add_subplot(n_rows, n_figs, n_figs+5, projection="3d")
+
+            abs_label_x_detached = abs_label_x.detach().cpu().numpy()[0]
+
+            max_abs_vals = np.maximum.reduce([scaled_out, abs_label_x_detached])
+            min_abs_vals = np.minimum.reduce([scaled_out, abs_label_x_detached])
+
+            abs_diff = np.absolute(max_abs_vals - min_abs_vals)
+            voxels3d(abs_diff, ax = abs_diff_ax, shrink = True, title="Diff out/abs")
+
+
+            model_rel_diff_ax = fig.add_subplot(n_rows, n_figs, 6, projection="3d")
+            rel_pred, model_rel_diff = model.classify(out_x, reference=rel_label_x, return_diff=True)
+            rel_pred = pred.detach().cpu().numpy().item()
+            model_rel_diff_detached = model_rel_diff.detach().cpu().numpy()[0]
+            voxels3d(model_rel_diff_detached, ax = model_rel_diff_ax, shrink = True, title=f"Model diff out/rel (p:{rel_pred:.2f})")
+
+            model_abs_diff_ax = fig.add_subplot(n_rows, n_figs, n_figs+6, projection="3d")
+            abs_pred, model_abs_diff = model.classify(out_x, reference=abs_label_x, return_diff=True)
+            abs_pred = pred.detach().cpu().numpy().item()
+            model_abs_diff_detached = model_abs_diff.detach().cpu().numpy()[0]
+            voxels3d(model_abs_diff_detached, ax = model_abs_diff_ax, shrink = True, title=f"Model diff out/abs (p:{abs_pred:.2f})")
 
 
             img_path = os.path.join(inference_folder, name+".png")
