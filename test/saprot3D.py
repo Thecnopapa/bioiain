@@ -557,6 +557,7 @@ if INFERENCE:
 
             img_path = os.path.join(inference_folder, name+".png")
             plt.savefig(img_path)
+            log(1, f"Figure saved to:", img_path)
             show()
-            close()
+            close(fig)
             #exit()
