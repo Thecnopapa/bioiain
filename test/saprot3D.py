@@ -568,13 +568,13 @@ if INFERENCE:
 
             model_rel_diff_ax = fig.add_subplot(n_rows, n_figs, 6, projection="3d")
             rel_pred, model_rel_diff = model.classify(out_x, reference=rel_label_x, return_diff=True)
-            rel_pred = pred.detach().cpu().numpy().item()
+            rel_pred = rel_pred.detach().cpu().numpy().item()
             model_rel_diff_detached = model_rel_diff.detach().cpu().numpy()[0]
             voxels3d(model_rel_diff_detached, ax = model_rel_diff_ax, shrink = True, title=f"Model diff out/rel (p:{rel_pred:.2f})")
 
             model_abs_diff_ax = fig.add_subplot(n_rows, n_figs, n_figs+6, projection="3d")
             abs_pred, model_abs_diff = model.classify(out_x, reference=abs_label_x, return_diff=True)
-            abs_pred = pred.detach().cpu().numpy().item()
+            abs_pred = abs_pred.detach().cpu().numpy().item()
             model_abs_diff_detached = model_abs_diff.detach().cpu().numpy()[0]
             voxels3d(model_abs_diff_detached, ax = model_abs_diff_ax, shrink = True, title=f"Model diff out/abs (p:{abs_pred:.2f})")
 
