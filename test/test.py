@@ -8,8 +8,18 @@ log("start", "test.py")
 log("title", "test.py")
 
 
+from src.bioiain.tools.CCP4.TRACER import TRACER
 
+example = {
+    "cell": [10.51, 15.15, 6.54, 90, 151.7, 90],
+    "d": 0.1,
+    "centered": "C",
+}
+tracer = TRACER("test")
+print(tracer)
+tracer.run(**example)
 
+exit()
 
 
 entity = BIEntity.from_file("./5ezq.cif")
