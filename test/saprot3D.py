@@ -466,7 +466,7 @@ if INFERENCE:
             #print("OUT", out_x.shape)
 
             import matplotlib.pyplot as plt
-            from src.bioiain.visualisation import voxels3d, show
+            from src.bioiain.visualisation import voxels3d, show, close
             fig = plt.figure()
             fig.suptitle(f"{chain}")
             n_figs = 6
