@@ -555,5 +555,8 @@ if INFERENCE:
             voxels3d(model_diff, ax = model_diff_ax, shrink = True, title=f"Model diff out/rel ({pred:.2f})")
 
 
+            img_path = os.path.join(inference_folder, name+".png")
+            plt.savefig(img_path)
             show()
+            close()
             #exit()
