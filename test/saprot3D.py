@@ -399,7 +399,7 @@ if INFERENCE:
                 model_path = None
         log(1, f"Model path: {model_path}")
 
-        model = MODEL_CLASS(name=dataset.name, in_shape=IN_SHAPE, inference=True)
+        model = MODEL_CLASS(name=MODEL_NAME, in_shape=IN_SHAPE, inference=True)
         log(1, f"Model:", model)
         model.load(model_path)
 
@@ -614,3 +614,4 @@ if INFERENCE:
             show()
             close(fig)
             #exit()
+
