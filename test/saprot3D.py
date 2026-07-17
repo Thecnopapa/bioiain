@@ -503,7 +503,7 @@ if INFERENCE:
 
             diff_label_ax = fig.add_subplot(n_rows, n_figs, n_figs*2+1, projection="3d")
 
-            diff_label = np.subtract(rel_label.detach().cpu().numpy()[0], abs_label.detach().cpu().numpy()[0])
+            diff_label = np.subtract(abs_label.detach().cpu().numpy()[0],rel_label.detach().cpu().numpy()[0])
 
             diff_label_count = (abs(diff_label) > 0.001) & (abs(diff_label) > 0.001) & (abs(diff_label) > 0.001)
             diff_label_count = diff_label_count.astype(np.int64)
