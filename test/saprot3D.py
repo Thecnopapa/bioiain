@@ -341,16 +341,18 @@ if TRAIN:
 
             if DIFFERENCES:
                 label = torch.subtract(rel_label_x, abs_label_x)
+            else:
+                label = rel_label_x
             #print("COMPRESSED REL LABEL:", rel_label_x)
             #print("COMPRESSED REL LABEL:", rel_label_x.shape)
 
             if label_oligo is not None and FINETUNE:
-                out_c = model.classify(out_i, reference=rel_label_x)
-                loss = model.raw_loss(out_i, rel_label_x, out_c, label_oligo)
+                out_c = model.classify(out_i, reference=label)
+                loss = model.raw_loss(out_i, label, out_c, label_oligo)
                 out_c_text = f"{out_c.item():7.3f}"
             else:
                 out_c_text="None"
-                loss = model.loss(out_i, rel_label_x)
+                loss = model.loss(out_i, label)
             #print("LOSS:", loss)
 
             if n % PRINT_EVERY == 0:
