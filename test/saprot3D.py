@@ -31,6 +31,7 @@ log(1, f"IMG_SIZE={IMG_SIZE}")
 
 log(1, dataset)
 
+
 MODEL_CLASS = Saprot3Dto1
 
 WORK_AS_IS = "--as-is" in sys.argv
@@ -274,7 +275,12 @@ if REBUILD or FORCE or LABELS:
     print()
 
 
+MODEL_NAME = dataset.name
 
+DIFFERENCES = ("--diffs" in sys.argv) or ("--differences" in sys.argv) or ("--diff" in sys.argv)
+
+if DIFFERENCES:
+    MODEL_NAME+"_diffs"
 
 IN_SHAPE = embeddings.get(0).t.shape
 log(1, f"IN_SHAPE={IN_SHAPE}")
@@ -294,7 +300,7 @@ if len(embeddings) <= 1000 or DEVICE == "cpu":
 if TRAIN:
     log("start", "TRAINING")
 
-    model = MODEL_CLASS(name=dataset.name, in_shape=IN_SHAPE)
+    model = MODEL_CLASS(name=MODEL_NAME, in_shape=IN_SHAPE)
     log(1, model)
     model.mount()
     print(repr(model))
@@ -332,6 +338,9 @@ if TRAIN:
             #print("REL LABEL SHAPE:", rel_label.shape, rel_label.dtype)
             rel_label_x = model.compress(rel_label)
             abs_label_x = model.compress(abs_label)
+
+            if DIFFERENCES:
+                label = torch.subtract(rel_label_x, abs_label_x)
             #print("COMPRESSED REL LABEL:", rel_label_x)
             #print("COMPRESSED REL LABEL:", rel_label_x.shape)
 
@@ -518,12 +527,12 @@ if INFERENCE:
 
 
             # Model output #############################################################################################
-            out_ax = fig.add_subplot(n_rows, n_figs, 3, projection="3d")
+            out_ax = fig.add_subplot(n_rows, n_figs, n_figs+3, projection="3d")
             out = out_x.detach().cpu().numpy()[0]
             #print(out)
             voxels3d(out, ax = out_ax, shrink = True, title="Raw output")
 
-            scaled_ax = fig.add_subplot(n_rows, n_figs, 4, projection="3d")
+            scaled_ax = fig.add_subplot(n_rows, n_figs, n_figs+4, projection="3d")
 
             max_val = rel_label_x_detached.reshape(rel_label_x_detached.shape[-1] ** 3).max()
             min_val = rel_label_x_detached.reshape(rel_label_x_detached.shape[-1] ** 3).min()
@@ -582,7 +591,6 @@ if INFERENCE:
 
             # DIFf diffs
             diff_diff_ax = fig.add_subplot(n_rows, n_figs, n_figs*2+5, projection="3d")
-
             max_diff_diff_vals = np.maximum.reduce([rel_diff, abs_diff])
             min_diff_diff_vals = np.minimum.reduce([rel_diff, abs_diff])
             diff_diff = np.absolute(max_diff_diff_vals - min_diff_diff_vals)
