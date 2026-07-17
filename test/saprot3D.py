@@ -503,9 +503,9 @@ if INFERENCE:
 
             diff_label_ax = fig.add_subplot(n_rows, n_figs, n_figs*2+1, projection="3d")
 
-            diff_label = abs(np.subtract(rel_label.detach().cpu().numpy()[0], abs_label.detach().cpu().numpy()[0]))
+            diff_label = np.subtract(rel_label.detach().cpu().numpy()[0], abs_label.detach().cpu().numpy()[0])
 
-            diff_label_count = (diff_label > 0.01) & (diff_label > 0.01) & (diff_label > 0.01)
+            diff_label_count = (abs(diff_label) > 0.001) & (abs(diff_label) > 0.001) & (abs(diff_label) > 0.001)
             diff_label_count = diff_label_count.astype(np.int64)
             #print(diff_label)
             #print(diff_label_count)
@@ -529,12 +529,15 @@ if INFERENCE:
 
 
             # Model output #############################################################################################
-            out_ax = fig.add_subplot(n_rows, n_figs, n_figs+3, projection="3d")
+            row = 1
+            if DIFFERENCES:
+                row=2
+            out_ax = fig.add_subplot(n_rows, n_figs, n_figs*row+3, projection="3d")
             out = out_x.detach().cpu().numpy()[0]
             #print(out)
             voxels3d(out, ax = out_ax, shrink = True, title="Raw output")
 
-            scaled_ax = fig.add_subplot(n_rows, n_figs, n_figs+4, projection="3d")
+            scaled_ax = fig.add_subplot(n_rows, n_figs, n_figs*row+4, projection="3d")
 
             max_val = rel_label_x_detached.reshape(rel_label_x_detached.shape[-1] ** 3).max()
             min_val = rel_label_x_detached.reshape(rel_label_x_detached.shape[-1] ** 3).min()
