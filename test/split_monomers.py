@@ -2,7 +2,7 @@ import os, sys, json, shutil
 sys.path.append('..')
 from src.bioiain import log
 from src.bioiain.utilities.exceptions import *
-from src.bioiain.tools.PISA import *
+from src.bioiain.tools.CCP4.PISA import *
 
 
 

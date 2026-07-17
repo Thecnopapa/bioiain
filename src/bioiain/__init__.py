@@ -15,7 +15,7 @@ log(1, f"$", *sys.argv)
 
 
 
-__all__ = ["aleph", "base", "machine", "tools", "utilities", "visualisation" ]
+__all__ = ["base", "utilities", "visualisation" ]
 
 __all__.extend(["log", "SUBDIR_NAME", "TEMP_FOLDER", "WD", "FD"])
 

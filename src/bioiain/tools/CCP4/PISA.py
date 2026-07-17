@@ -1,22 +1,11 @@
 import os, sys, json, xmltodict
 
 import subprocess
-from ..utilities.logging import log
-from ..utilities.exceptions import *
-from ..utilities import *
+from ...utilities.logging import log
+from ...utilities.exceptions import *
+from ...utilities import *
 
-
-log("header", "Importing PISA module...")
-try:
-    ccp4_path = os.environ["CCP4"]
-except KeyError:
-    log("error", "PISA: CCP4 not enabled")
-    ccp4_path = None
-    raise CCP4NotEnabled("Trying to import the PISA module outside the CCP4 shell")
-if ccp4_path is None:
-    raise CCP4Error("CCP4 Path not found")
-log(1,"CCP4 detected at:", ccp4_path)
-
+from . import CCP4_PATH
 
 class PISA(object):
     def __init__(self,
@@ -39,7 +28,7 @@ class PISA(object):
 
     def run_pisa(self, filepath, interfaces=True, assemblies=True):
 
-        assert ccp4_path is not None
+        assert CCP4_PATH is not None
 
         filepath = os.path.abspath(filepath)
         cmd = [

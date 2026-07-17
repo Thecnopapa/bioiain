@@ -1067,7 +1067,7 @@ class BIEntity(object):
         pass
 
     def _calculate_pisa(self, **kwargs):
-        from ..tools.PISA import PISA
+        from ..tools.CCP4.PISA import PISA
         pisa = PISA(pisa_id=self.name(), **kwargs)
 
 
