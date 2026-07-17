@@ -579,6 +579,25 @@ if INFERENCE:
             voxels3d(model_abs_diff_detached, ax = model_abs_diff_ax, shrink = True, title=f"Model diff out/abs (p:{abs_pred:.2f})")
 
 
+
+            # DIFf diffs
+            diff_diff_ax = fig.add_subplot(n_rows, n_figs, n_figs*2+5, projection="3d")
+
+            max_diff_diff_vals = np.maximum.reduce([rel_diff, abs_diff])
+            min_diff_diff_vals = np.minimum.reduce([rel_diff, abs_diff])
+            diff_diff = np.absolute(max_diff_diff_vals - min_diff_diff_vals)
+
+            diff_diff_count = (diff_diff >= 0.001) & (diff_diff > 0.001) & (diff_diff > 0.001)
+            diff_diff_count = diff_diff_count.astype(np.int64)
+
+
+            voxels3d(diff_diff, count_grid=diff_diff_count, ax = diff_diff_ax, shrink = True, title="Diff diff")
+
+
+
+
+
+
             img_path = os.path.join(inference_folder, name+".png")
             plt.savefig(img_path, dpi=300)
             log(1, f"Figure saved to:", img_path)
