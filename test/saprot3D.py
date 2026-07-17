@@ -467,10 +467,11 @@ if INFERENCE:
 
             import matplotlib.pyplot as plt
             from src.bioiain.visualisation import voxels3d, show, close
-            fig = plt.figure()
-            fig.suptitle(f"{chain}")
             n_figs = 6
             n_rows = 3
+            fig = plt.figure(figsize=(n_figs*5, n_rows*5))
+            fig.suptitle(f"{chain}")
+
 
 
             # Real Labels ##############################################################################################
@@ -556,7 +557,7 @@ if INFERENCE:
 
 
             img_path = os.path.join(inference_folder, name+".png")
-            plt.savefig(img_path)
+            plt.savefig(img_path, dpi=300)
             log(1, f"Figure saved to:", img_path)
             show()
             close(fig)
