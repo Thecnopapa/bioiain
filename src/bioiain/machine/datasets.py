@@ -151,7 +151,7 @@ class EmbeddingDataset(object):
         return list(self.embeddings.keys())
 
     def list(self):
-        return [k for k in self.keys() if not self.embeddings[key]["deleted"]]
+        return [k for k in self.keys() if not self.embeddings[k]["deleted"]]
 
 
     def __next__(self):
