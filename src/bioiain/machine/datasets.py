@@ -326,13 +326,19 @@ class EmbeddingDataset(object):
         self._lock = False
         return key
 
-    def sort_as(self, target_dataset):
+    def sort_as(self, target_dataset, delete_extra=True):
         log(1, f"Sorting dataset {self.name} as as : {target_dataset.name}" )
 
         new_embeddings = {}
         new_length = 0
         for key in target_dataset.keys():
-            v = self.embeddings[key]
+            try:
+                v = self.embeddings[key]
+            except:
+                if delete_extra:
+                    target_dataset.remove(key)
+                else:
+                    raise
             v["start"] = new_length
             v["end"] = new_length+v["length"]
             new_embeddings[key] = v
