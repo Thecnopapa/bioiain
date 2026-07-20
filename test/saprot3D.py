@@ -237,13 +237,15 @@ def generate_3DSaprot_embeddings(dataset,
 
 
 embeddings, rel_labels, abs_labels = generate_3DSaprot_embeddings(dataset, img_size=IMG_SIZE, force=FORCE, allow_exports=ALLOW_EXPORTS, rebuild=REBUILD, force_embeddings=EMBEDDINGS, force_labels=LABELS, as_is=WORK_AS_IS, n_threads=N_THREADS)
-
+log(1, "EMBEDDINGS", embeddings)
+log(1, "REL LABELS:", rel_labels)
+log(1, "ABS_LABELS:", abs_labels)
 print(embeddings.keys()[-10:])
 print(rel_labels.keys()[-10:])
 print(abs_labels.keys()[-10:])
 rel_labels.sort_as(embeddings)
 abs_labels.sort_as(embeddings)
-rel_labels.sort_as(embeddings)
+rel_labels.sort_as(abs_labels)
 print(embeddings.keys()[-10:])
 print(rel_labels.keys()[-10:])
 print(abs_labels.keys()[-10:])

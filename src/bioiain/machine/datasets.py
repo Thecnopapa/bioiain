@@ -337,7 +337,7 @@ class EmbeddingDataset(object):
         for key in target_dataset.list():
             try:
                 v = self.embeddings[key]
-            except:
+            except KeyError:
                 if delete_extra:
                     target_dataset.remove(key)
                     log("warning", f"Deleted {key} from {target_dataset}")
