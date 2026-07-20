@@ -14,7 +14,7 @@ from torch.utils.data import Dataset, DataLoader
 
 
 class Item(object):
-    def __init__(self, tensor:Tensor, label:Any, label_to_index:dict|None=None, key:str=None, name:str=None, dataset=None):
+    def __init__(self, tensor:Tensor, label:Any, label_to_index:dict|None=None, n:int|None=None, key:str=None, name:str=None, dataset=None):
         self.tensor = tensor
         self.label = label
         self.t = self.tensor
@@ -34,7 +34,7 @@ class Item(object):
                 self.lt = self.label_tensor
         #print(f"LABEL IS {type(self.label)}", type(self.label) in (list, tuple), label_to_index is not None , len(label_to_index) > 1)
 
-
+        self.n = n
         self.key = key
         self.name = name
         self.dataset = dataset
@@ -389,6 +389,14 @@ class EmbeddingDataset(object):
             f.write(f"> {key}\n")
             f.write(f"{sequence}\n")
 
+    def get_indexes(self, key, return_single_index=True, **kwargs):
+
+        indexes = range(self.embeddings[key]["start"], self.embeddings[key]["end"])
+
+        if return_single_index and len(indexes) == 1:
+            return indexes[0]
+        return indexes
+
 
     def get(self, key, embedding=True, label=True, cache=True, label_key=None, only_data=False) -> Item:
         #print("GET:", key)
@@ -551,7 +559,7 @@ class EmbeddingDataset(object):
         if self.data["mapped"]:
             l_to_i = self.data["label_to_index"]
         #print(l_to_i)
-        return Item(target_tensor, target_label, label_to_index=l_to_i, key=key, name=e["name"], dataset=self)
+        return Item(target_tensor, target_label, label_to_index=l_to_i, n=key, key=e["key"], name=e["name"], dataset=self)
 
 
     def add_label(self, key, label, label_key="label"):

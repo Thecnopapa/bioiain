@@ -245,7 +245,6 @@ print(rel_labels.keys()[-10:])
 print(abs_labels.keys()[-10:])
 rel_labels.sort_as(embeddings)
 abs_labels.sort_as(embeddings)
-abs_labels.sort_as(rel_labels)
 print(embeddings.keys()[-10:])
 print(rel_labels.keys()[-10:])
 print(abs_labels.keys()[-10:])
@@ -318,12 +317,17 @@ if TRAIN:
     for epoch in range(EPOCHS):
         log("start", f"EPOCH: {epoch}", print_timer=True, reset_timer=False)
         max_n = len(embeddings)
+        n = 0
         for n in range(len(embeddings)):
             #print(n)
             embeddings.use_label("oligo")
-            item = embeddings.get(n, label=True, label_key="oligo")
-            rel_item = rel_labels.get(n, label=False)
-            abs_item = abs_labels.get(n, label=False)
+            try:
+                item = embeddings.get(n, label=True, label_key="oligo")
+            except DeletedIndex:
+                continue
+            key = item.key
+            rel_item = rel_labels.get(rel_labels.get_indexes(key), label=False)
+            abs_item = abs_labels.get(abs_labels.get_indexes(key), label=False)
 
             assert item.name == rel_item.name and item.name == abs_item.name, f"{item.name} == {rel_item.name} == {abs_item.name}"
             tensor = item.t.to(torch.float32).to(DEVICE)
