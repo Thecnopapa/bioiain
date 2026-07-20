@@ -133,17 +133,20 @@ def generate_3DSaprot_embeddings(dataset,
                 log(1, "Generating Relative 3D label...")
                 rel_label3D = chain.img3D(property="rel_compactness", plot=False, size=img_size, as_embedding=True, mode="mean", residue_kwargs={"need_backbone":False})
                 log(2, rel_label3D.shape)
-                rel_label_embedding = Compactness3DEembedding.from_tensor(rel_label3D, name=name, img_size=img_size, relative=True).save()
-                rel_labels.add(rel_label_embedding)
-                rel_labels.save(temp=True)
-                log(2, rel_labels)
-
 
                 log(1, "Loading Absolute compactness...")
                 chain.compactness(with_symmetry=False, export=False)
                 log(1, "Generating Absolute 3D label...")
                 abs_label3D = chain.img3D(property="abs_compactness", plot=False, size=IMG_SIZE, as_embedding=True, mode="mean", residue_kwargs={"need_backbone":False})
                 log(2, abs_label3D.shape)
+
+                log(1, "Adding labels to datasets...")
+
+                rel_label_embedding = Compactness3DEembedding.from_tensor(rel_label3D, name=name, img_size=img_size, relative=True).save()
+                rel_labels.add(rel_label_embedding)
+                rel_labels.save(temp=True)
+                log(2, rel_labels)
+
                 abs_label_embedding = Compactness3DEembedding.from_tensor(abs_label3D, name=name, img_size=IMG_SIZE, relative=False).save()
                 abs_labels.add(abs_label_embedding)
                 abs_labels.save(temp=True)

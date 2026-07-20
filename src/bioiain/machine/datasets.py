@@ -337,6 +337,8 @@ class EmbeddingDataset(object):
             except:
                 if delete_extra:
                     target_dataset.remove(key)
+                    log("warning", f"Deleted {key} from {target_dataset}")
+                    continue
                 else:
                     raise
             v["start"] = new_length
