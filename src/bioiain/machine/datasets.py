@@ -118,8 +118,8 @@ class EmbeddingDataset(object):
         return self.data.get("incomplete", True)
 
     def __repr__(self):
-        if self.data["deleted_indexes"] > 0:
-            return f"<bi.{self.__class__.__name__}:{self.data['name']} N={len(self)} ({self.n_ids()}) mode={self.mode} deleted={self.data.get('deleted',False)}>"
+        if self.data.get("deleted_indexes",0) > 0:
+            return f"<bi.{self.__class__.__name__}:{self.data['name']} N={len(self)} ({self.n_ids()}) mode={self.mode} deleted={self.data.get('deleted_indexes')}>"
         else:
             return f"<bi.{self.__class__.__name__}:{self.data['name']} N={len(self)} ({self.n_ids()}) mode={self.mode}>"
 
@@ -149,6 +149,9 @@ class EmbeddingDataset(object):
 
     def keys(self):
         return list(self.embeddings.keys())
+
+    def list(self):
+        return [k for k in self.keys() if not self.embeddings[key]["deleted"]]
 
 
     def __next__(self):
@@ -331,7 +334,7 @@ class EmbeddingDataset(object):
 
         new_embeddings = {}
         new_length = 0
-        for key in target_dataset.keys():
+        for key in target_dataset.list():
             try:
                 v = self.embeddings[key]
             except:

@@ -243,6 +243,7 @@ print(rel_labels.keys()[-10:])
 print(abs_labels.keys()[-10:])
 rel_labels.sort_as(embeddings)
 abs_labels.sort_as(embeddings)
+rel_labels.sort_as(embeddings)
 print(embeddings.keys()[-10:])
 print(rel_labels.keys()[-10:])
 print(abs_labels.keys()[-10:])
@@ -252,7 +253,7 @@ log(1, "ABS_LABELS:", abs_labels)
 
 if REBUILD or FORCE or LABELS:
     log("header","Configuring oligomer labels")
-    for n, k in enumerate(embeddings.embeddings.keys()):
+    for n, k in enumerate(embeddings.embeddings.list()):
         log(2, f"{n+1}/{len(embeddings)}", end="\r")
         code = k.split("_")[0]
         label = None
