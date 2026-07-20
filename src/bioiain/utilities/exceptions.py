@@ -6,6 +6,9 @@ from .logging import log
 class NotAGoodIdea(Exception):
     pass
 
+class DeprecatedModule(Exception):
+    pass
+
 
 # 3rd party related
 class MissingProgram(Exception):

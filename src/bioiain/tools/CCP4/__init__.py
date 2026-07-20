@@ -13,4 +13,4 @@ if CCP4_PATH is None:
 log(1,"CCP4 detected at:", CCP4_PATH)
 
 
-__all__ = ["PISA", "TRACER" ,"CCP4_PATH"]
+__all__ = ["CCP4_PATH", "PISA"]

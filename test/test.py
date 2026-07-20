@@ -3,22 +3,24 @@ sys.path.append('..')
 from src.bioiain.utilities import *
 from src.bioiain.base import *
 
+import asyncio
 
 log("start", "test.py")
 log("title", "test.py")
 
 
-from src.bioiain.tools.CCP4.TRACER import TRACER
+from src.bioiain.tools.GEMMI import *
+structure = gemmi.read_structure("2rtg.cif")
 
-example = {
-    "cell": [10.51, 15.15, 6.54, 90, 151.7, 90],
-    "d": 0.1,
-    "centered": "C",
-}
-tracer = TRACER("test")
-print(tracer)
-tracer.run(**example)
+# Access the UnitCell object
+cell = structure.cell
+space_group = structure.find_spacegroup()
 
+print(cell, space_group)
+gv = gemmi_cell(cell, space_group)
+
+rcell = niggli_cell(gv)
+print(rcell)
 exit()
 
 
