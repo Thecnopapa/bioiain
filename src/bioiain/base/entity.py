@@ -862,6 +862,24 @@ class BIEntity(object):
             self.set_flag("crystal_error", True)
             raise CrystalError()
 
+    def unit_cell(self):
+        from ..symmetry import UnitCell
+        a = float(cell["length_a"])
+        b = float(cell["length_b"])
+        c = float(cell["length_c"])
+        alpha = float(cell["angle_alpha"])
+        beta = float(cell["angle_beta"])
+        gamma = float(cell["angle_gamma"])
+        z = float(cell["Z_PDB"])
+        return UnitCell(a, b, c, alpha, beta, gamma, z)
+
+    def space_group(self):
+        from ..symmetry import SpaceGroup
+        sp = int(self.headers["symmetry"].get("Int_Tables_number"))
+        return SpaceGroup(sp)
+
+
+
     def _get_crystal_card(self):
         cell = self.headers["cell"]
 

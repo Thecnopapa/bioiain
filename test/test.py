@@ -3,93 +3,24 @@ sys.path.append('..')
 from src.bioiain.utilities import *
 from src.bioiain.base import *
 
-import asyncio
-
 log("start", "test.py")
 log("title", "test.py")
 
 
-from src.bioiain.tools.GEMMI import *
-structure = gemmi.read_structure("2rtg.cif")
+from src.bioiain.symmetry import *
 
-# Access the UnitCell object
-cell = structure.cell
-space_group = structure.find_spacegroup()
-
-print(cell, space_group)
-gv = gemmi_cell(cell, space_group)
-
-rcell = niggli_cell(gv)
-print(rcell)
-exit()
+structures = StructureDataset.from_list(["1OII", "1VZ4"], name="symmetry_test",)
+print(structures)
 
 
-entity = BIEntity.from_file("./5ezq.cif")
-for res in entity.residues():
-    if res.resnum == 477:
-        print(res)
-        for a in res.atoms:
-            print(a)
-
-entity.fragment()
-exit()
-
-
-term = logging.CursedTerminal()
-
-heights = term.split_height(percentages=[10,50,40])
-#print(heights)
-widths = term.split_width(2)
-#print(widths)
-
-top =    term.add_window(heights[0], None,      heights[0], 0,         title=f"Top")
-left =   term.add_window(heights[1], widths[0], heights[1], widths[0], title=f"Left")
-rigth =  term.add_window(heights[1], widths[1], heights[1], widths[1], title=f"Right")
-bottom = term.add_window(heights[2], None,      heights[2], 0,         title=f"Bottom")
-
-top.print("data:")
-
-top.print("aaaa")
-top.print("bbb")
-top.print("ccc")
-top.print("ddd")
-top.print("eee")
-left.print("default", c="default")
-left.print("black", c="black")
-left.print("blue", c="blue")
-left.print("cyan", c="cyan")
-left.print("green", c="green")
-left.print("magenta", c="magenta")
-left.print("red", c="red")
-left.print("white", c="white")
-left.print("yellow", c="yellow")
-
-
-time.sleep(2)
-#print(term)
-
-time.sleep(10)
-term.close()
+for entity in structures.entities():
+    print(entity)
+    print(entity.space_group())
+    print(entity.unit_cell())
 
 
 
 
-exit()
 
 
-
-
-from data import dataset
-
-from saprot3D import *
-from compactness_base import *
-from compactness_models import *
-
-IMG_SIZE = 16
-
-
-
-for entity in dataset.entities(entity_class=CompactStructure):
-
-    entity.img3D(property="compactness", show_plot=False, gif=True)
-
+log("end")

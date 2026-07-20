@@ -1,6 +1,6 @@
 
-
-
+import os, sys, json
+import numpy as np
 from .logging import log, cursed
 from .logging import *
 from .strings import *
@@ -15,3 +15,5 @@ from .. import WD, FD, TEMP_FOLDER, SUBDIR_NAME
 __all__ = ["log", "cursed", "logging", "strings", "maths", "sequences", "parallel", "exceptions", "files", "kdtree"]
 
 __all__.extend(["WD", "FD", "TEMP_FOLDER", "SUBDIR_NAME", "StructureDataset", "N_THREADS"])
+
+__all__.extend(["os", "sys", "json", "np"])

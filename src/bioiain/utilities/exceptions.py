@@ -224,3 +224,9 @@ class NoTensorAvailable(EmbeddingLoadError):
 
 class UnknownEmbeddingFormat(EmbeddingLoadError):
     pass
+
+
+# Symmetry related
+
+class SpaceGroupNotFound(Exception):
+    pass
