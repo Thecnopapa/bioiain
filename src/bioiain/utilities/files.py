@@ -90,8 +90,7 @@ class StructureDataset(object):
         self._blacklist_lock = False
 
     def check_blacklist(self, path):
-        bl = set(self.blacklist)
-        return path in bl
+        return path in self.blacklist
 
     def codes(self) -> list:
         return [e.get("code", None) for e in self.data.values() if not self.check_blacklist(e["path"])]
