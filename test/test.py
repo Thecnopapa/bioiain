@@ -14,9 +14,9 @@ print(structures)
 
 
 for entity in structures.entities():
-    print(entity)
-    print(entity.space_group())
-    print(entity.unit_cell())
+    log("header", entity)
+    log(1, entity.space_group())
+    log(1, entity.unit_cell())
 
 
 

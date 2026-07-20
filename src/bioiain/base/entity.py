@@ -864,6 +864,7 @@ class BIEntity(object):
 
     def unit_cell(self):
         from ..symmetry import UnitCell
+        cell = self.headers["cell"]
         a = float(cell["length_a"])
         b = float(cell["length_b"])
         c = float(cell["length_c"])
@@ -871,7 +872,7 @@ class BIEntity(object):
         beta = float(cell["angle_beta"])
         gamma = float(cell["angle_gamma"])
         z = float(cell["Z_PDB"])
-        return UnitCell(a, b, c, alpha, beta, gamma, z)
+        return UnitCell(a, b, c, alpha, beta, gamma, z, space_group=self.space_group())
 
     def space_group(self):
         from ..symmetry import SpaceGroup

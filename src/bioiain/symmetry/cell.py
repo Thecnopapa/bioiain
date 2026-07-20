@@ -27,7 +27,10 @@ class SpaceGroup(object):
         self.n = n
         if type(n) is str:
             log("warning", f"Space group does not match an International Table entry: {n}")
-        self.name = self.group["xHM_symbol"]
+        self.name = self.group.get("symbol")
+
+    def __repr__(self):
+        return f"<bi.{self.__class__.__name__}:{self.name} ({self.n})>"
 
 
 
@@ -41,7 +44,7 @@ class SpaceGroup(object):
 
 
 class UnitCell(object):
-    def __init__(self, a, b, c, alpha, beta, gamma, space_group=None, z=None):
+    def __init__(self, a, b, c, alpha, beta, gamma, z=None, space_group=None,):
         self.a = a
         self.b = b
         self.c = c
@@ -52,8 +55,11 @@ class UnitCell(object):
         self.space_group = space_group
 
     def __repr__(self):
-        pstr = " ".join([f"{p:.2f}" for p in self.params])
-        return f"<bi.{self.__class__.__name__}[{pstr}]"
+        pstr = " ".join([f"{p:.2f}" for p in self.params()])
+        spstr = ""
+        if self.space_group is not None:
+            spstr = f" ({self.space_group.name})"
+        return f"<bi.{self.__class__.__name__} [{pstr}]{spstr}>"
 
 
     def params(self):
