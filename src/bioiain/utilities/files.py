@@ -93,13 +93,13 @@ class StructureDataset(object):
         return path in self.blacklist
 
     def codes(self) -> list:
-        return [e.get("code", None) for e in self.data.values() if not self.check_blacklist(e["path"])]
+        return [e.get("code", None) for e in self.data.values()]
 
     def urls(self) -> list:
-        return [e.get("url", None) for e in self.data.values() if not self.check_blacklist(e["path"])]
+        return [e.get("url", None) for e in self.data.values()]
 
     def paths(self) -> list:
-        return [e.get("path", None) for e in self.data.values() if not self.check_blacklist(e["path"])]
+        return [e.get("path", None) for e in self.data.values()]
 
     def entities(self, entity_class=BIEntity, return_entries=False, **kwargs):
         for entry in self:
@@ -287,9 +287,11 @@ class StructureDataset(object):
         if counter > 0 or failed_counter > 0:
             print()
         log(2, f"{counter} files downloaded, {failed_counter} failed, {skipped_counter} skipped")
-        for path in pdb_paths:
+        n_paths = len(pdb_paths)
+        for n, path in enumerate(pdb_paths):
             code = os.path.basename(path.split(".")[0])
             extension = f_name.split(".")[-1]
+            log(2, f"{n+1}/{n_paths}: {code}")
             self.add(code, name=code, path=path, url=None, source="list_path", extension=extension, replace=replace, **extras)
         return self
 
