@@ -8,6 +8,14 @@ log("title", "test.py")
 
 
 from src.bioiain.symmetry import *
+from src.bioiain.symmetry.niggli import *
+
+
+cell = UnitCell(3., 5.196, 2., 103.55, 109.28, 134.53)
+print(cell)
+niggli = cell_to_niggli(cell)
+
+exit()
 
 structures = StructureDataset.from_list(["1OII", "1VZ4"], name="symmetry_test",)
 print(structures)
@@ -16,7 +24,10 @@ print(structures)
 for entity in structures.entities():
     log("header", entity)
     log(1, entity.space_group())
-    log(1, entity.unit_cell())
+    cell = entity.unit_cell()
+    log(1, cell)
+    niggli = cell_to_niggli(cell)
+    log(1, niggli)
 
 
 
