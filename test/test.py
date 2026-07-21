@@ -14,6 +14,7 @@ from src.bioiain.symmetry.niggli import *
 cell = UnitCell(3., 5.196, 2., 103.55, 109.28, 134.53)
 print(cell)
 niggli = cell_to_niggli(cell)
+print(niggli)
 
 exit()
 
