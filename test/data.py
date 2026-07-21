@@ -25,6 +25,9 @@ elif "lbds" in sys.argv:
 elif "aleph" in sys.argv:
     dataset = StructureDataset.from_list(["1M2Z", "3HBB", "6F63", "5LXN", "3brf", "6e52", "7t2y", "3kg2", "2GEJ", "2bis"], name="aleph", ignore_blacklist=ignore_blacklist)
 
+elif "ccs" in sys.argv:
+        dataset = StructureDataset.from_list("./data/ccs.list", name="ccs", ignore_blacklist=ignore_blacklist)
+
 elif "test" in sys.argv:
         dataset = StructureDataset.from_list(["1A92"], name="test", ignore_blacklist=ignore_blacklist)
 

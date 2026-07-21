@@ -52,6 +52,7 @@ def cell_to_niggli(cell, angles_are_radians=False):
     done = False
     n = 0
     while not (done or n >= 6):
+        raise Exception("not ready yet")
         n+=1
         # 1 ############################################################################################################
 
