@@ -486,7 +486,8 @@ if INFERENCE:
             abs_label_x = model.compress(abs_label)
 
             out_x = model(in_tensor)
-            #print("OUT", out_x.shape)
+            print("OUT"):
+            print(out_x)
 
             import matplotlib.pyplot as plt
             from src.bioiain.visualisation import voxels3d, show, close
