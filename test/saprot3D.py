@@ -301,6 +301,7 @@ FINETUNE = "--finetune" in sys.argv
 FAST = "--fast" in sys.argv
 if len(embeddings) <= 1000 or DEVICE == "cpu":
     PRINT_EVERY=1
+    SAVE_TEMP_MODELS = False
     if not FAST:
         SAVE_TEMP_MODELS = True
 
