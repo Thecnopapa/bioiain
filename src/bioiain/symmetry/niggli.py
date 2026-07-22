@@ -11,7 +11,7 @@ from math import radians, cos, copysign, sqrt, acos, degrees
 
 
 
-def cell_to_quadratic(cell, angles_are_radians=False):
+def cell_to_quadratic(cell, angles_are_radians=False, normalise=False):
     from .cell import UnitCell
 
     if isinstance(cell, UnitCell):
@@ -27,6 +27,12 @@ def cell_to_quadratic(cell, angles_are_radians=False):
     A = a*a
     B = b*b
     C = c*c
+    if normalise:
+        largest = max(A,B,C)
+
+        A /= largest
+        B /= largest
+        C /= largest
 
     ξ = 2*b*c*cos(alpha) # ξ (Xi)
     η = 2*a*c*cos(beta) # η (Eta)
@@ -44,7 +50,7 @@ def check_buerger(cell, angles_are_radians=False, eps=0.01, is_quadratic=False):
     return leq(abs(ξ), B) and leq(abs(η), A) and leq(abs(ζ), A) and (ξ+η+ζ+A+B >= 0)
 
 
-def cell_to_niggli(cell, angles_are_radians=False, verbose=False, return_matrix=False, eps=0.01, max_iter=100):
+def cell_to_niggli(cell, angles_are_radians=False, verbose=False, return_matrix=False, eps=0.01, max_iter=100, return_iterations=False):
     from .cell import UnitCell
     def equal(a, b):
         return abs(a-b) < eps
@@ -153,7 +159,8 @@ def cell_to_niggli(cell, angles_are_radians=False, verbose=False, return_matrix=
         log(1, f"N-iterations: {n}")
         print()
     ####################################################################################################################
-
+    if return_iterations:
+        return n
     if return_matrix:
         return np.array([[A, B, C], [ξ/2, η/2, ζ/2 ]])
 

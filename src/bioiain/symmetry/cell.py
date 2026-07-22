@@ -76,5 +76,5 @@ class UnitCell(object):
 
     def is_niggli(self, **kwargs):
         from .niggli import cell_to_niggli
-        return self.params() == cell_to_niggli(self, angles_are_radians=self.angles_are_radians, **kwargs).params()
+        return cell_to_niggli(self, angles_are_radians=self.angles_are_radians, return_iterations=True,**kwargs)<=1
 
