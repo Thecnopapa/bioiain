@@ -55,7 +55,7 @@ class UnitCell(object):
         self.space_group = space_group
 
     def __repr__(self):
-        pstr = " ".join([f"{p:>2.1f}" for p in self.params()])
+        pstr = " ".join([f"{p:>5.2f}" for p in self.params()])
         spstr = ""
         if self.space_group is not None:
             spstr = f" ({self.space_group.name})"

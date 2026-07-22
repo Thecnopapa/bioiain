@@ -12,8 +12,10 @@ from src.bioiain.symmetry.niggli import *
 
 
 cell = UnitCell(3., 5.196, 2., 103.55, 109.28, 134.53)
+cell = UnitCell(3., 5.196, 2., 103.92, 109.47, 134.88)
+
 print(cell)
-niggli = cell_to_niggli(cell)
+niggli = cell_to_niggli(cell, verbose=True, eps=0.01)
 print(niggli)
 
 exit()
