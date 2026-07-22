@@ -1,4 +1,4 @@
-import torch, math
+import torch, math, shutil, os
 import torchvision.transforms.v2.functional
 import PIL
 
@@ -321,8 +321,8 @@ class BaseModel(nn.Module):
         return fname
 
 
-    def save(self, path=None, add_epoch=False, temp=False, allow_inference=False):
-        log(1, f"Saving model (TEMP={temp})")
+    def save(self, path=None, add_epoch=False, temp=False, best=False, allow_inference=False):
+        log(1, f"Saving model (TEMP={temp}, BEST={best})")
         if self.inference and not allow_inference:
             raise TryingToSaveInferenceModel()
         if path is None:
@@ -334,14 +334,20 @@ class BaseModel(nn.Module):
                model_path = model_path.replace(".model.pt", f".{name}.model.pt")
             if temp:
                 model_path = model_path.replace(".model.pt", ".temp.model.pt")
+            if best:
+                model_path = model_path.replace(".model.pt", ".best.model.pt")
             if name == "default":
                 self.data["path"] = model_path
             torch.save(submodel.state_dict(), model_path)
+            if not temp and not best:
+                temp_best = model_path.replace(".model.pt", ".temp.best.model.pt")
+                if os.path.exists(temp_best):
+                    shutil.copy(temp_best, model_path.replace(".model.pt", ".best.model.pt"))
         return self.export(path=path, add_epoch=add_epoch, temp=temp)
 
 
-    def export(self, path=None, add_epoch=False, temp=False):
-        log(1, f"Exporting model (TEMP={temp})")
+    def export(self, path=None, add_epoch=False, temp=False, best=False):
+        log(1, f"Exporting model (TEMP={temp}, BEST={best})")
 
         if path is None:
             path = os.path.join(self.data["folder"], self.get_fname(add_epoch=add_epoch))
@@ -351,8 +357,10 @@ class BaseModel(nn.Module):
             data_path = path + ".data.json"
         else:
             data_path = path
-        if temp and not path.endswith(".temp.data.json"):
+        if temp and not ".temp" in path:
             data_path = data_path.replace(".data.json", ".temp.data.json")
+        if best and not ".best" in path:
+            data_path = data_path.replace(".data.json", ".best.data.json")
         json.dump(self.data, open(data_path, "w"), indent=4)
         return data_path
 
@@ -361,22 +369,33 @@ class BaseModel(nn.Module):
         raise NotImplementedError()
 
 
-    def load(self, data_path=None, epoch=None, weights_only=False):
+    def load(self, data_path=None, epoch=None, weights_only=False, temp=True, best=True):
         log(1, f"Loading model (weights_only={weights_only})")
 
+
         if data_path is None:
-            data_path = os.path.join(self.data["folder"], self.get_fname(add_epoch=epoch))+".data.json"
-            try:
-                if not os.path.exists(data_path):
-                    raise ModelNotFound(data_path)
-            except:
-                log("warning", "Latest model not found, looking for temp model instead")
-                data_path = os.path.join(self.data["folder"], self.get_fname(add_epoch=epoch))+".temp.data.json"
-                if not os.path.exists(data_path):
-                    raise ModelNotFound(data_path)
-        else:
-            if not os.path.exists(data_path):
-                raise ModelNotFound(data_path)
+            base_path = os.path.join(self.data["folder"], self.get_fname(add_epoch=epoch))
+            search_paths=[]
+            if best:
+                search_paths.append(base_path+".best.data.json")
+                if temp:
+                    search_paths.append(base_path+".temp.best.data.json")
+            search_paths.append(base_path+".data.json")
+            if temp:
+                search_paths.append(base_path+".temp.data.json")
+
+            for path in search_paths:
+                if os.path.exists(path):
+                    data_path = path
+                    break
+                log("warning", "Model not found at:", path)
+
+        if data_path is None:
+            raise ModelNotFound(base_path)
+        elif not os.path.exists(data_path):
+            raise ModelNotFound(data_path)
+
+
 
         raw_data = json.load(open(data_path, "r"))
         self.data = self.data | raw_data

@@ -240,14 +240,14 @@ embeddings, rel_labels, abs_labels = generate_3DSaprot_embeddings(dataset, img_s
 log(1, "EMBEDDINGS", embeddings)
 log(1, "REL LABELS:", rel_labels)
 log(1, "ABS_LABELS:", abs_labels)
-print(embeddings.keys()[-10:])
-print(rel_labels.keys()[-10:])
-print(abs_labels.keys()[-10:])
+# print(embeddings.keys()[-10:])
+# print(rel_labels.keys()[-10:])
+# print(abs_labels.keys()[-10:])
 rel_labels.sort_as(embeddings)
 abs_labels.sort_as(embeddings)
-print(embeddings.keys()[-10:])
-print(rel_labels.keys()[-10:])
-print(abs_labels.keys()[-10:])
+# print(embeddings.keys()[-10:])
+# print(rel_labels.keys()[-10:])
+# print(abs_labels.keys()[-10:])
 log(1, "EMBEDDINGS", embeddings)
 log(1, "REL LABELS:", rel_labels)
 log(1, "ABS_LABELS:", abs_labels)
@@ -315,6 +315,8 @@ if TRAIN:
 
 
     EPOCHS = 100
+    best_loss = None
+
     for epoch in range(EPOCHS):
         log("start", f"EPOCH: {epoch}", print_timer=True, reset_timer=False)
         max_n = len(embeddings)
@@ -381,11 +383,19 @@ if TRAIN:
                 exit()
 
         print()
+        is_best = False
+        if best_loss is None:
+            is_best = True
+        elif model.running_loss['default'] < best_loss:
+            is_best = True
+            best_loss = model.running_loss['default']
+        if is_best:
+                model.save(temp=True, best=True)
         if epoch % 10 == 0 and epoch != 0:
-            if SAVE_TEMP_MODELS:
+            if SAVE_TEMP_MODELS and not is_best:
                 model.save(temp=True)
 
-        model.add_epoch(add_histograms=(epoch % 10 == 0) and not FAST)
+        model.add_epoch(add_histograms=((epoch % 10 == 0) and not FAST) or is_best)
         log("end", f"EPOCH: {epoch}", print_timer=True, reset_timer=False)
     model.save()
 
