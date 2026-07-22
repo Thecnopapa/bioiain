@@ -362,6 +362,10 @@ class BaseModel(nn.Module):
         if best and not ".best" in path:
             data_path = data_path.replace(".data.json", ".best.data.json")
         json.dump(self.data, open(data_path, "w"), indent=4)
+        if not temp and not best:
+                temp_best = model_path.replace(".data.json", ".temp.best.data.json")
+                if os.path.exists(temp_best):
+                    shutil.copy(temp_best, model_path.replace(".data.json", ".best.data.json"))
         return data_path
 
     @classmethod
