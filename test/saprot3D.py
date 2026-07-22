@@ -221,9 +221,10 @@ def generate_3DSaprot_embeddings(dataset,
                                        label_done=label_done, 
                                        )
         
-        while threading.active_count() > 1:
-            print(f"waiting for Threads to finish")
-            time.sleep(1)
+        # while threading.active_count() > 1:
+        #     print(f"waiting for Threads to finish")
+        #     print(threading.enumerate())
+        #     time.sleep(1)
         print("Joining threads...")
         for t in threads:
             t.join()
@@ -254,7 +255,7 @@ log(1, "ABS_LABELS:", abs_labels)
 
 if REBUILD or FORCE or LABELS:
     log("header","Configuring oligomer labels")
-    for n, k in enumerate(embeddings.embeddings.list()):
+    for n, k in enumerate(embeddings.list()):
         log(2, f"{n+1}/{len(embeddings)}", end="\r")
         code = k.split("_")[0]
         label = None
