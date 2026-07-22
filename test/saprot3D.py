@@ -546,7 +546,7 @@ if INFERENCE:
                 row=2
             out_ax = fig.add_subplot(n_rows, n_figs, n_figs*row+3, projection="3d")
             out = out_x.detach().cpu().numpy()[0]
-            #print(out)
+            print(out)
             voxels3d(out, ax = out_ax, shrink = True, title="Raw output")
 
             scaled_ax = fig.add_subplot(n_rows, n_figs, n_figs*row+4, projection="3d")
