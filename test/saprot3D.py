@@ -486,7 +486,7 @@ if INFERENCE:
             abs_label_x = model.compress(abs_label)
 
             out_x = model(in_tensor)
-            print("OUT"):
+            print("OUT:")
             print(out_x)
 
             import matplotlib.pyplot as plt
