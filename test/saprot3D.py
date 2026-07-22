@@ -309,13 +309,23 @@ if len(embeddings) <= 1000 or DEVICE == "cpu":
 if TRAIN:
     log("start", "TRAINING")
 
+    EPOCHS = 100
+    if "--epochs" in sys.argv:
+        EPOCHS = int(sys.argv[sys.argv.index("--epochs") + 1])
+    log(1, f"EPOCHS={EPOCHS}")
+    LR = 0.001
+    if "--lr" in sys.argv:
+        LR = float(sys.argv[sys.argv.index("--lr") + 1])
+    log(1, f"LR={LR}")
+
+
     model = MODEL_CLASS(name=MODEL_NAME, in_shape=IN_SHAPE)
     log(1, model)
     model.mount()
     print(repr(model))
 
 
-    EPOCHS = 100
+
     best_loss = None
 
     for epoch in range(EPOCHS):
