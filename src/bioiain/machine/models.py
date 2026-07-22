@@ -343,7 +343,7 @@ class BaseModel(nn.Module):
                 temp_best = model_path.replace(".model.pt", ".temp.best.model.pt")
                 if os.path.exists(temp_best):
                     shutil.copy(temp_best, model_path.replace(".model.pt", ".best.model.pt"))
-        return self.export(path=path, add_epoch=add_epoch, temp=temp)
+        return self.export(path=path, add_epoch=add_epoch, temp=temp, best=best)
 
 
     def export(self, path=None, add_epoch=False, temp=False, best=False):
