@@ -44,7 +44,7 @@ class SpaceGroup(object):
 
 
 class UnitCell(object):
-    def __init__(self, a, b, c, alpha, beta, gamma, z=None, space_group=None,):
+    def __init__(self, a, b, c, alpha, beta, gamma, z=None, space_group=None, angles_are_radians=False):
         self.a = a
         self.b = b
         self.c = c
@@ -53,9 +53,10 @@ class UnitCell(object):
         self.gamma = gamma
         self.z = None
         self.space_group = space_group
+        self.angles_are_radians=False
 
     def __repr__(self):
-        pstr = " ".join([f"{p:>2.1f}" for p in self.params()])
+        pstr = " ".join([f"{p:>5.2f}" for p in self.params()])
         spstr = ""
         if self.space_group is not None:
             spstr = f" ({self.space_group.name})"
@@ -65,8 +66,15 @@ class UnitCell(object):
     def params(self):
         return [self.a, self.b, self.c, self.alpha, self.beta, self.gamma]
 
-    def reduce(self, mode="niggli"):
-        pass
+    def niggli_cell(self, mode="niggli", **kwargs):
+        from .niggli import cell_to_niggli
+        return cell_to_niggli(self, angles_are_radians=self.angles_are_radians, **kwargs)
 
-    def is_reduced(self, mode="niggli"):
-        pass
+    def is_buerger(self, **kwargs):
+        from .niggli import check_buerger
+        return check_buerger(self, angles_are_radians=self.angles_are_radians, **kwargs)
+
+    def is_niggli(self, **kwargs):
+        from .niggli import cell_to_niggli
+        return cell_to_niggli(self, angles_are_radians=self.angles_are_radians, return_iterations=True,**kwargs)<=1
+

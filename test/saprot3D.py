@@ -221,9 +221,10 @@ def generate_3DSaprot_embeddings(dataset,
                                        label_done=label_done, 
                                        )
         
-        while threading.active_count() > 1:
-            print(f"waiting for Threads to finish")
-            time.sleep(1)
+        # while threading.active_count() > 1:
+        #     print(f"waiting for Threads to finish")
+        #     print(threading.enumerate())
+        #     time.sleep(1)
         print("Joining threads...")
         for t in threads:
             t.join()
@@ -240,21 +241,21 @@ embeddings, rel_labels, abs_labels = generate_3DSaprot_embeddings(dataset, img_s
 log(1, "EMBEDDINGS", embeddings)
 log(1, "REL LABELS:", rel_labels)
 log(1, "ABS_LABELS:", abs_labels)
-print(embeddings.keys()[-10:])
-print(rel_labels.keys()[-10:])
-print(abs_labels.keys()[-10:])
+# print(embeddings.keys()[-10:])
+# print(rel_labels.keys()[-10:])
+# print(abs_labels.keys()[-10:])
 rel_labels.sort_as(embeddings)
 abs_labels.sort_as(embeddings)
-print(embeddings.keys()[-10:])
-print(rel_labels.keys()[-10:])
-print(abs_labels.keys()[-10:])
+# print(embeddings.keys()[-10:])
+# print(rel_labels.keys()[-10:])
+# print(abs_labels.keys()[-10:])
 log(1, "EMBEDDINGS", embeddings)
 log(1, "REL LABELS:", rel_labels)
 log(1, "ABS_LABELS:", abs_labels)
 
 if REBUILD or FORCE or LABELS:
     log("header","Configuring oligomer labels")
-    for n, k in enumerate(embeddings.embeddings.list()):
+    for n, k in enumerate(embeddings.list()):
         log(2, f"{n+1}/{len(embeddings)}", end="\r")
         code = k.split("_")[0]
         label = None
@@ -298,16 +299,27 @@ log(1, "EMBEDDINGS", embeddings)
 log(1, "REL LABELS:", rel_labels)
 log(1, "ABS_LABELS:", abs_labels)
 PRINT_EVERY=100
-SAVE_TEMP_MODELS= False
+SAVE_TEMP_MODELS=True
 FINETUNE = "--finetune" in sys.argv
 FAST = "--fast" in sys.argv
 if len(embeddings) <= 1000 or DEVICE == "cpu":
     PRINT_EVERY=1
+    SAVE_TEMP_MODELS = False
     if not FAST:
         SAVE_TEMP_MODELS = True
 
 if TRAIN:
     log("start", "TRAINING")
+
+    EPOCHS = 100
+    if "--epochs" in sys.argv:
+        EPOCHS = int(sys.argv[sys.argv.index("--epochs") + 1])
+    log(1, f"EPOCHS={EPOCHS}")
+    LR = 0.001
+    if "--lr" in sys.argv:
+        LR = float(sys.argv[sys.argv.index("--lr") + 1])
+    log(1, f"LR={LR}")
+
 
     model = MODEL_CLASS(name=MODEL_NAME, in_shape=IN_SHAPE)
     log(1, model)
@@ -318,7 +330,9 @@ if TRAIN:
 
 
 
-    EPOCHS = 100
+
+    best_loss = None
+
     for epoch in range(EPOCHS):
         log("start", f"EPOCH: {epoch}", print_timer=True, reset_timer=False)
         max_n = len(embeddings)
@@ -385,11 +399,19 @@ if TRAIN:
                 exit()
 
         print()
+        is_best = False
+        if best_loss is None:
+            is_best = True
+        elif model.running_loss['default'] < best_loss:
+            is_best = True
+            best_loss = model.running_loss['default']
+        if is_best:
+                model.save(temp=True, best=True)
         if epoch % 10 == 0 and epoch != 0:
-            if SAVE_TEMP_MODELS:
+            if SAVE_TEMP_MODELS and not is_best:
                 model.save(temp=True)
 
-        model.add_epoch(add_histograms=(epoch % 10 == 0) and not FAST)
+        model.add_epoch(add_histograms=((epoch % 10 == 0) and not FAST) or is_best)
         log("end", f"EPOCH: {epoch}", print_timer=True, reset_timer=False)
     model.save()
 
@@ -491,7 +513,8 @@ if INFERENCE:
             abs_label_x = model.compress(abs_label)
 
             out_x = model(in_tensor)
-            #print("OUT", out_x.shape)
+            print("OUT:")
+            print(out_x)
 
             import matplotlib.pyplot as plt
             from src.bioiain.visualisation import voxels3d, show, close
@@ -551,7 +574,7 @@ if INFERENCE:
                 row=2
             out_ax = fig.add_subplot(n_rows, n_figs, n_figs*row+3, projection="3d")
             out = out_x.detach().cpu().numpy()[0]
-            #print(out)
+            print(out)
             voxels3d(out, ax = out_ax, shrink = True, title="Raw output")
 
             scaled_ax = fig.add_subplot(n_rows, n_figs, n_figs*row+4, projection="3d")
