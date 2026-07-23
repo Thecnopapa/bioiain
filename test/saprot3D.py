@@ -315,13 +315,13 @@ if TRAIN:
     if "--epochs" in sys.argv:
         EPOCHS = int(sys.argv[sys.argv.index("--epochs") + 1])
     log(1, f"EPOCHS={EPOCHS}")
+
     LR = 0.001
     if "--lr" in sys.argv:
         LR = float(sys.argv[sys.argv.index("--lr") + 1])
     log(1, f"LR={LR}")
 
-
-    model = MODEL_CLASS(name=MODEL_NAME, in_shape=IN_SHAPE)
+    model = MODEL_CLASS(name=MODEL_NAME, in_shape=IN_SHAPE, lr=LR)
     log(1, model)
     model.mount()
     print(repr(model))

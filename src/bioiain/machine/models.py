@@ -80,6 +80,24 @@ class BaseModel(nn.Module):
     def __str__(self):
         return f"<bi.{self.__class__.__name__}_{self.data['dataname']} mounted={self.mounted}>"
 
+    def _layer_str(self, name, layer):
+
+        size=""
+        np=""
+
+        if hasattr(layer, "in_features"):
+            size = f"\t({getattr(layer, 'in_features', '?')}x{getattr(layer, 'out_features', '?')})"
+        elif hasattr(layer, "in_channels"):
+            size = f"\t({getattr(layer, 'in_channels', '?')}->{getattr(layer, 'out_channels', '?')})"
+            if hasattr(layer, "kernel_size"):
+                size += f" [{'x'.join([ str(x) for x in getattr(layer, 'kernel_size')])}]"
+
+
+        n_params = sum(lp.numel() for lp in layer.parameters())
+        if n_params > 0:
+            np = f"\tNp={humanise(n_params)}"
+
+        return f"{name:<20s}\t--> {layer.__class__.__name__}{size:<20s}{np}"
 
     def __repr__(self):
         if not self.mounted:
@@ -100,7 +118,7 @@ class BaseModel(nn.Module):
         - criterion: {crit.__class__.__name__}
         - current epoch: {self.data['epoch']}
         - running loss: {loss}
-        - layers:{"".join([f'\n          - {k}\t--> {v.__class__.__name__}\t({getattr(v, 'in_features', '?')}x{getattr(v, 'out_features', '?')})\tNp= {humanise(sum(vv.numel() for vv in v.parameters()))}' for k, v in layers.items()])}
+        - layers:\n{"\n".join([f'          - {self._layer_str(k,v)}' for k, v in layers.items()])}
         - total params: {self.n_params(human=True)}
     >
 """
