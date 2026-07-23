@@ -283,7 +283,7 @@ if REBUILD or FORCE or LABELS:
     print()
 
 
-MODEL_NAME = DATASET_NAME
+MODEL_NAME = dataset.name
 
 CONTINUE = "--continue" in sys.argv
 
