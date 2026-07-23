@@ -222,7 +222,8 @@ class BaseModel(nn.Module):
             self.writer = SummaryWriter(log_dir=os.path.join(TEMP_FOLDER, "trash"))
         else:
             self.writer = SummaryWriter(log_dir=f"runs/{self.__class__.__name__}/{self.name()}_{datetime.datetime.now().strftime('%m-%d_%H-%M-%S')}")
-
+            self.add_text("data", self.json())
+            self.add_text("repr", repr(self))
 
     def reset_loss(self):
         self.running_loss["total"] = 0
@@ -314,7 +315,7 @@ class BaseModel(nn.Module):
         return self.get_fname(self)
 
     def get_fname(self, add_epoch=False) -> str:
-        if add_epoch and self.data["epoch"] is not None:
+        if add_epoch and (self.data["epoch"] is not None):
             fname = f"{self.data['name']}_E{self.data['epoch']}"
         else:
             fname = f"{self.data['name']}"

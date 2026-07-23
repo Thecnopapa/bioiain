@@ -282,7 +282,9 @@ if REBUILD or FORCE or LABELS:
     print()
 
 
-MODEL_NAME = dataset.name
+MODEL_NAME = DATASET_NAME
+
+CONTINUE = "--continue" in sys.argv
 
 DIFFERENCES = ("--diffs" in sys.argv) or ("--differences" in sys.argv) or ("--diff" in sys.argv)
 
@@ -311,6 +313,9 @@ if TRAIN:
     log(1, model)
     model.mount()
     print(repr(model))
+    if CONTINUE:
+        model.load()
+
 
 
     EPOCHS = 100
