@@ -654,7 +654,7 @@ if INFERENCE:
 
             else:
                 diff_diff_ax = fig.add_subplot(n_rows, n_figs, n_figs*2+5, projection="3d")
-                diff_diff = np.absolute(diff_label_x - scaled_out)
+                diff_diff = np.absolute(diff_label_x + scaled_out)
                 voxels3d(diff_diff, ax = diff_diff_ax, shrink = True, title="Diff diff")
 
 
