@@ -413,7 +413,7 @@ class BaseModel(nn.Module):
                     break
                 log("warning", "Model not found at:", path)
         else:
-            base_path = model_path.split(".")[0]
+            base_path = data_path.split(".")[0]
 
         if data_path is None:
             raise ModelNotFound(base_path)
