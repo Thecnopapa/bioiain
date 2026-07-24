@@ -583,23 +583,25 @@ if INFERENCE:
             if DIFFERENCES:
                 max_val = diff_label_x.reshape(diff_label_x.shape[-1] ** 3).max()
                 min_val = diff_label_x.reshape(diff_label_x.shape[-1] ** 3).min()
+                scaled_out = out * max_val
             else:
-                max_val = rel_label_x_detached.reshape(abs_label_x_detached.shape[-1] ** 3).max()
-                min_val = rel_label_x_detached.reshape(abs_label_x_detached.shape[-1] ** 3).min()
+                max_val = abs_label_x_detached.reshape(abs_label_x_detached.shape[-1] ** 3).max()
+                min_val = abs_label_x_detached.reshape(abs_label_x_detached.shape[-1] ** 3).min()
 
-            max_out = out.reshape(out.shape[-1] ** 3).max()
-            min_out = out.reshape(out.shape[-1] ** 3).min()
+                max_out = out.reshape(out.shape[-1] ** 3).max()
+                min_out = out.reshape(out.shape[-1] ** 3).min()
 
-            #print(max_out, min_out)
-            #print(max_val, min_val)
-            out_range = abs(max_out - min_out)
-            val_range = abs(max_val - min_val)
+                #print(max_out, min_out)
+                #print(max_val, min_val)
+                out_range = abs(max_out - min_out)
+                val_range = abs(max_val - min_val)
 
-            #print(out_range)
-            #print(val_range)
-            
-            #scaled_out = np.absolute((out + min_out) / out_range * val_range)
-            scaled_out = ((out + min_out) / out_range) * val_range
+                #print(out_range)
+                #print(val_range)
+
+                #scaled_out = np.absolute((out + min_out) / out_range * val_range)
+                scaled_out = ((out + min_out) / out_range) * val_range
+
 
             voxels3d(scaled_out, ax = scaled_ax, shrink = True, title="Scaled output")
 
@@ -656,8 +658,10 @@ if INFERENCE:
 
 
                 diff_diff_ax = fig.add_subplot(n_rows, n_figs, n_figs*2+5, projection="3d")
-                diff_diff = diff_label_x + scaled_out
-                voxels3d(diff_diff, ax = diff_diff_ax, shrink = True, title="Diff diff")
+                diff_diff = diff_label_x + out_x.detach().cpu().numpy()[0]
+
+                diff_rmse = np.sqrt(np.mean(diff_diff**2))
+                voxels3d(diff_diff, ax = diff_diff_ax, shrink = True, title=f"diff - out RMSE={diff_rmse:.3f}")
 
 
                 abs_out_ax = fig.add_subplot(n_rows, n_figs, n_figs+5, projection="3d")
@@ -669,7 +673,7 @@ if INFERENCE:
                 rel_label_x_detached = rel_label_x.detach().cpu().numpy()[0]
                 rel_out = rel_label_x_detached - abs_out
                 rmse = np.sqrt(np.mean(rel_out**2))
-                voxels3d(rel_out, ax = rel_out_ax, shrink = True, title=f"rel - (abs + out) RMSE={rmse}")
+                voxels3d(rel_out, ax = rel_out_ax, shrink = True, title=f"rel - (abs + out) RMSE={rmse:.3f}")
 
 
 
