@@ -1,9 +1,7 @@
 import os, json, sys, random
 sys.path.append('..')
 
-import torchvision.transforms.v2.functional
-
-
+import torch.nn as nn
 from src.bioiain.utilities.exceptions import *
 from src.bioiain.utilities.sequences import *
 
@@ -86,6 +84,7 @@ class Saprot3Dto1(BaseModel):
         first_kernel = None
         last_kernel = max(1, (max_size - latent_size) +1)
         pool_kernels = self.data["pool_kernels"] = [first_kernel, last_kernel]
+        interpolation_mode = self.data["interpolation_mode"] = "nearest"
 
 
         log(2, "In shape", self.data["in_shape"])
@@ -94,15 +93,25 @@ class Saprot3Dto1(BaseModel):
         log(2, "Max size", humanise(max_size))
         log(2, "Pool kernels", pool_kernels)
 
+        # Convolution layers ###########################################################################################
 
         self.layers["convolution_common"] = {
-            "conv3dMixed": nn.Conv3d(
+            "conv3dC": nn.Conv3d(
                 in_channels= in_channels,
                 out_channels= hc[0],
                 kernel_size=conv_kernels[0],
                 stride=1,
             ),
-            "conv_reluMixed": nn.ReLU(),
+            "conv_reluC": nn.ReLU(),
+        }
+        self.layers["deconvolution_common"] = {
+            "deconv3dC": nn.ConvTranspose3d(
+                in_channels= in_channels,
+                out_channels= hc[0],
+                kernel_size=conv_kernels[0],
+                stride=1,
+            ),
+            "deconv_reluC": nn.ReLU(),
         }
         self.layers["convolution_mixed"] = {
             "conv3dM": nn.Conv3d(
@@ -113,12 +122,36 @@ class Saprot3Dto1(BaseModel):
             ),
             "conv_reluM": nn.ReLU(),
         }
+
+        self.layers["deconvolution_mixed"] = {
+            "deconv3dM": nn.ConvTranspose3d(
+                in_channels=hc[0],
+                out_channels=hc[0]*2,
+                kernel_size=conv_kernels[1],
+                stride=1,
+            ),
+            "deconv_reluM": nn.ReLU(),
+        }
+
+        ################################################################################################################
+
+
+        # Pooling layers ###############################################################################################
+
         self.layers["last_pool"] = {
             "last_pool": nn.AvgPool3d(
                 kernel_size=last_kernel,
                 stride=1,
             ),
         }
+        self.layers["last_unpool"] = {
+            "last_unpool": nn.functional.interpolate([max_size, max_size, max_size], mode=interpolation_mode),
+        }
+
+        ################################################################################################################
+
+
+        # Linear (conv) layers #########################################################################################
 
         self.layers["linear"] = {
             "linear_relu1": nn.ReLU(),
@@ -128,13 +161,28 @@ class Saprot3Dto1(BaseModel):
             "conv1d2": nn.Conv1d(in_channels, 1, kernel_size=1, stride=1),
         }
 
+        self.layers["delinear"] = {
+            "delinear_relu1": nn.ReLU(),
+            "deconv1d2": nn.ConvTranspose1d(in_channels, 1, kernel_size=1, stride=1),
+            "delinear_relu2": nn.ReLU(),
+            "deconv1d1": nn.ConvTranspose1d(hc[0] * 2, in_channels, kernel_size=1, stride=1),
+            "deflatten1": nn.Unflatten([latent_size, latent_size, latent_size]),
+        }
+
+        ################################################################################################################
+
+
+        # Post latent space ############################################################################################
+
         self.layers["classifier"] = {
             "lineal_classifier": nn.Linear(latent_size**3, 1),
         }
 
-        self.layers["decoder"] = {
+        ################################################################################################################
 
-        }
+
+        # Non-trained utilities ########################################################################################
+
         self.layers["compressor"] = {
             "compressor1": nn.AvgPool3d(
                 kernel_size=conv_kernels[0],
@@ -145,17 +193,43 @@ class Saprot3Dto1(BaseModel):
                  stride=1,
              ),
         }
+        self.layers["interpolate_up"] = {
+            "interpolator_up": nn.functional.interpolate([img_size, img_size, img_size], mode=interpolation_mode),
+        }
+
+        ################################################################################################################
 
 
-        self.layers["default"] = {
+        # Main Submodels ###############################################################################################
+        self.layers["encoder"] ={
             **self.layers["convolution_common"], # --> [3840, 10, 10, 10]
             **self.layers["convolution_mixed"],
             **self.layers["last_pool"],
             **self.layers["linear"], # --> [1, 216]
-            **self.layers["classifier"],
+        }
+        self.layers["decoder"] ={
+            **self.layers["delinear"],
+            **self.layers["last_unpool"],
+            **self.layers["deconvolution_mixed"],
+            **self.layers["deconvolution_common"],
+        }
+        self.layers["autoencoder"] = {
+            **self.layers["encoder"],
+            **self.layers["decoder"],
+        }
+        self.layers["default"] = {
+            **self.layers["encoder"], # --> [3840, 10, 10, 10]
+            **self.layers["classifier"], # --> 1
         }
 
+        ################################################################################################################
+
+
+        # Criterions ###################################################################################################
+
         self.criterions["default"] = ImgAndClassifierLoss()
+
+        ################################################################################################################
 
     def forward(self, x, classify=False, reference=None):
         self.set_mode("default")
@@ -175,6 +249,16 @@ class Saprot3Dto1(BaseModel):
             return x, c
         return x
 
+    def autoencode(self, x, classify=False, reference=None):
+        self.set_mode("autoencoder")
+        l = self.forward(x, classify=classify, reference=reference)
+        if classify:
+            l, c = l
+        x = self._forward(l, "decoder")
+        if classify:
+            return x, l, c
+        return x, l
+
     def compress(self, x):
         with torch.no_grad():
             #print("compressing:", x.shape)
@@ -182,6 +266,13 @@ class Saprot3Dto1(BaseModel):
             x = self._forward(x, "last_pool")
             #print("compressed:", x.shape)
             return x
+
+    def interpolate(self, x):
+        with torch.no_grad():
+            #print("interpolating:", x.shape)
+            x = self._forward(x, "interpolator_up")
+            #print("interpolated:", x.shape)
+        return x
 
     def classify_norm(self, x, reference=None, return_diff=False):
         if reference is not None:
