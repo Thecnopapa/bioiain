@@ -290,7 +290,7 @@ CONTINUE = "--continue" in sys.argv
 DIFFERENCES = ("--diffs" in sys.argv) or ("--differences" in sys.argv) or ("--diff" in sys.argv)
 
 if DIFFERENCES:
-    MODEL_NAME+"_diffs"
+    MODEL_NAME += "_diffs"
 log(1, f"MODEL_NAME={MODEL_NAME}")
 
 IN_SHAPE = embeddings.get(0).t.shape
@@ -581,8 +581,8 @@ if INFERENCE:
             scaled_ax = fig.add_subplot(n_rows, n_figs, n_figs*row+4, projection="3d")
 
             if DIFFERENCES:
-                max_val = rel_label_x_detached.reshape(diff_label_x.shape[-1] ** 3).max()
-                min_val = rel_label_x_detached.reshape(diff_label_x.shape[-1] ** 3).min()
+                max_val = diff_label_x.reshape(diff_label_x.shape[-1] ** 3).max()
+                min_val = diff_label_x.reshape(diff_label_x.shape[-1] ** 3).min()
             else:
                 max_val = rel_label_x_detached.reshape(abs_label_x_detached.shape[-1] ** 3).max()
                 min_val = rel_label_x_detached.reshape(abs_label_x_detached.shape[-1] ** 3).min()
