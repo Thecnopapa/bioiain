@@ -289,6 +289,8 @@ CONTINUE = "--continue" in sys.argv
 
 DIFFERENCES = ("--diffs" in sys.argv) or ("--differences" in sys.argv) or ("--diff" in sys.argv)
 
+AUTOENCODER =  ("--auto" in sys.argv) or ("--autoencoder" in sys.argv) or ("--autoencode" in sys.argv)
+
 if DIFFERENCES:
     MODEL_NAME += "_diffs"
 log(1, f"MODEL_NAME={MODEL_NAME}")
@@ -324,6 +326,8 @@ if TRAIN:
 
     model = MODEL_CLASS(name=MODEL_NAME, in_shape=IN_SHAPE, lr=LR)
     log(1, model)
+    if AUTOENCODER:
+        model.set_mode("autoencoder")
     model.mount()
     print(repr(model))
     if CONTINUE:
@@ -362,7 +366,14 @@ if TRAIN:
 
             #print("\nIN:", tensor)
             #print("\nIN SHAPE:", tensor.shape, tensor.dtype)
-            out_i = model.forward(tensor)
+            if AUTOENCODER:
+                decoded, out_i = model.autoencode(tensor)
+                #print("OUT:", out_i)
+                #print("OUT SHAPE:", out_i.shape)
+                #print("DECODED:", decoded)
+                #print("DECODED SHAPE:", decoded.shape)
+            else:
+                out_i = model.forward(tensor)
             #print("OUT:", out_i)
             #print("OUT SHAPE:", out_i.shape)
             #print(rel_item.t)
@@ -378,20 +389,25 @@ if TRAIN:
             #print("COMPRESSED REL LABEL:", rel_label_x)
             #print("COMPRESSED REL LABEL:", rel_label_x.shape)
 
-            if label_oligo is not None and FINETUNE:
-                out_c = model.classify(out_i, reference=label)
-                loss = model.raw_loss(out_i, label, out_c, label_oligo)
-                out_c_text = f"{out_c.item():7.3f}"
-            else:
+
+            extra_text=""
+            if AUTOENCODER:
+                model.set_mode("autoencoder")
                 out_c_text="None"
-                loss = model.loss(out_i, label)
+                loss = model.raw_loss(out_i, label, decoded, original, criterion_name="autoencoder")
+            elif (label_oligo is not None) and FINETUNE:
+                out_c = model.classify(out_i, reference=label)
+                loss = model.raw_loss(out_i, label, out_c, label_oligo, criterion_name="default")
+                extra_text = f"out={out_c.item():7.3f} l={item.l}"
+            else:
+                loss = model.loss(out_i, label, criterion_name="default")
             #print("LOSS:", loss)
 
             if n % PRINT_EVERY == 0:
                 loss_str = f"{model.running_loss['default'] / model.running_loss['total']:15.3f}"
-                print(f"loss: {colour('yellow', loss_str)}\tlast --> loss={loss.item():15.3f} out={out_c_text} l={item.l}",
+                print(f"loss: {colour('yellow', loss_str)}\tlast --> loss={loss.item():15.3f} {extra_text}",
                       end="\r")
-
+            exit()
             if "--preview" in sys.argv:
                 from src.bioiain.visualisation import voxels3d
                 out3d = out_i.detach().cpu().numpy()[0]

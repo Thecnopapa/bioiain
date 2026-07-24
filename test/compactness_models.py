@@ -106,8 +106,8 @@ class Saprot3Dto1(BaseModel):
         }
         self.layers["deconvolution_common"] = {
             "deconv3dC": nn.ConvTranspose3d(
-                in_channels= in_channels,
-                out_channels= hc[0],
+                in_channels= hc[0],
+                out_channels= in_channels,
                 kernel_size=conv_kernels[0],
                 stride=1,
             ),
@@ -125,8 +125,8 @@ class Saprot3Dto1(BaseModel):
 
         self.layers["deconvolution_mixed"] = {
             "deconv3dM": nn.ConvTranspose3d(
-                in_channels=hc[0],
-                out_channels=hc[0]*2,
+                in_channels=hc[0]*2,
+                out_channels=hc[0],
                 kernel_size=conv_kernels[1],
                 stride=1,
             ),
@@ -145,7 +145,10 @@ class Saprot3Dto1(BaseModel):
             ),
         }
         self.layers["last_unpool"] = {
-            "last_unpool": nn.functional.interpolate([max_size, max_size, max_size], mode=interpolation_mode),
+            "last_unpool": nn.MaxUnpool3d(
+                kernel_size=last_kernel,
+                stride=1
+            ),
         }
 
         ################################################################################################################
@@ -163,10 +166,10 @@ class Saprot3Dto1(BaseModel):
 
         self.layers["delinear"] = {
             "delinear_relu1": nn.ReLU(),
-            "deconv1d2": nn.ConvTranspose1d(in_channels, 1, kernel_size=1, stride=1),
+            "deconv1d1": nn.ConvTranspose1d(1, in_channels, kernel_size=1, stride=1),
             "delinear_relu2": nn.ReLU(),
-            "deconv1d1": nn.ConvTranspose1d(hc[0] * 2, in_channels, kernel_size=1, stride=1),
-            "deflatten1": nn.Unflatten([latent_size, latent_size, latent_size]),
+            "deconv1d2": nn.ConvTranspose1d(in_channels, hc[0] * 2, kernel_size=1, stride=1),
+            "deflatten1": nn.Unflatten(-1, [latent_size, latent_size, latent_size]),
         }
 
         ################################################################################################################
@@ -193,9 +196,6 @@ class Saprot3Dto1(BaseModel):
                  stride=1,
              ),
         }
-        self.layers["interpolate_up"] = {
-            "interpolator_up": nn.functional.interpolate([img_size, img_size, img_size], mode=interpolation_mode),
-        }
 
         ################################################################################################################
 
@@ -209,7 +209,7 @@ class Saprot3Dto1(BaseModel):
         }
         self.layers["decoder"] ={
             **self.layers["delinear"],
-            **self.layers["last_unpool"],
+            #**self.layers["last_unpool"],
             **self.layers["deconvolution_mixed"],
             **self.layers["deconvolution_common"],
         }
@@ -251,7 +251,9 @@ class Saprot3Dto1(BaseModel):
 
     def autoencode(self, x, classify=False, reference=None):
         self.set_mode("autoencoder")
-        l = self.forward(x, classify=classify, reference=reference)
+        l = self._forward(x, "encoder")
+        #print(l)
+        #print(l.shape)
         if classify:
             l, c = l
         x = self._forward(l, "decoder")
@@ -267,10 +269,15 @@ class Saprot3Dto1(BaseModel):
             #print("compressed:", x.shape)
             return x
 
-    def interpolate(self, x):
+    def interpolate(self, x, img_size:int|list|tuple|None=None):
+        if img_size is None:
+            img_size = self.data["img_size"]
+        if type(img_size) not in (list, tuple):
+            img_size = [img_size, img_size, img_size]
+
         with torch.no_grad():
             #print("interpolating:", x.shape)
-            x = self._forward(x, "interpolator_up")
+            x = nn.functional.interpolate(img_size, mode=self.data["interpolation_mode"])
             #print("interpolated:", x.shape)
         return x
 
