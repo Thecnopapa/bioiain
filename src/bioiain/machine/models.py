@@ -423,10 +423,9 @@ class BaseModel(nn.Module):
         raw_data = json.load(open(data_path, "r"))
         self.data = self.data | raw_data
 
-        base_path = data_path.replace(".data.json", "")
-        is_tmp = base_path.endswith(".temp")
-        if is_tmp:
-            base_path = base_path.replace(".temp", "")
+        is_tmp = "temp" in data_path
+        is_best = "best" in data_path
+
 
         log(2, "Model base_path:", base_path)
         if not self.mounted:
@@ -437,6 +436,8 @@ class BaseModel(nn.Module):
             model_path = f"{base_path}.{name}"
             if is_tmp:
                 model_path += ".temp"
+            if is_best:
+                model_path += ".best"
             model_path += ".model.pt"
             if not os.path.exists(model_path):
                 log("warning", f"Weights fo submodel {name} not found: {model_path}")
