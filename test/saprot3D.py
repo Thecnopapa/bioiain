@@ -671,9 +671,9 @@ if INFERENCE:
 
                 rel_out_ax = fig.add_subplot(n_rows, n_figs, 5, projection="3d")
                 rel_label_x_detached = rel_label_x.detach().cpu().numpy()[0]
-                rel_out = rel_label_x_detached - abs_out
+                rel_out = abs(rel_label_x_detached - abs_out)
                 rmse = np.sqrt(np.mean(rel_out**2))
-                voxels3d(rel_out, ax = rel_out_ax, shrink = True, title=f"rel - (abs + out) RMSE={rmse:.3f}")
+                voxels3d(rel_out, ax = rel_out_ax, shrink = True, title=f"abs(rel-(abs + out)) RMSE={rmse:.3f}")
 
 
 
