@@ -666,7 +666,7 @@ if INFERENCE:
 
                 abs_out_ax = fig.add_subplot(n_rows, n_figs, n_figs+5, projection="3d")
                 abs_label_x_detached = abs_label_x.detach().cpu().numpy()[0]
-                abs_out = abs_label_x_detached + scaled_out
+                abs_out = abs_label_x_detached + out_x.detach().cpu().numpy()[0]
                 voxels3d(abs_out, ax = abs_out_ax, shrink = True, title="abs + out")
 
                 rel_out_ax = fig.add_subplot(n_rows, n_figs, 5, projection="3d")
