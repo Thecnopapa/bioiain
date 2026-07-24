@@ -291,6 +291,7 @@ DIFFERENCES = ("--diffs" in sys.argv) or ("--differences" in sys.argv) or ("--di
 
 if DIFFERENCES:
     MODEL_NAME+"_diffs"
+log(1, f"MODEL_NAME={MODEL_NAME}")
 
 IN_SHAPE = embeddings.get(0).t.shape
 log(1, f"IN_SHAPE={IN_SHAPE}")
@@ -654,7 +655,7 @@ if INFERENCE:
             else:
                 diff_diff_ax = fig.add_subplot(n_rows, n_figs, n_figs*2+5, projection="3d")
                 diff_diff = np.absolute(diff_label_x - scaled_out)
-                voxels3d(rel_diff, ax = diff_diff_ax, shrink = True, title="Diff diff")
+                voxels3d(diff_diff, ax = diff_diff_ax, shrink = True, title="Diff diff")
 
 
 
