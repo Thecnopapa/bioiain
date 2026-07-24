@@ -256,3 +256,26 @@ class ImgAndClassifierLoss(object):
         if return_all:
             return loss, i_loss, c_loss
         return loss
+
+
+
+class TwoCubeLoss(object):
+    def __init__(self):
+        self.MSE = nn.MSELoss()
+
+    def __call__(self, cube1, cube1label, cube2=None, cube2label=None, return_all=False):
+
+
+        #print(cube1.shape)
+        #print(cube1label.shape)
+        #print(cube2.shape)
+        #print(cube2label.shape)
+        loss1 = self.MSE(cube1, cube1label)
+        loss2 = self.MSE(cube2, cube2label)
+
+        loss = torch.add(loss1, loss2)
+
+        if return_all:
+            return loss, loss1, loss2
+
+        return loss

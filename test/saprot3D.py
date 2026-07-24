@@ -393,8 +393,8 @@ if TRAIN:
             extra_text=""
             if AUTOENCODER:
                 model.set_mode("autoencoder")
-                out_c_text="None"
-                loss = model.raw_loss(out_i, label, decoded, original, criterion_name="autoencoder")
+                loss = model.raw_loss(out_i, label, decoded, rel_label, criterion_name="autoencoder", return_all=True)
+                #extra_text=f"loss1={loss1:.3f} loss2={loss2:.3f}"
             elif (label_oligo is not None) and FINETUNE:
                 out_c = model.classify(out_i, reference=label)
                 loss = model.raw_loss(out_i, label, out_c, label_oligo, criterion_name="default")
@@ -407,12 +407,31 @@ if TRAIN:
                 loss_str = f"{model.running_loss['default'] / model.running_loss['total']:15.3f}"
                 print(f"loss: {colour('yellow', loss_str)}\tlast --> loss={loss.item():15.3f} {extra_text}",
                       end="\r")
-            exit()
             if "--preview" in sys.argv:
-                from src.bioiain.visualisation import voxels3d
+                import matplotlib.pyplot as plt
+                from src.bioiain.visualisation import voxels3d, show, close
+                n_figs = 3
+                n_rows = 1
+                fig = plt.figure(figsize=(n_figs*5, n_rows*5))
+                fig.suptitle(f"{item.name}")
+                ax1 = fig.add_subplot(n_rows, n_figs, 1, projection="3d")
+                ax2 = fig.add_subplot(n_rows, n_figs, 2, projection="3d")
+                ax3 = fig.add_subplot(n_rows, n_figs, 3, projection="3d")
+
                 out3d = out_i.detach().cpu().numpy()[0]
                 count3d = (out3d != 0) & (out3d != 0) & (out3d != 0)
-                voxels3d(out3d, count3d, show_plot=True, title=f"({item.name}) out={out_c.detach().item():5.3f} l={item.l}", shrink=True)
+                voxels3d(out3d, count3d, show_plot=True, title=f"latent", shrink=True, ax=ax1)
+                if AUTOENCODER:
+                    decoded3d = decoded.detach().cpu().numpy()[0]
+                    rel_lab_detached = rel_label.detach().cpu().numpy()[0]
+                    decoded_count3d = (rel_lab_detached != 0) & (rel_lab_detached != 0) & (rel_lab_detached != 0)
+                    print(decoded3d.shape)
+                    print(rel_label.shape)
+                    print(decoded_count3d.shape)
+                    voxels3d(rel_lab_detached, decoded_count3d, show_plot=True, title=f"label", shrink=True, ax=ax2)
+                    voxels3d(decoded3d, decoded_count3d, show_plot=True, title=f"decoded", shrink=True, ax=ax3)
+                    show()
+
                 exit()
 
         print()

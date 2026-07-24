@@ -613,7 +613,7 @@ class BaseModel(nn.Module):
         else:
             criterions = [criterion_name]
 
-
+        ll = None
         losses = []
 
         for n, criterion in enumerate(criterions):
@@ -646,7 +646,11 @@ class BaseModel(nn.Module):
                         print(item.__dict__)
                         raise
             else:
-                losses.append(self.criterions[criterion](*[i.to(DEVICE) for i in items], **kwargs))
+                ll = self.criterions[criterion](*[i.to(DEVICE) for i in items], **kwargs)
+                if type(ll) in (list, tuple):
+                    losses.append(ll[0])
+                else:
+                    losses.append(ll)
 
         if len(losses) > 1:
             loss = torch.sum(losses)
@@ -664,7 +668,6 @@ class BaseModel(nn.Module):
             if not c in self.running_loss:
                 self.running_loss[c] = 0
             self.running_loss[c] += l.item()
-
         return loss
 
 

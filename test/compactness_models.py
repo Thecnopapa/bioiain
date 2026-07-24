@@ -107,7 +107,7 @@ class Saprot3Dto1(BaseModel):
         self.layers["deconvolution_common"] = {
             "deconv3dC": nn.ConvTranspose3d(
                 in_channels= hc[0],
-                out_channels= in_channels,
+                out_channels= 1,
                 kernel_size=conv_kernels[0],
                 stride=1,
             ),
@@ -228,6 +228,7 @@ class Saprot3Dto1(BaseModel):
         # Criterions ###################################################################################################
 
         self.criterions["default"] = ImgAndClassifierLoss()
+        self.criterions["autoencoder"] = TwoCubeLoss()
 
         ################################################################################################################
 
@@ -257,6 +258,7 @@ class Saprot3Dto1(BaseModel):
         if classify:
             l, c = l
         x = self._forward(l, "decoder")
+        l = l.reshape(1, self.data["latent_size"], self.data["latent_size"], self.data["latent_size"])
         if classify:
             return x, l, c
         return x, l
