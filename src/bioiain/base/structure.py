@@ -1,12 +1,12 @@
-from .entity import BIEntity
-from .chain import BIChain
+from .entity import Entity
+from .chain import Chain
 
 
 
 
 
-class BIStructure(BIEntity):
-    child_class = BIChain
+class Structure(Entity):
+    child_class = Chain
     extension = "structure"
 
     def __init__(self, *args, **kwargs):

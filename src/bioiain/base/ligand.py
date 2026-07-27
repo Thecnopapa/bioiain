@@ -1,11 +1,11 @@
-from .atom import BIAtom
+from .atom import Atom
 
 
 
 
 
 class Water(object):
-    child_class = BIAtom
+    child_class = Atom
     type = "water"
     def __init__(self, atoms, **kwargs):
         self.atoms = atoms
@@ -24,7 +24,7 @@ class Water(object):
 
 
 class Ligand(object):
-    child_class = BIAtom
+    child_class = Atom
     type = "ligand"
     def __init__(self, atoms, parent=None, relevance_threshold=15, **kwargs):
         self.atoms = atoms

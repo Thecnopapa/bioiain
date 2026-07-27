@@ -2,7 +2,7 @@ import os, sys, json, subprocess
 
 sys.path.append('..')
 
-from src.bioiain.base import BIEntity, BIChain
+from src.bioiain.base import Entity, Chain
 from src.bioiain.aleph import FragmentedStructure
 import polars as pl
 import numpy as np
@@ -168,7 +168,7 @@ class FoldseekDB(object):
         else:
             return code, chain, model
 
-    def match_dataset(self, dataset, saprot=True, atoms=True, entity_class=BIEntity, **kwargs):
+    def match_dataset(self, dataset, saprot=True, atoms=True, entity_class=Entity, **kwargs):
 
 
         iterables = [self.tokens_fasta(**kwargs), self.sequences_fasta(**kwargs)]

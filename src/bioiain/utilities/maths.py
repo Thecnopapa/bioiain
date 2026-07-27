@@ -45,8 +45,8 @@ def find_com(atoms:list|GeneratorType|np.ndarray) -> list[float]:
     x = 0
     y = 0
     z = 0
-    from ..base import BIEntity
-    if isinstance(atoms, BIEntity):
+    from ..base import Entity
+    if isinstance(atoms, Entity):
         atoms = atoms.atoms()
 
     if isinstance(atoms, GeneratorType):

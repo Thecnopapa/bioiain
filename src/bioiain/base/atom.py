@@ -225,7 +225,7 @@ class PseudoAtom(object):
 
 
 
-class BIAtom(PseudoAtom):
+class Atom(PseudoAtom):
     def __init__(self, data, residue=None, entity=None):
         if len(data) == 1:
             data = data[0]

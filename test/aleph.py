@@ -506,8 +506,8 @@ if "-p" in sys.argv:
             #     tok_list[t] = [rname]
             # else:
             #     tok_list[t].append(rname)
-            # cv_chain = BIChain.from_atoms([*cv.res1.atoms, *cv.res2.atoms, *cv.res3.atoms], code=rname, chain_id="A", complex=True, share=False)
-            # closest_chain = BIChain.from_atoms([*cv.closest.res1.atoms, *cv.closest.res2.atoms, *cv.closest.res3.atoms], code=rname, chain_id="B", complex=True, share=False)
+            # cv_chain = Chain.from_atoms([*cv.res1.atoms, *cv.res2.atoms, *cv.res3.atoms], code=rname, chain_id="A", complex=True, share=False)
+            # closest_chain = Chain.from_atoms([*cv.closest.res1.atoms, *cv.closest.res2.atoms, *cv.closest.res3.atoms], code=rname, chain_id="B", complex=True, share=False)
             # atoms = [*cv_chain.all_atoms(), *closest_chain.all_atoms()]
             # script.load(write_atoms(atoms, os.path.join(TEMP_FOLDER, "trash", rname)), rname)
 

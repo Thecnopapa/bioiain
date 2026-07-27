@@ -3,7 +3,7 @@ import os, sys, json
 
 sys.path.append('..')
 
-from src.bioiain.base import BIEntity
+from src.bioiain.base import Entity
 from src.bioiain.aleph import FragmentedStructure
 from src.bioiain.machine.embeddings import ProteinEmbedding
 from src.bioiain.machine.datasets import EmbeddingDataset
@@ -23,7 +23,7 @@ from src.bioiain import log
 
 
 
-class ContactactStructure(BIEntity):
+class ContactactStructure(Entity):
     pass
 
 
@@ -55,7 +55,7 @@ class RelativeContactabilityError(Exception):
 
 def calculate_relative_contactability(dataset:EmbeddingDataset,
                                       contactability_pos:int=8,
-                                      entity_class:type[BIEntity]=FragmentedStructure,
+                                      entity_class:type[Entity]=FragmentedStructure,
                                       embedding_class:type[ProteinEmbedding]=embeddings.ALEPHProteinEmbedding,
                                       ) -> EmbeddingDataset:
     print(dataset)

@@ -1,9 +1,9 @@
 from ..utilities.exceptions import *
-from .entity import BIEntity
-from .residue import BIResidue
+from .entity import Entity
+from .residue import Residue
 
-class BIChain(BIEntity):
-    child_class = BIResidue
+class Chain(Entity):
+    child_class = Residue
     extension = "chain"
     level = "chain"
 

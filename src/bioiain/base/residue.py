@@ -1,6 +1,6 @@
 
 from ..utilities.exceptions import *
-from .atom import BIAtom
+from .atom import Atom
 from .ligand import Ligand, Water
 from ..utilities import d3to1
 
@@ -17,16 +17,16 @@ def build_res(atoms, ignore_errors=False, **kwargs):
             return Water(atoms, **kwargs)
 
         if max(len(r) for r in resnames) < 3:
-            return BINucleotide(atoms, **kwargs)
+            return Nucleotide(atoms, **kwargs)
 
 
         if "CA" in atomnames:
-            return BIResidue(atoms, **kwargs)
+            return Residue(atoms, **kwargs)
 
         elif "C6" in atomnames:
-            return BIHexose(atoms, **kwargs)
+            return Hexose(atoms, **kwargs)
         elif "C5" in atomnames:
-            return BIRibose(atoms, **kwargs)
+            return Ribose(atoms, **kwargs)
 
         atomtypes = [a.type for a in atoms]
         if atomtypes == ["HETATM"]:
@@ -47,8 +47,8 @@ def build_res(atoms, ignore_errors=False, **kwargs):
 
 
 
-class BIResidue(object):
-    child_class = BIAtom
+class Residue(object):
+    child_class = Atom
     type="residue"
     main_atom_name = "CA"
     def __init__(self, atoms, require_ca=True, **kwargs):
@@ -196,8 +196,8 @@ class BIResidue(object):
 
 
 
-class BISugar(object):
-    child_class = BIAtom
+class Sugar(object):
+    child_class = Atom
     type="ligand"
     main_atom_name="C1"
     def __init__(self, atoms, **kwargs):
@@ -244,18 +244,18 @@ class BISugar(object):
             atom.set_misc(key, value)
 
 
-class BIRibose(BISugar):
+class Ribose(Sugar):
     pass
 
-class BIHexose(BISugar):
+class Hexose(Sugar):
     pass
 
-class BINucleotide(BIHexose):
+class Nucleotide(Hexose):
     type="nucleotide"
     main_atom_name="N1"
 
-class BIRNA(BINucleotide):
+class RNA(Nucleotide):
     pass
 
-class BIDBNA(BINucleotide):
+class DBNA(Nucleotide):
     pass

@@ -5,7 +5,7 @@ from . import string_to_list, clean_string
 from .logging import log
 from .. import WD, SUBDIR_NAME, TEMP_FOLDER
 from itertools import accumulate
-from ..base import BIEntity
+from ..base import Entity
 
 rcsb_pdb_url = "https://files.rcsb.org/download/{}.pdb"
 rcsb_cif_url = "https://files.rcsb.org/download/{}.cif"
@@ -101,7 +101,7 @@ class StructureDataset(object):
     def paths(self) -> list:
         return [e.get("path", None) for e in self.data.values()]
 
-    def entities(self, entity_class=BIEntity, return_entries=False, **kwargs):
+    def entities(self, entity_class=Entity, return_entries=False, **kwargs):
         for entry in self:
             entity = entity_class.from_file(entry.path, code=entry.name, **kwargs)
             if return_entries:

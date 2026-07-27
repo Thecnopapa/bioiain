@@ -1,13 +1,13 @@
 import os, json
 import numpy as np
 
-from ..base import BIStructure, BIChain, BIResidue
+from ..base import Structure, Chain, Residue
 from ..utilities import *
 from ..utilities.exceptions import *
 
 
-class Fragment(BIChain):
-    child_class = BIResidue
+class Fragment(Chain):
+    child_class = Residue
     extension = "fragment"
 
     def __init__(self, *args, fragment_id=None, **kwargs):
@@ -40,7 +40,7 @@ class Fragment(BIChain):
 
 
 
-class FragmentedStructure(BIStructure):
+class FragmentedStructure(Structure):
     child_class = Fragment
     extension = "fstructure"
 

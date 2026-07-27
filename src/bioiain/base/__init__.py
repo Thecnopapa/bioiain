@@ -1,14 +1,14 @@
 
-from .entity import BIEntity
-from .structure import BIStructure
-from .chain import BIChain
-from .residue import BIResidue
+from .entity import Entity
+from .structure import Structure
+from .chain import Chain
+from .residue import Residue
 from .ligand import Ligand, Water
-from .atom import BIAtom, PseudoAtom
+from .atom import Atom, PseudoAtom
 
 from .mmcif import *
 
 
 __all__ = ["entity", "structure", "chain", "residue", "atom", "mmcif", "ligand"]
-__all__.extend(["BIEntity", "BIStructure", "BIChain", "BIResidue", "BIAtom", "PseudoAtom", "Ligand", "Water"])
+__all__.extend(["Entity", "Structure", "Chain", "Residue", "Atom", "PseudoAtom", "Ligand", "Water"])
 __all__.extend(["downloadPDBlist", "MMCIF", "read_mmcif", "write_atoms"])

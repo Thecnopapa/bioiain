@@ -16,8 +16,8 @@ class KDT(object):
 
         if not quiet:
             log(3, "Building KDT...")
-        from ..base import BIEntity
-        if isinstance(coords_or_entity, BIEntity):
+        from ..base import Entity
+        if isinstance(coords_or_entity, Entity):
             self.entity = coords_or_entity
             self.mode = mode
             if not quiet:

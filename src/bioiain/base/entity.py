@@ -4,7 +4,7 @@ import numpy as np
 from ..utilities import *
 
 
-class BIEntity(object):
+class Entity(object):
     child_class = None
     extension = "structure"
     level = "structure"
@@ -226,10 +226,10 @@ class BIEntity(object):
         return self.get_sequence("aa")
 
     def structure(self, code=None):
-        from .structure import BIStructure
+        from .structure import Structure
         if code is None:
             code = str(self.data["info"]["code"])
-        return BIStructure.from_atoms(self._atoms, code, parent=self)
+        return Structure.from_atoms(self._atoms, code, parent=self)
 
     def chains(self, sele:list|str=None, by_complex=False, **kwargs):
         return self.atoms(as_chains=True, hetatm=True, chain_sele=sele, by_complex=by_complex, **kwargs)
@@ -353,7 +353,7 @@ class BIEntity(object):
             chain_sele = kwargs.get("chain_sele", None)
             if chain_sele in ["*", "", "-"]:
                 chain_sele = None
-            from .chain import BIChain
+            from .chain import Chain
             chain_list = {}
             for atom in atoms:
                 if atom.chain in chain_list.keys():
@@ -362,7 +362,7 @@ class BIEntity(object):
                     chain_list[atom.chain] = [atom]
             if as_chains:
                 if chain_class is None:
-                    chain_class = BIChain
+                    chain_class = Chain
 
                 for ch, atms in chain_list.items():
                     chain_list[ch] = chain_class().from_atoms(atms, self.code(), ch, parent=self)
@@ -580,7 +580,7 @@ class BIEntity(object):
         return self._atoms
 
     def _all_atoms(self, filepath=None, force=False, require_crystal=True, verbose=False, **kwargs):
-        from .atom import BIAtom
+        from .atom import Atom
 
 
         if filepath is None:
@@ -618,7 +618,7 @@ class BIEntity(object):
             except CrystalError as e:
                 if require_crystal:
                     raise e
-            atoms = [BIAtom(a) for a in atoms]
+            atoms = [Atom(a) for a in atoms]
 
             self._atoms = atoms
         self.set_flag("no_atoms", False)
