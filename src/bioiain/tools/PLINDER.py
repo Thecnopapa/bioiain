@@ -4,6 +4,7 @@ from ..utilities import *
 from ..utilities.exceptions import *
 from .. import TEMP_FOLDER, SUBDIR_NAME
 
+raise DeprecatedModule("PLINDER DB tool is due revision and not currently supported")
 
 
 class PLINDERSystem(object):

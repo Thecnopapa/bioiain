@@ -4,9 +4,9 @@
 
 # Critical #############################################################################################################
 numpy
-polars
-matplotlib >= 3.10.8
-scikit-learn >= 1.8.0
+polars 
+matplotlib >= 3.10.8 # idk why
+scikit-learn >= 1.8.0 # sklearn.metrics.confusion_matrix (I think)
 scipy >= 1.17.0
 
 # Essential ############################################################################################################
@@ -15,12 +15,12 @@ requests >= 2.32.5
 unidecode >= 1.4.0
 xmltodict >= 0.14.2
 psutil
-requests
+
 
 
 # ML ###################################################################################################################
 torch >= 2.6 # install version for each machine (Below 2.6 cant load models, CVE-2025-32434)
-torchvision # install version for each machine
+torchvision # install version for each machine idk if really needed
 transformers
 tensorboard
 
@@ -37,19 +37,19 @@ pandas >= 2.3.3
 bioiain
 
 # DB ###################################################################################################################
-#plinder
+# plinder (due revision)
 
 
 # Tools ################################################################################################################
-#pexpect # for TRACER
-gemmi # for GEMMI
+# pexpect # for TRACER (deprecated)
+# gemmi # for GEMMI (unused)
 
 # ProstT5 ##############################################################################################################
-biopython>=1.86
-protobuf>=7.34.0
-sentencepiece>=0.2.1
-#torch>=2.10.0
-transformers==4.57.6
+# biopython>=1.86
+# protobuf>=7.34.0
+# sentencepiece>=0.2.1
+# torch>=2.10.0
+# transformers==4.57.6
 
 # CONDA ################################################################################################################
 
@@ -57,7 +57,7 @@ transformers==4.57.6
 # pip
 # conda-forge::pymol-open-source >= 2.5.0
 # bioconda::foldseek
-# bioconda::clustalw == 2.1
+# bioconda::clustalw == 2.1 # Output parsing might crash in other versions
 
 
 # Dev ##################################################################################################################

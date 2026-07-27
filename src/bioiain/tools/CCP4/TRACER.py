@@ -7,7 +7,7 @@ from ...utilities.logging import log
 from ...utilities.exceptions import *
 from ...utilities import *
 
-raise DeprecatedModule()
+raise DeprecatedModule("TRACER tool is not yet fully implemented and is not currently working")
 
 from . import CCP4_PATH
 
