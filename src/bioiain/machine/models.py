@@ -313,10 +313,13 @@ class BaseModel(nn.Module):
         if (self.writer is not None) and add_histograms:
             for set_name, layers in self.layers.items():
                 for layer_name, layer in layers.items():
-                    if hasattr(layer, "weight"):
-                        self.writer.add_histogram(f"{set_name}/weight/{layer_name}", layer.weight, self.data["epoch"])
-                    if hasattr(layer, "bias"):
-                        self.writer.add_histogram(f"{set_name}/bias/{layer_name}", layer.bias,  self.data["epoch"])
+                    try:
+                        if hasattr(layer, "weight"):
+                            self.writer.add_histogram(f"{set_name}/weight/{layer_name}", layer.weight, self.data["epoch"])
+                        if hasattr(layer, "bias"):
+                            self.writer.add_histogram(f"{set_name}/bias/{layer_name}", layer.bias,  self.data["epoch"])
+                    except ValueError as e:
+                        log("warning",layer,":", e)
 
 
 

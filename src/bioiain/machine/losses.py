@@ -275,6 +275,17 @@ class TwoCubeLoss(object):
 
         loss = torch.add(loss1, loss2)
 
+        if loss.isnan():
+            print(loss, loss1, loss2)
+            if loss1.isnan():
+                print(cube1)
+                print(cube1label)
+            if loss2.isnan():
+                print(cube2)
+                print(cube2label)
+            raise Exception(f"Loss is {loss} ({type(loss)})")
+
+
         if return_all:
             return loss, loss1, loss2
 

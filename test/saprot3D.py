@@ -353,11 +353,11 @@ if TRAIN:
         if EXPAND:
             max_n *= N_EXPANSIONS
         n = 0
-        for _ in range(len(embeddings)):
+        for i in range(len(embeddings)):
             #print(n)
             embeddings.use_label("oligo")
             try:
-                item = embeddings.get(n, label=True, label_key="oligo")
+                item = embeddings.get(i, label=True, label_key="oligo")
             except DeletedIndex:
                 continue
             key = item.key
