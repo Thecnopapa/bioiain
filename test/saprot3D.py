@@ -288,11 +288,20 @@ MODEL_NAME = dataset.name
 CONTINUE = "--continue" in sys.argv
 
 DIFFERENCES = ("--diffs" in sys.argv) or ("--differences" in sys.argv) or ("--diff" in sys.argv)
+if DIFFERENCES:
+    MODEL_NAME += "_diffs"
 
 AUTOENCODER =  ("--auto" in sys.argv) or ("--autoencoder" in sys.argv) or ("--autoencode" in sys.argv)
 
-if DIFFERENCES:
-    MODEL_NAME += "_diffs"
+EXPAND = "--expand" in sys.argv
+if EXPAND:
+    MODEL_NAME += "_expanded"
+    N_EXPANSIONS = 4
+    import scipy as sp
+    import random
+
+
+
 log(1, f"MODEL_NAME={MODEL_NAME}")
 
 IN_SHAPE = embeddings.get(0).t.shape
@@ -341,8 +350,10 @@ if TRAIN:
     for epoch in range(EPOCHS):
         log("start", f"EPOCH: {epoch}", print_timer=True, reset_timer=False)
         max_n = len(embeddings)
+        if EXPAND:
+            max_n *= N_EXPANSIONS
         n = 0
-        for n in range(len(embeddings)):
+        for _ in range(len(embeddings)):
             #print(n)
             embeddings.use_label("oligo")
             try:
@@ -354,59 +365,126 @@ if TRAIN:
             abs_item = abs_labels.get(abs_labels.get_indexes(key), label=False)
 
             assert item.name == rel_item.name and item.name == abs_item.name, f"{item.name} == {rel_item.name} == {abs_item.name}"
-            tensor = item.t.to(torch.float32).to(DEVICE)
-            rel_label = rel_item.t.to(torch.float32).to(DEVICE)
-            abs_label = abs_item.t.to(torch.float32).to(DEVICE)
+            tensor = item.t
+            rel_label = rel_item.t
+            abs_label = abs_item.t
             label_oligo = torch.Tensor([item.l]) if item.l is not None else None
+
             #print(n, item.name, label_oligo, item.l)
 
-            #print(entity)
-            if n % PRINT_EVERY == 0:
-                log(1, f"{n+1:6d}/{max_n:6d}", end=" ")
+            if EXPAND:
+                ts = []
+                rls = []
+                als = []
+                if "--preview" in sys.argv:
+                    import matplotlib.pyplot as plt
+                    from src.bioiain.visualisation import voxels3d, show, close
+                    n_figs = 3
+                    n_rows = N_EXPANSIONS
+                    fig = plt.figure(figsize=(n_figs*5, n_rows*5))
+                    fig.suptitle(f"{item.name}")
 
-            #print("\nIN:", tensor)
-            #print("\nIN SHAPE:", tensor.shape, tensor.dtype)
-            if AUTOENCODER:
-                decoded, out_i = model.autoencode(tensor)
+                for e in range(N_EXPANSIONS):
+                    angle_x, angle_y, angle_z = random.randint(1, 180), random.randint(1, 180), random.randint(1, 180)
+                    t = sp.ndimage.interpolation.rotate(tensor, angle_x, axes=(-2,-1), reshape = False)
+                    t = sp.ndimage.interpolation.rotate(t, angle_y, axes=(-3,-1), reshape = False)
+                    t = sp.ndimage.interpolation.rotate(t, angle_z, axes=(-3,-2), reshape = False)
+
+                    rl = sp.ndimage.interpolation.rotate(rel_label, angle_x, axes=(-2,-1), reshape = False)
+                    rl = sp.ndimage.interpolation.rotate(rl, angle_y, axes=(-3,-1), reshape = False)
+                    rl = sp.ndimage.interpolation.rotate(rl, angle_z, axes=(-3,-2), reshape = False)
+
+                    al = sp.ndimage.interpolation.rotate(abs_label, angle_x, axes=(-2,-1), reshape = False)
+                    al = sp.ndimage.interpolation.rotate(al, angle_y, axes=(-3,-1), reshape = False)
+                    al = sp.ndimage.interpolation.rotate(al, angle_z, axes=(-3,-2), reshape = False)
+
+
+                    if "--preview" in sys.argv:
+                        ax1 = fig.add_subplot(n_rows, n_figs, n_figs*e+1, projection="3d")
+                        ax2 = fig.add_subplot(n_rows, n_figs, n_figs*e+2, projection="3d")
+                        ax3 = fig.add_subplot(n_rows, n_figs, n_figs*e+3, projection="3d")
+                        fill = (rl[0] >= 0.0001) & (rl[0] >= 0.0001) & (rl[0] >= 0.0001)
+
+                        voxels3d(t[0], fill, show_plot=True, title=f"tensor", shrink=True, ax=ax1)
+                        voxels3d(rl[0], fill, show_plot=True, title=f"rel_label", shrink=True, ax=ax2)
+                        voxels3d(al[0], fill, show_plot=True, title=f"rel_label", shrink=True, ax=ax3)
+
+
+                    ts.append(torch.Tensor(t))
+                    rls.append(torch.Tensor(rl))
+                    als.append(torch.Tensor(al))
+
+
+                if "--preview" in sys.argv:
+                    show()
+                    exit()
+
+
+
+
+
+            else:
+                ts = [tensor]
+                rls = [rel_label]
+                als = [abs_label]
+
+
+
+            for tensor, rel_label, abs_label in zip(ts, rls, als):
+
+                tensor = tensor.to(torch.float32).to(DEVICE)
+                rel_label = rel_label.to(torch.float32).to(DEVICE)
+                abs_label = abs_label.to(torch.float32).to(DEVICE)
+
+                #print(entity)
+                if n % PRINT_EVERY == 0:
+                    log(1, f"{n+1:6d}/{max_n:6d}", end=" ")
+
+                #print("\nIN:", tensor)
+                #print("\nIN SHAPE:", tensor.shape, tensor.dtype)
+                if AUTOENCODER:
+                    decoded, out_i = model.autoencode(tensor)
+                    #print("OUT:", out_i)
+                    #print("OUT SHAPE:", out_i.shape)
+                    #print("DECODED:", decoded)
+                    #print("DECODED SHAPE:", decoded.shape)
+                else:
+                    out_i = model.forward(tensor)
                 #print("OUT:", out_i)
                 #print("OUT SHAPE:", out_i.shape)
-                #print("DECODED:", decoded)
-                #print("DECODED SHAPE:", decoded.shape)
-            else:
-                out_i = model.forward(tensor)
-            #print("OUT:", out_i)
-            #print("OUT SHAPE:", out_i.shape)
-            #print(rel_item.t)
-            #print("REL LABEL:", rel_label)
-            #print("REL LABEL SHAPE:", rel_label.shape, rel_label.dtype)
-            rel_label_x = model.compress(rel_label)
-            abs_label_x = model.compress(abs_label)
+                #print(rel_item.t)
+                #print("REL LABEL:", rel_label)
+                #print("REL LABEL SHAPE:", rel_label.shape, rel_label.dtype)
+                rel_label_x = model.compress(rel_label)
+                abs_label_x = model.compress(abs_label)
 
-            if DIFFERENCES:
-                label = torch.subtract(rel_label_x, abs_label_x)
-            else:
-                label = rel_label_x
-            #print("COMPRESSED REL LABEL:", rel_label_x)
-            #print("COMPRESSED REL LABEL:", rel_label_x.shape)
+                if DIFFERENCES:
+                    label = torch.subtract(rel_label_x, abs_label_x)
+                else:
+                    label = rel_label_x
+                #print("COMPRESSED REL LABEL:", rel_label_x)
+                #print("COMPRESSED REL LABEL:", rel_label_x.shape)
 
 
-            extra_text=""
-            if AUTOENCODER:
-                model.set_mode("autoencoder")
-                loss = model.raw_loss(out_i, label, decoded, rel_label, criterion_name="autoencoder", return_all=True)
-                #extra_text=f"loss1={loss1:.3f} loss2={loss2:.3f}"
-            elif (label_oligo is not None) and FINETUNE:
-                out_c = model.classify(out_i, reference=label)
-                loss = model.raw_loss(out_i, label, out_c, label_oligo, criterion_name="default")
-                extra_text = f"out={out_c.item():7.3f} l={item.l}"
-            else:
-                loss = model.loss(out_i, label, criterion_name="default")
-            #print("LOSS:", loss)
+                extra_text=""
+                if AUTOENCODER:
+                    model.set_mode("autoencoder")
+                    loss = model.raw_loss(out_i, label, decoded, rel_label, criterion_name="autoencoder", return_all=True)
+                    #extra_text=f"loss1={loss1:.3f} loss2={loss2:.3f}"
+                elif (label_oligo is not None) and FINETUNE:
+                    out_c = model.classify(out_i, reference=label)
+                    loss = model.raw_loss(out_i, label, out_c, label_oligo, criterion_name="default")
+                    extra_text = f"out={out_c.item():7.3f} l={item.l}"
+                else:
+                    loss = model.loss(out_i, label, criterion_name="default")
+                #print("LOSS:", loss)
 
-            if n % PRINT_EVERY == 0:
-                loss_str = f"{model.running_loss['default'] / model.running_loss['total']:15.3f}"
-                print(f"loss: {colour('yellow', loss_str)}\tlast --> loss={loss.item():15.3f} {extra_text}",
-                      end="\r")
+                if n % PRINT_EVERY == 0:
+                    loss_str = f"{model.running_loss[model.mode] / model.running_loss['total']:15.3f}"
+                    print(f"loss: {colour('yellow', loss_str)}\tlast --> loss={loss.item():15.3f} {extra_text}",
+                          end="\r")
+                n += 1
+
             if "--preview" in sys.argv:
                 import matplotlib.pyplot as plt
                 from src.bioiain.visualisation import voxels3d, show, close
