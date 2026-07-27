@@ -1,5 +1,5 @@
 # Byte-compiled / optimized / DLL files
-__pycache__/
+*__pycache__/
 
 
 # Distribution / packaging
@@ -33,7 +33,7 @@ test/cvmaps
 
 
 # Bioiain V3
-*/bioiain.d/
+*bioiain.d/
 test/bioian.d
 test/ bioiain.d
 test/runs
@@ -49,5 +49,8 @@ html
 *.geany
 *.sublime-*
 
-#ALEPH
+# ALEPH
 */fromCVtoAA_12.txt
+
+# Coot
+*coot-download/
