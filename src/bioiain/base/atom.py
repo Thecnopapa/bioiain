@@ -413,6 +413,9 @@ class Atom(PseudoAtom):
                 raise KeyError(f"Misc key ({label}) not found in {self}")
             else:
                 return keyerror
+                
+    def fragment(self):
+        return self.get_misc("fragment", None)
 
     def pdb_string(self, new_id=None):
         record_name = f"{self.type:<6s}"[-6:]
