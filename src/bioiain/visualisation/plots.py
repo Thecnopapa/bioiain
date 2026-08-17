@@ -12,13 +12,18 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
 
-try:
-    mpl.use('QtAgg')
-except:
-    try:
-        mpl.use('TkAgg')
-    except:
-        mpl.use('Agg')
+
+
+# if os.environ.get("MPLBACKEND", None) is not None:
+#     try:
+#         mpl.use('QtAgg')
+#     except:
+#         try:
+#             mpl.use('TkAgg')
+#         except:
+#             mpl.use('Agg')
+
+log(1, f"MPL backend: {mpl.get_backend()}")
 
 mpl_colours = ('blue', 'orange', 'green', 'red', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan')
 pymol_colours = ('green', 'cyan', 'red', 'yellow', 'violet','blue',

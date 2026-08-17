@@ -6,7 +6,8 @@ from src.bioiain.utilities import *
 ########################################################################################################################
 
 
-
+import networkx as nx
+from src.bioiain.visualisation.plots import fig2D, show, close
 
 class PPI(object):
     def __init__(self, **kwargs):
@@ -16,8 +17,14 @@ class PPI(object):
         self.fragments1:list|None = None
         self.fragments2:list|None = None
 
+        self.op: int|None = kwargs.get("op", None)
+        self.name: str = kwargs.get("name", "")
+
     def __repr__(self):
-        return f"<bi.PPI at {hex(id(self))}>"
+        if self.atoms1 is None or self.atoms2 is None:
+            return f"<bi.PPI at {hex(id(self))}>"
+        else:
+            return f"<bi.PPI {self.name} {len(self.atoms1)}x{len(self.atoms2)} atoms (op:{self.op})>"
 
     @classmethod
     def from_atoms(cls, atoms1:list, atoms2:list, **kwargs):
@@ -43,21 +50,89 @@ class PPI(object):
 
 
 
-def get_all_PPIs(entity):
+def get_all_PPIs(entity, radius=10, min_contacts=1, intra_asu=True):
     fragment_interactions = []
+    interaction_dict = {}
+    ppis = []
     kdtree = entity.ca_kdtree()
     print(kdtree)
     for res in entity.residues():
         ca = res.ca
-        nns = kdtree.radius(ca)
+        nns = kdtree.radius(ca, radius=radius)
         f1 = ca.fragment()
         for nn in nns[0]:
             #print(nn)
             natom = kdtree.atom_of(nn)
             #print(natom.fragment())
             f2 = natom.fragment()
-            fragment_interactions.append([f1,f2])
-    print(fragment_interactions)
+            op2 = kdtree.op_of(nn)
+            is_intra=False
+            if op2 == 1:
+                is_intra=True
+                if intra_asu:
+                    if ca.chain == natom.chain:
+                        continue
+                else:
+                    continue
+            key = (f1,f2)
+            fragment_interactions.append([f1,f2, op2])
+            if op2 not in interaction_dict:
+                interaction_dict[op2] = {}
+            if key not in interaction_dict[op2]:
+                interaction_dict[op2][key] = {"n":0, "c1":ca.chain, "c2": natom.chain, "intra":is_intra, "f1":f1, "f2":f2}
+            interaction_dict[op2][key]["n"] += 1
+
+    for o in interaction_dict.keys():
+        interaction_dict[o] = {k:v for k,v in sorted(sorted(interaction_dict[o].items(), key=lambda x: x[0][1]), key=lambda x: x[0][0]) if v["n"] >= min_contacts}
+    interaction_dict = {k:v for k,v in sorted(interaction_dict.items(), key = lambda x: x[0]) if len(v) > 0}
+    #print(fragment_interactions)
+    #print(interaction_dict)
+    
+    for o, vv in interaction_dict.items():
+        graph = nx.Graph()
+        
+        #graph.add_node(f"op{o}", color="red")
+        for k, v in vv.items():
+            k1 = f"{v['c1']}{k[0]}"
+            if v["intra"]:
+                k2 = f"{v['c2']}{k[1]}"
+            else:
+                k2 = f"s{v['c2']}{k[1]}"
+            graph.add_node(k1, color="blue")
+            graph.add_node(k2, color="green")
+            graph.add_edge(k1, k2, weight=v["n"])
+            #graph.add_edge(k[0], f"op{o}", weight=1)
+        print(graph)
+        for n, cc in enumerate(nx.connected_components(graph)):
+            fig, ax = fig2D(figsize=(10,10))
+            subgraph = graph.subgraph(cc)
+            print(subgraph)
+            #print(subgraph.nodes)
+        
+            nx.draw(subgraph, with_labels=True, font_weight='bold', font_size=8, ax=ax, node_color=dict(subgraph.nodes.data("color")).values())
+            ax.set_aspect('equal')
+            ax.set_title(f"ppi:{o}-{n}")
+            os.makedirs(os.path.join(TEMP_FOLDER,"graphs"), exist_ok=True)
+            fig_path = os.path.join(TEMP_FOLDER,"graphs", f"graph{o}-{n}.png")
+            fig.savefig(fig_path)
+            print("open", fig_path)
+
+            atoms1 = []
+            atoms2 = []
+
+            for atom, op in zip(kdtree.atoms, kdtree.operations):
+                if atom.fragment() == v["f1"] and op == 1:
+                    atoms1.append(atom)
+                elif atom.fragment() == v["f2"] and op == o:
+                    atoms2.append(atom)
+            #print(atoms1)
+            #print(atoms2)
+
+
+            ppi = PPI.from_atoms(atoms1, atoms2, op=o, name=f"{entity.name()}_{o}-{n}")
+            ppis.append(ppi)
+            print(ppi)
+    return ppis
 
 
 
@@ -68,7 +143,7 @@ if __name__ == "__main__":
     entity.fragment(in_place=True)
     print(entity)
 
-    get_all_PPIs(entity)
+    ppis = get_all_PPIs(entity, min_contacts=1)
 
 
 

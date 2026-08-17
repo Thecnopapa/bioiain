@@ -1,4 +1,4 @@
-python == 3.12
+python == 3.12 # Lowest support (pyproject should allow higher versions too)
 pip
 conda-forge::pymol-open-source >= 2.5.0
 #bioconda::foldseek #  not installed by default as default version can be heavy
