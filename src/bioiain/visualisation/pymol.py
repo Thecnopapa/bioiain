@@ -51,7 +51,7 @@ class PymolScript(object):
             folder = os.path.join(SUBDIR_NAME, "pml_sessions")
         self.folder = folder
         if tmp_folder is None:
-            tmp_folder = os.path.join(TEMP_FOLDER, self.folder )
+            tmp_folder = os.path.join(TEMP_FOLDER, "pml_sessions")
         self.tmp_folder=tmp_folder
         os.makedirs(self.folder, exist_ok=True)
         os.makedirs(self.tmp_folder, exist_ok=True)
@@ -312,7 +312,7 @@ class PymolScript(object):
             name = entity.data["info"]["name"]
         if not overwrite:
             n = 1
-            while name+".pdb" in os.listdir(self.subfolder):
+            while name+".cif" in os.listdir(self.subfolder):
                 name = "{}_{}".format(entity.data["info"]["name"], n)
                 n += 1
 

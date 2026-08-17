@@ -55,7 +55,7 @@ def get_all_PPIs(entity, radius=10, min_contacts=1, intra_asu=True):
     interaction_dict = {}
     ppis = []
     kdtree = entity.ca_kdtree()
-    print(kdtree)
+    #print(kdtree)
     for res in entity.residues():
         ca = res.ca
         nns = kdtree.radius(ca, radius=radius)
@@ -102,11 +102,11 @@ def get_all_PPIs(entity, radius=10, min_contacts=1, intra_asu=True):
             graph.add_node(k2, color="green")
             graph.add_edge(k1, k2, weight=v["n"])
             #graph.add_edge(k[0], f"op{o}", weight=1)
-        print(graph)
+        #print(graph)
         for n, cc in enumerate(nx.connected_components(graph)):
             fig, ax = fig2D(figsize=(10,10))
             subgraph = graph.subgraph(cc)
-            print(subgraph)
+            #print(subgraph)
             #print(subgraph.nodes)
         
             nx.draw(subgraph, with_labels=True, font_weight='bold', font_size=8, ax=ax, node_color=dict(subgraph.nodes.data("color")).values())
@@ -135,6 +135,15 @@ def get_all_PPIs(entity, radius=10, min_contacts=1, intra_asu=True):
     return ppis
 
 
+def plot_ppis(entity, ppis):
+    from src.bioiain.visualisation.pymol import PymolScript
+    script = PymolScript(name=f"{entity.name()}_ppis", use_temp=True)
+    print(script)
+    script.load(entity.path())
+    script.execute()
+
+
+
 
 
 if __name__ == "__main__":
@@ -144,6 +153,8 @@ if __name__ == "__main__":
     print(entity)
 
     ppis = get_all_PPIs(entity, min_contacts=1)
+
+    plot_ppis(entity, ppis)
 
 
 
