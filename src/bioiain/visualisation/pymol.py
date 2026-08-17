@@ -51,13 +51,13 @@ class PymolScript(object):
             folder = os.path.join(SUBDIR_NAME, "pml_sessions")
         self.folder = folder
         if tmp_folder is None:
-            tmp_folder = os.path.join(TEMP_FOLDER, "pml_sessions")
+            tmp_folder = os.path.join(TEMP_FOLDER, "pml")
         self.tmp_folder=tmp_folder
         os.makedirs(self.folder, exist_ok=True)
         os.makedirs(self.tmp_folder, exist_ok=True)
         self.use_temp = use_temp
         if use_temp:
-            self.subfolder =  os.path.join(tmp_folder, self.folder, self.name)
+            self.subfolder =  os.path.join(self.tmp_folder, self.name)
         else:
             self.subfolder = os.path.join(self.folder, self.name)
 
