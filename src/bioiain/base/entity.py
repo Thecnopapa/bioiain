@@ -29,7 +29,7 @@ class Entity(object):
         self.data = {
             "info": {
                 "code": None, # The code of this structure, if any
-                "name": None, # The name of this structure (used mainly for file naming)
+                "name": kwargs.get("name", None), # The name of this structure (used mainly for file naming)
                 "class": self.__class__.__name__,
                 "model": str(model)
             },
@@ -77,7 +77,7 @@ class Entity(object):
         self._parameters = None
         self._operations = None
 
-        # COmpactness
+        # Compactness
         self.data["compactness"] = {}
         self._compactness = {
             "rel_compactness": None,
@@ -457,7 +457,8 @@ class Entity(object):
         if code is not None:
             self.data["info"]["code"] = clean_string(code).upper()
             #self.data["info"]["code"] = str(code)
-        self.set_name(self.code())
+        if self.data["info"]["name"] is None:
+            self.set_name(self.code())
         self.paths["top_folder"] = self.code()
         self.set_flag("no_atoms", False)
 

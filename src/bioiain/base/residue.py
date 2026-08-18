@@ -81,6 +81,7 @@ class Residue(object):
 
             if a.name == self.main_atom_name:
                 self.ca = a
+                self.ca._residue = self
             elif a.name == "CB":
                 self.cb = a
             elif a.name == "C":

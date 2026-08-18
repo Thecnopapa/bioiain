@@ -5,7 +5,7 @@ from src.bioiain import *
 from src.bioiain.utilities import *
 ########################################################################################################################
 
-
+from src.bioiain.base import Entity
 import networkx as nx
 from src.bioiain.visualisation.plots import fig2D, show, close
 
@@ -17,6 +17,9 @@ class PPI(object):
         self.fragments1:list|None = None
         self.fragments2:list|None = None
 
+        self.subentity1:Entity|None = None
+        self.subentity2:Entity|None = None
+
         self.op: int|None = kwargs.get("op", None)
         self.name: str = kwargs.get("name", "")
 
@@ -26,11 +29,27 @@ class PPI(object):
         else:
             return f"<bi.PPI {self.name} {len(self.atoms1)}x{len(self.atoms2)} atoms (op:{self.op})>"
 
+    def _init_subentities(self):
+        self.subentity1 = Entity.from_atoms(self.atoms1, code=self.name.split("_")[0], name=f"{self.name}_p1", share=False)
+        self.subentity2 = Entity.from_atoms(self.atoms2, code=self.name.split("_")[0], name=f"{self.name}_p2", share=False)
+
+        self.subentity1.paths["sub_folder"] = "fragmented/PPIs"
+        self.subentity2.paths["sub_folder"] = "fragmented/PPIs"
+
+        self.subentity1.extension = "ppi"
+        self.subentity2.extension = "ppi"
+
+        self.subentity1.export()
+        self.subentity2.export()
+        return self
+
     @classmethod
     def from_atoms(cls, atoms1:list, atoms2:list, **kwargs):
         self = cls(**kwargs)
         self.atoms1 = atoms1
         self.atoms2 = atoms2
+        self._init_subentities()
+        
         return self
 
     @classmethod
@@ -46,6 +65,7 @@ class PPI(object):
             self.atoms1.extend(frag.atoms())
         for frag in self.fragments2:
             self.atoms2.extend(frag.atoms())  
+        self._init_subentities()
         return self
 
 
@@ -66,6 +86,7 @@ def get_all_PPIs(entity, radius=10, min_contacts=1, intra_asu=True):
             #print(natom.fragment())
             f2 = natom.fragment()
             op2 = kdtree.op_of(nn)
+            pos2 = kdtree.pos_of(nn)
             is_intra=False
             if op2 == 1:
                 is_intra=True
@@ -74,12 +95,12 @@ def get_all_PPIs(entity, radius=10, min_contacts=1, intra_asu=True):
                         continue
                 else:
                     continue
-            key = (f1,f2)
-            fragment_interactions.append([f1,f2, op2])
+            key = (f1,f2, pos2)
+            fragment_interactions.append([f1,f2, op2, pos2])
             if op2 not in interaction_dict:
                 interaction_dict[op2] = {}
             if key not in interaction_dict[op2]:
-                interaction_dict[op2][key] = {"n":0, "c1":ca.chain, "c2": natom.chain, "intra":is_intra, "f1":f1, "f2":f2}
+                interaction_dict[op2][key] = {"n":0, "c1":ca.chain, "c2": natom.chain, "intra":is_intra, "f1":f1, "f2":f2, "op": op2, "pos": pos2}
             interaction_dict[op2][key]["n"] += 1
 
     for o in interaction_dict.keys():
@@ -93,11 +114,11 @@ def get_all_PPIs(entity, radius=10, min_contacts=1, intra_asu=True):
         
         #graph.add_node(f"op{o}", color="red")
         for k, v in vv.items():
-            k1 = f"{v['c1']}{k[0]}"
-            if v["intra"]:
-                k2 = f"{v['c2']}{k[1]}"
-            else:
-                k2 = f"s{v['c2']}{k[1]}"
+            k1 = f"{v['c1']}{v["f1"]}"
+            # if v["intra"]:
+            #     k2 = f"s{v['c2']}{v["f2"]}{v["pos"]}"
+            # else:
+            k2 = f"s{v['c2']}{v["f2"]}{v["pos"]}"
             graph.add_node(k1, color="blue")
             graph.add_node(k2, color="green")
             graph.add_edge(k1, k2, weight=v["n"])
@@ -119,15 +140,14 @@ def get_all_PPIs(entity, radius=10, min_contacts=1, intra_asu=True):
 
             atoms1 = []
             atoms2 = []
-
-            for atom, op in zip(kdtree.atoms, kdtree.operations):
-                if atom.fragment() == v["f1"] and op == 1:
-                    atoms1.append(atom)
-                elif atom.fragment() == v["f2"] and op == o:
-                    atoms2.append(atom)
-            #print(atoms1)
-            #print(atoms2)
-
+            print(cc)
+            for atom, op, pos in zip(kdtree.atoms, kdtree.operations, kdtree.positions):
+                if (op == 1) and f"{atom.chain}{atom.fragment()}" in cc:
+                    atoms1.extend(atom._residue.atoms)
+                elif (op == o) and f"s{atom.chain}{atom.fragment()}{pos}" in cc:
+                    atoms2.extend(a.copy().symop(symop=entity.symops(op), params=entity.params(), position=pos) for a in atom._residue.atoms)
+            print(atoms1)
+            print(atoms2)
 
             ppi = PPI.from_atoms(atoms1, atoms2, op=o, name=f"{entity.name()}_{o}-{n}")
             ppis.append(ppi)
@@ -140,6 +160,13 @@ def plot_ppis(entity, ppis):
     script = PymolScript(name=f"{entity.name()}_ppis", use_temp=True)
     print(script)
     script.load(entity.path())
+    for ppi in ppis:
+        print(ppi)
+        ppi.subentity1.path()
+        script.load(ppi.subentity1.path())
+        script.load(ppi.subentity2.path())
+        script.group(ppi.name, ppi.name)
+    script.orient()
     script.execute()
 
 
@@ -152,7 +179,7 @@ if __name__ == "__main__":
     entity.fragment(in_place=True)
     print(entity)
 
-    ppis = get_all_PPIs(entity, min_contacts=1)
+    ppis = get_all_PPIs(entity, min_contacts=2)
 
     plot_ppis(entity, ppis)
 
