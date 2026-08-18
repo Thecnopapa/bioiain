@@ -93,6 +93,8 @@ def get_all_PPIs(entity, radius=10, min_contacts=1, intra_asu=True):
                 if intra_asu:
                     if ca.chain == natom.chain:
                         continue
+                    if f2 <= f1:
+                        continue
                 else:
                     continue
             key = (f1,f2, pos2)
@@ -146,8 +148,8 @@ def get_all_PPIs(entity, radius=10, min_contacts=1, intra_asu=True):
                     atoms1.extend(atom._residue.atoms)
                 elif (op == o) and f"s{atom.chain}{atom.fragment()}{pos}" in cc:
                     atoms2.extend(a.copy().symop(symop=entity.symops(op), params=entity.params(), position=pos) for a in atom._residue.atoms)
-            print(atoms1)
-            print(atoms2)
+            #print(atoms1)
+            #print(atoms2)
 
             ppi = PPI.from_atoms(atoms1, atoms2, op=o, name=f"{entity.name()}_{o}-{n}")
             ppis.append(ppi)
