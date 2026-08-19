@@ -1754,14 +1754,22 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
         return uno, due, False
 
     def __get_associations(a, stringent=True):
+        print(f"Getting associations... (stringent={stringent})")
         associations = {}
         for e in a:
+            print("E:", e)
+            print()
             for resi in e[2]:
                 if tuple(resi) not in associations:
                     associations[tuple(resi)] = {"bs": 0, "ah": 0, "coil": 0, "COIL": 0}
                 associations[tuple(resi)][e[1]] += 1
+        print(associations)
 
+        for x in associations.keys():
+            print(x[:3]+(x[3][1:],))
         lisorted = sorted(associations.keys(), key=lambda x: x[:3]+(x[3][1:],))
+        print(lisorted)
+
         for t, key in enumerate(lisorted):
             result = ""
             # or (associations[key]["ah"] >= 2 and associations[key]["bs"] == 0) \
@@ -2349,13 +2357,19 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
         print("ZENNE", zenne)
         if p - 3 >= 0:
             print("###")
+            print((enne[2][0][3][1], enne[2][1][3][1], enne[2][2][3][1]), (z[p - 3][2][0][3][1], z[p - 3][2][1][3][1], z[p - 3][2][2][3][1]))
+            print(z[p - 3][1],  enne[1])
+            
             print(matrix[tuple(sorted([dimap[enne[3]], dimap[z[p - 3][3]]]))])
             print(matrix[tuple(sorted([dimap[enne[3]], dimap[z[p - 3][3]]]))][2])
             print(matrix[tuple(sorted([dimap[enne[3]], dimap[z[p - 3][3]]]))][3])
-
-
-            exit()
+            
+            print(enne[1], z[p - 3][1])
+            
         if enne[1] in ["ah", "bs"] and p - 3 >= 0 and z[p - 3][1] == enne[1]:
+            
+            print(z[p - 3][1],  enne[1])
+            print("#", matrix[tuple(sorted([dimap[enne[3]], dimap[z[p - 3][3]]]))])
             # checking if the two CV are representing two tripetides continous but not overlapping
             resaN = Bioinformatics.get_residue(strucc, enne[2][0][1], enne[2][0][2], enne[2][0][3])
             prevResC = Bioinformatics.get_residue(strucc, z[p - 3][2][-1][1], z[p - 3][2][-1][2], z[p - 3][2][-1][3])
@@ -2409,12 +2423,14 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
         z = __check_impossible_angle(z, p, a, enne, zenne, cvs_list, dimap, matrix, angle_mean_bs, angle_mean_ah, strucc)
 
     a = z
-    print(a)
-    exit()
+
 
     text = ""
     for w in range(2):
+        print(f"W:{w}", f"interface:{interface}")
         associations = __get_associations(a, stringent=True if w == 0 else False)
+        print(associations)
+        exit()
         # associations = __getAssociations(a)
         g, a = __generate_graph(a, None if w == 0 else min_ah, None if w == 0 else min_bs, associations, interface)
         # for frag in g.vs:
@@ -2457,7 +2473,9 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
     #     print()
 
     with open("fromCVtoAA_12.txt","w") as f:
+        print("writing to ./fromCVtoAA_12.txt")
         f.write(text)
+    exit()
 
     return g
 

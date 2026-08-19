@@ -187,6 +187,9 @@ class CVPair(object):
         self.t1 = kwargs.get("t1", None)
         self.t2 = kwargs.get("t2", None)
         self.da = kwargs.get("da", None)
+        self.dm = None
+        if self.da is not None:
+            self.dm = min(self.da, 360-self.da) 
 
 
         self.calculate()
@@ -221,13 +224,13 @@ class CVPair(object):
 
         #print(self.v, self.d)
         if self.a is None:
-            self.a = angle_between_vectors(self.v1.v, self.v2.v)+ 180
+            self.a = angle_between_vectors(self.v1.v, self.v2.v)
         if self.t1 is None:
-            self.t1 = angle_between_vectors(self.v1.v, self.v)+ 180
+            self.t1 = angle_between_vectors(self.v1.v, self.v)
         if self.t2 is None:
-            self.t2 = angle_between_vectors(self.v2.v, self.v)+ 180
+            self.t2 = angle_between_vectors(self.v2.v, self.v)
         if self.da is None:
-            self.da = dihedral_angle(self.v1.end, self.v1.start, self.v2.start, self.v2.end) + 180
+            self.da = dihedral_angle(self.v1.end, self.v1.start, self.v2.start, self.v2.end)
 
         return self
 

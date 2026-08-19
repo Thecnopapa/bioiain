@@ -258,7 +258,7 @@ class Entity(object):
     def _calculate_cvectors(self, vc_mode=None):
         log(1, "Calculating CVectors for:", self.name(), f"({vc_mode})")
         from ..aleph.vectors import CVector
-        residues = self.residues(hetatm=True)
+        residues = self.residues()
         n_res = len(residues)
         cvector_list = []
         missing_cvectors = []
@@ -270,8 +270,7 @@ class Entity(object):
             cvector = CVector(residues[n-1], res, residues[n+1], params=self.params(), symops=self.symops(), entity_centre=self.com(), vc_mode=vc_mode)
             if cvector.trash:
                 missing_cvectors.append(n)
-                print()
-                print(cvector)
+                log("warning", f"{cvector} is trash")
                 continue
             cvector_list.append(cvector)
         log(2, f"n CVectors: {len(cvector_list)}, trash={len(missing_cvectors)} ")
