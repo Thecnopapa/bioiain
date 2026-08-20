@@ -151,6 +151,7 @@ class CVector(object):
             ss = "ah"
         else:
             ss = "co"
+        #print(self.d, ss)
         return ss
 
 

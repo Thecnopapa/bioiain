@@ -1353,6 +1353,7 @@ def get_ss_from_cvl(cvl1):
     exty1 = "bs" if (1.4 - delta_cvlb <= float(cvl1) <= 1.4 + delta_cvlb) else "coil"
     if exty1 == "coil":
         exty1 = "ah" if (2.2 - delta_cvla <= float(cvl1) <= 2.2 + delta_cvla) else "coil"
+    print(cvl1, exty1)
     return exty1
 
 
@@ -1570,10 +1571,10 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
     cvl_mean_bs = 1.4
     cvl_mean_ah = 2.2
     thresh_scores = 1.5
-
+    print("sample")
     print(cvs_list[0]) # [n, len, (start), (end), (res1, res2, res3)
     a = [[lis[1], get_ss_from_cvl(lis[1]), lis[4], lis[0]] for lis in cvs_list] # [len, ss, (res1, res2, res3), n]
-    [print(aa) for aa in a[0:5]]
+    [print(aa[1]) for aa in a]
 
     dimap = {value[0]: i for (i, value) in enumerate(cvs_list)}
     print("dimap")
@@ -1588,15 +1589,17 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
         return r
 
     def __check_by_unified_score_step2(uno, due, dizio3d, take_first=True, validate=["bs", "coil"], min_num_bs=1.0):
+        print("Checking unified score...")
         ###value1 = compute_instruction(cvs_list[dimap[uno[3]]], cvs_list[dimap[due[3]]])
         #print("uno")
         #print(uno) # res id
         sup = tuple(sorted([dimap[uno[3]], dimap[due[3]]]))
-        print(sup)
+        #print(sup)
         value1 = matrix[sup]
-        print(value1) # [?, cv1.d, cv2.d, CA-CA-dist, ???]
-        #print(value1[0])
+        #print(value1) # [?, cv1.d, cv2.d, CA-CA-dist, ???]
+        #print(value1[2])
         if value1[0] != 1:
+            print("Not checking unified")
             return uno, due, True
 
         beta_score_uno = 100000
@@ -1605,11 +1608,20 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
         alpha_score_due = 100000
         #if uno[3] == 134:
         #    print("BEFORE UNO",uno[1], uno[0], value1[2], uno[2], "---", uno[3])
+        
+
+        
         if take_first and (dizio3d is None or uno[1] in validate):
+            #print("UNO pre:", uno[1])
+            #print(uno[0], value1[2])
+            #print(__scoring_tick_fn(uno[0], cvl_mean_bs, 2.4, v=0.9, p=0.8, n=1))
+            #print( __scoring_tick_fn(value1[2], angle_mean_bs, 180.0, v=0.9, p=0.5, n=0.5))
             beta_score_uno = __scoring_tick_fn(uno[0], cvl_mean_bs, 2.4, v=0.9, p=0.8, n=1) + __scoring_tick_fn(
                 value1[2], angle_mean_bs, 180.0, v=0.9, p=0.5, n=0.5) #n=0.5
             alpha_score_uno = __scoring_tick_fn(uno[0], cvl_mean_ah, 2.4, v=0.0, p=1.0, n=1) + __scoring_tick_fn(
                 value1[2], angle_mean_ah, 180.0, v=0.9, p=0.5, n=0.5)
+            #print(beta_score_uno, alpha_score_uno)
+            #exit()
             CA_CA_d = value1[3]
 
             if dizio3d is not None:
@@ -1657,9 +1669,11 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
                 uno[1] = "coil"
             else:
                 uno[1] = "coil"
+            #print(uno[2][1][3][1])
+            #print(uno[1], alpha_score_uno, beta_score_uno)
             #if uno[3] == 134:
             #    print("ANNOTATION UNO IS:",uno)
-
+        #print("DUE pre:", uno[1])
         if (dizio3d is None or due[1] in validate):
             ###print("CVL score:",__scoring_tick_fn(due[0],cvl_mean_bs,2.4,v=0.9,p=0.8,n=1),"con cvl=",due[0])
             ###print("Angle score:",__scoring_tick_fn(value1[2],angle_mean_bs,180.0,v=0.9,p=0.5,n=0.5),"con angle=",value1[2])
@@ -1740,6 +1754,8 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
                 due[1] = "coil"
             else:
                 due[1] = "coil"
+            #print(due[2][1][3][1])
+            #print(due[1], alpha_score_due, beta_score_due)
 
         # print("UNO AFTER bs:", beta_score_uno, "ah:", alpha_score_uno)
         # print(uno)
@@ -1757,18 +1773,19 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
         print(f"Getting associations... (stringent={stringent})")
         associations = {}
         for e in a:
-            print("E:", e)
-            print()
+            #print("E:", e)
+            #print()
             for resi in e[2]:
                 if tuple(resi) not in associations:
                     associations[tuple(resi)] = {"bs": 0, "ah": 0, "coil": 0, "COIL": 0}
                 associations[tuple(resi)][e[1]] += 1
-        print(associations)
+        #print(associations)
 
         for x in associations.keys():
-            print(x[:3]+(x[3][1:],))
+            #print(x[:3]+(x[3][1:],))
+            pass
         lisorted = sorted(associations.keys(), key=lambda x: x[:3]+(x[3][1:],))
-        print(lisorted)
+        #print(lisorted)
 
         for t, key in enumerate(lisorted):
             result = ""
@@ -2084,6 +2101,7 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
         return g, a
 
     def __generate_graph(a, min_ah, min_bs, associations, interface = False):
+        print("Generating graph...")
         if min_ah is not None and min_ah < 3:
             min_ah = 3
         if min_bs is not None and min_bs < 3:
@@ -2113,6 +2131,7 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
                     listaFrags.append([asso])
             else:
                 listaFrags.append([asso])
+        [print(len(f), [r[3][1] for r in f], [associations[r]["result"] for r in f]) for f in listaFrags]
 
         listaFrags = [
             {"sstype": associations[fragl[0]]["result"].lower(),
@@ -2353,23 +2372,25 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
         # print("==========================")
         # Checking if the current enne is annotated as ah or bs and if it exists a previous cv at p-3 with the same annotation
         print("Checking impossible angle...")
-        print("ENNE", enne)
-        print("ZENNE", zenne)
+        #print("ENNE", enne)
+        #print("ZENNE", zenne)
+        #print(enne[1])
         if p - 3 >= 0:
-            print("###")
-            print((enne[2][0][3][1], enne[2][1][3][1], enne[2][2][3][1]), (z[p - 3][2][0][3][1], z[p - 3][2][1][3][1], z[p - 3][2][2][3][1]))
-            print(z[p - 3][1],  enne[1])
+            #print("###")
+            #print((enne[2][0][3][1], enne[2][1][3][1], enne[2][2][3][1]), (z[p - 3][2][0][3][1], z[p - 3][2][1][3][1], z[p - 3][2][2][3][1]))
+            #print(z[p - 3][1],  enne[1])
             
-            print(matrix[tuple(sorted([dimap[enne[3]], dimap[z[p - 3][3]]]))])
-            print(matrix[tuple(sorted([dimap[enne[3]], dimap[z[p - 3][3]]]))][2])
-            print(matrix[tuple(sorted([dimap[enne[3]], dimap[z[p - 3][3]]]))][3])
+            #print(matrix[tuple(sorted([dimap[enne[3]], dimap[z[p - 3][3]]]))])
+            #print(matrix[tuple(sorted([dimap[enne[3]], dimap[z[p - 3][3]]]))][2])
+            #print(matrix[tuple(sorted([dimap[enne[3]], dimap[z[p - 3][3]]]))][3])
             
-            print(enne[1], z[p - 3][1])
+            #print(enne[1], z[p - 3][1])
+            pass
             
         if enne[1] in ["ah", "bs"] and p - 3 >= 0 and z[p - 3][1] == enne[1]:
             
-            print(z[p - 3][1],  enne[1])
-            print("#", matrix[tuple(sorted([dimap[enne[3]], dimap[z[p - 3][3]]]))])
+            #print(z[p - 3][1],  enne[1])
+            #print("#", matrix[tuple(sorted([dimap[enne[3]], dimap[z[p - 3][3]]]))])
             # checking if the two CV are representing two tripetides continous but not overlapping
             resaN = Bioinformatics.get_residue(strucc, enne[2][0][1], enne[2][0][2], enne[2][0][3])
             prevResC = Bioinformatics.get_residue(strucc, z[p - 3][2][-1][1], z[p - 3][2][-1][2], z[p - 3][2][-1][3])
@@ -2387,8 +2408,10 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
                     # print("the angle between them is",matrix[tuple(sorted([dimap[enne[3]], dimap[z[p-3][3]]]))][2])
                     # enne[1] = "COIL"
                     if z[p - 3][1] not in ["coil", "COIL"]:
+                        print(f"-2 to COIL ({z[p - 2][2][1][3][1]})")
                         z[p - 2][1] = "COIL"
                     else:
+                        print(f"-3 to COIL ({z[p - 3][2][1][3][1]})")
                         z[p - 3][1] = "COIL"
         # Checking if the current zenne is annotated as ah or bs and if it exists a previous cv at p-2 with the same annotation
         if zenne[1] in ["ah", "bs"] and p - 2 >= 0 and z[p - 2][1] == zenne[1]:
@@ -2408,21 +2431,25 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
                     # print("the angle between them is", matrix[tuple(sorted([dimap[zenne[3]], dimap[z[p - 2][3]]]))][2])
                     # zenne[1] = "COIL"
                     if z[p - 2][1] not in ["coil", "COIL"]:
+                        print(f"-1 to COIL ({z[p - 1][2][1][3][1]})")
                         z[p - 1][1] = "COIL"
                     else:
+                        print(f"-2 to COIL ({z[p - 2][2][1][3][1]})")
                         z[p - 2][1] = "COIL"
         z[p] = enne
         z[p + 1] = zenne
         return z
 
     z = [0 for y in range(len(a))] # [0]*len(a)
-    print(z)
+
     tf = True
     for p in range(len(a) - 1):
         enne, zenne, tf = __check_by_unified_score_step2(a[p], a[p + 1], None, take_first=tf)
         z = __check_impossible_angle(z, p, a, enne, zenne, cvs_list, dimap, matrix, angle_mean_bs, angle_mean_ah, strucc)
 
     a = z
+    [print(aa[1]) for aa in a]
+    exit()
 
 
     text = ""
@@ -2430,9 +2457,13 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
         print(f"W:{w}", f"interface:{interface}")
         associations = __get_associations(a, stringent=True if w == 0 else False)
         print(associations)
-        exit()
+        print(a)
+        for aa, ass in zip(a, associations.values()):
+            print(aa[1], ass["result"])
+        
         # associations = __getAssociations(a)
         g, a = __generate_graph(a, None if w == 0 else min_ah, None if w == 0 else min_bs, associations, interface)
+        exit()
         # for frag in g.vs:
         #      if len(frag["reslist"]) > 0:
         #          print(frag["reslist"][0][3][1], "--", frag["reslist"][-1][3][1], frag["sstype"], "---", frag["unique_cv"])
@@ -2444,6 +2475,8 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
 
         z = [0 for y in range(len(a))]
         tf = True
+        print(a)
+        exit()
         for p in range(len(a) - 1):
             enne, zenne, tf = __check_by_unified_score_step2(a[p], a[p + 1], dictio_3D, take_first=tf,
                                                              validate=["bs", "coil"] if w == 0 else ["bs"],
