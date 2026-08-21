@@ -2142,8 +2142,12 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
                     listaFrags.append([asso])
             else:
                 listaFrags.append([asso])
-        [print(len(f), [r[3][1] for r in f], [associations[r]["result"] for r in f]) for f in listaFrags]
-
+        # [print(len(f), [r[3][1] for r in f], [associations[r]["result"] for r in f]) for f in listaFrags]
+        # print("###########")
+        # for f in listaFrags:
+        #     [print(list(fr), e[3]) for fr in f for e in a if list(fr) in e[2]]
+        #     print(sorted(set([e[3] for fr in f for e in a if list(fr) in e[2]])))
+        # print("###########")
         listaFrags = [
             {"sstype": associations[fragl[0]]["result"].lower(),
              "reslist": [list(fr) for fr in fragl],
@@ -2175,11 +2179,18 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
             #     if frag['sstype']!='coil':
             #         print("frag['sstype']",frag['sstype'],"len(frag['reslist']",len(frag['reslist']))
 
+        #for f in listaFrags:
+            #print(len(f["reslist"]), len(f["cvids"]), f["cvids"])
+            #print(f["strictnesses"])
+        
+
         add_coil = []
         listaFrags = sorted(listaFrags, key=lambda x: x["reslist"][-1])
         for o, frag in enumerate(listaFrags):
+            print(o, frag["sstype"][:2], len(frag["reslist"]), frag["cvids"])
             if o > 0 and len(listaFrags[o - 1]["reslist"]) > 2 and len(listaFrags[o]["reslist"]) > 2 and \
                     listaFrags[o - 1]["sstype"] in ["ah", "bs"] and listaFrags[o]["sstype"] in ["ah", "bs"]:
+                print("#", o)
                 resaN = Bioinformatics.get_residue(strucc, frag["reslist"][0][1], frag["reslist"][0][2], frag["reslist"][0][3])
                 prev = listaFrags[o - 1]["reslist"][-1]
                 prevResC = Bioinformatics.get_residue(strucc, prev[1], prev[2], prev[3])
@@ -2315,11 +2326,12 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
                         listaFrags[o - 1]["sstype"] = "coil"
                     elif B and len(listaFrags[o]["reslist"]) < 3:
                         listaFrags[o]["sstype"] = "coil"
-
+        
         listaFrags = [fr for fr in listaFrags if len(fr["reslist"]) > 0]
         listaFrags = sorted(listaFrags, key=lambda x: x["reslist"][-1])
-
+        
         g = igraph.Graph.Full(len(listaFrags))
+        print(g)
 
         for i, fr in enumerate(listaFrags):
             g.vs[i]["sstype"] = fr["sstype"]
@@ -2345,6 +2357,8 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
         # for fra in listaFrags:
         #      print(fra["sstype"],fra['sequence'])
         # print("=========================================================================")
+        print(g)
+        exit()
         return g, a
 
     def __generate_3d_relations(g, max_distance=10.0, validate=["bs", "coil"]):
