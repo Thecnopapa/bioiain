@@ -83,7 +83,9 @@ class FragmentedStructure(Structure):
                 return self.from_file(self.path(), export_folder=self.paths["export_folder"])
         if self.aleph_mode == "ALEPH2":
             from .ALEPH2 import ALEPH2
-            ALEPH2().generate_fragments(self)
+            ALEPH2(params={"strictness_bs":0.3,
+                   "strictness_ah": 0.5,
+                   }).generate_fragments(self)
             exit()
 
         else:

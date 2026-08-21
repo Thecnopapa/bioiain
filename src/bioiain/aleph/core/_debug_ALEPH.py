@@ -1353,7 +1353,7 @@ def get_ss_from_cvl(cvl1):
     exty1 = "bs" if (1.4 - delta_cvlb <= float(cvl1) <= 1.4 + delta_cvlb) else "coil"
     if exty1 == "coil":
         exty1 = "ah" if (2.2 - delta_cvla <= float(cvl1) <= 2.2 + delta_cvla) else "coil"
-    print(cvl1, exty1)
+    #print(cvl1, exty1)
     return exty1
 
 
@@ -1571,15 +1571,15 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
     cvl_mean_bs = 1.4
     cvl_mean_ah = 2.2
     thresh_scores = 1.5
-    print("sample")
-    print(cvs_list[0]) # [n, len, (start), (end), (res1, res2, res3)
+    #print("sample")
+    #print(cvs_list[0]) # [n, len, (start), (end), (res1, res2, res3)
     a = [[lis[1], get_ss_from_cvl(lis[1]), lis[4], lis[0]] for lis in cvs_list] # [len, ss, (res1, res2, res3), n]
-    [print(aa[1]) for aa in a]
+    #[print(aa[1]) for aa in a]
 
     dimap = {value[0]: i for (i, value) in enumerate(cvs_list)}
-    print("dimap")
-    print(dimap)
-    print("###")
+    #print("dimap")
+    #print(dimap)
+    #print("###")
 
     def __scoring_tick_fn(u, mean, topx, v=0.9, p=0.5, n=0.5):
         r = numpy.abs((u - mean) / mean) ** n if u <= mean else (((((u - mean) * ((mean * v))) / (
@@ -1589,7 +1589,7 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
         return r
 
     def __check_by_unified_score_step2(uno, due, dizio3d, take_first=True, validate=["bs", "coil"], min_num_bs=1.0):
-        print("Checking unified score...")
+        #print("Checking unified score...")
         ###value1 = compute_instruction(cvs_list[dimap[uno[3]]], cvs_list[dimap[due[3]]])
         #print("uno")
         #print(uno) # res id
@@ -1737,7 +1737,7 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
                 #if due[3] == 134:
                 #    print("DUE cvl+int_angles+dist+numlinks bs:",beta_score_uno,"ah:",alpha_score_uno,"len(listuno)",len(listdue),"f",sum(f))
                 ###print("DUE: NUMLINKS BS",len(listdue))
-
+            old_due = due[1]
             if len(due) == 4:
                 due.append(numpy.abs(alpha_score_due - beta_score_due))
             else:
@@ -1754,6 +1754,8 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
                 due[1] = "coil"
             else:
                 due[1] = "coil"
+            # if old_due != due[1]:
+            #     print(due[2][1][3][1], old_due, "-->", due[1], alpha_score_due, beta_score_due, strictness_bs)
             #print(due[2][1][3][1])
             #print(due[1], alpha_score_due, beta_score_due)
 
@@ -1787,6 +1789,9 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
         lisorted = sorted(associations.keys(), key=lambda x: x[:3]+(x[3][1:],))
         #print(lisorted)
 
+        # for res in lisorted:
+        #     print(res, associations[res])
+        
         for t, key in enumerate(lisorted):
             result = ""
             # or (associations[key]["ah"] >= 2 and associations[key]["bs"] == 0) \
@@ -1794,14 +1799,18 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
             max_for_key = sum([associations[key][z] for z in associations[key].keys()])
             if max_for_key > 3: max_for_key = 3
 
+            #print(associations[key]["bs"], max_for_key)
+
             if associations[key]["ah"] == max_for_key \
                     or (max_for_key < 3 and  associations[key]["ah"] >=1 and associations[key]["bs"] == 0) or (
                     0 < t < len(associations.keys()) - 1 and associations[key]["ah"] >= 2 and
                     associations[key]["bs"] == 0 and associations[lisorted[t - 1]]["result"] == "coil" and
                     associations[lisorted[t + 1]]["ah"] >= 3):
                 result = "ah"
+                #print("ah")
             elif stringent and associations[key]["bs"] == max_for_key:
                 result = "bs"
+                #print("bs1")
             elif not stringent and (associations[key]["bs"] == max_for_key
                                     or (associations[key]["bs"] == 2 and associations[key]["COIL"] == 0)
                                     or (associations[key]["bs"] == 1 and associations[key]["ah"] < 2 and associations[key]["COIL"] == 0)
@@ -1817,8 +1826,10 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
 
                 # or (t>0 and t<len(associations.keys())-1 and associations[key]["bs"] == 1 and associations[key]["coil"] == 2 and associations[lisorted[t-1]]["result"] == "coil" and associations[lisorted[t+1]]["bs"] >= 2 and associations[lisorted[t+1]]["ah"] == 0)):
                 result = "bs"
+                #print("bs2")
             else:
                 result = "coil"
+                #print("co")
 
             #print("STRINGENT:", stringent, "T all:", associations[key], "T:", t, "RESULT:",result,"RESI",key)  # ,"T-1 all: "+str(associations[lisorted[t - 1]]) if t>0 else "","T+1 all: "+str(associations[lisorted[t+1]]) if t<len(associations.keys()) - 1 else "")
             associations[key]["result"] = result
@@ -2371,7 +2382,7 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
         #     print(abs(matrix[tuple(sorted([dimap[zenne[3]], dimap[z[p - 2][3]]]))][2] - angle_mean_bs))
         # print("==========================")
         # Checking if the current enne is annotated as ah or bs and if it exists a previous cv at p-3 with the same annotation
-        print("Checking impossible angle...")
+        #print("Checking impossible angle...")
         #print("ENNE", enne)
         #print("ZENNE", zenne)
         #print(enne[1])
@@ -2408,10 +2419,10 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
                     # print("the angle between them is",matrix[tuple(sorted([dimap[enne[3]], dimap[z[p-3][3]]]))][2])
                     # enne[1] = "COIL"
                     if z[p - 3][1] not in ["coil", "COIL"]:
-                        print(f"-2 to COIL ({z[p - 2][2][1][3][1]})")
+                        #print(f"-2 to COIL ({z[p - 2][2][1][3][1]})")
                         z[p - 2][1] = "COIL"
                     else:
-                        print(f"-3 to COIL ({z[p - 3][2][1][3][1]})")
+                        #print(f"-3 to COIL ({z[p - 3][2][1][3][1]})")
                         z[p - 3][1] = "COIL"
         # Checking if the current zenne is annotated as ah or bs and if it exists a previous cv at p-2 with the same annotation
         if zenne[1] in ["ah", "bs"] and p - 2 >= 0 and z[p - 2][1] == zenne[1]:
@@ -2431,10 +2442,10 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
                     # print("the angle between them is", matrix[tuple(sorted([dimap[zenne[3]], dimap[z[p - 2][3]]]))][2])
                     # zenne[1] = "COIL"
                     if z[p - 2][1] not in ["coil", "COIL"]:
-                        print(f"-1 to COIL ({z[p - 1][2][1][3][1]})")
+                        #print(f"-1 to COIL ({z[p - 1][2][1][3][1]})")
                         z[p - 1][1] = "COIL"
                     else:
-                        print(f"-2 to COIL ({z[p - 2][2][1][3][1]})")
+                        #print(f"-2 to COIL ({z[p - 2][2][1][3][1]})")
                         z[p - 2][1] = "COIL"
         z[p] = enne
         z[p + 1] = zenne
@@ -2448,18 +2459,17 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
         z = __check_impossible_angle(z, p, a, enne, zenne, cvs_list, dimap, matrix, angle_mean_bs, angle_mean_ah, strucc)
 
     a = z
-    [print(aa[1]) for aa in a]
-    exit()
+    # [print(aa[1]) for aa in a]
 
 
     text = ""
     for w in range(2):
         print(f"W:{w}", f"interface:{interface}")
         associations = __get_associations(a, stringent=True if w == 0 else False)
-        print(associations)
-        print(a)
-        for aa, ass in zip(a, associations.values()):
-            print(aa[1], ass["result"])
+        #print(associations)
+        #print(a)
+        # for aa, ass in zip(a, associations.values()):
+        #     print(aa[1], ass["result"])
         
         # associations = __getAssociations(a)
         g, a = __generate_graph(a, None if w == 0 else min_ah, None if w == 0 else min_bs, associations, interface)
@@ -2475,7 +2485,7 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
 
         z = [0 for y in range(len(a))]
         tf = True
-        print(a)
+        #print(a)
         exit()
         for p in range(len(a) - 1):
             enne, zenne, tf = __check_by_unified_score_step2(a[p], a[p + 1], dictio_3D, take_first=tf,
