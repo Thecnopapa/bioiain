@@ -2187,7 +2187,7 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
         add_coil = []
         listaFrags = sorted(listaFrags, key=lambda x: x["reslist"][-1])
         for o, frag in enumerate(listaFrags):
-            print(o, frag["sstype"][:2], len(frag["reslist"]), frag["cvids"])
+
             if o > 0 and len(listaFrags[o - 1]["reslist"]) > 2 and len(listaFrags[o]["reslist"]) > 2 and \
                     listaFrags[o - 1]["sstype"] in ["ah", "bs"] and listaFrags[o]["sstype"] in ["ah", "bs"]:
                 print("#", o)
@@ -2330,7 +2330,11 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
         listaFrags = [fr for fr in listaFrags if len(fr["reslist"]) > 0]
         listaFrags = sorted(listaFrags, key=lambda x: x["reslist"][-1])
         
+        for o, frag in enumerate(listaFrags):
+            print(o, frag["sstype"][:2], len(frag["reslist"]), frag["cvids"])
+        exit()
         g = igraph.Graph.Full(len(listaFrags))
+
         print(g)
 
         for i, fr in enumerate(listaFrags):
@@ -2357,8 +2361,8 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
         # for fra in listaFrags:
         #      print(fra["sstype"],fra['sequence'])
         # print("=========================================================================")
-        print(g)
-        exit()
+        #print(g)
+        #exit()
         return g, a
 
     def __generate_3d_relations(g, max_distance=10.0, validate=["bs", "coil"]):

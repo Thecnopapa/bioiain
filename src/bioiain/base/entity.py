@@ -264,13 +264,13 @@ class Entity(object):
         missing_cvectors = []
         for n, res in enumerate(residues):
             if n == 0 or n == n_res -1:
-                missing_cvectors.append(n)
+                #missing_cvectors.append(n)
                 continue
             print(f"{n:4d}/{len(residues)-2:4d}", end="\r")
             cvector = CVector(residues[n-1], res, residues[n+1], params=self.params(), symops=self.symops(), entity_centre=self.com(), vc_mode=vc_mode)
             if cvector.trash:
                 missing_cvectors.append(n)
-                log("warning", f"{cvector} is trash")
+                #log("warning", f"{cvector} is trash")
                 continue
             cvector_list.append(cvector)
         log(2, f"n CVectors: {len(cvector_list)}, trash={len(missing_cvectors)} ")

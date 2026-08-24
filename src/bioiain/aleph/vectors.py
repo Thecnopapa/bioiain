@@ -90,7 +90,7 @@ class CVector(object):
 
 
     def __repr__(self):
-        return f"<bi.{self.__class__.__name__} c.{self.chain} ({self.res1.resnum}>{self.res2.resnum}>{self.res3.resnum})>"
+        return f"<bi.{self.__class__.__name__} c.{self.chain} ({self.res1.resnum}>{self.res2.resnum}>{self.res3.resnum}) ss:{self.ss()}>"
 
 
     def _centroid(self, *coords):
