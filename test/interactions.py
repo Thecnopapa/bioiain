@@ -157,11 +157,13 @@ def get_all_PPIs(entity, radius=10, min_contacts=1, intra_asu=True):
     return ppis
 
 
-def plot_ppis(entity, ppis):
+def plot_ppis(entity, ppis, execute=False):
     from src.bioiain.visualisation.pymol import PymolScript
     script = PymolScript(name=f"{entity.name()}_ppis", use_temp=True)
     print(script)
     script.load(entity.path())
+    print(entity)
+    entity.show_cvectors(script=script, execute=False)
     for ppi in ppis:
         print(ppi)
         ppi.subentity1.path()
@@ -169,7 +171,9 @@ def plot_ppis(entity, ppis):
         script.load(ppi.subentity2.path())
         script.group(ppi.name, ppi.name)
     script.orient()
-    script.execute()
+    script.write_script()
+    if execute
+        script.execute()
 
 
 
@@ -178,12 +182,12 @@ def plot_ppis(entity, ppis):
 if __name__ == "__main__":
 
     entity = base.entity.Entity.from_file("./1M2Z.cif")
-    entity.fragment(in_place=True)
-    print(entity)
+    entity = entity.fragment(in_place=True)
 
-    ppis = get_all_PPIs(entity, min_contacts=2)
 
-    plot_ppis(entity, ppis)
+    ppis = get_all_PPIs(entity, min_contacts=2, intra_asu=True)
+
+    plot_ppis(entity, ppis, execute=True)
 
 
 
