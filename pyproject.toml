@@ -14,14 +14,14 @@ dependencies = [
     "matplotlib >= 3.10.8",
     "scikit-learn",
     "scipy",
-    "networkx[default]"
+    "networkx[default]",
 
 
     "typing-extensions",
     "requests",
     "unidecode",
     "xmltodict",
-    "psutil",
+    "psutil"
 ]
 
 name = "bioiain"
