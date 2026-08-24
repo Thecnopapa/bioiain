@@ -2142,6 +2142,8 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
                     listaFrags.append([asso])
             else:
                 listaFrags.append([asso])
+        # for n, asso in enumerate(associations_sorted):
+        #     print(n, associations[asso]["result"][:2], associations[asso]["ah"], associations[asso]["bs"], associations[asso]["coil"], associations[asso]["COIL"])
         # [print(len(f), [r[3][1] for r in f], [associations[r]["result"] for r in f]) for f in listaFrags]
         # print("###########")
         # for f in listaFrags:
@@ -2332,10 +2334,9 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
         
         for o, frag in enumerate(listaFrags):
             print(o, frag["sstype"][:2], len(frag["reslist"]), frag["cvids"])
-        exit()
         g = igraph.Graph.Full(len(listaFrags))
 
-        print(g)
+        #print(g)
 
         for i, fr in enumerate(listaFrags):
             g.vs[i]["sstype"] = fr["sstype"]
@@ -2366,13 +2367,17 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
         return g, a
 
     def __generate_3d_relations(g, max_distance=10.0, validate=["bs", "coil"]):
+        print("Getting relations...")
         dictio3d = {}
         for i, frag1 in enumerate(g.vs):
+            #print(i, frag1["sstype"])
             if frag1["sstype"] not in validate:
                 continue
+
             for frag2 in g.vs.select(lambda vertex: vertex.index != frag1.index):
                 if frag2["sstype"] not in validate:
                     continue
+                #print("    ", frag2.index, frag2["sstype"])
                 for uno in frag1["cvids"]:
                     if uno not in dictio3d:
                         dictio3d[uno] = []
@@ -2384,6 +2389,7 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
                         sup = tuple(sorted([dimap[uno], dimap[due]]))
                         value1 = matrix[sup]
                         if value1[3] <= max_distance:
+                            #print("   >", uno, due, value1[2], value1[3], value1[4])
                             dictio3d[uno].append([due, value1[2], value1[3], value1[4]])
         return dictio3d
 
@@ -2477,7 +2483,7 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
         z = __check_impossible_angle(z, p, a, enne, zenne, cvs_list, dimap, matrix, angle_mean_bs, angle_mean_ah, strucc)
 
     a = z
-    # [print(aa[1]) for aa in a]
+    #[print(n, aa[1][:2]) for n, aa in enumerate(a)]
 
 
     text = ""
@@ -2491,13 +2497,13 @@ def aleph_secstr(strucc, cvs_list, matrix, min_ah=None, min_bs=None, strictness_
         
         # associations = __getAssociations(a)
         g, a = __generate_graph(a, None if w == 0 else min_ah, None if w == 0 else min_bs, associations, interface)
-        exit()
+
         # for frag in g.vs:
         #      if len(frag["reslist"]) > 0:
         #          print(frag["reslist"][0][3][1], "--", frag["reslist"][-1][3][1], frag["sstype"], "---", frag["unique_cv"])
 
         dictio_3D = __generate_3d_relations(g, validate=["bs", "coil"] if w == 0 else ["bs"])
-
+        exit()
         #NOTE: Why I was filtering here by the length of e the problem.
         #a = [e[:-1] if len(e) == 5 else e for e in a]
 

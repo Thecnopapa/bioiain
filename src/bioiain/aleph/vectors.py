@@ -220,7 +220,9 @@ class CVPair(object):
             if self.v is None:
                 self.v = vector(self.v1.vc.coord, self.v2.vc.coord)
             if self.d is None:
-                self.d = flength(self.v)
+                self.d = d2(self.v)
+
+        self.d = math.sqrt(self.d)
 
 
         #print(self.v, self.d)
