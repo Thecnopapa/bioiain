@@ -119,6 +119,7 @@ class PPI(object):
         for c in flat2:
             ax2.scatter(*c)
 
+        fig.suptitle(self.name)
         fig_folder = os.path.join(TEMP_FOLDER, "plots", "DPEs")
         os.makedirs(fig_folder, exist_ok=True)
         fig_path = os.path.join(fig_folder, self.name)
