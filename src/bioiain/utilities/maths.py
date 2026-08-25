@@ -299,3 +299,33 @@ def clamp(value, min_value:int|float|None=None, max_value:int|float|None=None):
     if max_value is None:
         max_value = math.inf
     return max(min(value, max_value), min_value)
+
+
+def projection(plane, point):
+    lambda_val = np.dot(point,plane)/np.dot(plane,plane)
+    return point - lambda_val * plane
+
+def projection_2D(plane, points, origin=None, axis_top="z", axis_side="y"):
+    indexes={"x":0, "y":1, "z":2}
+    if origin is None:
+        points = np.array(projection(plane, point) for point in points)
+        origin = multidimensional_com(points)
+    top = np.array([0., 0., 0.])
+    side = np.array([0., 0., 0.])
+    top[indexes[axis_top]] = plane[indexes[axis_top]]
+    side[indexes[axis_side]] = plane[indexes[axis_side]]
+
+    u_dir = side - origin
+    u = u_dir / np.linalg.norm(u_dir)
+    v_dir = top - origin
+    normal_dir = np.cross(u, v_dir)
+    normal = normal_dir / np.linalg.norm(normal_dir)
+    v = np.cross(normal, u)
+
+    for point in points:
+        w = np.array(point) - origin
+
+        u_2d = np.dot(w, u)
+        v_2d = np.dot(w, v)
+
+        yield np.array([u_2d, v_2d])

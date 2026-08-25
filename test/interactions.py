@@ -6,7 +6,13 @@ from src.bioiain.utilities import *
 ########################################################################################################################
 
 from src.bioiain.base import Entity
+from src.bioiain.utilities.maths import *
+from src.bioiain.visualisation.plots import grid2D, close, show
+
 import networkx as nx
+from sklearn.decomposition import PCA
+from sklearn.svm import SVC
+from PIL import Image
 from src.bioiain.visualisation.plots import fig2D, show, close
 
 class PPI(object):
@@ -69,8 +75,62 @@ class PPI(object):
         return self
 
 
+    def generate_DPE(self):
+        """Generate Double Plane Embeddings
+        """
+        log(3, f"Generating DPE for {self}...")
 
-def get_all_PPIs(entity, radius=10, min_contacts=1, intra_asu=True):
+        coords1 = [a.coord for a in self.atoms1]
+        coords2 = [a.coord for a in self.atoms2]
+
+        #print(coords1)
+        #print(coords2)
+        coords = coords1+coords2
+
+        labels = [0] * len(coords1)
+        labels.extend([1] * len(coords2))
+        #print(labels)
+
+        model = SVC(kernel='linear')
+        model.fit(coords, labels)
+
+        plane = model.coef_[0]  # [a, b, c]
+        intercept = model.intercept_[0]  # d
+
+        print("PLANE:", plane)
+        print("INTERCEPT:", intercept)
+
+
+        projections1 = [projection(plane, coord) for coord in coords1]
+        origin = multidimensional_com(projections1)
+        flat1 = projection_2D(plane, projections1, origin=origin)
+
+        projections2 = [projection(plane, coord) for coord in coords2]
+        flat2 = projection_2D(plane, projections2, origin=origin)
+
+        fig, axes = grid2D(1, 2)
+        ax1 = axes[0]
+        ax2 = axes[1]
+
+        print(origin)
+        for c in flat1:
+            ax1.scatter(*c)
+
+        for c in flat2:
+            ax2.scatter(*c)
+
+        fig_folder = os.path.join(TEMP_FOLDER, "plots", "DPEs")
+        os.makedirs(fig_folder, exist_ok=True)
+        fig_path = os.path.join(fig_folder, self.name)
+        fig.savefig(fig_path)
+        print("DPE saved to:", fig_path)
+
+
+
+
+
+def get_all_PPIs(entity, radius=10, min_contacts=1, intra_asu=True, save_graphs=False):
+    log(1, f"Calculating PPIs for {entity}")
     fragment_interactions = []
     interaction_dict = {}
     ppis = []
@@ -127,22 +187,25 @@ def get_all_PPIs(entity, radius=10, min_contacts=1, intra_asu=True):
             #graph.add_edge(k[0], f"op{o}", weight=1)
         #print(graph)
         for n, cc in enumerate(nx.connected_components(graph)):
-            fig, ax = fig2D(figsize=(10,10))
             subgraph = graph.subgraph(cc)
             #print(subgraph)
             #print(subgraph.nodes)
-        
-            nx.draw(subgraph, with_labels=True, font_weight='bold', font_size=8, ax=ax, node_color=dict(subgraph.nodes.data("color")).values())
-            ax.set_aspect('equal')
-            ax.set_title(f"ppi:{o}-{n}")
-            os.makedirs(os.path.join(TEMP_FOLDER,"graphs"), exist_ok=True)
-            fig_path = os.path.join(TEMP_FOLDER,"graphs", f"graph{o}-{n}.png")
-            fig.savefig(fig_path)
-            print("open", fig_path)
+            if save_graphs:
+                fig, ax = fig2D(figsize=(10,10))
+
+
+
+                nx.draw(subgraph, with_labels=True, font_weight='bold', font_size=8, ax=ax, node_color=dict(subgraph.nodes.data("color")).values())
+                ax.set_aspect('equal')
+                ax.set_title(f"ppi:{o}-{n}")
+                os.makedirs(os.path.join(TEMP_FOLDER,"graphs"), exist_ok=True)
+                fig_path = os.path.join(TEMP_FOLDER,"graphs", f"graph{o}-{n}.png")
+                fig.savefig(fig_path)
+                log(3,"Graph saved to:", fig_path)
 
             atoms1 = []
             atoms2 = []
-            print(cc)
+            #print(cc)
             for atom, op, pos in zip(kdtree.atoms, kdtree.operations, kdtree.positions):
                 if (op == 1) and f"{atom.chain}{atom.fragment()}" in cc:
                     atoms1.extend(atom._residue.atoms)
@@ -153,26 +216,23 @@ def get_all_PPIs(entity, radius=10, min_contacts=1, intra_asu=True):
 
             ppi = PPI.from_atoms(atoms1, atoms2, op=o, name=f"{entity.name()}_{o}-{n}")
             ppis.append(ppi)
-            print(ppi)
+            log(2, ppi)
     return ppis
 
 
 def plot_ppis(entity, ppis, execute=False):
     from src.bioiain.visualisation.pymol import PymolScript
     script = PymolScript(name=f"{entity.name()}_ppis", use_temp=True)
-    print(script)
     script.load(entity.path())
-    print(entity)
     entity.show_cvectors(script=script, execute=False)
     for ppi in ppis:
-        print(ppi)
         ppi.subentity1.path()
         script.load(ppi.subentity1.path())
         script.load(ppi.subentity2.path())
         script.group(ppi.name, ppi.name)
     script.orient()
     script.write_script()
-    if execute
+    if execute:
         script.execute()
 
 
@@ -184,10 +244,16 @@ if __name__ == "__main__":
     entity = base.entity.Entity.from_file("./1M2Z.cif")
     entity = entity.fragment(in_place=True)
 
+    log("header", entity)
 
-    ppis = get_all_PPIs(entity, min_contacts=2, intra_asu=True)
+    ppis = get_all_PPIs(entity, min_contacts=3, intra_asu=True, save_graphs=False)
 
-    plot_ppis(entity, ppis, execute=True)
+    if "--pymol" in sys.argv:
+        plot_ppis(entity, ppis, execute=True)
+
+    log(1, "Generating Double Plane Embeddings...")
+    for ppi in ppis:
+        ppi.generate_DPE()
 
 
 

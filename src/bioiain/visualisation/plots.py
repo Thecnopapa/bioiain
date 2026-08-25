@@ -82,8 +82,11 @@ def grid2D(rows, columns, height=5, width=5, as_grid=False):
     if as_grid:
         return fig, grid_axes
     axes = []
-    for row in grid_axes:
-        axes.extend(row)
+    try:
+        for row in grid_axes:
+            axes.extend(row)
+    except TypeError:
+        axes = grid_axes
 
     return fig, axes
 
