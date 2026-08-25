@@ -1259,7 +1259,7 @@ class Entity(object):
                 gif_path = None
                 if gif:
                     gif_path = os.path.join(self.folder(), "gifs", f"{self.full_id()}_{pp}")
-                from src.bioiain.visualisation import voxels3d
+                from ..utilities.visualisation import voxels3d
                 voxels3d(value_grid, count_grid, show_plot=show_plot, title=pp, gif_path=gif_path, **kwargs)
 
 
@@ -1291,10 +1291,10 @@ class Entity(object):
                 log("warning", "Failed to obtain entire completeness list from residues")
                 self._compactness[label] = None
         if force or self._compactness[label] is None:
-            self._calculate_compactness(with_symmetry=with_symmetry, **kwargs)
+            self = self._calculate_compactness(with_symmetry=with_symmetry, **kwargs)
 
 
-        return self._compactness
+        return self, self._compactness
 
     def _calculate_compactness(self, radius=10, plot=False, session=False, with_symmetry=True, export=True):
         if with_symmetry:
@@ -1395,5 +1395,5 @@ class Entity(object):
         if export:
             self.export()
         log(3, f"{label} calculated")
-        return self._compactness[label]
+        return self
 
