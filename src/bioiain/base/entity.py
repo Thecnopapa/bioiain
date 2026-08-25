@@ -1294,7 +1294,7 @@ class Entity(object):
             self = self._calculate_compactness(with_symmetry=with_symmetry, **kwargs)
 
 
-        return self, self._compactness
+        return self, self._compactness[label]
 
     def _calculate_compactness(self, radius=10, plot=False, session=False, with_symmetry=True, export=True):
         if with_symmetry:
