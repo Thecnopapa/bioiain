@@ -1275,16 +1275,16 @@ class Entity(object):
         return self._kdtrees["ca"]
 
 
-    def compactness(self, force=False, with_symmetry=True, **kwargs):
+    def compactness(self, force=False, with_symmetry=True, vectors=False, **kwargs):
         if with_symmetry:
             label = "rel_compactness"
         else:
             label = "abs_compactness"
-        if (not force) and self.has_flag(f"{label}_calculated", True):
+        if (not force) and (not vectors) and self.has_flag(f"{label}_calculated", True):
             try:
                 self._compactness[label] = []
                 for res in self.residues():
-                    self._compactness[label].append(res.ca.get_misc(label))
+                    self._compactness[label].append({"residue":res, "atom":res.ca, "value":res.ca.get_misc(label)})
                 log(2, "Compactness already generated")
 
             except:
@@ -1327,7 +1327,9 @@ class Entity(object):
         assert max_frags is not None
 
 
-        all_compactness = []
+        #all_compactness = []
+        #all_vectors = []
+        data = []
         rn = -1
         for n, k in enumerate(kdtree):
             if k["op"] != 1:
@@ -1343,8 +1345,10 @@ class Entity(object):
             residue = residues[rn]
             #print(n, rn, atom, residue)
             assert atom.resseq == residue.resseq, f"{atom.resseq}, {residue.resseq}"
-
+            data.append({"atom":atom, "residue":residue, "resseq":atom.resseq})
             neighs = list(kdtree.radius(k["coord"], radius=radius)[0])
+            data[-1]["nn"] = neighs
+            data[-1]["neighbours"] = [kdtree.atom_of(nn) for nn in neighs]
             # print(neighs)
             final_vector = np.array([0., 0., 0.])
             valid_nn = 0
@@ -1359,14 +1363,17 @@ class Entity(object):
                 # ax.plot(*line(k["coord"], kdtree.coord_of(nn)), c=color)
                 final_vector += np.array(vector(coord, kdtree.coord_of(nn)))
 
-
+            data[-1]["valid_nn"] = valid_nn
             if valid_nn > 0:
                 final_vector /= valid_nn
                 final_vector *= -1
                 compactness = length(final_vector)
                 # print(final_vector, compactness)
                 vector_end = coord + final_vector
-                all_compactness.append(compactness)
+                #all_compactness.append(compactness)
+                #all_vectors.append(final_vector)
+                data[-1]["vector"] = final_vector
+                data[-1]["value"] = compactness
                 residue.set_misc(label, float(compactness))
                 if  plot:
                     ccol = plasma(compactness, scale=10)
@@ -1381,7 +1388,8 @@ class Entity(object):
                     script.line(name=label, sele1=a1, coord2=vector_end)
                     script.color(r1, color=hexccol)
             else:
-                all_compactness.append(10)
+                data[-1]["vector"] = None
+                data[-1]["value"] = 10
 
 
 
@@ -1395,7 +1403,7 @@ class Entity(object):
         if session:
             script.compile()
             script.execute()
-        self._compactness[label] = all_compactness
+        self._compactness[label] = data
         if export:
             self.export()
         log(3, f"{label} calculated")
