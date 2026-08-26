@@ -1348,7 +1348,7 @@ class Entity(object):
             data.append({"atom":atom, "residue":residue, "resseq":atom.resseq})
             neighs = list(kdtree.radius(k["coord"], radius=radius)[0])
             data[-1]["nn"] = neighs
-            data[-1]["neighbours"] = [kdtree.atom_of(nn) for nn in neighs]
+            data[-1]["neighbours"] = [kdtree[nn] for nn in neighs]
             # print(neighs)
             final_vector = np.array([0., 0., 0.])
             valid_nn = 0
