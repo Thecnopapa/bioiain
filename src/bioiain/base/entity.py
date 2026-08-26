@@ -1380,12 +1380,16 @@ class Entity(object):
                     a1 = f"({r1} and n. ca)"
                     script.line(name=label, sele1=a1, coord2=vector_end)
                     script.color(r1, color=hexccol)
+            else:
+                all_compactness.append(10)
+
 
 
         self.set_flag(f"{label}_calculated", True)
 
         if plot:
             show()
+            input("Press Enter to CONTINUE")
             close(fig)
 
         if session:
