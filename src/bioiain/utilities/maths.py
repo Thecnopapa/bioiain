@@ -308,7 +308,8 @@ def projection(plane, point):
 def projection_2D(plane, points, origin=None, axis_top="z", axis_side="y"):
     indexes={"x":0, "y":1, "z":2}
     if origin is None:
-        points = np.array(projection(plane, point) for point in points)
+        print(plane)
+        points = np.array([projection(plane, point) for point in points])
         origin = multidimensional_com(points)
     top = np.array([0., 0., 0.])
     side = np.array([0., 0., 0.])
