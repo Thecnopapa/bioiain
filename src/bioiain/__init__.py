@@ -13,7 +13,7 @@ log(1, "FD:", FD)
 log(1, "WD:", WD)
 log(1, f"$", *sys.argv)
 
-
+from . import tools
 
 __all__ = ["base", "utilities", "visualisation"]
 
