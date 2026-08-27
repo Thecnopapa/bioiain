@@ -663,7 +663,7 @@ class Entity(object):
                 log(3, "Calculating export path...")
             return base_path+".cif"
         if verbose:
-            log(2, f"Exporting: {self} to {base_path}")
+            log(2, f"Exporting: {self} to {base_path}.cif")
         if self.has_flag("is_fractional", True):
             log("Warning", "A fractional entity was about to be exported!")
             log("Warning", "An orthogonal copy was made for you and exported instead! (only for atoms)")
@@ -1296,7 +1296,7 @@ class Entity(object):
 
         return self, self._compactness[label]
 
-    def _calculate_compactness(self, radius=10, plot=False, session=False, with_symmetry=True, export=True):
+    def _calculate_compactness(self, radius=10, plot=False, session=False, with_symmetry=True, export=True, same_fragment=True):
         if with_symmetry:
             label = "rel_compactness"
         else:
@@ -1348,20 +1348,24 @@ class Entity(object):
             data.append({"atom":atom, "residue":residue, "resseq":atom.resseq})
             neighs = list(kdtree.radius(k["coord"], radius=radius)[0])
             data[-1]["nn"] = neighs
-            data[-1]["neighbours"] = [kdtree[nn] for nn in neighs]
+
             # print(neighs)
             final_vector = np.array([0., 0., 0.])
             valid_nn = 0
+            valid_neighs = []
             for nn in neighs:
                 if n == nn:
                     # log("warning", "Same atom:", n, nn)
                     continue
-                if (kdtree.atom_of(nn).get_misc("fragment", None) == fragment) and (kdtree.pos_of(nn) in [None, 1]):
-                    # log("warning", "Same fragment:", fragment,  kdtree.atom_of(nn).get_misc("fragment", None),)
-                    continue
+                if not same_fragment:
+                    if (kdtree.atom_of(nn).get_misc("fragment", None) == fragment) and (kdtree.pos_of(nn) in [None, 1]):
+                        # log("warning", "Same fragment:", fragment,  kdtree.atom_of(nn).get_misc("fragment", None),)
+                        continue
                 valid_nn += 1
+                valid_neighs.append(nn)
                 # ax.plot(*line(k["coord"], kdtree.coord_of(nn)), c=color)
                 final_vector += np.array(vector(coord, kdtree.coord_of(nn)))
+            data[-1]["neighbours"] = [kdtree[nn] for nn in valid_neighs]
 
             data[-1]["valid_nn"] = valid_nn
             if valid_nn > 0:
