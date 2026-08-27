@@ -395,8 +395,9 @@ class Atom(PseudoAtom):
 
     def set_coord(self, coord):
         for t in self:
-            t.coord = float(coord)
-        return self.b
+            t.coord = tuple(coord)
+            t.x, t.y, t.z = t.coord
+        return self
 
 
     def set_misc(self, label, value):

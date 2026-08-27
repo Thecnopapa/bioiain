@@ -208,6 +208,12 @@ class PymolScript(object):
         self.commands.append(c)
         return c
 
+    def raw(self, line, *args, **kwargs):
+        if type(line) is str:
+            line = [line]
+        self.add(", ".join(line), is_cmd=False, *args, **kwargs)
+        return self
+
 
 
 
