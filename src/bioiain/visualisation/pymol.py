@@ -14,7 +14,7 @@ pymol_colours = ['green', 'cyan', 'red', 'yellow', 'violet','blue',
 
 
 
-def quick_display(entity) -> str:
+def quick_display(entity, execute=True) -> str:
     """
     Displays entity or list of entities with PyMol. Exports entities to ./.temp and saves generated script in the same
     directory as quick_display.pml . Entities are named as N_[entity_id] following input order.
@@ -26,11 +26,12 @@ def quick_display(entity) -> str:
     if type(entity) is not list:
         entity = [entity]
     for n, entity in enumerate(entity):
-        name = "{}_{}".format(n, entity.id)
+        name = "{}_{}".format(n, entity.name())
         script.load_entity(entity, name, overwrite=False)
-    script.write_script(".temp")
-    script.execute()
-    return script.path
+    script.write_script()
+    if execute:
+        script.execute()
+    return script
 
 
 
@@ -67,6 +68,7 @@ class PymolScript(object):
         self.commands = []
         self.path = None
         self.session_path = None
+        log(1, f"New: {self}")
 
 
     def __repr__(self):
@@ -301,7 +303,7 @@ class PymolScript(object):
         self.add(fun, self._to_str(representation), sele, **kwargs)
         return self
 
-    def load_entity(self, entity, name:str|None=None, overwrite:bool=True) -> str:
+    def load_entity(self, entity, name:str|None=None, overwrite:bool=True, minimal=True) -> str:
         """
         Adds command to load file from entity. Entity is exported to t/mp/bioiain/pymol as of the cwd.
         :param entity:
@@ -317,7 +319,8 @@ class PymolScript(object):
                 n += 1
 
         folder = self.subfolder
-        path = entity.export(folder, name, data=True)[0]
+        path = entity.export(minimal=minimal, target_folder=folder)
+        log(2, "Entity saved to:", path)
         self.load(path, name)
         return name
 
