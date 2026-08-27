@@ -1,5 +1,4 @@
 import os, json, time, sys
-from .logging import log
 
 
 # Miscellaneous
@@ -14,6 +13,12 @@ class DeprecatedModule(Exception):
 class MissingProgram(Exception):
     pass
 
+# Module loading
+class ModuleNotEnabled(Exception):
+    pass
+
+class ModuleLoadError(Exception):
+    pass
 
 
 #PDB download related

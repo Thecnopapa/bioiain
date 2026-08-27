@@ -1,9 +1,8 @@
 import os, json
 import numpy as np
 
-from ..base import Structure, Chain, Residue
-from ..utilities import *
-from ..utilities.exceptions import *
+from base import Structure, Chain, Residue
+
 
 
 class Fragment(Chain):

@@ -1,6 +1,6 @@
 
 from unidecode import unidecode
-from ..utilities.logging import log
+from logging import log
 
 
 

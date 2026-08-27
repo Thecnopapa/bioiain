@@ -1,4 +1,3 @@
-from ..utilities.exceptions import *
 from .entity import Entity
 from .residue import Residue
 

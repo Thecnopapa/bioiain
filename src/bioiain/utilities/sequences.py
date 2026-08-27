@@ -1,8 +1,7 @@
 import os, sys, json, subprocess, shutil
 
-from ..utilities.exceptions import *
+from .exceptions import *
 from .logging import log
-from .. import TEMP_FOLDER, SUBDIR_NAME
 import polars as pl
 
 
@@ -222,6 +221,7 @@ class MSA(object):
 
 class MMSEQS2(MSA):
     def __init__(self, *args, mmseqs_cmd="mmseqs", db_name=None, verbosity=1, folder=None, force=False, **kwargs):
+        from . import TEMP_FOLDER, SUBDIR_NAME
         super().__init__(*args, **kwargs)
         self.fasta.rewrite(key_start=">")
         self.tmp_folder = os.path.join(TEMP_FOLDER, "mmseqs2")

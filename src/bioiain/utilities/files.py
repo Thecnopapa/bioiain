@@ -1,11 +1,10 @@
 import os, sys, shutil, json, requests, time
 from io import TextIOWrapper
 
-from . import string_to_list, clean_string
+from .strings import string_to_list, clean_string
 from .logging import log
-from .. import WD, SUBDIR_NAME, TEMP_FOLDER
+from base import Entity
 from itertools import accumulate
-from ..base import Entity
 
 rcsb_pdb_url = "https://files.rcsb.org/download/{}.pdb"
 rcsb_cif_url = "https://files.rcsb.org/download/{}.cif"

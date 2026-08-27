@@ -1,7 +1,7 @@
 import os, sys, shutil, time, datetime, requests, curses, math, threading
 import numpy as np
 
-from .. import SUBDIR_NAME, TEMP_FOLDER, WD, FD
+
 
 class Log(object):
     def __init__(self):

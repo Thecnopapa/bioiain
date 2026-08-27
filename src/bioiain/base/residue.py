@@ -1,8 +1,6 @@
 
-from ..utilities.exceptions import *
 from .atom import Atom
 from .ligand import Ligand, Water
-from ..utilities import d3to1
 
 
 

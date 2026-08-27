@@ -1,7 +1,9 @@
-
-from ..utilities.logging import log
-
-import torch, sys
+import sys
+from ..utilities import *
+try:
+    import torch
+except:
+    raise NotEnabledError("module bioiain.machine is disabled (no torch)")
 
 DEVICE = "cpu"
 DEVICE_N = None

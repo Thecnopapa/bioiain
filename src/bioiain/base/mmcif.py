@@ -1,9 +1,5 @@
 import os, json, requests
 
-from ..utilities.strings import *
-from ..utilities.exceptions import *
-from .. import SUBDIR_NAME
-
 
 def fetchPDB(code:str, target_folder:str|None=None, data_folder_name:str|None=None, dataset:str|None=None, base_url:str|None=None, file_format:str="cif", force=False):
 

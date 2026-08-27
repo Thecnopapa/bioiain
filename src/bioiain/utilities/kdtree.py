@@ -1,7 +1,6 @@
 import os, sys, math, json
 import numpy as np
 
-from . import log
 from sklearn.neighbors import KDTree
 
 

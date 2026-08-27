@@ -1,5 +1,5 @@
 import os, sys, json, asyncio, time, threading, ctypes, psutil, platform
-from ..utilities.logging import log
+from .logging import log
 
 N_THREADS = 0
 if "--threads" in sys.argv:
