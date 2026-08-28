@@ -42,6 +42,22 @@ def plasma(value, scale=256, as_hex=False, as_pymol_hex=False, alpha:float|None=
     col = process_rgba(col, alpha=alpha, as_hex=as_hex, as_pymol_hex=as_pymol_hex)
     return col
 
+class Plasma():
+    def __init__(scale=256, as_hex=False, as_pymol_hex=False, alpha:float|None=None):
+        self.scale=scale
+        self.as_hex=as_hex
+        self.as_pymol_hex=as_pymol_hex
+        self.alpha=alpha
+
+    def __call__(self, scale=None, as_hex=None, as_pymol_hex=None, alpha:float|None=None):
+        if scale is None:
+            scale=self.scale
+        if as_hex is None:
+            as_hex=self.as_hex
+        if as_pymol_hex is None:
+            as_pymol_hex
+
+
 
 def traffic(value, scale=256, as_hex=False, as_pymol_hex=False, alpha:float|None=None):
     cm = mpl.colormaps["RdYlGn"]
