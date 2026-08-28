@@ -330,3 +330,7 @@ def projection_2D(plane, points, origin=None, axis_top="z", axis_side="y"):
         v_2d = np.dot(w, v)
 
         yield np.array([u_2d, v_2d])
+
+
+def normal_pdf(x, mean, var):
+    return np.exp(-(x - mean)**2 / (2*var))

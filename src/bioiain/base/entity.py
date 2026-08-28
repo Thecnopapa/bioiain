@@ -1291,16 +1291,18 @@ class Entity(object):
                 log("warning", "Failed to obtain entire completeness list from residues")
                 self._compactness[label] = None
         if force or self._compactness[label] is None:
-            self = self._calculate_compactness(with_symmetry=with_symmetry, **kwargs)
+            self, plot = self._calculate_compactness(with_symmetry=with_symmetry, **kwargs)
 
 
-        return self, self._compactness[label]
+        return self, self._compactness[label], plot
 
-    def _calculate_compactness(self, radius=10, plot=False, session=False, with_symmetry=True, export=True, same_fragment=True):
+    def _calculate_compactness(self, radius=10, plot=False, session=False, with_symmetry=True, export=True, same_fragment=True, return_plot=False):
         if with_symmetry:
             label = "rel_compactness"
         else:
             label = "abs_compactness"
+        if return_plot:
+            plot=True
         log(2, f"Calculating {label}...")
         kdtree = self.ca_kdtree(auto_parse_symmetry=with_symmetry)
         residues = self.residues()
@@ -1400,9 +1402,10 @@ class Entity(object):
         self.set_flag(f"{label}_calculated", True)
 
         if plot:
-            show()
-            input("Press Enter to CONTINUE")
-            close(fig)
+            if not return_plot:
+                show()
+                input("Press Enter to CONTINUE")
+                close(fig)
 
         if session:
             script.compile()
@@ -1411,5 +1414,7 @@ class Entity(object):
         if export:
             self.export()
         log(3, f"{label} calculated")
-        return self
+        if return_plot:
+            return self, (fig, ax)
+        return self, None
 
