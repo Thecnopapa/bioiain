@@ -305,16 +305,22 @@ def projection(plane, point):
     lambda_val = np.dot(point,plane)/np.dot(plane,plane)
     return point - lambda_val * plane
 
-def projection_2D(plane, points, origin=None, axis_top="z", axis_side="y"):
+def plane_directional_vectors(plane,axis_top="z", axis_side="y"):
     indexes={"x":0, "y":1, "z":2}
-    if origin is None:
-        print(plane)
-        points = np.array([projection(plane, point) for point in points])
-        origin = multidimensional_com(points)
     top = np.array([0., 0., 0.])
     side = np.array([0., 0., 0.])
     top[indexes[axis_top]] = plane[indexes[axis_top]]
     side[indexes[axis_side]] = plane[indexes[axis_side]]
+    return side, top
+
+def projection_2D(plane, points, origin=None, axis_top="z", axis_side="y"):
+
+    if origin is None:
+        print(plane)
+        points = np.array([projection(plane, point) for point in points])
+        origin = multidimensional_com(points)
+
+    side, top, = plane_directional_vectors(plane, axis_top=axis_top, axis_side=axis_side)
 
     u_dir = side - origin
     u = u_dir / np.linalg.norm(u_dir)
