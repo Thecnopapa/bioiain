@@ -44,7 +44,7 @@ class PymolScript(object):
     :param name: Name of the script. Will de set as a filename. Default is ".temp_pymol_script".
     :return: PymolScript Object.
     """
-    def __init__(self, name="pymol_script", folder:str|None=None, tmp_folder=None, pymol_path = "pymol", use_temp=False):
+    def __init__(self, name="pymol_script", folder:str|None=None, tmp_folder=None, pymol_path = "pymol", use_temp=False, allow_plugins=False):
         self.pymol_path = pymol_path
         self._bioiain = "bioiain"
         self.name = name
@@ -88,12 +88,13 @@ class PymolScript(object):
         :param kwargs: Same as args but with keywords.
         :return: Command object.
         """
-        def __init__(self, fun:str, *args, to:str=None, is_cmd=True, **kwargs):
+        def __init__(self, fun:str, *args, to:str=None, is_cmd=True, is_fun=True, **kwargs):
             self.fun = fun
             self.args = args
             self.kwargs = kwargs
             self.to = to
             self.is_cmd = is_cmd
+            self.is_fun = is_fun
             self.cmd = None
 
         def __repr__(self):
@@ -112,7 +113,15 @@ class PymolScript(object):
             else:
                 arg_str = ", ".join(self.args)
             kwarg_str = ", ".join([f"{k}={v}" for k, v in self.kwargs.items()])
-            c = "{}({},{})".format(self.fun, arg_str, kwarg_str)
+            arglist = []
+            if len(arg_str) > 0:
+                arglist.append(arg_str)
+            if len(kwarg_str) > 0:
+                arglist.append(kwarg_str)
+            if self.is_fun:
+                c = "{}({})".format(self.fun, ", ".join(arglist))
+            else:
+                c = "{} {}".format(self.fun, ", ".join(arglist))
             if self.is_cmd:
                 c = "cmd."+ c
             if self.to is not None:
@@ -160,7 +169,13 @@ class PymolScript(object):
             self.write_script()
         if pymol_path is None:
             pymol_path = self.pymol_path
-        cmd = [pymol_path, extra_options]
+        cmd = [pymol_path]
+        if extra_options is not None:
+            if type(extra_options) is str:
+                if len(extra_options) > 0:
+                    cmd.append(extra_options)
+            elif type(extra_options) is list:
+                cmd.extend(extra_options)
 
         if full_screen:
             cmd.extend(["-x", "-e"])
