@@ -425,10 +425,10 @@ class PymolScript(object):
         self.add(fun, *args, **kwargs)
         return self
 
-    def pseudoatom(self, name="tmp", coord=(0,0,0), **kwargs) -> str:
+    def pseudoatom(self, name="tmp", coord=(0,0,0), atomname="PA", **kwargs) -> str:
         fun = "pseudoatom"
         name = self._to_str(name)
-        self.add(fun, name, pos=coord, **kwargs)
+        self.add(fun, name, pos=coord, name=atomname **kwargs)
         return name
 
     def line(self, name="line", sele1=None, sele2=None, coord1=(0,0,0), coord2=(0,0,0), show_distance=False, **kwargs) -> str:
