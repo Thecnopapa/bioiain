@@ -226,7 +226,7 @@ class PymolScript(object):
     def raw(self, line, *args, **kwargs):
         if type(line) is str:
             line = [line]
-        self.add(", ".join(line), is_cmd=False, *args, **kwargs)
+        self.add(", ".join(line), is_cmd=False, is_fun=False *args, **kwargs)
         return self
 
 
