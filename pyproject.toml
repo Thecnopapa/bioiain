@@ -15,6 +15,7 @@ dependencies = [
     "scikit-learn",
     "scipy",
     "networkx[default]",
+    "sympy",
 
 
     "typing-extensions",

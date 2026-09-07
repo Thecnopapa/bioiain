@@ -9,6 +9,7 @@ matplotlib >= 3.10.8 # idk why
 scikit-learn >= 1.8.0 # sklearn.metrics.confusion_matrix (I think)
 scipy >= 1.17.0
 networkx[default]
+sympy
 
 # Critical ############################################################################################################
 typing-extensions >= 4.15.0

@@ -1,6 +1,8 @@
 import os, sys, math, json
 import numpy as np
 from types import GeneratorType
+import sympy
+from sympy import pi
 
 
 
@@ -300,12 +302,40 @@ def clamp(value, min_value:int|float|None=None, max_value:int|float|None=None):
         max_value = math.inf
     return max(min(value, max_value), min_value)
 
+# New planes
+class Plane(sympy.Plane):
+    pass
 
-def projection(plane, point):
+def projection2D(point, plane, compass=None):
+    from sympy.abc import t, u, v
+    if compass is None:
+        compass = plane.arbitrary_point(t)
+    if type(point[0]) in [list, tuple, np.ndarray]:
+        return [projection2D(pp, plane, compass=compass) for pp in point]
+    p = plane.projection(sympy.Point3D(point))
+    print("p", [float(c) for c in p.coordinates])
+
+    north = compass.subs(t, 0)
+    east = compass.subs(t, pi/2)
+    #TODO: Work this out
+    print("north", [float(c) for c in north.coordinates])
+    print("east", [float(c) for c in east.coordinates])
+    pp = plane.parameter_value(p, u=u)
+    print(pp)
+    print("pp", [float(c) for c in pp.values()])
+    return [float(c) for c in pp.coordinates]
+
+
+
+
+
+
+# Old planes
+def _deprecated_projection(plane, point):
     lambda_val = np.dot(point,plane)/np.dot(plane,plane)
     return point - lambda_val * plane
 
-def plane_directional_vectors(plane,axis_top="z", axis_side="y"):
+def _deprecated_plane_directional_vectors(plane,axis_top="z", axis_side="y"):
     indexes={"x":0, "y":1, "z":2}
     top = np.array([0., 0., 0.])
     side = np.array([0., 0., 0.])
@@ -313,7 +343,7 @@ def plane_directional_vectors(plane,axis_top="z", axis_side="y"):
     side[indexes[axis_side]] = plane[indexes[axis_side]]
     return side, top
 
-def projection_2D(plane, points, origin=None, axis_top="z", axis_side="y"):
+def _deprecated_projection_2D(plane, points, origin=None, axis_top="z", axis_side="y"):
 
     if origin is None:
         print(plane)
@@ -338,5 +368,5 @@ def projection_2D(plane, points, origin=None, axis_top="z", axis_side="y"):
         yield np.array([u_2d, v_2d])
 
 
-def normal_pdf(x, mean, var):
+def _deprecated_normal_pdf(x, mean, var):
     return np.exp(-(x - mean)**2 / (2*var))
