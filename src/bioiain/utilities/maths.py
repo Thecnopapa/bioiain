@@ -304,26 +304,52 @@ def clamp(value, min_value:int|float|None=None, max_value:int|float|None=None):
 
 # New planes
 class Plane(sympy.Plane):
-    pass
 
-def projection2D(point, plane, compass=None):
+    def compass(self):
+        from sympy.abc import t
+        if not hasattr(self, "_compass"):
+            self._compass = self.arbitrary_point(t)
+            origin = self.p1
+            self._north = self._compass.subs(t, pi/2)
+            self._east = self._compass.subs(t, pi)
+
+        return self._compass, self._north, self._east
+
+
+
+def projection2D(points, plane):
     from sympy.abc import t, u, v
-    if compass is None:
-        compass = plane.arbitrary_point(t)
-    if type(point[0]) in [list, tuple, np.ndarray]:
-        return [projection2D(pp, plane, compass=compass) for pp in point]
-    p = plane.projection(sympy.Point3D(point))
-    print("p", [float(c) for c in p.coordinates])
+    compass, north, east = plane.compass()
+    print("O=", tuple([float(c) for c in plane.p1.coordinates]))
+    print("N=", tuple([float(c) for c in north.coordinates]))
+    print("E=", tuple([float(c) for c in east.coordinates]))
 
-    north = compass.subs(t, 0)
-    east = compass.subs(t, pi/2)
-    #TODO: Work this out
-    print("north", [float(c) for c in north.coordinates])
-    print("east", [float(c) for c in east.coordinates])
-    pp = plane.parameter_value(p, u=u)
+    if type(points[0]) in [list, tuple, np.ndarray]:
+        return [projection2D(point, plane) for point in points]
+
+    point = points
+    print("pp=", tuple([float(c) for c in point]))
+    p = plane.projection(sympy.Point3D(point))
+    print("P=", tuple([float(c) for c in p.coordinates]))
+
+    vector = p - plane.p1
+    print("vector=", tuple([float(c) for c in vector.coordinates]))
+    x_2d = np.dot(vector, north - plane.p1)
+    y_2d = np.dot(vector, east - plane.p1)
+    pp = (float(x_2d), float(y_2d))
+    print("PP=", pp)
+    return pp
+
+    pp = plane.parameter_value(p, u, v)
     print(pp)
-    print("pp", [float(c) for c in pp.values()])
-    return [float(c) for c in pp.coordinates]
+    if type(pp) is dict:
+        print("PP=", tuple([float(c) for c in pp.values()]))
+        pp = tuple([float(c) for c in pp.values()])
+    else:
+        print("PP is origin:")
+        print("PP=", tuple([float(c) for c in pp.coordinates]))
+        pp = tuple([float(c) for c in pp.coordinates])
+    return pp
 
 
 
