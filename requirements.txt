@@ -23,7 +23,7 @@ psutil
 # ML ###################################################################################################################
 torch >= 2.6 # install version for each machine (Below 2.6 cant load models, CVE-2025-32434)
 torchvision # install version for each machine idk if really needed
-transformers
+transformers>=5.10.0 # Vulnerability
 tensorboard
 
 

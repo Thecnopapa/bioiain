@@ -1308,17 +1308,17 @@ class Entity(object):
         residues = self.residues()
         self.set_misc(label, None)
 
-        from src.bioiain.visualisation.plots import plasma
+        from ..visualisation.plots import plasma
 
         if plot:
             log(2, "Including 3D mpl plot")
-            from src.bioiain.visualisation.plots import fig3D, close, show, line
+            from ..visualisation.plots import fig3D, close, show, line
             fig, ax = fig3D()
             #print(fig, ax)
 
         if session:
             log(2, "Including pymol session")
-            from src.bioiain.visualisation.pymol import PymolScript
+            from ..visualisation.pymol import PymolScript
             script = PymolScript(name=f"{label}_{self.name()}", folder = self.folder())
             minimal = self.path(minimal=True)
             entity_name = script.load(minimal)
