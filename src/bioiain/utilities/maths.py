@@ -309,48 +309,63 @@ class Plane(sympy.Plane):
         from sympy.abc import t
         if not hasattr(self, "_compass"):
             self._compass = self.arbitrary_point(t)
-            origin = self.p1
-            self._north = self._compass.subs(t, pi/2)
-            self._east = self._compass.subs(t, pi)
+            self._north = vector(self.origin(), self._compass.subs(t, pi/2).coordinates)
+            self._east = vector(self.origin(), self._compass.subs(t, pi).coordinates)
 
-        return self._compass, self._north, self._east
+        return self._compass, tuple([float(c) for c in self._north]), tuple([float(c) for c in self._east])
+
+    def origin(self):
+        return tuple([float(c) for c in self.p1.coordinates])
+
+    def project(self, points, flat=True):
+
+        from sympy.abc import t, u, v
+        compass, north, east = self.compass()
+        #print("O=", tuple([float(c) for c in plane.p1.coordinates]))
+        #print("N=", tuple([float(c) for c in north.coordinates]))
+        #print("E=", tuple([float(c) for c in east.coordinates]))
+
+        if type(points[0]) in [list, tuple, np.ndarray]:
+            return [self.project(point, flat=flat) for point in points]
+
+        #print("pp=", tuple([float(c) for c in points]))
+        p = self.projection(sympy.Point3D(points))
+        #print("P=", tuple([float(c) for c in p.coordinates]))
+        if flat:
+            v = p - self.p1
+            #print("vector=", tuple([float(c) for c in v.coordinates]))
+            x_2d = np.dot(v, north)
+            y_2d = np.dot(v, east)
+            pp = (float(x_2d), float(y_2d))
+            #print("PP=", pp)
+        else:
+            pp = tuple([float(c) for c in p.coordinates])
+        return pp
+
+    def to3D(self, x_2d, y_2d):
+
+        _, north, east = self.compass()
+
+        x, y, z = np.array(self.origin()) + np.array(scale(north,x_2d)) + np.array(scale(east, y_2d))
+
+        return x, y, z
 
 
 
-def projection2D(points, plane):
-    from sympy.abc import t, u, v
-    compass, north, east = plane.compass()
-    print("O=", tuple([float(c) for c in plane.p1.coordinates]))
-    print("N=", tuple([float(c) for c in north.coordinates]))
-    print("E=", tuple([float(c) for c in east.coordinates]))
 
-    if type(points[0]) in [list, tuple, np.ndarray]:
-        return [projection2D(point, plane) for point in points]
+    def meshgrid_to3D(self, xx, yy):
+        x3 = np.zeros_like(xx.flatten())
+        y3 = np.zeros_like(x3)
+        z3 = np.zeros_like(x3)
 
-    point = points
-    print("pp=", tuple([float(c) for c in point]))
-    p = plane.projection(sympy.Point3D(point))
-    print("P=", tuple([float(c) for c in p.coordinates]))
+        for n, (x, y) in enumerate(zip(xx.flatten(), yy.flatten())):
+            x3[n], y3[n], z3[n] = self.to3D(x, y)
 
-    vector = p - plane.p1
-    print("vector=", tuple([float(c) for c in vector.coordinates]))
-    x_2d = np.dot(vector, north - plane.p1)
-    y_2d = np.dot(vector, east - plane.p1)
-    pp = (float(x_2d), float(y_2d))
-    print("PP=", pp)
-    return pp
+        x3 = x3.reshape(xx.shape)
+        y3 = y3.reshape(xx.shape)
+        z3 = z3.reshape(xx.shape)
 
-    pp = plane.parameter_value(p, u, v)
-    print(pp)
-    if type(pp) is dict:
-        print("PP=", tuple([float(c) for c in pp.values()]))
-        pp = tuple([float(c) for c in pp.values()])
-    else:
-        print("PP is origin:")
-        print("PP=", tuple([float(c) for c in pp.coordinates]))
-        pp = tuple([float(c) for c in pp.coordinates])
-    return pp
-
+        return x3, y3, z3
 
 
 
