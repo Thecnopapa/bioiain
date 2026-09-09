@@ -153,6 +153,9 @@ class Residue(object):
     def get_misc(self, key, keyerror="undefined"):
         return self.ca.get_misc(key, keyerror=keyerror)
 
+    def misc(self):
+        return self.ca.misc
+
     def set_bfactor(self, bfactor):
         for a in self.atoms:
             a.set_bfactor(bfactor)
