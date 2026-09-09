@@ -303,50 +303,73 @@ def clamp(value, min_value:int|float|None=None, max_value:int|float|None=None):
     return max(min(value, max_value), min_value)
 
 # New planes
-class Plane(sympy.Plane):
+class Plane():
 
-    def compass(self):
+    def __init__(self, origin, normal_vector):
+        self.normal = np.array(normal_vector)
+        self.normal = self.normal / np.linalg.norm(self.normal)
+        self.origin = np.array(origin)
+
+    def compass(self, r=1):
         from sympy.abc import t
-        if not hasattr(self, "_compass"):
-            self._compass = self.arbitrary_point(t)
-            self._north = vector(self.origin(), self._compass.subs(t, pi/2).coordinates)
-            self._east = vector(self.origin(), self._compass.subs(t, pi).coordinates)
+        if not hasattr(self, "_north"):
+            #o = self.origin
+            n = self.normal
+            if abs(n[0]) > abs(n[1]):
+                v = np.array([-n[2], 0.0, n[0]])
+            else:
+                v = np.array([0.0, -n[2], n[1]])
+            v = v / np.linalg.norm(v)
+            u = np.cross(n, v)
+            self._north = r * (v * np.cos(np.pi/2) + u * np.sin(np.pi/2))
+            self._east = r * (v * np.cos(np.pi) + u * np.sin(np.pi))
+            #print("O=", tuple([float(c) for c in self.origin]))
+            #print("N=", tuple([float(c) for c in self._north]))
+            #print("E=", tuple([float(c) for c in self._east]))
+        return self._north, self._east
 
-        return self._compass, tuple([float(c) for c in self._north]), tuple([float(c) for c in self._east])
 
-    def origin(self):
-        return tuple([float(c) for c in self.p1.coordinates])
+
+    def projection_fast(self, point):
+        point = np.array(point)
+        normal = self.normal
+        v = point - self.origin
+        d = np.dot(v, normal)
+        p = point - d * normal
+        return p
+
 
     def project(self, points, flat=True):
 
         from sympy.abc import t, u, v
-        compass, north, east = self.compass()
+        north, east = self.compass()
         #print("O=", tuple([float(c) for c in plane.p1.coordinates]))
         #print("N=", tuple([float(c) for c in north.coordinates]))
         #print("E=", tuple([float(c) for c in east.coordinates]))
 
         if type(points[0]) in [list, tuple, np.ndarray]:
-            return [self.project(point, flat=flat) for point in points]
+            return np.array([self.project(point, flat=flat) for point in points])
 
         #print("pp=", tuple([float(c) for c in points]))
-        p = self.projection(sympy.Point3D(points))
-        #print("P=", tuple([float(c) for c in p.coordinates]))
+        #p_slow = self.projection(sympy.Point3D(points))
+        p = self.projection_fast(points)
+        #print("P=", tuple([float(c) for c in p]))
         if flat:
-            v = p - self.p1
-            #print("vector=", tuple([float(c) for c in v.coordinates]))
+            v = p - self.origin
+            #print("V=", tuple([float(c) for c in v]))
             x_2d = np.dot(v, north)
             y_2d = np.dot(v, east)
-            pp = (float(x_2d), float(y_2d))
-            #print("PP=", pp)
+            pp = np.array([x_2d, y_2d])
+            #print("R=", tuple([float(c) for c in pp]))
+            return pp
         else:
-            pp = tuple([float(c) for c in p.coordinates])
-        return pp
+            return p
 
     def to3D(self, x_2d, y_2d):
 
-        _, north, east = self.compass()
+        north, east = self.compass()
 
-        x, y, z = np.array(self.origin()) + np.array(scale(north,x_2d)) + np.array(scale(east, y_2d))
+        x, y, z = self.origin + np.array(scale(north,x_2d)) + np.array(scale(east, y_2d))
 
         return x, y, z
 
