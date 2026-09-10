@@ -65,10 +65,22 @@ class StructureDataset(object):
             return self.data.get(key)
 
         def __repr__(self):
-            return f"<bi.{self.dataset.__class__.__name__}.{self.__class__.__name__}: {self.code} ({self.name}) at {self.path if self.path is not None else self.url} from {self.source}>"
+            return f"<bi.{self.dataset.__class__.__name__}.{self.__class__.__name__}: {self.name()} ({self.code()}){' at '+self.path() if self.path() is not None else self.data.get('url')} from {self.data.get('source')}>"
 
         def blacklist(self, error=None, reason=None):
             self.dataset.add_to_blacklist(self.path, reason=reason)
+
+        def code(self):
+            return self.data.get("code", None)
+
+        def name(self):
+            return self.data.get("name", None)
+
+        def path(self):
+            return self.data.get("path", None)
+
+        def entity(self, entity_class=Entity):
+            return entity_class.from_file(self.path(), code=self.name(), **kwargs)
 
 
     def add_to_blacklist(self, path, error=None, reason=None):
