@@ -24,6 +24,8 @@ class BaseModel(nn.Module):
             embedding_class=None,
             **kwargs):
         log(1, "Initialising model...")
+        if name == self:
+            raise Exception("Do not add self when using super().__init__")
         super().__init__()
         self.data = getattr(self, "data", {})
         self.data["dataname"] = name
@@ -68,7 +70,7 @@ class BaseModel(nn.Module):
 
         self.running_loss = {"total":0, "default":0}
         self.batch_loss = {"current_n":0, "current_list":[], "cumulative":0, "n_batches": 0}
-
+        print(name)
         self.data["name"] = f"{self.__class__.__name__}_{name}"
         self._optimisers = {}
         self._schedulers = {}
@@ -78,7 +80,7 @@ class BaseModel(nn.Module):
 
 
     def __str__(self):
-        return f"<bi.{self.__class__.__name__}_{self.data['dataname']} mounted={self.mounted}>"
+        return f"<bi.{self.__class__.__name__}: {self.name()} mounted={self.mounted}>"
 
     def _layer_str(self, name, layer):
 

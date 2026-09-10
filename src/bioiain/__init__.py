@@ -16,7 +16,7 @@ log(1, f"$", *sys.argv)
 from . import tools
 
 __all__ = ["base", "utilities", "visualisation"]
-
+__all__.extend(["machine", "symmetry", "aleph", "tools"])
 __all__.extend(["log", "SUBDIR_NAME", "TEMP_FOLDER", "WD", "FD"])
 
 
