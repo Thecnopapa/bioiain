@@ -79,7 +79,7 @@ class StructureDataset(object):
         def path(self):
             return self.data.get("path", None)
 
-        def entity(self, entity_class=Entity):
+        def entity(self, entity_class=Entity, **kwargs):
             return entity_class.from_file(self.path(), code=self.name(), **kwargs)
 
 
