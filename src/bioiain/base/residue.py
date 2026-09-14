@@ -135,6 +135,14 @@ class Residue(object):
     def __repr__(self):
         return f"<bi.{self.__class__.__name__} id={self.id()}>"
 
+    def coord(self, mode="ca"):
+        #TODO: implement other modes, such as centroid or CoM
+        if mode=="ca":
+            return self.ca.coord
+        else:
+            raise NotImplementedError()
+
+
     def name(self):
         return "_".join([str(v) for v in self.id()])
 

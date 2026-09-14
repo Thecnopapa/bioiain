@@ -145,6 +145,14 @@ class StructureDataset(object):
     def __getitem__(self, item):
         return self.Entry(self.data[self.codes()[item]], dataset=self)
 
+    def __call__(self, code):
+        code = code.upper()
+        return self.Entry(self.data[code], dataset=self)
+
+    def __contains__(self, code):
+        code = code.upper()
+        return code.upper() in self.codes()
+
     def __len__(self):
         return sum([1 for e in self.data.values() if not self.check_blacklist(e["path"])])
 
@@ -172,6 +180,7 @@ class StructureDataset(object):
 
 
     def add(self, code, name=None, path=None, url=None, source="manual", extension="cif", replace=True, **extras):
+        code = code.upper()
         if path in self.blacklist:
             log("warning", f"Path: {path} in blacklist: {self.blacklist_file}")
             return self
