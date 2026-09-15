@@ -608,7 +608,7 @@ class BaseModel(nn.Module):
 
 
 
-    def _calculate_loss(self, *items, criterion_name:str="mode", **kwargs) -> torch.Tensor|float:
+    def _calculate_loss(self, *items, criterion_name:str="mode", weight=None, **kwargs) -> torch.Tensor|float:
 
         if criterion_name == "mode":
             criterions = [self.mode]
@@ -621,6 +621,7 @@ class BaseModel(nn.Module):
         ll = None
         losses = []
 
+
         for n, criterion in enumerate(criterions):
 
             if criterion not in self.criterions: criterions[n] = "default"; criterion = "default"
@@ -628,15 +629,15 @@ class BaseModel(nn.Module):
             if len(items) == 2:
                 output, item = items
                 if isinstance(self.criterions[criterion], CustomLoss) or not isinstance(item, Item):
-                    losses.append(self.criterions[criterion](output, item))
+                    l = self.criterions[criterion](output, item)
 
                 elif hasattr(item, "lt"):
                     print("LT", item.lt)
-                    losses.append(self.criterions[criterion](output, item.lt.to(DEVICE)))
+                    l = self.criterions[criterion](output, item.lt.to(DEVICE))
                 elif item.l is not None:
                     #print("L", item.l)
                     try:
-                        losses.append(self.criterions[criterion](output, torch.Tensor([item.l]).to(DEVICE)))
+                        l = self.criterions[criterion](output, torch.Tensor([item.l]).to(DEVICE))
                     except:
                         print(item)
                         print(item.l)
@@ -644,13 +645,18 @@ class BaseModel(nn.Module):
                         raise
                 else:
                     try:
-                        losses.append(self.criterions[criterion](output, torch.Tensor(item.t).to(DEVICE)))
+                        l = self.criterions[criterion](output, torch.Tensor(item.t).to(DEVICE))
                     except:
                         print(item)
                         print(item.t)
                         print(item.__dict__)
                         raise
+                if weight is not None:
+                    weight = torch.tensor(weight).to(DEVICE)
+                    l = l * weight
+                losses.append(l)
             else:
+                raise NotImplementedError("Batched loss is old and not tested")
                 ll = self.criterions[criterion](*[i.to(DEVICE) for i in items], **kwargs)
                 if type(ll) in (list, tuple):
                     losses.append(ll[0])
@@ -702,17 +708,17 @@ class BaseModel(nn.Module):
 
 
 
-    def raw_loss(self, *inputs, criterion_name:str="mode", backwards:bool=True, zero_optims:str|None="mode", step="mode", force_backpropagation=False, retain_graph=False, **kwargs):
-        loss = self._calculate_loss(*inputs, criterion_name=criterion_name, **kwargs)
+    def raw_loss(self, *inputs, criterion_name:str="mode", backwards:bool=True, zero_optims:str|None="mode", step="mode", force_backpropagation=False, retain_graph=False, weight=None, **kwargs):
+        loss = self._calculate_loss(*inputs, criterion_name=criterion_name, weight=weight, **kwargs)
         loss = self._backpropagate(loss=loss, zero_optims=zero_optims, step=step, force=force_backpropagation, retain_graph=retain_graph)
         return loss
 
 
 
-    def loss(self, output:torch.Tensor|None=None, item:Item|torch.Tensor|None=None, criterion_name:str="mode", backwards:bool=True, zero_optims:str|None="mode", step="mode", force_backpropagation=False, retain_graph=False) -> torch.Tensor|float:
+    def loss(self, output:torch.Tensor|None=None, item:Item|torch.Tensor|None=None, criterion_name:str="mode", backwards:bool=True, zero_optims:str|None="mode", step="mode", force_backpropagation=False, retain_graph=False, weight=None) -> torch.Tensor|float:
 
         if (output is not None) and (item is not None):
-            loss = self._calculate_loss(output, item, criterion_name=criterion_name)
+            loss = self._calculate_loss(output, item, criterion_name=criterion_name, weight=weight)
         else: loss = None
         loss = self._backpropagate(loss=loss, zero_optims=zero_optims, step=step, force=force_backpropagation, retain_graph=retain_graph)
 
