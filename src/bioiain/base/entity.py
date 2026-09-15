@@ -1296,7 +1296,7 @@ class Entity(object):
 
         return self, self._compactness[label], plot
 
-    def _calculate_compactness(self, radius=10, plot=False, session=False, with_symmetry=True, export=True, same_fragment=True, return_plot=False):
+    def _calculate_compactness(self, radius=10, plot=False, session=False, with_symmetry=True, export=True, same_fragment=True, return_plot=False, asu_as_one=False):
         if with_symmetry:
             label = "rel_compactness"
         else:
@@ -1363,6 +1363,10 @@ class Entity(object):
                     if (kdtree.atom_of(nn).get_misc("fragment", None) == fragment) and (kdtree.pos_of(nn) in [None, 1]):
                         # log("warning", "Same fragment:", fragment,  kdtree.atom_of(nn).get_misc("fragment", None),)
                         continue
+                if (not with_symmetry) and (not asu_as_one):
+                    if (atom.chain != kdtree.atom_of(nn).chain) and (kdtree.pos_of(nn) in [None, 1]):
+                        continue
+
                 valid_nn += 1
                 valid_neighs.append(nn)
                 # ax.plot(*line(k["coord"], kdtree.coord_of(nn)), c=color)
