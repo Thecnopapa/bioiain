@@ -399,7 +399,7 @@ class PymolScript(object):
         sele = self._to_str(sele)
 
         args = [sele_target, sele]
-        self.add(fun, *args, source_state=from_state, target_state=to_state, **kwargs)
+        self.add(fun, *args, source_state=from_state, target_state=to_state, discrete=1, **kwargs)
         return sele_target
 
 
