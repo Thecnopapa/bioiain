@@ -629,7 +629,7 @@ class Entity(object):
             self.headers["symmetry"]["space_group_name_H-M"] = f"\'{self.headers['symmetry']['space_group_name_H-M']}\'"
 
 
-    def export(self, minimal=False, cleanup=False, as_pdb=False, target_folder=None, sufix=None, dry=False, all_headers=True, cvmatrix=True, cvectors=True, verbose=False):
+    def export(self, minimal=False, cleanup=False, as_pdb=False, target_folder=None, suffix=None, dry=False, all_headers=True, cvmatrix=True, cvectors=True, verbose=False):
 
         custom_folder = False
         if target_folder is None:
@@ -641,12 +641,12 @@ class Entity(object):
             target_folder = str(target_folder).strip()
 
         fname = str(self.name())
-        if sufix is not None:
+        if suffix is not None:
             custom_folder = True
-            if sufix[0] in [".", "-", "_", "(",]:
-                fname += sufix
+            if suffix[0] in [".", "-", "_", "(",]:
+                fname += suffix
             else:
-                fname += "_"+sufix
+                fname += "_"+suffix
 
         fname += f".{self.extension}"
         if minimal:

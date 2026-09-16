@@ -324,7 +324,7 @@ class PymolScript(object):
         self.add(fun, self._to_str(representation), sele, **kwargs)
         return self
 
-    def load_entity(self, entity, name:str|None=None, overwrite:bool=True, minimal=True) -> str:
+    def load_entity(self, entity, name:str|None=None, overwrite:bool=True, minimal=True, state=0, **kwargs) -> str:
         """
         Adds command to load file from entity. Entity is exported to t/mp/bioiain/pymol as of the cwd.
         :param entity:
@@ -340,9 +340,9 @@ class PymolScript(object):
                 n += 1
 
         folder = self.subfolder
-        path = entity.export(minimal=minimal, target_folder=folder)
+        path = entity.export(minimal=minimal, target_folder=folder, **kwargs)
         log(2, "Entity saved to:", path)
-        self.load(path, name)
+        self.load(path, name, state=state)
         return name
 
 
@@ -393,13 +393,13 @@ class PymolScript(object):
         self.add(fun, *args, **kwargs)
         return self
 
-    def merge(self, target:str, sele:str, state=-1, **kwargs) -> str:
+    def merge(self, target:str, sele:str, from_state=0, to_state=-1, **kwargs) -> str:
         fun = "create"
         sele_target= self._to_str(target)
         sele = self._to_str(sele)
 
         args = [sele_target, sele]
-        self.add(fun, *args, state=state, **kwargs)
+        self.add(fun, *args, source_state=from_state, target_state=to_state, **kwargs)
         return sele_target
 
 

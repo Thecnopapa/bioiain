@@ -169,6 +169,12 @@ class Residue(object):
             a.set_bfactor(bfactor)
         return self
 
+    def set_model(self, model=1):
+        assert type(model) is int, f"Model must be int, not {type(model)}"
+        for a in self.atoms:
+            a.model = model
+        self.model = self.ca.model
+
     def set_fragment(self, fragment=None, unset=False):
         if fragment is not None or unset:
             for a in self.atoms:
