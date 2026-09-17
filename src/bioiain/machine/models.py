@@ -245,6 +245,7 @@ class BaseModel(nn.Module):
             self.add_text("data", self.json())
             self.add_text("repr", repr(self))
 
+
     def reset_loss(self):
         self.running_loss["total"] = 0
         for c in self.running_loss.keys():
@@ -294,6 +295,8 @@ class BaseModel(nn.Module):
             if self.writer is not None:
                 log(2, "Batch loss:", av_batch_loss)
                 self.writer.add_scalar(f"loss/batch", float(av_batch_loss), self.data["epoch"])
+
+        #self.add_hparams()
 
         return av_losses
 
@@ -468,8 +471,16 @@ class BaseModel(nn.Module):
             data = np.array(data)
         self.writer.add_histogram(name, data,  self.data["epoch"])
 
-    def add_hparams(self, hparams={}, hmetrics={}):
-        self.writer.add_hparams(hparams, hmetrics, run_name=".")
+    def log_hparams(self):
+        self.add_hparams(self.data)
+
+    def add_hparams(self, hparams=None, metrics=["default"]):
+        return
+        if hparams is None:
+            hparams = self.data
+        metrics = {f"loss/{m}":self.running_loss[m]/self.running_loss["total"] for m in metrics}
+        hparams = {k:v for k, v in hparams.items() if type(v) in [int, float, str, bool, torch.Tensor]}
+        self.writer.add_hparams(hparam_dict=hparams, metric_dict=metrics, global_step=self.data["epoch"])
 
     def add_protein(self, name, coords, colours):
         self.writer.add_mesh(name, coords, colours, global_step=self.data["epoch"])
