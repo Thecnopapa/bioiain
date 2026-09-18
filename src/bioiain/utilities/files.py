@@ -32,6 +32,7 @@ class StructureDataset(object):
         self.name = name
         self.blacklist = []
         self._blacklist_lock = False
+        self.i = None
         log(1, "Initialising dataset:", self.name, f"(blacklist={not ignore_blacklist})")
 
         if folder is None:
@@ -45,7 +46,7 @@ class StructureDataset(object):
         if os.path.exists(self.blacklist_file) and not ignore_blacklist:
             with open(self.blacklist_file, "r") as bl:
                 for line in bl:
-                    self.blacklist.append(line.strip().replace("\n", "").split(":")[0].strip())
+                    self.blacklist.append(os.path.realpath(line.strip().replace("\n", "").split(":")[0].strip()))
         else:
             with open(self.blacklist_file, "w") as bl:
                 bl.write(f"{self.blacklist_file}\n")
@@ -102,16 +103,16 @@ class StructureDataset(object):
         self._blacklist_lock = False
 
     def check_blacklist(self, path):
-        return path in self.blacklist
+        return os.path.realpath(path) in self.blacklist
 
     def codes(self) -> list:
-        return [e.get("code", None) for e in self.data.values()]
+        return [getattr(e, "code", None) for e in self]
 
     def urls(self) -> list:
-        return [e.get("url", None) for e in self.data.values()]
+        return [getattr(e, "url", None) for e in self]
 
     def paths(self) -> list:
-        return [e.get("path", None) for e in self.data.values()]
+        return [getattr(e, "path", None) for e in self]
 
     def entities(self, entity_class=Entity, return_entries=False, **kwargs):
         for entry in self:
@@ -143,7 +144,9 @@ class StructureDataset(object):
         return f"<bi.{self.__class__.__name__}: {self.name} N={len(self)}>"
 
     def __getitem__(self, item):
-        return self.Entry(self.data[self.codes()[item]], dataset=self)
+        if self.i is None:
+            self.__iter__( )
+        return self.Entry(self.data[self._codes[item]], dataset=self)
 
     def __call__(self, code):
         code = code.upper()
@@ -154,10 +157,10 @@ class StructureDataset(object):
         return code.upper() in self.codes()
 
     def __len__(self):
-        return sum([1 for e in self.data.values() if not self.check_blacklist(e["path"])])
+        return sum([1 for e in self.data.values() if not self.check_blacklist(e.get("path", None))])
 
     def __iter__(self):
-        self._codes = self.codes()
+        self._codes = [e.get("code", None) for e in self.data.values() if not self.check_blacklist(e.get("path", None))]
         self.i = 0
         return self
 
@@ -170,6 +173,7 @@ class StructureDataset(object):
             except IndexError:
                 raise IndexError(self.i -1, len(self._codes))
         else:
+            self.i = None
             raise StopIteration
 
     def get(self, code, exception="raise"):
@@ -181,7 +185,7 @@ class StructureDataset(object):
 
     def add(self, code, name=None, path=None, url=None, source="manual", extension="cif", replace=True, **extras):
         code = code.upper()
-        if path in self.blacklist:
+        if os.path.realpath(path) in self.blacklist:
             log("warning", f"Path: {path} in blacklist: {self.blacklist_file}")
             return self
         if os.path.getsize(path) > 1.5 * 1024 * 1024:
