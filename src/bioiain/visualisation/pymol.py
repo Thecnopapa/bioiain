@@ -439,6 +439,7 @@ class PymolScript(object):
     def pseudoatom(self, name="tmp", coord=(0,0,0), atomname="PA", **kwargs) -> str:
         fun = "pseudoatom"
         name = self._to_str(name)
+        atomname = self._to_str(atomname)
         self.add(fun, name, pos=coord, name=atomname, **kwargs)
         return name
 
