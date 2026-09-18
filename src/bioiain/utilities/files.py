@@ -106,13 +106,13 @@ class StructureDataset(object):
         return os.path.realpath(path) in self.blacklist
 
     def codes(self) -> list:
-        return [getattr(e, "code", None) for e in self]
+        return [e.code() for e in self]
 
     def urls(self) -> list:
-        return [getattr(e, "url", None) for e in self]
+        return [e.url() for e in self]
 
     def paths(self) -> list:
-        return [getattr(e, "path", None) for e in self]
+        return [e.path() for e in self]
 
     def entities(self, entity_class=Entity, return_entries=False, **kwargs):
         for entry in self:
@@ -154,7 +154,7 @@ class StructureDataset(object):
 
     def __contains__(self, code):
         code = code.upper()
-        return code.upper() in self.codes()
+        return code in self.codes()
 
     def __len__(self):
         return sum([1 for e in self.data.values() if not self.check_blacklist(e.get("path", None))])
