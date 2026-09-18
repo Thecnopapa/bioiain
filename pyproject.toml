@@ -12,11 +12,10 @@ dependencies = [
     "numpy",
     "polars",
     "matplotlib >= 3.10.8",
-    "scikit-learn",
+    "scikit-learn >= 1.8.0",
     "scipy",
     "networkx[default]",
     "sympy",
-
 
     "typing-extensions",
     "requests",
@@ -26,7 +25,7 @@ dependencies = [
 ]
 
 name = "bioiain"
-version = "0.3.3"
+version = "0.3.4"
 authors = [
   { name="Iain Visa", email="iainvisa@gmail.com" },
 ]
@@ -80,8 +79,8 @@ conda = [
 ml = [
     "torch >= 2.6",
     "torchvision",
-    "transformers",
-    "tensorboard"
+    "transformers >= 5.10.0",
+    "tensorboard",
 ]
 aleph = [
     "numpy >= 2.4.2",

@@ -358,6 +358,17 @@ class PymolScript(object):
         self.add(fun, sele, **kwargs)
         return self
 
+    def enable(self, sele:str, **kwargs):
+        """
+        Adds Command to enable selection.
+        :param sele: Selection string.
+        :param kwargs:
+        :return: Generated Command object -> Unknown.
+        """
+        sele = self._to_str(sele)
+        fun = "enable"
+        self.add(fun, sele, **kwargs)
+        return self
 
     def symmetries(self, obj:str="original", prefix:str="sym", distance:int=6, **kwargs):
         fun = "symexp"
