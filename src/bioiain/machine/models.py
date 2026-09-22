@@ -242,9 +242,12 @@ class BaseModel(nn.Module):
             self.writer = SummaryWriter(log_dir=os.path.join(TEMP_FOLDER, "trash"))
         else:
             self.writer = SummaryWriter(log_dir=f"runs/{self.__class__.__name__}/{self.name()}_{datetime.datetime.now().strftime('%m-%d_%H-%M-%S')}")
-            self.add_text("data", self.json())
-            self.add_text("repr", repr(self))
+            self.data["log_dir"] = self.writer.log_dir
+        self.write_data()
 
+    def write_data(self):
+        self.add_text("data", self.json())
+        self.add_text("repr", repr(self))
 
     def reset_loss(self):
         self.running_loss["total"] = 0
@@ -337,6 +340,11 @@ class BaseModel(nn.Module):
         return self.data["epoch"]
 
 
+    def run_name(self):
+        if self.writer is None:
+            self._create_writer()
+        return os.path.basename(self.writer.log_dir)
+
     def name(self):
         return self.get_fname(self)
 
@@ -348,12 +356,17 @@ class BaseModel(nn.Module):
         return fname
 
 
-    def save(self, path=None, add_epoch=False, temp=False, best=False, allow_inference=False):
+    def save(self, path=None, add_epoch=False, temp=False, best=False, allow_inference=False, timestamp=False):
         log(1, f"Saving model (TEMP={temp}, BEST={best})")
         if self.inference and not allow_inference:
             raise TryingToSaveInferenceModel()
         if path is None:
-            path = os.path.join(self.data["folder"], self.get_fname(add_epoch=add_epoch))
+            folder = self.data["folder"]
+            if timestamp:
+                folder = os.path.join(folder, self.run_name())
+            os.makedirs(folder, exist_ok=True)
+            path = os.path.join(folder, self.get_fname(add_epoch=add_epoch))
+
         for name, submodel in self.submodels.items():
             if not path.endswith(".model.pt"):
                 model_path = path + f".{name}.model.pt"
