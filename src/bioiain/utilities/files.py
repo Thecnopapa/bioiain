@@ -160,6 +160,8 @@ class StructureDataset(object):
         return sum([1 for e in self.data.values() if not self.check_blacklist(e.get("path", None))])
 
     def __iter__(self):
+        if self.i is not None:
+            log("warning", "Restarting iterator of:", self)
         self._codes = [e.get("code", None) for e in self.data.values() if not self.check_blacklist(e.get("path", None))]
         self.i = 0
         return self
@@ -174,7 +176,8 @@ class StructureDataset(object):
                 raise IndexError(self.i -1, len(self._codes))
         else:
             self.i = None
-            raise StopIteration
+            self._codes = None
+            raise StopIteration()
 
     def get(self, code, exception="raise"):
         if exception == "raise":
