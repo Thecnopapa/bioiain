@@ -119,10 +119,20 @@ class Residue(object):
             self.entity = self.ca.entity
             self.complex = self.ca.complex
 
-            self.is_disordered = self.ca.disordered
+            # TODO: allow working in a particular disordered state (currently this does nothing)
+            self._disorder_state = None
+            self.disorder_tags = None
+            self.is_disordered = any([a.disordered for a in self.atoms])
             if self.is_disordered:
-                raise NotImplementedError(f"Residue {self.resseq} ch.{self.chain} m.{self.model} is disordered")
+                self.disorder_tags = []
+                for a in self.atoms:
+                    if a.disordered:
+                        self.disorder_tags.extend(a.disorder_tags)
+                self.disorder_tags = sorted(list(set(self.disorder_tags)))
+                #print(self.disorder_tags)
+                #raise NotImplementedError(f"Residue {self.resseq} ch.{self.chain} m.{self.model} is disordered")
 
+            self.set_disorder()
 
             if any([a is None for a in self.backbone]):
                 #print("No backbone")
@@ -130,9 +140,23 @@ class Residue(object):
                 #print(self.backbone)
                 raise NoBackbone(self, f"Trying to initialise {self.__class__.__name__} with no backbone")
 
+    def set_disorder(self, tag=None):
+        if tag is not None:
+            raise NotImplementedError(f"Working with a disordered residue state is not implemented yet")
+        if not self.is_disordered:
+            return None
+        if tag is None:
+            tag = self.disorder_tags[0]
+        assert tag in self.disorder_tags, f"Disorder tag: {tag} not found in residue atoms"
+        self._disorder_state = tag
+        return self._disorder_state
+
+
     def id(self): return self.resname, self.resnum, self.resseq, self.chain, self.entity, self.complex, self.fragment
 
     def __repr__(self):
+        if self.is_disordered:
+            return f"<bi.{self.__class__.__name__} id={self.id()} disorder={self._disorder_state}>"
         return f"<bi.{self.__class__.__name__} id={self.id()}>"
 
     def coord(self, mode="ca"):

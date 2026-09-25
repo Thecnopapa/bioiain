@@ -306,10 +306,12 @@ class Atom(PseudoAtom):
                 self.alt_id = "."
 
             if self.alt_id == ".":
+                self.disorder_tags = None
                 self.disordered = False
                 self.doppelgangers = None
                 self.favourite = None
             else:
+                self.disorder_tags = [self.alt_id]
                 self.disordered = True
                 self.doppelgangers = []
                 self.favourite = True
@@ -355,7 +357,6 @@ class Atom(PseudoAtom):
                 return "<bi.{} id={}.{} b={} occupancy={} (disordred/not-favourite)>".format(self.__class__.__name__, self.id(), self.alt_id, self.b, self.occupancy)
         else:
             return "<bi.{} id={} b={}>".format(self.__class__.__name__, self.id(), self.b)
-
 
 
     def __iter__(self):
@@ -419,6 +420,8 @@ class Atom(PseudoAtom):
         return self.get_misc("fragment", None)
 
     def pdb_string(self, new_id=None):
+        # TODO: Make this a generator with disordered versions
+        # TODO: Make sure it wors as intended (untested for a long time)
         record_name = f"{self.type:<6s}"[-6:]
         if new_id is None:
             atom_serial_number = f"{self.atomnum:5d}"[-5:]
@@ -491,7 +494,7 @@ class Atom(PseudoAtom):
 
 
     def _mmcif_dict(self, include_misc=True):
-
+        # TODO: Make this a generator with disordered versions
         try:
             data = {}
             data["group_PDB"] = f"{self.type:6s}"
@@ -500,8 +503,6 @@ class Atom(PseudoAtom):
 
             data["label_alt_id"] = f"{self._none_point(self.alt_id):>1s}"
             data["type_symbol"] = f"{self._none_point(self.element):<2s}"
-
-
 
 
             if self.prime and not self.name.endswith("'"): data["label_atom_id"] = f"\"{self.name:>2s}'\""
@@ -562,6 +563,7 @@ def _fix_disordered(atoms):
                         print("<<<")
                         raise
                     a.doppelgangers.append(atom)
+                    a.disorder_tags.append(atom.alt_id)
                     a.favourite = True
                     atom.favourite = False
                     atom.doppelgangers = None
