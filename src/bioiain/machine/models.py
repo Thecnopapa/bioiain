@@ -28,6 +28,7 @@ class BaseModel(nn.Module):
             raise Exception("Do not add self when using super().__init__")
         super().__init__()
         self.data = getattr(self, "data", {})
+        self.timestamp()
         self.data["dataname"] = name
         self.data["lr"] = lr
         self.data["folder"] = os.path.join(folder, self.__class__.__name__)
@@ -236,13 +237,18 @@ class BaseModel(nn.Module):
             x = self.submodels[submodel_name](x)
         return x
 
+    def timestamp(self):
+        if self.data.get("timestamp", None) is None:
+            self.data["timestamp"] = datetime.datetime.now().strftime('%m-%d_%H-%M-%S')
+        return self.data["timestamp"]
 
     def _create_writer(self):
+        run_name = f"{self.name()}_{self.timestamp()}"
+        log_dir = os.path.join("runs",  f"{self.__class__.__name__}", run_name)
         if self.dry or self.inference:
-            self.writer = SummaryWriter(log_dir=os.path.join(TEMP_FOLDER, "trash"))
-        else:
-            self.writer = SummaryWriter(log_dir=f"runs/{self.__class__.__name__}/{self.name()}_{datetime.datetime.now().strftime('%m-%d_%H-%M-%S')}")
-            self.data["log_dir"] = self.writer.log_dir
+            log_dir = os.path.join(TEMP_FOLDER, log_dir)
+            self.writer = SummaryWriter(log_dir=log_dir)
+        self.data["log_dir"] = self.writer.log_dir
         self.write_data()
 
     def write_data(self):

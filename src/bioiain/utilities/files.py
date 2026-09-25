@@ -27,7 +27,7 @@ def relative_path(path, relative_to=None):
 
 
 class StructureDataset(object):
-    def __init__(self, name="dataset", folder=None, shared_source=True, ignore_blacklist=False):
+    def __init__(self, name="dataset", folder=None, shared_source=True, ignore_blacklist=False, export_folder=None):
         self.data = {}
         self.name = name
         self.blacklist = []
@@ -42,6 +42,9 @@ class StructureDataset(object):
                 folder = os.path.join(SUBDIR_NAME, "data", name)
         self.folder = folder
         os.makedirs(self.folder, exist_ok=True)
+        if (export_folder is not None) and (not export_folder.endswith("exports")):
+            export_folder = os.path.join(export_folder, "exports")
+        self.export_folder = export_folder
         self.blacklist_file = os.path.join(self.folder, f"{self.name}.black.list")
         if os.path.exists(self.blacklist_file) and not ignore_blacklist:
             with open(self.blacklist_file, "r") as bl:
@@ -81,7 +84,8 @@ class StructureDataset(object):
             return self.data.get("path", None)
 
         def entity(self, entity_class=Entity, **kwargs):
-            return entity_class.from_file(self.path(), code=self.name(), **kwargs)
+            export_folder = kwargs.pop("export_folder", self.dataset.export_folder)
+            return entity_class.from_file(self.path(), code=self.name(), export_folder=export_folder, **kwargs)
 
 
     def add_to_blacklist(self, path, error=None, reason=None):
@@ -116,7 +120,7 @@ class StructureDataset(object):
 
     def entities(self, entity_class=Entity, return_entries=False, **kwargs):
         for entry in self:
-            entity = entity_class.from_file(entry.path, code=entry.name, **kwargs)
+            entity = entry.entity()
             if return_entries:
                 yield entity, entry
             else:
@@ -236,11 +240,11 @@ class StructureDataset(object):
         return self
 
     @classmethod
-    def from_dir(cls, folder, name=None, exclude:str|list|None=None, replace=True, ignore_blacklist=False, **extras):
+    def from_dir(cls, target_folder, name=None, exclude:str|list|None=None, replace=True, ignore_blacklist=False, export_folder=None, folder=None, **extras):
         if name is None:
             name = os.path.dirname(os.path.abspath(folder))
-        self = cls(name=name, ignore_blacklist=ignore_blacklist)
-        self.add_dir(folder, exclude=exclude, replace=replace,**extras)
+        self = cls(name=name, ignore_blacklist=ignore_blacklist, folder=folder, export_folder=export_folder)
+        self.add_dir(target_folder, exclude=exclude, replace=replace, **extras)
         return self
 
 
@@ -324,12 +328,12 @@ class StructureDataset(object):
         return self
 
     @classmethod
-    def from_list(cls, file_or_list:str|list, name=None, download_as="cif", base_url=None, force=False, replace=True, ignore_blacklist=False, **extras):
+    def from_list(cls, file_or_list:str|list, name=None, download_as="cif", base_url=None, force=False, replace=True, ignore_blacklist=False, folder=None, export_folder=None, **extras):
         if name is None:
             if type(file_or_list) is list:
                 name = "pdb_list"
             elif type(file_or_list) is str:
                 name = os.path.basename(file_or_list).split(".")[0]
-        self = cls(name=name, ignore_blacklist=ignore_blacklist)
+        self = cls(name=name, ignore_blacklist=ignore_blacklist, folder=folder, export_folder=export_folder)
         self.add_list(file_or_list, download_as=download_as, base_url=base_url, force=force, replace=replace, **extras)
         return self

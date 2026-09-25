@@ -965,7 +965,6 @@ class Entity(object):
         else:
             frag = FragmentedStructure.from_atoms(self.all_atoms(), parent=self, share=in_place, export_folder=self.paths["export_folder"], aleph_mode=aleph_mode)
 
-
         frag.fragments(force=force)
         return frag
 
@@ -975,6 +974,8 @@ class Entity(object):
         new = self.__class__.from_atoms(self.all_atoms(), parent=self, share=False)
         new.data = deepcopy(self.data)
         new.flags = deepcopy(self.flags)
+        new.paths = deepcopy(self.paths)
+        new.paths["self"] = None
         new.set_flag("is_copy", True)
         new.set_flag("exported", False)
         return new
