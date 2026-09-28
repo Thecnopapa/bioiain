@@ -247,7 +247,7 @@ class BaseModel(nn.Module):
         log_dir = os.path.join("runs",  f"{self.__class__.__name__}", run_name)
         if self.dry or self.inference:
             log_dir = os.path.join(TEMP_FOLDER, log_dir)
-            self.writer = SummaryWriter(log_dir=log_dir)
+        self.writer = SummaryWriter(log_dir=log_dir)
         self.data["log_dir"] = self.writer.log_dir
         self.write_data()
 

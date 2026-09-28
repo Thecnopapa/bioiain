@@ -12,6 +12,7 @@ def build_res(atoms, ignore_errors=False, **kwargs):
     try:
         resnames = [a.resname for a in atoms]
         atomnames = [a.name for a in atoms]
+        resseqs = [a.resseq for a in atoms]
 
         if resnames == ["HOH"]:
             return Water(atoms, **kwargs)
@@ -20,7 +21,7 @@ def build_res(atoms, ignore_errors=False, **kwargs):
             return Nucleotide(atoms, **kwargs)
 
 
-        if "CA" in atomnames:
+        if "CA" in atomnames and list(set(resseqs)) != [None]:
             return Residue(atoms, **kwargs)
 
         elif "C6" in atomnames:
