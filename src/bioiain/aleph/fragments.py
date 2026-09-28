@@ -117,6 +117,7 @@ class FragmentedStructure(Structure):
                 print("### ALEPH end ###")
             except Exception as e:
                 log("warning", e)
+                log("warning", "path:", target_path)
                 print("### ALEPH failed ###")
                 raise ALEPHError(e)
 

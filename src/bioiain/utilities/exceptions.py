@@ -85,6 +85,8 @@ class StructureExportError(Exception):
     pass
 class ExportingNoAtoms(StructureExportError):
     pass
+class FailedToLockFile(StructureExportError):
+    pass
 
 # CCP4 related
 class CCP4Error(Exception):

@@ -2,6 +2,7 @@ from ..utilities.exceptions import *
 from .mmcif import *
 import numpy as np
 from ..utilities import *
+import time
 
 
 class Entity(object):
@@ -619,6 +620,7 @@ class Entity(object):
                 if require_crystal:
                     raise e
             atoms = [Atom(a) for a in atoms]
+            #[print(a) for a in atoms[:100]]
 
             self._atoms = atoms
         self.set_flag("no_atoms", False)
@@ -706,9 +708,35 @@ class Entity(object):
             else:
                 #log("Warning", "Exporting all atoms and misc fields might corrupt the file (cleanup=True recommended)")
                 atoms = self._all_atoms()
+        #print("##### exporting #####")
+        #[print(a) for a in atoms[:100]]
+        #print("##### exported #####")
+
         filepath = filepath.strip()
+
+        lock_file = filepath+".lock"
+        if os.path.exists(lock_file):
+                ok = False
+                n = 0
+                max_attempts = 10
+                while n <= max_attempts:
+                    user_pid = open(lock_file ,"r").read()
+                    if not os.path.exists(lock_file) or user_pid == str(os.getpid()):
+                        ok = True
+                        break
+                    log("warning", f"Waiting for .lock file to clear (user={user_pid}/requester={os.getpid()}) (attempt={n}/{max_attempts}): {lock_file}")
+                    time.sleep(1)
+                    n += 1
+                if not ok:
+                    log("warning", "Remove manually with:")
+                    print(f"rm {os.path.abspath(lock_file)}")
+                    raise FailedToLockFile(f"Failed to lock file (already locked): {filepath}")
+        with open(lock_file, "w") as lf:
+            lf.write(str(os.getpid()))
+
+
         if as_pdb:
-            return write_pdb_atoms(atoms, filepath.strip(), mode=mode, end=True)
+            r = write_pdb_atoms(atoms, filepath.strip(), mode=mode, end=True)
         else:
 
             full_headers = {}
@@ -764,7 +792,10 @@ class Entity(object):
                 mode = "a"
             if verbose:
                 log(3, "Exporting atoms...")
-            return write_atoms(atoms, filepath, name=self.name(), include_misc=misc_fields, mode=mode)
+            r = write_atoms(atoms, filepath, name=self.name(), include_misc=misc_fields, mode=mode)
+
+        os.remove(lock_file)
+        return r
 
     @classmethod
     def recover_from_id(cls, code, endswith=None, full_name=None, **kwargs):
