@@ -249,6 +249,7 @@ class BaseModel(nn.Module):
             log_dir = os.path.join(TEMP_FOLDER, log_dir)
         self.writer = SummaryWriter(log_dir=log_dir)
         self.data["log_dir"] = self.writer.log_dir
+        self.data["run_name"] = run_name
         self.write_data()
 
     def write_data(self):
@@ -349,7 +350,7 @@ class BaseModel(nn.Module):
     def run_name(self):
         if self.writer is None:
             self._create_writer()
-        return os.path.basename(self.writer.log_dir)
+        return self.data["run_name"]
 
     def name(self):
         return self.get_fname(self)
