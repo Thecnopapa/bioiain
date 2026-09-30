@@ -536,7 +536,7 @@ def write_dict_list(data, label, file_path, name=None, mode="w", **kwargs):
 
     #log(3, "Writing dict list to:", file_path, f"({label})", end="\n")
 
-    keys = ["n"]
+    keys = []
 
     if type(data) is dict:
         data = data.values()
@@ -555,6 +555,10 @@ def write_dict_list(data, label, file_path, name=None, mode="w", **kwargs):
             else:
                 keys.extend(d.keys())
             break
+    add_n = False
+    if "n" not in keys:
+        keys = ["n"] + keys
+        add_n = True
 
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     try:
@@ -570,7 +574,10 @@ def write_dict_list(data, label, file_path, name=None, mode="w", **kwargs):
             for n, d in enumerate([d for d in data if d is not None]):
                 if get_dict:
                     d = d._mmcif_dict(**kwargs)
-                f.write(f"{n:4d}  "+"  ".join([cleanup_for_mmcif(v) for v in d.values()]) + "\n")
+                s = "  ".join([cleanup_for_mmcif(v) for v in d.values()]) + "\n"
+                if add_n:
+                    s = f"{n:4d}  " + s
+                f.write(s)
 
         return file_path
     except Exception as e:
