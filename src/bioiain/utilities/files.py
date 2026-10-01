@@ -27,12 +27,13 @@ def relative_path(path, relative_to=None):
 
 
 class StructureDataset(object):
-    def __init__(self, name="dataset", folder=None, shared_source=True, ignore_blacklist=False, export_folder=None):
+    def __init__(self, name="dataset", folder=None, shared_source=True, ignore_blacklist=False, export_folder=None, require_crystal=True):
         self.data = {}
         self.name = name
         self.blacklist = []
         self._blacklist_lock = False
         self.i = None
+        self.require_crystal = require_crystal
         log(1, "Initialising dataset:", self.name, f"(blacklist={not ignore_blacklist})")
 
         if folder is None:
@@ -85,7 +86,8 @@ class StructureDataset(object):
 
         def entity(self, entity_class=Entity, **kwargs):
             export_folder = kwargs.pop("export_folder", self.dataset.export_folder)
-            return entity_class.from_file(self.path(), code=self.name(), export_folder=export_folder, **kwargs)
+            require_crystal = kwargs.pop("require_crystal", self.dataset.require_crystal)
+            return entity_class.from_file(self.path(), code=self.code(), export_folder=export_folder, require_crystal=require_crystal, dataset_name=self.code(), **kwargs)
 
 
     def add_to_blacklist(self, path, error=None, reason=None):
@@ -189,7 +191,7 @@ class StructureDataset(object):
         else:
             return self.data.get(code, exception)
 
-
+    # TODO: Clean name like in entity
     def add(self, code, name=None, path=None, url=None, source="manual", extension="cif", replace=True, **extras):
         code = code.upper()
         if os.path.realpath(path) in self.blacklist:
