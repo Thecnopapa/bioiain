@@ -12,7 +12,7 @@ class Entity(object):
     tmp_folder = "/tmp"
     excluded_from_headers = ["_bi_*", "_atom_site", "_aleph_*","_cell", "_symmetry","_entry"]
 
-    def __init__(self, export_folder=None, parent=None, use_tmp=False, model:str|int="*", dataset_name=None, **kwargs):
+    def __init__(self, export_folder=None, parent=None, use_tmp=False, model:str|int="*", **kwargs):
         if export_folder is None:
             export_folder = os.path.join(SUBDIR_NAME, "exports").strip()
         self.children = []
@@ -27,7 +27,6 @@ class Entity(object):
             "fasta": None, # Path to fasta
             "db": None, #mmseqs DB path
         }
-        self.dataset_name = dataset_name # Key name as used by the current dataset (not stored in cif)
         self.data = {
             "info": {
                 "code": None, # The code of this structure, if any
@@ -486,9 +485,7 @@ class Entity(object):
         if not no_atoms:
             self.set_flag("no_atoms", False)
             try:
-                print(kwargs)
                 self._all_atoms(filepath=filepath, force=True, is_pdb=file_format == "pdb", **kwargs)
-
             except (StructureLoadException, CrystalError) as e:
                 raise StructureLoadException(f"Structure not loaded: {filepath}", e.__class__.__name__)
         else:

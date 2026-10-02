@@ -87,7 +87,7 @@ class StructureDataset(object):
         def entity(self, entity_class=Entity, **kwargs):
             export_folder = kwargs.pop("export_folder", self.dataset.export_folder)
             require_crystal = kwargs.pop("require_crystal", self.dataset.require_crystal)
-            return entity_class.from_file(self.path(), code=self.code(), export_folder=export_folder, require_crystal=require_crystal, dataset_name=self.code(), **kwargs)
+            return entity_class.from_file(self.path(), code=self.code(), export_folder=export_folder, require_crystal=require_crystal, **kwargs)
 
 
     def add_to_blacklist(self, path, error=None, reason=None):
@@ -191,9 +191,10 @@ class StructureDataset(object):
         else:
             return self.data.get(code, exception)
 
-    # TODO: Clean name like in entity
     def add(self, code, name=None, path=None, url=None, source="manual", extension="cif", replace=True, **extras):
-        code = code.upper()
+        if name is None:
+            name = code
+        code = clean_string(code).upper()
         if os.path.realpath(path) in self.blacklist:
             log("warning", f"Path: {path} in blacklist: {self.blacklist_file}")
             return self
