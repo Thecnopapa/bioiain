@@ -13,8 +13,19 @@ class Entity(object):
     excluded_from_headers = ["_bi_*", "_atom_site", "_aleph_*","_cell", "_symmetry","_entry"]
 
     def __init__(self, export_folder=None, parent=None, use_tmp=False, model:str|int="*", **kwargs):
+        print(export_folder ,parent)
+        if export_folder is None and parent is not None:
+            print("Using parent folder", parent.paths.get("export_folder", None))
+            export_folder = parent.paths.get("export_folder", None)
         if export_folder is None:
+            print("Using default folder", os.path.join(SUBDIR_NAME, "exports").strip())
             export_folder = os.path.join(SUBDIR_NAME, "exports").strip()
+        else:
+            print("Using given folder", export_folder)
+
+        if use_tmp:
+            self.paths["export_folder"] = os.path.join(self.tmp_folder, self.paths["export_folder"] )
+
         self.children = []
         self.paths = {
             "self": None, # This entity cif path
@@ -58,6 +69,11 @@ class Entity(object):
         }
         self.exporting = ["data", "paths", "flags"]
 
+        if parent is not None:
+            self.paths["parent"] = parent.paths["self"]
+            self.data["info"]["parent"] = repr(parent)
+            self.headers = parent.headers
+
         #Properties
         self._com = None
         self._kdtrees = {}
@@ -85,15 +101,7 @@ class Entity(object):
             "abs_compactness": None,
         }
 
-
-        if parent is not None:
-            self.paths["export_folder"] = parent.paths["export_folder"].strip()
-            self.paths["parent"] = parent.paths["self"]
-            self.data["info"]["parent"] = repr(parent)
-            self.headers = parent.headers
-
-        if use_tmp:
-            self.paths["export_folder"] = os.path.join(self.tmp_folder, self.paths["export_folder"] )
+        print("init:", self.paths)
 
 
     def clear_cahces(self):
@@ -365,8 +373,8 @@ class Entity(object):
                     chain_class = Chain
 
                 for ch, atms in chain_list.items():
-                    chain_list[ch] = chain_class().from_atoms(atms, self.code(), ch, parent=self)
-                #[print(ch.id(), type(ch.id())) for ch in chain_list.values()]
+                    chain_list[ch] = chain_class.from_atoms(atms, self.code(), ch, parent=self)
+                [print(ch.id(), type(ch.id())) for ch in chain_list.values()]
                 #print((ch.id() if not by_complex else ch.complex()) for ch in chain_list.values())
                 chain_list = list(chain_list.values())
                 chain_list = [ch for ch in chain_list if len(ch.residues()) > 0]

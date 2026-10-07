@@ -122,7 +122,7 @@ class StructureDataset(object):
 
     def entities(self, entity_class=Entity, return_entries=False, **kwargs):
         for entry in self:
-            entity = entry.entity()
+            entity = entry.entity(**kwargs)
             if return_entries:
                 yield entity, entry
             else:
