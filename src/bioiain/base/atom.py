@@ -336,6 +336,8 @@ class Atom(PseudoAtom):
     def id4(self): return self.atomnum, self.alt_id, self.type, self.element, self.name, self.resseq, self.chain, self.model, self.prime # Unique (absolute)
 
 
+    def __eq__(self, target):
+        return self.id4() == target.id4()
 
     def print_full(self):
         if self.disordered:

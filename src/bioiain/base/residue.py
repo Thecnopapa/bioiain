@@ -153,7 +153,7 @@ class Residue(object):
         return self._disorder_state
 
 
-    def id(self): return self.resname, self.resnum, self.resseq, self.chain, self.entity, self.complex, self.fragment
+    def id(self): return self.resname, self.resnum, self.resseq, self.chain, self.entity, self.complex
 
     def __repr__(self):
         if self.is_disordered:
@@ -167,6 +167,8 @@ class Residue(object):
         else:
             raise NotImplementedError()
 
+    def __eq__(self, target):
+        return self.id() == target.id()
 
     def name(self):
         return "_".join([str(v) for v in self.id()])
