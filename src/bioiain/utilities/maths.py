@@ -309,11 +309,17 @@ class Plane():
         self.normal = np.array(normal_vector)
         self.normal = self.normal / np.linalg.norm(self.normal)
         self.origin = np.array(origin)
+        self.rotation = 0.
+        self.r = 1
 
-    def compass(self, r=1):
-        from sympy.abc import t
-        if not hasattr(self, "_north"):
+    def __repr__(self):
+        return f"<bi.Plane: N={self.normal} O={self.origin} R={self.rotation}"
+
+    def compass(self, r=None, force=False):
+        if not hasattr(self, "_north") or force:
             #o = self.origin
+            if r is not None:
+                self.r = r
             n = self.normal
             if abs(n[0]) > abs(n[1]):
                 v = np.array([-n[2], 0.0, n[0]])
@@ -321,12 +327,24 @@ class Plane():
                 v = np.array([0.0, -n[2], n[1]])
             v = v / np.linalg.norm(v)
             u = np.cross(n, v)
-            self._north = r * (v * np.cos(np.pi/2) + u * np.sin(np.pi/2))
-            self._east = r * (v * np.cos(np.pi) + u * np.sin(np.pi))
+            angle_e = np.pi*self.rotation
+            angle_n = np.pi*(self.rotation+0.5)
+
+            self._east = self.r * (v * np.cos(angle_e) + u * np.sin(angle_e))
+            self._north = self.r * (v * np.cos(angle_n) + u * np.sin(angle_n))
             #print("O=", tuple([float(c) for c in self.origin]))
             #print("N=", tuple([float(c) for c in self._north]))
             #print("E=", tuple([float(c) for c in self._east]))
         return self._north, self._east
+
+    def rotate(self, piradians=0.5):
+        #print(f"Rotating plane by {piradians}pi radians")
+        self.rotation += piradians
+        self.compass(force=True)
+
+    def set_rotation(self, piradians=0.):
+        self.rotation = piradians
+        self.compass(force=True)
 
 
 
@@ -340,27 +358,22 @@ class Plane():
 
 
     def project(self, points, flat=True):
-
-        from sympy.abc import t, u, v
+        from ..base import PseudoAtom
         north, east = self.compass()
-        #print("O=", tuple([float(c) for c in plane.p1.coordinates]))
-        #print("N=", tuple([float(c) for c in north.coordinates]))
-        #print("E=", tuple([float(c) for c in east.coordinates]))
 
-        if type(points[0]) in [list, tuple, np.ndarray]:
+        #print(type(points), type(points[0]))
+        if isinstance(points, PseudoAtom):
+            points=points.coord
+        #print(type(points), type(points[0]))
+        if type(points[0]) in [list, tuple, np.ndarray] or isinstance(points[0], PseudoAtom):
             return np.array([self.project(point, flat=flat) for point in points])
 
-        #print("pp=", tuple([float(c) for c in points]))
-        #p_slow = self.projection(sympy.Point3D(points))
         p = self.projection_fast(points)
-        #print("P=", tuple([float(c) for c in p]))
         if flat:
             v = p - self.origin
-            #print("V=", tuple([float(c) for c in v]))
             x_2d = np.dot(v, north)
             y_2d = np.dot(v, east)
             pp = np.array([x_2d, y_2d])
-            #print("R=", tuple([float(c) for c in pp]))
             return pp
         else:
             return p
