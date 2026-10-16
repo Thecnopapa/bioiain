@@ -25,7 +25,7 @@ from mpl_toolkits.mplot3d import proj3d
 
 log(1, f"MPL backend: {mpl.get_backend()}")
 
-mpl_colours = ('blue', 'orange', 'green', 'red', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan')
+mpl_colours = ('blue', 'orange', 'green', 'red', 'purple', 'brown', 'pink', 'olive', 'cyan', 'gray')
 pymol_colours = ('green', 'cyan', 'red', 'yellow', 'violet','blue',
                'salmon', 'lime', 'pink', 'slate', 'magenta', 'orange', 'marine',
                'olive', 'purple', 'teal', 'forest', 'firebrick', 'chocolate',
