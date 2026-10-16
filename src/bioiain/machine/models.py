@@ -56,7 +56,7 @@ class BaseModel(nn.Module):
             "default": {
                 "layer_set": "default",
                 "class":torch.optim.Adam,
-                "kwargs":{"lr":lr},
+                "kwargs":{"lr":self.data["lr"]},
             }
         }
 
@@ -71,7 +71,7 @@ class BaseModel(nn.Module):
 
         self.running_loss = {"total":0, "default":0}
         self.batch_loss = {"current_n":0, "current_list":[], "cumulative":0, "n_batches": 0}
-        print(name)
+        #print(name)
         self.data["name"] = f"{self.__class__.__name__}_{name}"
         self._optimisers = {}
         self._schedulers = {}
@@ -184,7 +184,8 @@ class BaseModel(nn.Module):
                     params = []
                     for layer_set in op_data["layer_set"]:
                         params.extend([p for p in self.submodels[layer_set].parameters()])
-                #print(params)
+                if sum([1 for _ in params]) == 0:
+                    continue
                 self._optimisers[o] = op_data["class"](params, **op_data.get("kwargs", {}))
                 if self.optimisers[o].get("LRS", None) is not None:
                     self._schedulers[o] = op_data["LRS"](optimiser=self._optimisers[o], **op_data.get("LRS_kwargs", {}))
