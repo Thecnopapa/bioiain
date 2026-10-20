@@ -779,6 +779,12 @@ class Entity(object):
                                 continue
                         write_dict(d, file_path=filepath, label=k, mode=mode, name=self.name())
                         mode = "a"
+            else:
+
+                for k in ["cell", "symmetry"]:
+                    if k in self.headers:
+                        write_dict(self.headers[k], file_path=filepath, label=k, mode=mode, name=self.name())
+                        mode = "a"
 
             #print(self)
             #log(3, "CVECTORS", cvectors, self._cvectors is not None)

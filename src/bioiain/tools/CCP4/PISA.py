@@ -75,7 +75,7 @@ class PISA(object):
             if os.path.exists(out_path):
                 self.load(out_path)
                 print(" ... reusing pisa output from:", out_path)
-                return out_path, self["pdb_code"]
+                return out_path
         filepath = os.path.abspath(filepath)
         print(f" ... analysing: {filepath}")
         self.run_pisa(filepath)
