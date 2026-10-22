@@ -17,11 +17,16 @@ RUN which python
 
 RUN pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 RUN pip3 install bioiain[ml,aleph]
-RUN pip3 install pdoc>=16
+RUN pip3 install pdoc==16.0.0
 RUN pip3 cache purge
+RUN which pdoc
 
+
+ENV PDOC_INIT="$(find $VIRTUAL_ENV/ |grep 'pdoc/__init__.py')""
 
 COPY ./app .
+RUN echo "./pdoc-init-fixed.py --> ${PDOC_INIT}"
+COPY ./pdoc-init-fixed.py $PDOC_INIT
 
 RUN chmod +x ./build-wiki.sh
 
