@@ -27,21 +27,24 @@ def index():
 def page(version=None, path=None, filename=None):
     print("Fetching page...")
     if version is None:
+        version_list=sorted(os.listdir("/docs"), reverse=True)
+        print(version, version in version_list)
+        latest_version=version_list[0]
         version = latest_version
     else:
         version = secure_filename(version)
-    print(version, version in version_list)
+
     if version not in version_list:
         return f"Version ({version}) not found"
 
     filepath = os.path.join("/docs", version, "bioiain")
-    print(filepath)
+    #print(filepath)
     if path is None or path == "":
         print("No path provided")
     else:
-        print(path)
+        #print(path)
         path = secure_filename(path)
-        print(path)
+        #print(path)
         filepath = os.path.join(filepath, path)
     
     print(filepath)
