@@ -25,6 +25,7 @@ def index():
 @app.route('/<version>/<filename>')
 @app.route('/<version>/<path:path>/<filename>')
 def page(version=None, path=None, filename=None):
+    global version_list
     print("Fetching page...")
     if version is None:
         version_list=sorted(os.listdir("/docs"), reverse=True)
