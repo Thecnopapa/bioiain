@@ -17,7 +17,8 @@ RUN which python
 
 RUN pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 RUN pip3 install bioiain[ml,aleph]
-RUN pip3 install pdoc3
+RUN pip3 install pdoc>=16
+RUN pip3 cache purge
 
 
 COPY ./app .

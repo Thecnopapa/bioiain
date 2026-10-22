@@ -32,4 +32,5 @@ mkdir -p $OUTPUT_FOLDER
 
 echo "OUTPUT_FOLDER=${OUTPUT_FOLDER}"
 
-pdoc --html -o $OUTPUT_FOLDER -f --skip-errors bioiain
+#pdoc --html -o $OUTPUT_FOLDER -f --skip-errors bioiain --logo "https://storage.googleapis.com/bioiain-media/Bioiain%20Logo%20H.png" --template-dir "./templates"
+pdoc --logo https://storage.googleapis.com/bioiain-media/Bioiain%20Logo%20H.png -t ./templates --footer-text "bioiain $BIOIAIN_VERSION" -o $OUTPUT_FOLDER bioiain
