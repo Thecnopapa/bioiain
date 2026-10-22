@@ -54,10 +54,10 @@ def page(version=None, path=None, filename=None):
 
     if filename is None or filename == '':
         filename = "index.html"
-        print("filename:", filename)
     else:
         filename = secure_filename(filename)
 
+    print("filename:", filename)
     filepath = os.path.join(filepath, filename)
     print("final_path:", filepath)
     if not os.path.exists(filepath):
