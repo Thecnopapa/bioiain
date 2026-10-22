@@ -38,25 +38,28 @@ def page(version=None, path=None, filename=None):
     if version not in version_list:
         return f"Version ({version}) not found"
 
-    filepath = os.path.join("/docs", version)
+    docspath = os.path.join("/docs", version)
     #print(filepath)
     if path is None or path == "":
         print("No path provided")
+        filepath = docspath
     else:
         #print(path)
-        path = secure_filename(path)
+        path = "/".join([secure_filename(pp) for pp in path.split("/")])
         #print(path)
-        filepath = os.path.join(filepath, path)
+        print("path:"path)
+        filepath = os.path.join(docspath, path)
     
-    print(filepath)
+
 
     if filename is None or filename == '':
         filename = "index.html"
+        print("filename:", filename)
     else:
         filename = secure_filename(filename)
 
     filepath = os.path.join(filepath, filename)
-
+    print("final_path:", filepath)
     if not os.path.exists(filepath):
         return f"File not found: {filepath}"
 
