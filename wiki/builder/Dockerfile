@@ -21,13 +21,13 @@ RUN pip3 install pdoc==16.0.0
 RUN pip3 cache purge
 RUN which pdoc
 
-
-RUN export PDOC_INIT="$(find $VIRTUAL_ENV/ |grep 'pdoc/__init__.py')"
+RUN echo "$(find "./venv"|grep 'pdoc/__init__.py')"
 
 COPY ./app .
-RUN echo "./pdoc-init-fixed.py --> $PDOC_INIT"
+#RUN echo "./pdoc-init-fixed.py --> $PDOC_INIT"
 COPY ./pdoc-init-fixed.py .
-RUN mv ./pdoc-init-fixed.py $PDOC_INIT
+RUN mv ./pdoc-init-fixed.py "./venv/lib/python3.13/site-packages/pdoc/__init__.py"
+#RUN mv ./pdoc-init-fixed.py "$(find "./venv"|grep 'pdoc/__init__.py')"
 
 RUN chmod +x ./build-wiki.sh
 
