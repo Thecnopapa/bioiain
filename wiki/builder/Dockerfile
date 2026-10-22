@@ -22,11 +22,12 @@ RUN pip3 cache purge
 RUN which pdoc
 
 
-ENV PDOC_INIT="$(find $VIRTUAL_ENV/ |grep 'pdoc/__init__.py')"
+RUN export PDOC_INIT="$(find $VIRTUAL_ENV/ |grep 'pdoc/__init__.py')"
 
 COPY ./app .
-RUN echo "./pdoc-init-fixed.py --> ${PDOC_INIT}"
-COPY ./pdoc-init-fixed.py $PDOC_INIT
+RUN echo "./pdoc-init-fixed.py --> $PDOC_INIT"
+COPY ./pdoc-init-fixed.py .
+RUN mv ./pdoc-init-fixed.py $PDOC_INIT
 
 RUN chmod +x ./build-wiki.sh
 
