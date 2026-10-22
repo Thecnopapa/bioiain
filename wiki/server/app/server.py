@@ -47,7 +47,7 @@ def page(version=None, path=None, filename=None):
         #print(path)
         path = "/".join([secure_filename(pp) for pp in path.split("/")])
         #print(path)
-        print("path:"path)
+        print("path:", path)
         filepath = os.path.join(docspath, path)
     
 
