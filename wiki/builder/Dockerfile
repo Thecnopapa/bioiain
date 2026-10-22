@@ -22,7 +22,7 @@ RUN pip3 cache purge
 RUN which pdoc
 
 
-ENV PDOC_INIT="$(find $VIRTUAL_ENV/ |grep 'pdoc/__init__.py')""
+ENV PDOC_INIT="$(find $VIRTUAL_ENV/ |grep 'pdoc/__init__.py')"
 
 COPY ./app .
 RUN echo "./pdoc-init-fixed.py --> ${PDOC_INIT}"
