@@ -287,6 +287,7 @@ class BaseModel(nn.Module):
     def write_loss(self):
         av_losses = {}
         log(1, "Writing losses...")
+        log(2, "Run Name:", self.data["run_name"])
         for c, rl in self.running_loss.items():
             if c == "total":
                 pass
@@ -792,7 +793,7 @@ class BaseModel(nn.Module):
     def step(self, optimizer_name:str|None="mode") -> bool:
         if optimizer_name is None: return False
         if optimizer_name == "mode": optimizer_name = self.mode
-        if optimizer_name not in self._optimisers: optimizer_name = "default"
+        if optimizer_name not in self._optimisers and optimizer_name not in ["mode", "all"]: optimizer_name = "default"
 
 
         if optimizer_name == "all":
@@ -807,7 +808,7 @@ class BaseModel(nn.Module):
     def zero_grad(self, optimizer_name:str|None="mode", set_to_none=True) -> bool:
         if optimizer_name is None: return False
         if optimizer_name == "mode": optimizer_name = self.mode
-        if optimizer_name not in self._optimisers: optimizer_name = "default"
+        if optimizer_name not in self._optimisers and optimizer_name not in ["mode", "all"]: optimizer_name = "default"
 
         if optimizer_name == "all":
             for optimizer in self._optimisers.values():
