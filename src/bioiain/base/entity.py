@@ -624,6 +624,7 @@ class Entity(object):
             try:
                 self._calculate_crystal()
             except CrystalError as e:
+                self.set_flag("no_crystal", True)
                 if require_crystal:
                     raise e
             atoms = [Atom(a) for a in atoms]
