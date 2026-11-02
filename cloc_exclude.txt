@@ -1,0 +1,7 @@
+src/bioiain/aleph/core/Bioinformatics.py
+src/bioiain/aleph/core/ALEPH.py
+src/bioiain/aleph/core/Grid.py
+src/bioiain/aleph/core/_debug_ALEPH.py
+src/bioiain/aleph/ALEPH2/bioiain.d/exports/1M2Z/fragmented/1M2Z.fstructure.json
+src/bioiain/aleph/core/SystemUtility.py
+src/bioiain/utilities/space_groups.py
