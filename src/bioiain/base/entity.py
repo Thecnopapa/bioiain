@@ -729,10 +729,15 @@ class Entity(object):
                 n = 0
                 max_attempts = 10
                 while n <= max_attempts:
-                    user_pid = open(lock_file ,"r").read()
-                    if not os.path.exists(lock_file) or user_pid == str(os.getpid()):
+                    try:
+                        user_pid = open(lock_file ,"r").read()
+                        if not os.path.exists(lock_file) or user_pid == str(os.getpid()):
+                            ok = True
+                            break
+                    except FileNotFoundError:
                         ok = True
                         break
+
                     log("warning", f"Waiting for .lock file to clear (user={user_pid}/requester={os.getpid()}) (attempt={n}/{max_attempts}): {lock_file}")
                     time.sleep(1)
                     n += 1
