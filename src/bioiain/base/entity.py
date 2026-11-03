@@ -260,7 +260,8 @@ class Entity(object):
         if self._cvectors is None or (vc_mode != getattr(self, "_vc_mode", None)) or force:
             self._calculate_cvectors(vc_mode=vc_mode)
         else:
-            log(1, f"Using previously saved CVectors ({vc_mode})...")
+            #log(1, f"Using previously saved CVectors ({vc_mode})...")
+            pass
         if return_missing:
             return self._cvectors, self._missing_cvectors
         return self._cvectors
