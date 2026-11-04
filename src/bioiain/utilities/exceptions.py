@@ -107,6 +107,11 @@ class ModelSaveError(Exception):
 class TryingToSaveInferenceModel(ModelSaveError):
     pass
 
+class ModelTrainingError(Exception):
+    pass
+class ModelHasNans(ModelTrainingError):
+    pass
+
 
 # LossRelated
 class LossIsZero(Exception):

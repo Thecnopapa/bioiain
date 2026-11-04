@@ -109,6 +109,8 @@ class BaseModel(nn.Module):
         except KeyError: crit = self.criterions.get('default', None)
         try: optim = self._optimisers[self.mode]
         except KeyError: optim = self.optimisers.get(self.mode, None)
+        try: sche = self._schedulers[self.mode]
+        except KeyError: sche = self._schedulers.get("default", None)
         try: layers = self.layers[self.mode]
         except KeyError: layers = self.layers.get("default", None)
         try: loss = self.running_loss[self.mode]
@@ -117,10 +119,11 @@ class BaseModel(nn.Module):
         return f"""
     <bi.{self.__class__.__name__}: {self.data['name']}
         - MODE: {self.mode}
-        - optimiser: {optim.__class__.__name__}
-        - criterion: {crit.__class__.__name__}
+        - optimiser: {optim.__class__.__name__ if optim is not None else ""}
+        - criterion: {crit.__class__.__name__ if crit is not None else ""}
+        - scheduler: {sche.__class__.__name__ if sche is not None else ""}
         - current epoch: {self.data['epoch']}
-        - running loss: {loss}
+        - running loss: {loss if loss is not None else ""}
         - layers:\n{"\n".join([f'          - {self._layer_str(k,v)}' for k, v in layers.items()])}
         - total params: {self.n_params(human=True)}
     >
@@ -192,7 +195,7 @@ class BaseModel(nn.Module):
 
                 self._optimisers[o] = op_data["class"](params, **op_data.get("kwargs", {}))
                 if self.optimisers[o].get("LRS", None) is not None:
-                    self._schedulers[o] = op_data["LRS"](optimiser=self._optimisers[o], **op_data.get("LRS_kwargs", {}))
+                    self._schedulers[o] = op_data["LRS"](self._optimisers[o], **op_data.get("LRS_kwargs", {}))
 
         self.mounted = True
 
@@ -240,6 +243,8 @@ class BaseModel(nn.Module):
                 x = submodel(x)
         else:
             x = self.submodels[submodel_name](x)
+        if x.isnan().any():
+            raise ModelHasNans()
         return x
 
     def timestamp(self):
@@ -300,7 +305,7 @@ class BaseModel(nn.Module):
             if total == 0: continue
             else: av_loss = rl / total
             if self.writer is not None:
-                log(2, f"Loss ({c}):", av_loss)
+                log(2, f"Loss ({c}): {av_loss:.5f}")
                 self.writer.add_scalar(f"loss/{c}", float(av_loss), self.data["epoch"])
             av_losses[c] = av_loss
 
@@ -345,8 +350,7 @@ class BaseModel(nn.Module):
 
 
         av_losses = self.write_loss()
-
-        self.step_schedulers(running_loss=av_losses, scheduler_name="all", dry=self.data["epoch"] not in (None, 0))
+        self.step_schedulers(running_loss=av_losses, scheduler_name="all", dry=self.data["epoch"] in (None, 0))
         self.reset_loss()
         if self.data["epoch"] is None: self.data["epoch"] = 1
         else: self.data["epoch"] += 1
@@ -767,7 +771,7 @@ class BaseModel(nn.Module):
         if scheduler_name is None: return False
         if scheduler_name == "mode": scheduler_name = self.mode
         if scheduler_name not in self._schedulers and scheduler_name not in ["mode", "all"]: scheduler_name = "default"
-        log(1, f"Stepping schedulers... ({scheduler_name})")
+
 
         if running_loss is None:
             running_loss = self.running_loss.get("default", 0.5)
@@ -779,13 +783,16 @@ class BaseModel(nn.Module):
 
         #print(schedulers)
 
-        for name, scheduler in schedulers.items():
-            if scheduler is not None:
-                lrs = scheduler
-                self.writer.add_scalar(f"learning_rate/{name}", torch.Tensor(lrs.current()), self.data["epoch"])
-                if not dry:
-                    lrs = lrs.step(running_loss=running_loss.get(name, 0.5))
-                log(2, f"{name}: {lrs.last()[0]:1.5f} -> {lrs.current()[0]:1.5f}")
+        if len(schedulers) > 0:
+            log(1, f"Stepping schedulers... ({scheduler_name}) dry={dry}")
+
+            for name, scheduler in schedulers.items():
+                if scheduler is not None:
+                    lrs = scheduler
+                    self.writer.add_scalar(f"learning_rate/{name}", torch.Tensor(lrs.current()), self.data["epoch"])
+                    if not dry:
+                        lrs.step(running_loss.get(name, 0.5))
+                    log(2, f"{name}: {lrs.last()[0]:.3e} -> {lrs.current()[0]:.3e}")
 
         return True
 

@@ -18,16 +18,20 @@ from ..utilities.maths import *
 
 
 
-class customLRS(torch.optim.lr_scheduler.LRScheduler):
-    def __init__(self, *args, optimiser, use_original=False, range=4, **kwargs):
+class CustomLRS(torch.optim.lr_scheduler.LRScheduler):
+    def __init__(self, optimiser, min=-10, max=-1, **kwargs):
         self.o_lrs = [p["lr"] for p in optimiser.param_groups]
-        self.use_original = use_original
         self.loss_list = []
-        super().__init__(optimiser, *args, **kwargs)
+        self.min = min
+        self.max = max
+        self.kwargs = kwargs
+        super().__init__(optimiser)
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__}: {self.optimizer} (x{self.factor})>"
 
     def get_lr(self):
-        print("LRS: getting lrs")
-        print(self.lrs)
+        log(2, "Getting lrs:", [f"{l:.3e}" for l in self.lrs])
         return torch.Tensor(np.array(self.lrs))
 
     def current(self):
@@ -42,42 +46,125 @@ class customLRS(torch.optim.lr_scheduler.LRScheduler):
         except AttributeError:
             return self.o_lrs
 
-    def step(self, running_loss=None):
-        print("LRS: stepping...")
-        print("Current loss:", running_loss)
+    def _step(self, running_loss, **kwargs):
+        raise NotImplementedError()
 
+    def step(self, running_loss):
+        log(2, f"Stepping: {self}")
         if running_loss is None:
             return self.o_lrs
+        log(3, f"Current loss: {running_loss:.3e}")
+
+
 
         if len(self.loss_list) == 0:
             self.loss_list.append(running_loss)
-        print("Previous loss", self.loss_list[-1])
+        log(3, f"Previous loss {self.loss_list[-1]:.3e}")
         if hasattr(self, "lrs"):
             self._last_lrs = self.lrs
         self.lrs = []
-        for p, olr in zip(self.optimizer.param_groups, self.o_lrs):
+
+        self._step(running_loss, **self.kwargs)
+
+        self.loss_list.append(running_loss)
+        log(2, f"Updating LRs:", [f"{l:.3e}" for l in self.lrs])
+        super().step()
+        return self
+
+
+    def clamp(self, val):
+        return max(min(self.max, val), self.min)
+
+
+
+class PlateauLRS(torch.optim.lr_scheduler.ReduceLROnPlateau):
+    def current(self):
+        return self.get_last_lr()
+
+    def last(self):
+        return self.get_last_lr()
+
+
+class EpochLRS(CustomLRS):
+    def _step(self, running_loss, frequency=1, delta=-0.001, **kwargs):
+        if len(self.loss_list) % frequency != 0:
+            log(4, f"Not stepping in this epoch")
+            return
+        for n, (p, olr) in enumerate(zip(self.optimizer.param_groups, self.last())):
             old_log = math.log(olr, 10)
+            log(4, f"OLD_LOG {old_log:.3f}")
 
-            print("OLD_LOG", old_log)
+            new_log = old_log + delta
+            log(4, f"NEW_LOG: {new_log:.3f}")
 
-            if self.use_original:
-                new_log = old_log - ((1-running_loss)*4) + 2
-            else:
-                delta = self.loss_list[-1] / running_loss
-                new_log = old_log + (delta - 1) #+ 1 # -0.5
-                print("DELTA", delta)
+            new_log = self.clamp(new_log)
+            log(4, f"CAPPED NEW_LOG: {new_log:.3f}")
 
-
-
-            print("NEW_LOG", new_log)
             new_lr = 10 ** new_log
-            print("NEW_LR", new_lr)
+            log(4, f"NEW_LR {new_lr:.3e}")
+
             self.lrs.append(new_lr)
             p["lr"] = float(new_lr)
 
-        self.loss_list.append(running_loss)
-        print(self.lrs)
-        return self
+class DeltaLRS(CustomLRS):
+    def _step(self, running_loss, factor=1, threshold=0.5, smoothing=5, freedom=0.5):
+        for n, (p, olr) in enumerate(zip(self.optimizer.param_groups, self.last())):
+            old_log = math.log(olr, 10)
+
+            smoothed_loss = 0
+            smoothed_n = 0
+            for i in range(smoothing):
+                try:
+                    smoothed_loss += self.loss_list[-i-1]
+                    smoothed_n += 1
+                except IndexError:
+                    break
+            smoothed_loss /= smoothed_n
+            log(4, f"Smoothed loss: {smoothed_loss:.3e}, {smoothed_n}")
+            ratio = smoothed_loss / running_loss
+            log(4, f"RATIO: {ratio:.3f}")
+
+
+            if running_loss < threshold:
+                log(4, "Below threshold!")
+                if ratio >= 1:
+                    delta = -(ratio - 1)*factor
+                else:
+                    delta = 0
+
+
+            elif ratio >= 2:
+                #delta = delta = -(ratio - 1) /2
+                delta = 0
+            elif ratio >= 1:
+                delta = 0
+            elif ratio <= 0.5:
+                delta = -(0.5 - ratio)*factor
+            else:
+                delta = (1 - ratio)*factor
+
+            # + DELTA -> + LR
+
+            log(4, f"DELTA: {delta:.3f}")
+
+            delta = max(min(delta, freedom), -freedom)
+
+            log(4, f"CAPPED DELTA: {delta:.3f}")
+
+
+            log(4, f"OLD_LOG {old_log:.3f}")
+            new_log = old_log + delta
+            log(4, f"NEW_LOG: {new_log:.3f}")
+
+            new_log = self.clamp(new_log)
+            log(4, f"CAPPED NEW_LOG: {new_log:.3f}")
+
+            new_lr = 10 ** new_log
+            log(4, f"NEW_LR {new_lr:.3e}")
+
+            self.lrs.append(new_lr)
+            p["lr"] = float(new_lr)
+
 
 
 
