@@ -453,12 +453,12 @@ class Entity(object):
     def set_symmetry(self):
         pass
 
-    def clean_and_long(self, min_length=25, export_folder=None):
+    def clean_and_long(self, min_length:int=25, export_folder=None):
         if export_folder is None:
             export_folder = os.path.join(self.paths["export_folder"], "clean_{min_length}")
         long_chain_atoms = []
         for chain in self.chains():
-            if len(chain) > 25:
+            if len(chain) >= min_length:
                 long_chain_atoms.extend(chain.atoms())
         new = self.__class__.from_atoms(long_chain_atoms, parent=self, share=False, export_folder=export_folder)
 
