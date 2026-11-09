@@ -453,6 +453,25 @@ class Entity(object):
     def set_symmetry(self):
         pass
 
+    def clean_and_long(self, min_length:int=25, export_folder=None):
+        if export_folder is None:
+            export_folder = os.path.join(self.paths["export_folder"], f"clean_{min_length}")
+        long_chain_atoms = []
+        for chain in self.chains():
+            if len(chain) >= min_length:
+                long_chain_atoms.extend(chain.atoms())
+        new = self.__class__.from_atoms(long_chain_atoms, parent=self, share=False, export_folder=export_folder)
+
+        from copy import deepcopy
+        new.data = deepcopy(self.data)
+        new.flags = deepcopy(self.flags)
+        new.paths = deepcopy(self.paths)
+        new.paths["self"] = None
+        new.paths["export_folder"] = export_folder
+        new.set_flag("is_copy", True)
+        new.set_flag("exported", False)
+        return new
+
 
 
     @classmethod
@@ -640,7 +659,7 @@ class Entity(object):
             self.headers["symmetry"]["space_group_name_H-M"] = f"\'{self.headers['symmetry']['space_group_name_H-M']}\'"
 
 
-    def export(self, minimal=False, cleanup=False, as_pdb=False, target_folder=None, suffix=None, dry=False, all_headers=True, cvmatrix=True, cvectors=True, verbose=False):
+    def export(self, minimal=False, cleanup=False, as_pdb=False, target_folder=None, suffix=None, dry=False, all_headers=True, cvmatrix=True, cvectors=True, verbose=True):
 
         custom_folder = False
         if target_folder is None:
@@ -671,7 +690,7 @@ class Entity(object):
         base_path = os.path.join(base_folder, fname)
         if dry:
             if verbose:
-                log(3, "Calculating export path...")
+                log(3, "Export path:", base_path+".cif")
             return base_path+".cif"
         if verbose:
             log(2, f"Exporting: {self} to {base_path}.cif")
@@ -708,8 +727,8 @@ class Entity(object):
 
 
     def _export_structure(self, filepath:str, atoms:list=None, headers:bool=None, misc_fields:bool=True, cleanup=True, as_pdb=False, all_headers=True, cvectors=True, cvmatrix=True, verbose=False) -> str:
-        if verbose:
-            log(2,"Exporting structure...")
+        # if verbose:
+        #     log(2,"Exporting structure...")
         mode = "w"
         if atoms is None:
             if cleanup:
@@ -802,16 +821,16 @@ class Entity(object):
 
             if cvectors and (self._cvectors is not None):
                 if verbose:
-                    log(3, "Exporting cvectors...")
+                    log(2, "Exporting cvectors...")
                 write_dict_list(self._cvectors, file_path=filepath, label="aleph_cvectors", mode=mode, name=self.name())
                 mode = "a"
             if cvmatrix and (getattr(self, "_cvmatrix", None) is not None):
                 if verbose:
-                    log(3, "Exporting cvmatrix...")
+                    log(2, "Exporting cvmatrix...")
                 write_dict_list([v.closest_vp for v in self._cvmatrix.vectors], file_path=filepath, label="aleph_cvmatrix", mode=mode, name=self.name())
                 mode = "a"
-            if verbose:
-                log(3, "Exporting atoms...")
+            # if verbose:
+            #     log(2, "Exporting atoms...")
             r = write_atoms(atoms, filepath, name=self.name(), include_misc=misc_fields, mode=mode)
 
         os.remove(lock_file)
