@@ -453,6 +453,24 @@ class Entity(object):
     def set_symmetry(self):
         pass
 
+    def clean_and_long(self, min_length=25, export_folder=None):
+        if export_folder is None:
+            export_folder = os.path.join(self.paths["export_folder"], "clean_{min_length}")
+        long_chain_atoms = []
+        for chain in self.chains():
+            if len(chain) > 25:
+                long_chain_atoms.extend(chain.atoms())
+        new = self.__class__.from_atoms(long_chain_atoms, parent=self, share=False, export_folder=export_folder)
+
+        from copy import deepcopy
+        new.data = deepcopy(self.data)
+        new.flags = deepcopy(self.flags)
+        new.paths = deepcopy(self.paths)
+        new.paths["self"] = None
+        new.set_flag("is_copy", True)
+        new.set_flag("exported", False)
+        return new
+
 
 
     @classmethod
