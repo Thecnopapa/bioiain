@@ -33,9 +33,14 @@ def fetchPDB(code:str, target_folder:str|None=None, data_folder_name:str|None=No
         log("Error", f"Failed to download {fname} from:", url)
         raise DownloadError()
     else:
-        with open(fpath, "w") as f:
-            f.write(response.text)
-            log(2, f"PDB file: {fname} downloaded to: {fpath}")
+        try:
+            with open(fpath, "w") as f:
+                log(2, f"Downloading PDB file: {fname} to: {fpath}")
+                f.write(response.text)
+        except:
+            log(2, f"File write interrupted, deleting corrupted PDB file: {fpath}")
+            os.remove(fpath)
+
     return fpath
 
 
@@ -469,7 +474,7 @@ def write_atoms(atoms, file_path, name=None, include_misc=True, preserve_ids=Fal
         with open(file_path, mode) as f:
             if mode == "w":
                 f.write(f"data_{name}\n")
-            f.write("#\n")
+                f.write("#\n")
             f.write("loop_\n")
 
             for l in labels:
@@ -480,10 +485,16 @@ def write_atoms(atoms, file_path, name=None, include_misc=True, preserve_ids=Fal
                 if not preserve_ids:
                     d["id"] = f"{n:4d}"
                 if len(d.values()) != len(labels):
-                    log("Warning", f"Atom with inconsistent ({len(d.values())}v/{len(labels)}l) labels")
-                    continue
+                    log("Warning", f"Atom [{d['id']}] with inconsistent ({len(d.values())}v/{len(labels)}l) labels")
+                    for lab in labels:
+                        if lab not in d:
+                            log(1, "Missing lab:", lab)
+                            d[lab] = "."
+                    #[print(dd) for dd in d.items()]
+                    #continue
                 f.write("  ".join(d.values()) + "\n")
                 n+=1
+            f.write("#\n")
 
         return file_path
     except Exception as e:
@@ -509,7 +520,7 @@ def write_dict(data, label, file_path, name=None, mode="w"):
         with (open(file_path, mode) as f):
             if mode == "w" and name is not None:
                 f.write(f"data_{name}\n")
-            f.write("#\n")
+                f.write("#\n")
             if not type(data) is dict:
                 log("error", "Trying to export dict that is not dict")
                 print(label, data)
@@ -517,7 +528,7 @@ def write_dict(data, label, file_path, name=None, mode="w"):
             for k, v in data.items():
                 #print(label, k, v)
                 f.write(f"{label}.{k}   {cleanup_for_mmcif(v ,force_quote=f'{label}.{k}' in quoted_headers)}\n")
-
+            f.write("#\n")
         return file_path
     except Exception as e:
         log("error", f"Dict writing to mmcif failed, deleting corrupted file: {file_path}")
@@ -565,7 +576,7 @@ def write_dict_list(data, label, file_path, name=None, mode="w", **kwargs):
         with open(file_path, mode) as f:
             if mode == "w" and name is not None:
                 f.write(f"data_{name}\n")
-            f.write("#\n")
+                f.write("#\n")
             f.write("loop_\n")
             #print(keys)
             for k in keys:
@@ -578,7 +589,7 @@ def write_dict_list(data, label, file_path, name=None, mode="w", **kwargs):
                 if add_n:
                     s = f"{n:4d}  " + s
                 f.write(s)
-
+            f.write("#\n")
         return file_path
     except Exception as e:
         log("error", f"Dict writing to mmcif failed, deleting corrupted file: {file_path}")
