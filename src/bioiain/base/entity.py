@@ -1346,11 +1346,11 @@ class Entity(object):
         return self._kdtrees["ca"]
 
 
-    def compactness(self, force=False, with_symmetry=True, vectors=False, **kwargs):
+    def compactness(self, force=False, with_symmetry=True, vectors=False, radius=10, **kwargs):
         if with_symmetry:
-            label = "rel_compactness"
+            label = f"rel_compactness_{radius}"
         else:
-            label = "abs_compactness"
+            label = f"abs_compactness_{radius}"
         if (not force) and (not vectors) and self.has_flag(f"{label}_calculated", True):
             try:
                 self._compactness[label] = []
@@ -1359,19 +1359,19 @@ class Entity(object):
                 log(2, "Compactness already generated")
 
             except:
-                log("warning", "Failed to obtain entire completeness list from residues")
+                log("warning", "Failed to obtain entire compactness list from residues")
                 self._compactness[label] = None
-        if force or self._compactness[label] is None:
-            self, plot = self._calculate_compactness(with_symmetry=with_symmetry, **kwargs)
+        if force or self._compactness.get(label, None) is None:
+            self, plot = self._calculate_compactness(with_symmetry=with_symmetry, radius=radius, **kwargs)
 
 
         return self, self._compactness[label], plot
 
     def _calculate_compactness(self, radius=10, plot=False, session=False, with_symmetry=True, export=True, same_fragment=True, return_plot=False, asu_as_one=False):
         if with_symmetry:
-            label = "rel_compactness"
+            label = f"rel_compactness_{radius}"
         else:
-            label = "abs_compactness"
+            label = f"abs_compactness_{radius}"
         if return_plot:
             plot=True
         log(2, f"Calculating {label}...")
