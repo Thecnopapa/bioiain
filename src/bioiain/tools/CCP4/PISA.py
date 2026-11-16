@@ -12,7 +12,9 @@ class PISA(object):
                  pisa_id="temp",
                  pisa_command="pisa",
                  out_folder=None,
-                 xml_folder=None):
+                 xml_folder=None,
+                 flags=None,
+                 config_file=None):
         self.pisa_command = pisa_command
         self.pisa_id = pisa_id
         if out_folder is None:
@@ -21,6 +23,8 @@ class PISA(object):
             xml_folder = os.path.join(TEMP_FOLDER, "pisa", "xml")
         self.out_folder = out_folder
         self.xml_folder = xml_folder
+        self.config_file = config_file
+        self.flags = flags
         self.data = None
 
     def __getitem__(self, key):
@@ -37,6 +41,18 @@ class PISA(object):
             "-analyse",
             filepath
         ]
+
+        if self.flags is not None:
+            if type(self.flags) is str:
+                cmd.append(self.flags)
+            elif type(self.flags) in [list, tuple]:
+                cmd.extend(self.flags)
+            else:
+                raise PISAFlagsError(e)
+
+        if self.config_file is not None:
+            cmd.append(config_file)
+
         try:
             print(" ..$ "+ " ".join(cmd))
             subprocess.run(cmd, check=True)
@@ -55,6 +71,8 @@ class PISA(object):
             self.pisa_id,
             "-erase"
         ]
+        if self.config_file is not None:
+            cmd.append(config_file)
         try:
             print(" ..$ "+ " ".join(cmd))
             subprocess.run(cmd, check=True)
@@ -227,11 +245,15 @@ class PISA(object):
         if interfaces:
             interfaces_path = f"{self.xml_folder}/{self.pisa_id}.interfaces.xml"
             cmd_i = cmd + ["interfaces"]
+            if self.config_file is not None:
+                cmd.append(config_file)
             print(" ..$ "+ " ".join(cmd_i))
             subprocess.run(cmd_i, stdout=open(interfaces_path, "w"))
         if assemblies:
             assemblies_path = f"{self.xml_folder}/{self.pisa_id}.assemblies.xml"
             cmd_a = cmd + ["assemblies"]
+            if self.config_file is not None:
+                cmd.append(config_file)
             print(" ..$ "+ " ".join(cmd_a))
             subprocess.run(cmd_a, stdout=open(assemblies_path, "w"))
         return interfaces_path, assemblies_path

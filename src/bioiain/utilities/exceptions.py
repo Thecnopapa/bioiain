@@ -98,6 +98,8 @@ class CCP4NotEnabled(CCP4Error):
 class PISAError(CCP4Error):
     pass
 
+class PISAFlagsError(CCP4Error):
+    pass
 
 # Model related
 class ModelNotFound(Exception):
