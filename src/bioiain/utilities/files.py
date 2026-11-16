@@ -27,9 +27,10 @@ def relative_path(path, relative_to=None):
 
 
 class StructureDataset(object):
-    def __init__(self, name="dataset", folder=None, shared_source=True, ignore_blacklist=False, export_folder=None, require_crystal=True):
+    def __init__(self, name="dataset", folder=None, shared_source=True, ignore_blacklist=False, export_folder=None, require_crystal=True, max_mb=3.):
         self.data = {}
         self.name = name
+        self.max_mb = max_mb
         self.blacklist = []
         self._blacklist_lock = False
         self.i = None
@@ -198,7 +199,7 @@ class StructureDataset(object):
         if os.path.realpath(path) in self.blacklist:
             log("warning", f"Path: {path} in blacklist: {self.blacklist_file}")
             return self
-        if os.path.getsize(path) > 1.5 * 1024 * 1024:
+        if os.path.getsize(path) > self.max_mb * 1024 * 1024:
             log("warning", f"File: {os.path.basename(path)} too large! ({os.path.getsize(path) / 1024 / 1024 :3.2f} MiB)")
             self.add_to_blacklist(path, reason=f"File: {os.path.basename(path)} too large! ({os.path.getsize(path) / 1024 / 1024 :3.2f} MiB)")
             return self
