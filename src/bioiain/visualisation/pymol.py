@@ -193,7 +193,8 @@ class PymolScript(object):
             if batch_mode:
                 cmd.extend(["-c"])
             else:
-                f.write(f"\nquit")
+                with open(tmp_session_path, "a") as f:
+                    f.write(f"\nquit")
             cmd.extend(["-l", tmp_session_path])
         else:
             if use_compiled and self.session_path is not None:
