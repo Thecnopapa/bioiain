@@ -1,3 +1,4 @@
+from ..utilities.exceptions import *
 from . import SASA
 try:
     from .CCP4 import PISA

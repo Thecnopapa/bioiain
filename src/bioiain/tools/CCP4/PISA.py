@@ -88,7 +88,7 @@ class PISA(object):
     def analyse(self, filepath, force=False):
         if not force:
             fname = os.path.basename(filepath)
-            out_path = os.path.join(self.out_folder, f"{fname.split(".")[0]}.pisa.json")
+            out_path = os.path.join(self.out_folder, f"{fname.split('.')[0]}.pisa.json")
             print(f" ... output file: {out_path}")
             if os.path.exists(out_path):
                 self.load(out_path)
