@@ -145,7 +145,7 @@ class PymolScript(object):
             f.write(f"#!{self.pymol_path}\n\n")
             #f.write(f"try:\n\tcd os.path.dirname(sys.argv[1])\nexcept:\n\tpass\n")
             #f.write("import os\n")
-            f.write(f"os.chdir('{self.subfolder}')\n")
+            f.write(f"cd '{self.subfolder}'\n")
 
             #f.write("import {} as bi\n\n\n".format(self._bioiain))
             for cmd in self.commands:
@@ -161,7 +161,7 @@ class PymolScript(object):
     def compile(self, **kwargs):
         return self.execute(compile=True, **kwargs)
 
-    def execute(self, quiet=True, pymol_path=None, full_screen=False, compile=False, use_compiled=True, extra_options="-k"):
+    def execute(self, quiet=True, pymol_path=None, full_screen=False, compile=False, use_compiled=True, extra_options="-k", keep_compiler=False, batch_mode=True):
         """
         Executes the script on the current thread. Not sure if it is blocking or not.
         """
@@ -190,7 +190,8 @@ class PymolScript(object):
             shutil.copy(self.path, tmp_session_path)
             with open(tmp_session_path, "a") as f:
                 f.write(f"\ncmd.save('{self.session_path}')")
-            cmd.extend(["-c"])
+            if batch_mode:
+                cmd.extend(["-c"])
             cmd.extend(["-l", tmp_session_path])
         else:
             if use_compiled and self.session_path is not None:
@@ -203,7 +204,8 @@ class PymolScript(object):
             subprocess.run(cmd, cwd=self.subfolder)
             if compile:
                 log(1, f"PyMol Session compiled at: pymol {self.session_path}")
-                os.remove(tmp_session_path)
+                if not keep_compiler:
+                    os.remove(tmp_session_path)
         except KeyboardInterrupt:
             logging.log("debug", "\nClosing Pymol...")
         except Exception as e:
