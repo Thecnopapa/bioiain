@@ -192,6 +192,8 @@ class PymolScript(object):
                 f.write(f"\ncmd.save('{self.session_path}')")
             if batch_mode:
                 cmd.extend(["-c"])
+            else:
+                f.write(f"\nquit")
             cmd.extend(["-l", tmp_session_path])
         else:
             if use_compiled and self.session_path is not None:
@@ -210,6 +212,11 @@ class PymolScript(object):
             logging.log("debug", "\nClosing Pymol...")
         except Exception as e:
             log("error","(PYMOL)", e)
+
+        if compile or (use_compiled and self.session_path is not None):
+            return self.session_path
+        else:
+            return self.path
 
 
     def add(self, fun, *args, **kwargs) -> Command:
